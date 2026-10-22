@@ -1,0 +1,41 @@
+{
+  "name": "conjure",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env server/index.ts",
+    "start": "NODE_ENV=production tsx --env-file-if-exists=.env server/index.ts",
+    "build": "node dev/typecheck.mjs && vite build",
+    "typecheck": "node dev/typecheck.mjs",
+    "check": "node dev/check.mjs",
+    "test": "tsx --test tests/*.test.ts",
+    "new": "node dev/new.mjs",
+    "export": "node dev/export.mjs",
+    "check:expansion": "node dev/expansion-check.mjs",
+    "check:layers": "node dev/layers-check.mjs",
+    "check:styles": "node --import tsx dev/styles-check.mjs",
+    "check:requests": "node --import tsx dev/requests-check.mjs",
+    "check:directions": "node --import tsx dev/directions-check.mjs"
+  },
+  "engines": {
+    "node": ">=22.12"
+  },
+  "dependencies": {
+    "@typesafe-ai/sdk": "^0.6.0",
+    "express": "^5.2.1",
+    "imagetracerjs": "^1.2.6",
+    "p5": "2.3.3",
+    "three": "0.185.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.0.0",
+    "@types/three": "^0.185.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vite": "^6.0.0"
+  }
+}

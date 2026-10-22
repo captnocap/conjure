@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Atelier — Rendering Studies</title>
+    <meta
+      name="description"
+      content="One fixed scene, many ways of seeing. A Three.js and p5.js rendering laboratory."
+    />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231b2928'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23dfef93' stroke-width='4'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="app.css" />
+    <script src="vendor/p5.min.js"></script>
+  </head>
+  <body>
+    <header>
+      <a class="brand" href="./" aria-label="Atelier home"
+        ><span class="brandmark">a</span> ATELIER</a
+      ><span class="header-label">A LABORATORY FOR WAYS OF SEEING</span
+      ><span class="edition">STUDIES / 001</span>
+    </header>
+    <main>
+      <aside>
+        <div class="eyebrow">TREATMENTS <span id="count">69</span></div>
+        <div class="collection-controls">
+          <label for="treatment-search">Find a technique</label>
+          <input
+            id="treatment-search"
+            type="search"
+            placeholder="Name, number, medium…"
+            autocomplete="off"
+            aria-controls="styles"
+          />
+          <label for="family-filter">Technique family</label>
+          <select id="family-filter" aria-controls="styles">
+            <option value="">All families</option>
+          </select>
+          <div class="filter-summary">
+            <span id="filter-count" role="status" aria-live="polite"></span
+            ><button id="clear-filters" type="button">Clear</button>
+          </div>
+          <div class="current-treatment">
+            <span>Viewing</span
+            ><strong
+              id="current-treatment"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              >Risograph</strong
+            ><button id="show-current" type="button" hidden>
+              Show current
+            </button>
+          </div>
+        </div>
+        <nav id="styles" aria-label="Choose a rendering treatment"></nav>
+        <p id="no-matches" class="no-matches" hidden>
+          No matching techniques. Clear the filters to browse all studies.
+        </p>
+        <div class="aside-note">
+          <span class="small-ring"></span
+          ><strong>One scene.<br />Different instruments.</strong>
+          <p>Every treatment receives the same geometry, camera and light.</p>
+        </div>
+        <button class="text-button" id="about">About the experiment</button>
+      </aside>
+      <section class="workspace">
+        <div class="workspace-heading">
+          <div>
+            <div class="eyebrow">REFERENCE SCENE / THE QUIET GARDEN</div>
+            <h1 id="study-title">The printed image.</h1>
+          </div>
+          <div class="heading-switches">
+            <div
+              class="mode-switch"
+              role="group"
+              aria-label="Rendering approach"
+            >
+              <button id="study-view" class="active" aria-pressed="true">
+                Study</button
+              ><button id="mixer-view" aria-pressed="false">Mixer</button>
+            </div>
+            <div class="mode-switch" role="group" aria-label="View mode">
+              <button id="compare" class="active" aria-pressed="true">
+                Compare</button
+              ><button id="solo" aria-pressed="false">Single</button>
+            </div>
+          </div>
+        </div>
+        <div class="browse-strip" aria-label="Browse matching treatments">
+          <div>
+            <button
+              id="previous-treatment"
+              aria-label="Previous matching treatment"
+            >
+              ← Previous</button
+            ><span id="browse-position"></span
+            ><button id="next-treatment" aria-label="Next matching treatment">
+              Next →
+            </button>
+          </div>
+          <div class="browse-actions">
+            <button
+              id="sheet-export"
+              disabled
+              title="Export every treatment with the current scene settings"
+            >
+              Export contact sheet
+            </button>
+            <button
+              id="reset"
+              class="reset"
+              title="Restore shared defaults and Compare; keep this treatment"
+            >
+              Reset view
+            </button>
+          </div>
+        </div>
+        <div
+          id="sheet-status"
+          class="sheet-progress"
+          role="status"
+          aria-live="polite"
+          hidden
+        >
+          <span id="sheet-message"></span
+          ><button id="sheet-cancel" hidden>Cancel</button>
+        </div>
+
+          <details id="sheet-details" class="render-details" hidden>
+            <summary id="sheet-details-summary">Render details</summary>
+            <div class="diagnostic-actions">
+              <button id="sheet-copy-diagnostic" type="button">Copy diagnostics</button>
+              
+              <span id="sheet-copy-status" role="status"></span>
+            </div>
+            <textarea id="sheet-diagnostic" aria-label="Copyable render diagnostics" readonly spellcheck="false"></textarea>
+          </details>
+        <section
+          class="material-stage"
+          aria-label="Scene materials before rendering"
+        >
+          <div class="material-heading">
+            <div>
+              <div class="eyebrow">01 / MATERIAL</div>
+              <strong id="material-summary">Mixed materials</strong>
+            </div>
+            <div class="mode-switch" role="group" aria-label="Material preset">
+              <button id="materials-original" aria-pressed="false">
+                Original</button
+              ><button id="materials-mixed" class="active" aria-pressed="true">
+                Mixed materials
+              </button>
+              <button id="materials-tissue" aria-pressed="false">
+                Flesh &amp; bone
+              </button>
+            </div>
+          </div>
+          <details>
+            <summary>Assign materials by object</summary>
+            <p>
+              Choose what each object is made of, then explore it through any
+              rendering treatment. The geometry, camera and light controls stay
+              shared.
+            </p>
+            <div id="material-objects" class="material-objects"></div>
+            <p class="material-note">
+              Ribbed clay is available for Vase. Rounded joined courses shade the
+              original surface, with a plain interior. The silhouette and cast
+              shadow stay fixed; pigment-only treatments see uniform buff clay.
+              This is illustrative relief on a backing, without separate tubes.
+              <a href="https://swvirtualmuseum.nau.edu/wp/index.php/artifacts/pottery/tusayan-gray-ware/moenkopi-corrugated/"
+                target="_blank" rel="noopener noreferrer">Exposed clay-course reference</a>.
+            </p>
+            <p class="material-note">
+              Enamel reserve is available for Vase. Broad reflective metal surrounds
+              blue filled cells. Both materials lie flush on the original surface;
+              the shape and cast shadow stay fixed. Pigment-only treatments keep
+              the blue and silver colors without their reflections.
+              <a href="https://www.artsandcraftsnsw.com.au/blogs/news/fine-silver-cloisonne-enamel-pendant-by-laura-haszard"
+                target="_blank" rel="noopener noreferrer">Metal-and-enamel reference</a>.
+            </p>
+            <p class="material-note">
+              Shingle relief is available for Vase. Broad plate tips and short
+              recess shadows create relief on a solid backing. The silhouette and
+              cast shadow keep the original vase geometry. The inside remains
+              plain, and pigment-only treatments show uniform gray.
+              <a href="https://nhm.org/stories/wheel-through-museum"
+                target="_blank" rel="noopener noreferrer">Overlapping-scale reference</a>.
+            </p>
+            <p class="material-note">
+              Perforated metal is available for Vase and Sphere. Its openings let the
+              background and light through, without adding hole rims. Original-shape
+              studies such as Section ribs and Thickness exposure keep their own geometry.
+              <a href="https://shop.design-museum.de/en/products/miniatur-landi-chair"
+                target="_blank" rel="noopener noreferrer">Perforated metal reference</a>.
+            </p>
+            <p class="material-note">
+              Metals reflect a fixed studio environment. Steel highlights stretch
+              across its fine brush marks. Geometry-derived
+              curvature and short-range ambient occlusion guide wear, glaze and
+              dust. Surface relief and porcelain wrap are stylized; the scene
+              shape stays fixed. Solid wood uses one continuous growth volume:
+              crosscuts reveal rings; side cuts follow fibers.
+              <a
+                href="https://research.fs.usda.gov/treesearch/62242"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Wood anatomy reference</a
+              >. Frosted glass softly refracts the background. Drawing modes
+              that use only pigment may show it as a solid pale surface. Its
+              thickness and contact light are approximations; glass lets ambient
+              light through without removing nearby surface wear.
+              <a
+                href="https://threejs.org/docs/pages/MeshPhysicalMaterial.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Glass transmission reference</a
+              >. Flesh &amp; bone adds skin, fatty tissue, aligned muscle, dense
+              bone and porous bone. Soft light wrap suggests scattering; pores
+              and fibers change surface shading while the shapes stay fixed.
+              <a
+                href="https://histology.leeds.ac.uk/home/tissue_types/muscle/muscle_skeletal/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Tissue reference</a
+              >
+              ·
+              <a
+                href="https://histologylab.ctl.columbia.edu/lab04/bone/"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Bone reference</a
+              >. Velvet adds a soft, light-dependent sheen over deep dyed pile.
+              Fine nap changes shading without changing the shape.
+              <a
+                href="https://www.metmuseum.org/art/collection/search/214319"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Velvet textile reference</a
+              >. Woven linen interlaces rounded yarns with separate directional
+              reflections. Its surface stays solid, with no added fabric geometry.
+              <a href="https://www.metmuseum.org/perspectives/immaterial-linen"
+                target="_blank" rel="noopener noreferrer">Linen close-up</a>. Diffraction foil adds spectral glints from the
+              directional lights; its studio reflections stay neutral.
+              <a href="https://www.newport.com/t/grating-physics/f/plane-holographic-reflection-gratings/"
+                target="_blank" rel="noopener noreferrer">Grating reference</a>.
+              Hammered metal breaks broad reflections with shallow surface impacts.
+              <a href="https://www.abigailbrown.co.uk/silversmithing-shop/adraste-silver-bowl"
+                target="_blank" rel="noopener noreferrer">Hammered silver reference</a>.
+              Circular-grained metal uses overlapping circular reflection fields.
+              Small plant parts use a smooth finish to keep their highlights readable.
+              <a href="https://www.alange-soehne.com/eu-en/manufacture/art-of-watchmaking/finishing-and-engraving"
+                target="_blank" rel="noopener noreferrer">Perlage reference</a>.
+              Tiled surface adds an original abstract relief of uneven dark plates.
+              Its pattern lives in lighting and reflections; color-only treatments
+              flatten that relief.
+              <a href="https://threejs.org/docs/pages/MeshPhysicalMaterial.html"
+                target="_blank" rel="noopener noreferrer">Shading reference</a>.
+            </p>
+          </details>
+        </section>
+        <div id="render-workspace" class="render-workspace">
+          <div class="canvases" id="canvases">
+            <article class="board reference-board">
+              <div class="board-label">
+                <span><i class="dot"></i> REFERENCE</span
+                ><span>THREE.JS / MATERIAL</span>
+              </div>
+              <div class="canvas-wrap" id="reference">
+                <div class="loading">Preparing the reference scene…</div>
+              </div>
+              <div class="board-foot">
+                <span>The Quiet Garden</span><span>01 — FIXED SCENE</span>
+              </div>
+            </article>
+            <article class="board treatment-board">
+              <div class="board-label">
+                <span
+                  ><i class="dot lime"></i>
+                  <span id="render-label">RISOGRAPH</span></span
+                ><span>P5.JS / DRAWING</span>
+              </div>
+              <div class="canvas-wrap" id="treatment"></div>
+              <div class="board-foot">
+                <span id="medium-label">Two inks, one impression</span
+                ><button
+                  id="export"
+                  disabled
+                  aria-label="Download current treatment as PNG"
+                >
+                  Export PNG
+                </button>
+              </div>
+            </article>
+          </div>
+          <div class="render-error" id="render-error" role="alert" hidden></div>
+          <details id="render-details" class="render-details" hidden>
+            <summary id="render-details-summary">Render details</summary>
+            <div class="diagnostic-actions">
+              <button id="render-copy-diagnostic" type="button">Copy diagnostics</button>
+              <button id="render-retry" type="button">Retry render</button>
+              <span id="render-copy-status" role="status"></span>
+            </div>
+            <textarea id="render-diagnostic" aria-label="Copyable render diagnostics" readonly spellcheck="false"></textarea>
+          </details>
+          <section
+            id="mixer-panel"
+            class="mixer-panel"
+            aria-label="Treatment mixer"
+            hidden
+          >
+            <div class="mixer-heading">
+              <div>
+                <div class="eyebrow">COMPOSE THE STUDIES</div>
+                <h2>Several instruments. One image.</h2>
+              </div>
+              <div class="mix-example-actions">
+                <button id="mix-object-example" title="Load an object-selected mix using your current scene settings and materials">Object example</button>
+                <button id="mix-favorites">Restore favorites</button>
+              </div>
+            </div>
+            <div class="mix-random-actions">
+              <button
+                id="mix-randomize"
+                title="Randomize layers and materials on the fixed scene"
+              >
+                ↻ Randomize
+              </button>
+              <button
+                id="mix-undo-random"
+                disabled
+                title="Restore both mix and materials before the last randomization"
+              >
+                Undo randomize
+              </button>
+              <span
+                id="mix-random-note"
+                role="status"
+                aria-live="polite"
+              ></span>
+            </div>
+            <div class="mix-toolbar">
+              <label for="mix-method"
+                >Method
+                <select id="mix-method">
+                  <option value="layers">Ordered layers</option>
+                  <option value="average">Weighted average</option>
+                  <option value="regions">Regional collage</option>
+                </select></label
+              ><span id="mix-summary" role="status"></span>
+            </div>
+            <div class="mix-handoff-row">
+              <button id="mix-ai-export" type="button">Export for AI ↗</button>
+              <span>Take this style to another project — brief, recipe, code &amp; images.</span>
+            </div>
+            <p id="mix-explanation"></p>
+            <p class="mix-tone-help">Reference tones follow brightness in the 3D view.
+              Layers reveal the stack below; Average and Regions fade each row
+              toward the reference. Soft ranges overlap.</p>
+            <div id="mix-layers"></div>
+            <div class="mix-add-row">
+              <label for="mix-add-style"
+                >Add to mix
+                <select id="mix-add-style"></select></label
+              ><button id="mix-add">Add layer</button
+              ><button id="mix-recipe">Save recipe</button>
+              <button id="mix-open-recipe">Open recipe</button>
+              <input
+                id="recipe-file"
+                type="file"
+                accept=".json,application/json"
+                hidden
+              />
+            </div>
+            <div class="mix-finish-controls">
+              <label for="mix-finish">Finish composition
+                <select id="mix-finish" aria-describedby="mix-finish-help">
+                  <option value="none">None</option>
+                  <option value="finite-lenses">Finite lenses</option>
+                  <option value="ink-completed-mix">Ink completed mix</option>
+                  <option value="fluted-glass">Fluted glass</option>
+                </select>
+              </label>
+              <label for="mix-finish-weight">Finish influence
+                <input id="mix-finish-weight" type="range" min="0" max="100"
+                  step="1" value="100" disabled aria-describedby="mix-finish-help" />
+                <output id="mix-finish-value" for="mix-finish-weight">Off</output>
+              </label>
+            </div>
+            <p id="mix-finish-help" class="mix-note">Finish samples the completed mix after
+              layer masks and blends. At 0% you see the mix; at 100% the full lens image.
+              Fixed primary transmission, with dark rims and finite-image misses;
+              reflected paths are omitted. Randomize keeps this choice.</p>
+            <p id="mix-ink-reference" class="mix-note" hidden>
+              Inspired by <a href="https://www.kyprianidis.com/p/cag2012/winnemoeller-cag2012.pdf"
+                target="_blank" rel="noreferrer">XDoG coherent line drawing</a>.
+              This finish reads the painted image, with no new geometry or material response.</p>
+            <p id="mix-fluted-reference" class="mix-note" hidden>
+              Inspired by <a href="https://www.bendheimcabinetglass.com/product-detail.cfm/Bendheim-Cabinet-Glass/European-Wide-Fluted/product_id/274"
+                target="_blank" rel="noreferrer">wide fluted glass</a>.
+              A glass-over-print approximation; it can repeat and distort object shapes.</p>
+            <p
+              id="recipe-status"
+              class="mix-note"
+              role="status"
+              aria-live="polite"
+            ></p>
+            <p class="mix-note">
+              Composites images of the same captured scene. Scene reference adds
+              the current 3D render.
+              Influence changes only the blend; the strength control below
+              changes each study's marks. Up to eight layers. Artistic
+              references stay linked above.
+              Apply to selects visible surfaces; Floor &amp; backdrop includes
+              the surrounding ground. Object selections clip glow, spatter and
+              displaced marks at the original silhouette. Transparent objects
+              use their front surface; shadows belong to the surface receiving them.
+            </p>
+            <div
+              id="mix-progress"
+              class="sheet-progress"
+              role="status"
+              aria-live="polite"
+              hidden
+            >
+              <span id="mix-message"></span
+              ><button id="mix-cancel">Cancel render</button>
+            </div>
+          </section>
+        </div>
+        <div class="control-strip">
+          <div class="control-group">
+            <button id="camera-lock" class="lock active" aria-pressed="true">
+              Camera locked</button
+            ><label class="range-label"
+              >Orbit
+              <input
+                id="orbit"
+                type="range"
+                min="-45"
+                max="45"
+                value="0"
+                disabled
+              /><output id="orbit-value">0°</output></label
+            >
+          </div>
+          <div class="control-group">
+            <button id="time-lock" class="lock active" aria-pressed="true">
+              Time locked</button
+            ><label class="range-label"
+              >Light
+              <input
+                id="time"
+                type="range"
+                min="0"
+                max="100"
+                value="25"
+                disabled
+              /><output id="time-value">25</output></label
+            >
+          </div>
+          <div class="control-group seed-group">
+            <button id="seed-lock" class="lock active" aria-pressed="true">
+              Seed locked</button
+            ><label
+              >Seed
+              <input
+                id="seed"
+                type="number"
+                min="1"
+                max="999999"
+                value="2401"
+                disabled
+            /></label>
+          </div>
+        </div>
+        <div class="study-details">
+          <div id="mix-details" hidden>
+            <div class="eyebrow">IMAGE COMPOSITING / SHARED SCENE</div>
+            <h2>Tune the conversation.</h2>
+            <p>
+              Every layer sees the same geometry, camera, light and seed. The
+              cached images blend without recalculating their drawings when you
+              change influence.
+            </p>
+            <p>
+              Contact sheets retain all individual studies. Export PNG saves the
+              current mix; Save recipe records every layer and setting; Open
+              recipe restores them.
+            </p>
+          </div>
+          <div id="single-details">
+            <div class="eyebrow" id="technique-label">01 / INK SEPARATION</div>
+            <h2 id="style-name">Risograph</h2>
+            <p id="description"></p>
+            <a id="reference-link" target="_blank" rel="noopener noreferrer"
+              >View artistic reference</a
+            >
+            <a
+              id="reference-page"
+              target="_blank"
+              rel="noopener noreferrer"
+              hidden
+              >Game gallery</a
+            >
+          </div>
+          <div class="parameter">
+            <label for="intensity"
+              ><span id="intensity-label">Screen density</span
+              ><output id="intensity-value">60%</output></label
+            ><input id="intensity" type="range" min="15" max="95" value="60" />
+            <p id="mechanism"></p>
+          </div>
+        </div>
+        <section
+          id="ink-panel"
+          class="ink-panel"
+          hidden
+          aria-label="Expressive ink controls"
+        >
+          <div class="ink-heading">
+            <div>
+              <div class="eyebrow">EXPRESSIVE INK / SHARED EFFECTS</div>
+              <h2>Leave the rough edges.</h2>
+            </div>
+            <button id="ink-reset">Reset ink</button>
+          </div>
+          <p>
+            Seven independent effects for the ink studies. Preview updates when
+            you release a slider. These settings also follow ink layers into the
+            mixer and saved recipes.
+          </p>
+          <div class="ink-controls">
+            <div class="parameter">
+              <label for="ink-spatter"
+                >Spatter field<output id="ink-spatter-value"></output></label
+              ><input
+                id="ink-spatter"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+              />
+            </div>
+            <div class="parameter">
+              <label for="ink-bloom"
+                >Wash bloom<output id="ink-bloom-value"></output></label
+              ><input id="ink-bloom" type="range" min="0" max="100" step="1" />
+            </div>
+            <div class="parameter">
+              <label for="ink-scrape"
+                >White scrape<output id="ink-scrape-value"></output></label
+              ><input id="ink-scrape" type="range" min="0" max="100" step="1" />
+            </div>
+            <div class="parameter">
+              <label for="ink-nervous"
+                >Nervous line<output id="ink-nervous-value"></output></label
+              ><input
+                id="ink-nervous"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+              />
+            </div>
+            <div class="parameter">
+              <label for="ink-bristles"
+                >Bristle flicks<output id="ink-bristles-value"></output></label
+              ><input
+                id="ink-bristles"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+              />
+            </div>
+            <div class="parameter">
+              <label for="ink-accent"
+                >Hot accent<output id="ink-accent-value"></output></label
+              ><input id="ink-accent" type="range" min="0" max="100" step="1" />
+            </div>
+            <div class="parameter">
+              <label for="ink-warp"
+                >Depth warp<output id="ink-warp-value"></output></label
+              ><input id="ink-warp" type="range" min="0" max="100" step="1" />
+            </div>
+          </div>
+          <p class="ink-caption">
+            Depth warp bends the pigment image while the comparison stays
+            unchanged. Orange is confined to the ring and two leaves. Disabled
+            effects do not belong to the selected component study.
+          </p>
+        </section>
+        <footer>
+          <a class="source-link" href="source.zip" download>Source ZIP</a
+          ><span id="status" role="status">Preparing scene</span
+          ><button id="study-cancel" type="button" hidden>Cancel study</button
+          ><span>THREE.JS r180 + P5.JS 1.11 · LOCAL RENDERING</span>
+        </footer>
+      </section>
+    </main>
+    <dialog id="style-handoff-dialog" aria-labelledby="style-handoff-title" aria-describedby="style-handoff-help">
+      <form method="dialog"><button class="close" aria-label="Close style export">×</button></form>
+      <div class="eyebrow">TAKE THE STYLE WITH YOU</div>
+      <h2 id="style-handoff-title">A recipe for your next project.</h2>
+      <p id="style-handoff-help">Paste the brief into any AI chat with your project request. For an exact implementation, attach the complete kit with source code and a local replay.</p>
+      <p id="style-handoff-summary"></p>
+      <div id="style-handoff-images" hidden>
+        <figure><img id="style-handoff-reference" alt="Captured scene before the mixer treatments" /><figcaption>Reference scene</figcaption></figure>
+        <figure><img id="style-handoff-preview" alt="Finished mixer style captured for export" /><figcaption>Your style</figcaption></figure>
+      </div>
+      <p id="style-handoff-image-note" class="dialog-small"></p>
+      <div class="style-handoff-actions">
+        <button id="style-handoff-copy" type="button" autofocus>Copy AI brief</button>
+        <button id="style-handoff-download" type="button">Download brief (.md)</button>
+        <button id="style-handoff-kit" type="button">Download complete kit (.zip)</button>
+      </div>
+      <p id="style-handoff-status" role="status" aria-live="polite"></p>
+      <details><summary>Read the exported brief</summary>
+        <label class="sr-only" for="style-handoff-text">AI style brief</label>
+        <textarea id="style-handoff-text" aria-label="AI style brief" readonly spellcheck="false"></textarea>
+      </details>
+      <p class="dialog-small">A snapshot of this setup. Includes inactive layers, object masks, materials and finishing choices. Reopen after edits to capture a new version.</p>
+    </dialog>
+    <dialog id="about-dialog">
+      <form method="dialog">
+        <button class="close" aria-label="Close about dialog">×</button>
+      </form>
+      <div class="eyebrow">THE EXPERIMENT</div>
+      <h2>A constant subject.<br />An open-ended practice.</h2>
+      <p>
+        The Quiet Garden is a real 3D still life: an arch, stepped plinths, a
+        vessel, a ring, an orb and a branching plant. Choose materials for each
+        object before interpreting it through ink, thread or light.
+      </p>
+      <p>
+        Three.js renders materials, shadows, normals, depth and mesh identity.
+        p5.js interprets that exact frame as ink, thread, dots or engraved
+        lines. Each treatment changes the drawing mechanism rather than merely
+        its palette.
+      </p>
+      <p>
+        Unlock camera, time or seed to experiment. Controls are always
+        synchronized between panels. Reset view restores Compare and shared
+        defaults while keeping your selected treatment. Everything runs in your
+        browser. Choose Mixer for ordered layers, a weighted average or regional
+        collage. Each method combines completed studies from one shared material
+        capture.
+      </p>
+      <a href="source.zip" download>Download reusable project source</a>
+      <p class="dialog-small">
+        Art references are starting points for process studies, not replicas of
+        individual artworks.
+      </p>
+    </dialog>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

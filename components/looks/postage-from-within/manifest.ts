@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Postage from within',medium:'craft',scales:[],summary:'Perforated postage whose engraved scene is built from little witnesses, ritual architecture and nested creatures. Smaller stamps and envelopes reproduce the drawing from within its cancellations. Dead-letter offices, Fifth World correspondence and whole images woven from tiny images.'});

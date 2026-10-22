@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind:'look',medium:'mixed',title:'Stairwell in the wall',summary:'Gravity-changing stair flights cut through a scene whose surfaces contain smaller stair beasts, inhabited towers and minute eyes in multiscale ink drawing. Landings repeat the world and its witnesses; the cast remains legible inside an impossible circulation of rooms. Broken ascent, return and Fifth World architectural horror.',scales:[]});

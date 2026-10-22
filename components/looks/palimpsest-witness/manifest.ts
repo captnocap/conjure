@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Palimpsest witness',medium:'mixed',scales:[],summary:'An erased parchment scene made from tiny masks, processions, serpents and rooms within rooms. Scraped windows uncover older drawn worlds and smaller erased pages. Unreliable memory, forbidden histories and a Fifth World surface that cannot forget.'});

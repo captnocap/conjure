@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Dead channel mosaic',medium:'optical',scales:[],summary:'A surveillance broadcast whose picture is woven from small phosphor specters, watching masks and tiny ritual rooms. Monitors repeat themselves, negative witnesses interrupt the feed, and fine scenes inhabit larger forms. Fifth World transmissions arriving from inside the receiver.'});

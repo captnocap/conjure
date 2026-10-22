@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind:'look',medium:'mixed',title:'Recursive tenement',summary:'Impossible tenements grow through a dense ink drawing. Walls, cast and empty air resolve into smaller masks, stair beasts, inhabited towers and minute corridors at three scales; windows hold further worlds while deep shadow masses remain legible. Horror vacui, Fifth World architecture and a neighbourhood living inside its own image.',scales:[]});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Cell within cell',summary:'A world becomes anatomical tissue: shaded membranes and source silhouettes contain interlocking skull-masks, larvae, tiny witnesses and inhabited landscapes at three scales. Fifth World biological horror, figures inside figures, smaller creatures drawn inside the bodies of larger ones.',medium:'mixed',scales:[]});

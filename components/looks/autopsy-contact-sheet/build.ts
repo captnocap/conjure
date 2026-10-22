@@ -1,0 +1,28 @@
+import { choice, defineLook, score } from '@conjure/kit';
+import { weave } from './micrograph';
+import { border,crop,css,develop,image,inks,label,paper,pixels,rules,scratches,sheet,snapshot } from './plate';
+export default defineLook({questions:{
+  microWorld:choice('What small world lives inside the forensic silver and archival card?',{witnesses:'Masks, raised hands and little shrouded processions, with still smaller watchers inside their faces.',chimeras:'Serpents, reliquary birds and horned insects carrying tiny eyes and doorways.',rites:'Toothed corridors, ritual wheels and inhabited tooth palaces.',menagerie:'A shifting bestiary of witnesses, creatures and ritual architecture.'}),
+  hierarchy:score('How strongly do the hidden worlds separate into scales?',['Fine interwoven figures with delicate inner glyphs','Large stories with smaller attendants','Large creatures, intermediate scenes and tiny inner witnesses']),
+
+  layout:choice('How was the evidence assembled?',{ledger:'A large scene at left, a column of specimen enlargements at right.',cross:'A central square print surrounded by annotated contact fragments.',drawer:'A wide main plate above a row of three examination windows.'}),
+  stock:choice('What photographic stock holds the findings?',{iron:'Neutral iron silver on yellowed laboratory card.',rust:'Red-brown iron print with dried maroon grease-pencil marks.',blue:'Cold blue-black evidence print on bone paper.'}),
+  state:choice('What went wrong during the examination?',{repeat:'Each enlargement includes the record of its own examination.',reverse:'The marginal witnesses face the wrong way.',sealed:'The evidence has been sealed with crosses and a case stamp.',disputed:'Two conflicting crop positions are linked by red measurement lines.'}),
+  depth:score('How far does the paper contain itself?',['One nested sheet','Two nested sheets','Four shrinking sheets']),
+  specimen:score('How closely are the small witnesses examined?',['Keep their surroundings','A tight examination','Almost microscopic']),
+  annotation:choice('What marks accompany the image?',{ruler:'Fine measuring rulers and numbered corners.',thread:'Red thread lines join the image to its witnesses.',circle:'Grease-pencil rings select the impossible evidence.'}),
+  edge:choice('How are photographs mounted?',{tape:'Brown paper tape fastens their corners.',black:'Thick black negative borders.',pin:'Dark specimen pins and narrow white gutters.'}),
+}, async apply(c,a,ctx,signal){
+ const src=await develop(c,ctx,signal,'silver',inks[a.stock]);await weave(c,src,ctx,signal,{vocabulary:a.microWorld,hierarchy:a.hierarchy,medium:'forensic'});const {canvas,g}=sheet(c.size);paper(g,ctx,'#ded3bc');await weave(c,canvas,ctx,signal,{vocabulary:a.microWorld,hierarchy:a.hierarchy,medium:'forensic',paper:true});const accent=a.stock==='blue'?'#32515a':'#883f2d';
+ label(g,'EVIDENCE / FIFTH SURVEY',27,31,14); label(g,`${String(ctx.seed>>>0).slice(0,7)} : NO EXTERNAL WITNESS`,27,49,9);rules(g,27,62,665,8);
+ const main:[number,number,number,number]=a.layout==='cross'?[133,132,454,454]:a.layout==='drawer'?[115,86,490,490]:[29,96,474,474];
+ g.fillStyle='#f3ecd7';g.fillRect(main[0]-7,main[1]-7,main[2]+14,main[3]+35);image(g,src,main);border(g,main,'#242d29',a.edge==='black'?8:2);
+ const cells:[number,number,number,number][]=a.layout==='cross'?[[26,116,94,150],[600,116,94,150],[26,402,94,150],[600,402,94,150],[178,604,160,90]]:a.layout==='drawer'?[[27,603,150,92],[202,603,150,92],[377,603,150,92],[552,603,140,92]]:[[530,96,159,159],[530,282,159,159],[530,468,159,159],[29,606,151,80]];
+ cells.forEach((b,i)=>{g.fillStyle='#eee5ce';g.fillRect(b[0]-4,b[1]-4,b[2]+8,b[3]+20);image(g,src,b,crop(c,i,1+a.specimen*.8),a.state==='reverse'&&i%2===0);border(g,b);label(g,`0${i+1} / ${i%2?'EXCISION':'WITNESS'}`,b[0],b[1]+b[3]+12,8);rules(g,b[0],b[1]-8,b[2],4);if(a.annotation==='thread'||a.state==='disputed'){g.strokeStyle=accent;g.lineWidth=.8;g.beginPath();g.moveTo(main[0]+main[2]*.62,main[1]+main[3]*.62);g.lineTo(b[0]+b[2]/2,b[1]+b[3]/2);g.stroke();}if(a.annotation==='circle'){g.strokeStyle=accent;g.lineWidth=1.5;g.beginPath();g.ellipse(b[0]+b[2]/2,b[1]+b[3]/2,b[2]*.45,b[3]*.4,-.12,0,Math.PI*2);g.stroke();}});
+ if(a.edge==='tape'){g.fillStyle='rgba(146,117,71,.35)';for(const [x,y] of [[main[0]-10,main[1]-5],[main[0]+main[2]-20,main[1]+main[3]-8]]){g.save();g.translate(x,y);g.rotate(-.2);g.fillRect(0,0,37,16);g.restore();}}else if(a.edge==='pin'){g.fillStyle='#292b27';for(const [x,y]of[[main[0],main[1]],[main[0]+main[2],main[1]]]){g.beginPath();g.arc(x,y,3,0,Math.PI*2);g.fill();}}
+ label(g,a.state==='sealed'?'SEALED / SUBJECT STILL PRESENT':'THE PHOTOGRAPH CONTAINS ITS OWN EXAMINATION',main[0],a.layout==='cross'?107:main[1]+main[3]+14,8,accent);
+ const nest:[number,number,number,number]=a.layout==='cross'?[374,604,115,100]:a.layout==='drawer'?[574,92,111,111]:[213,596,113,98];
+ for(let j=0;j<1+Math.round(a.depth*3);j++){const copy=snapshot(canvas);image(g,copy,nest);border(g,nest,accent,3);}
+ if(a.state==='sealed'){g.strokeStyle=accent;g.lineWidth=2;g.strokeRect(430,641,245,38);label(g,'RETAIN THE ORIGINAL',444,666,13,accent);}
+ scratches(g,ctx,.6);label(g,'01 / ARCHIVE OF THE UNACCOUNTED',28,80,8);return{pixels:pixels(canvas,signal),notes:[`Embedded ${a.microWorld}: three scales of drawn worlds inside forensic silver and archival card`,`Forensic ${a.layout} with ${a.stock} silver`,`${a.state}: identity enlargements and ${1+Math.round(a.depth*3)} actual nested sheets`]};
+}});

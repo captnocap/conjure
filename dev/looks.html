@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Conjure · Atelier treatments</title>
+    <style>
+      body { margin: 16px; background: #edf0e5; color: #20362c; font: 13px system-ui; }
+      #stage { width: 240px; height: 240px; }
+      #sheet { display: grid; grid-template-columns: repeat(8, 180px); gap: 8px; margin-top: 12px; }
+      figure { margin: 0; }
+      figure canvas { width: 180px; height: 180px; display: block; }
+      figcaption { font-size: 11px; line-height: 1.25; }
+      .failed { color: #a3261c; }
+    </style>
+  </head>
+  <body>
+    <p id="status">Building the scene…</p>
+    <canvas id="stage"></canvas>
+    <div id="sheet"></div>
+    <script type="module" src="./looks.ts"></script>
+  </body>
+</html>

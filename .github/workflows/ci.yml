@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # The independence rules for every component, the direction rules, and the engine's unit tests.
+      - run: npm test
+      - run: npm run typecheck
+      # The production bundle, without the optional ateliers repository linked in.
+      - run: npx vite build --logLevel warn

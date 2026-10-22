@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind:'look',medium:'mixed',title:'Vanishing nursery',summary:'A looming dollhouse cross-section holds the world in its central nursery, with unequal little rooms and another house inside. Walls, toys and inhabitants resolve into miniature architectural beasts, faces and corridors in multiscale ink drawing. Abandoned childhood, watching bedrooms and domestic Fifth World horror.',scales:[]});

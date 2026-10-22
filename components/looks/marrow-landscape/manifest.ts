@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Marrow landscape',summary:"A colossal bone opens onto the remembered world: femur, vertebra, jaw or ribs with landscape-filled cavities. The mineral substance and captured surfaces contain smaller faces, creatures and inhabited cliffs in multiscale anatomical drawing. Excavation, regrowth and Fifth World skeletal horror.",medium:'mixed',scales:[]});

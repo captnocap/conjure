@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Parasitic atlas',summary:"A parasitic vascular atlas links inhabited source organs by roots, arteries and sutures. Embedded skull-masks, worms, witnesses and tiny settlements follow the host surfaces and vessel tissue at three scales. Fifth World bodily cartography, feeding relations and worlds living inside larger bodies.",medium:'mixed',scales:[]});

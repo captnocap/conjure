@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "useDefineForClassFields": true,
+    "allowImportingTsExtensions": true,
+    "types": ["node", "vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@conjure/kit": ["kit/index.ts"],
+      "@ateliers/*": ["ateliers/*"],
+      "p5": ["node_modules/p5/types/p5.d.ts"]
+    }
+  },
+  "include": ["types", "kit", "engine", "components", "src", "server", "tests", "vite.config.ts"]
+}

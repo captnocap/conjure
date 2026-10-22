@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Marginalia of the abyss',medium:'print',scales:[],summary:'A forbidden engraved folio whose scene and parchment are woven from masks, pilgrims, serpents and tiny inhabited corridors, with smaller witnesses inside their forms. Strong dark shapes conceal continuous micro-worlds; living margins reproduce the page. Fifth World manuscripts and devotional dread.'});

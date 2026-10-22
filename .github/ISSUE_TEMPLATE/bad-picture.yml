@@ -1,0 +1,28 @@
+name: A picture came back wrong
+description: An idea that the catalogue or the engine answered badly.
+title: "[picture] "
+labels: [picture]
+body:
+  - type: input
+    id: idea
+    attributes:
+      label: The sentence you typed
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected, and what came back
+      description: Attach the print if you can.
+    validations:
+      required: true
+  - type: textarea
+    id: record
+    attributes:
+      label: The gallery record
+      description: Paste the saved `.data/gallery/<day>/<id>.json` for the generation, or its direction, world, cast and look from the decision tree.
+      render: json
+  - type: input
+    id: version
+    attributes:
+      label: Commit or date

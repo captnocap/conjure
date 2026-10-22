@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind:'look',medium:'mixed',title:'Borrowed horizon',summary:'Torn horizons reveal nested settlements and magnified inhabitants as distant mountains. Their strata and the original scene become multiscale ink drawings woven from little masks, living towers and corridor beasts. A continent inside a room, inhabited geological tissue and the wrong distance behind a familiar wall.',scales:[]});

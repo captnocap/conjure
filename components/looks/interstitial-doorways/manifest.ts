@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind:'look',medium:'mixed',title:'Interstitial doorways',summary:'Skewed deep corridors appear in gaps around the cast, carrying repeated worlds or magnified witnesses. Their walls and surrounding scene are woven from miniature architectural creatures, watching masks and tiny passages at three ink scales. Invitation, bricked thresholds, leaking rooms and Fifth World unease.',scales:[]});

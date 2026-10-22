@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Skin of the world',summary:"A world rendered as folded skin, peeled flaps and incisions opening into smaller inhabited strata. The raised lips, folds and source surfaces contain skull-masks, little beasts and impossible settlements at three scales. Multiscale anatomical drawing, Fifth World dermal geography and healing or reopened seams.",medium:'mixed',scales:[]});

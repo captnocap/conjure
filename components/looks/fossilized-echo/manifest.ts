@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Fossilized echo',summary:"A scene fossilized into ammonite chambers, annual rings, vertebrae or accreted mineral. Shell substance and captured surfaces shelter smaller masks, creatures and inhabited places in multiscale anatomical drawing. Fifth World deep time, excavated memories, fractures and impossible regrowth.",medium:'mixed',scales:[]});

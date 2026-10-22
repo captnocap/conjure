@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Autopsy contact sheet',medium:'print',scales:[],summary:'An impossible forensic print whose large evidence forms are woven from tiny witnesses, mask fragments and inhabited corridors. Identity enlargements and smaller sheets expose still finer drawings. Fifth World case files, occult examination and pictures composed of pictures.'});

@@ -1,0 +1,39 @@
+name: Component request
+description: A world, thing, look or direction the catalogue is missing.
+title: "[component] "
+labels: [component, good first issue]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind
+      options: [thing, world, look, direction]
+    validations:
+      required: true
+  - type: input
+    id: name
+    attributes:
+      label: Name
+      description: Specific, lowercase, hyphenated. Ids are folder paths and cannot collide.
+      placeholder: gas-station-roller-grill
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: What it is and what it evokes
+      description: The model casts from one sentence like this. Say what it is, then the moods, times, places or stories it belongs to.
+      placeholder: A roller grill of hot dogs turning under a heat lamp. Truck stops, night shifts, hunger without choice, food that has been waiting longer than you have.
+    validations:
+      required: true
+  - type: textarea
+    id: ideas
+    attributes:
+      label: Ideas that would use it
+      description: Two or three sentences you would type into Conjure that should cast this.
+  - type: checkboxes
+    id: build
+    attributes:
+      label: Will you build it?
+      options:
+        - label: I plan to build this myself (say so to avoid duplicate work).

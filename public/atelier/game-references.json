@@ -1,0 +1,127 @@
+[
+  {
+    "id": "game-obra",
+    "game": "Return of the Obra Dinn",
+    "source": "https://store.steampowered.com/app/653530/",
+    "screenshot": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/653530/ss_996fca2ef1e1f9cf16fd71f06c00919a61b1a2cc.1920x1080.jpg?t=1686697594",
+    "observations": [
+      "Almost binary dark olive and pale mint; no continuously shaded mids.",
+      "Bright hairline edges remain legible across large black surfaces.",
+      "Dither density, rather than translucent gray, models the sailor and wet deck.",
+      "Raster stair steps and isolated single-pixel speckles are integral to the look."
+    ],
+    "selection": "An arbitrary screenshot selected from the official or publisher-maintained gallery.",
+    "interpretation": "An original adaptation of visible graphical mechanisms on the fixed Atelier scene; not a reproduction of game assets or a claim about the original engine."
+  },
+  {
+    "id": "game-disco",
+    "game": "Disco Elysium - The Final Cut",
+    "source": "https://store.steampowered.com/app/632470/",
+    "screenshot": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/632470/ss_b1205caa224a0dea0d141c2d6f7db4240cd5dbb7.1920x1080.jpg?t=1780913406",
+    "observations": [
+      "Long directional strokes follow planks and the planes of ice.",
+      "Slate-violet ambient fields are broken by chalky dry brush and scraped highlights.",
+      "Edges can be soft or lost; there is no uniform black contour.",
+      "Long, warm low-angle shadows and tiny rust/orange accents organize otherwise quiet color."
+    ],
+    "selection": "An arbitrary screenshot selected from the official or publisher-maintained gallery.",
+    "interpretation": "An original adaptation of visible graphical mechanisms on the fixed Atelier scene; not a reproduction of game assets or a claim about the original engine."
+  },
+  {
+    "id": "game-okami",
+    "game": "Okami HD",
+    "source": "https://store.steampowered.com/app/587620/",
+    "screenshot": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/587620/ss_71f6af1f989df2aa6bc4e07a9ae407609c264b2e.1920x1080.jpg?t=1733787035",
+    "observations": [
+      "Cliff and architectural contours swell into dark tapered wedges instead of a fixed-width border.",
+      "Fibrous mottling is visible through sky, water and earth.",
+      "Translucent cyan/green washes pool and overlap; distant hills lose density.",
+      "Sparse calligraphic wind gestures and white surf lines use a different visual weight from geometry."
+    ],
+    "selection": "An arbitrary screenshot selected from the official or publisher-maintained gallery.",
+    "interpretation": "An original adaptation of visible graphical mechanisms on the fixed Atelier scene; not a reproduction of game assets or a claim about the original engine."
+  },
+  {
+    "id": "game-sable",
+    "game": "Sable",
+    "source": "https://store.steampowered.com/app/757310/",
+    "screenshot": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/757310/ss_6132344e1a086e984169123445d637fef3b71a73.1920x1080.jpg?t=1780992723",
+    "observations": [
+      "Silhouette and interior engineering seams are very fine, nearly uniform dark lines.",
+      "Large surfaces remain relatively flat and low contrast despite rich geometric detail.",
+      "Technical curls and panel subdivisions are denser than the global silhouette treatment.",
+      "Small neon-pink regions bloom against muted purple and ochre."
+    ],
+    "selection": "An arbitrary screenshot selected from the official or publisher-maintained gallery.",
+    "interpretation": "An original adaptation of visible graphical mechanisms on the fixed Atelier scene; not a reproduction of game assets or a claim about the original engine."
+  },
+  {
+    "id": "game-hylics",
+    "game": "Hylics 2",
+    "source": "https://store.steampowered.com/app/1286710/",
+    "screenshot": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1286710/ss_9b74c6a1b9af4ec02391e41eb52416c5e1fc0c63.1920x1080.jpg?t=1610844140",
+    "observations": [
+      "Surfaces retain irregular molded relief and crease cavities.",
+      "A tiny set of flat ochre, blue, red, pale cream and black tones replaces smooth illumination.",
+      "Fine black threshold texture clusters along cavities and steep curvature.",
+      "Hard pixel contours coexist with organic handmade volume; sky transitions also use dither."
+    ],
+    "selection": "An arbitrary screenshot selected from the official or publisher-maintained gallery.",
+    "interpretation": "An original adaptation of visible graphical mechanisms on the fixed Atelier scene; not a reproduction of game assets or a claim about the original engine."
+  },
+  {
+    "id": "game-windwaker",
+    "game": "The Legend of Zelda: The Wind Waker HD",
+    "source": "https://www.nintendo.com/en-gb/Games/Wii-U-games/The-Legend-of-Zelda-The-Wind-Waker-HD-765386.html",
+    "screenshot": "https://www.nintendo.com/eu/media/images/06_screenshots/games_5/wiiu_7/wiiu_thelegendofzeldathewindwakerhd/WiiU_TheLegendofZelda_TheWindWakerHD_03.jpg",
+    "observations": [
+      "The selected boss encounter has broad dark-blue and green matte forms, hard blue cast-shadow islands, small cyan rim strips, angular decorative markings, faceted brilliant yellow eyes and target indicator, and a soft glow confined around those emissive features. It is a dark action scene rather than a sea screenshot."
+    ],
+    "selection": "An arbitrary screenshot selected from the official or publisher-maintained gallery.",
+    "interpretation": "An original adaptation of visible graphical mechanisms on the fixed Atelier scene; not a reproduction of game assets or a claim about the original engine."
+  },
+  {
+    "id": "game-persona",
+    "game": "Persona 5 Royal",
+    "source": "https://store.steampowered.com/app/1687950/",
+    "screenshot": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1687950/ss_ddcc016b8e5c434ccbd1a89c0157ce73acf905ae.1920x1080.jpg?t=1783356822",
+    "observations": [
+      "School cafeteria gameplay: softened 3D models and red chair backs sit behind large irregular black-and-white dialogue panels, white keylines, aggressively angled typography and a crisp illustrated portrait. The graphic UI has a different edge language from the rendered environment."
+    ],
+    "selection": "An arbitrary screenshot selected from the official or publisher-maintained gallery.",
+    "interpretation": "An original adaptation of visible graphical mechanisms on the fixed Atelier scene; not a reproduction of game assets or a claim about the original engine."
+  },
+  {
+    "id": "game-inside",
+    "game": "INSIDE",
+    "source": "https://store.steampowered.com/app/304430/",
+    "screenshot": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/304430/ss_ebeba62a8d2141b4fd36760500529fb2d9a29190.1920x1080.jpg?t=1761819581",
+    "observations": [
+      "A small runner crosses an industrial rooftop; the closest metal frame and chimney are nearly black. A bright upper-right light casts long diagonal shadows. Background towers lose contrast into cyan-gray haze while broad foreground masses remain clean silhouettes."
+    ],
+    "selection": "An arbitrary screenshot selected from the official or publisher-maintained gallery.",
+    "interpretation": "An original adaptation of visible graphical mechanisms on the fixed Atelier scene; not a reproduction of game assets or a claim about the original engine."
+  },
+  {
+    "id": "game-mirrorsedge",
+    "game": "Mirror’s Edge",
+    "source": "https://store.steampowered.com/app/17410/Mirrors_Edge/",
+    "screenshot": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/17410/0000006707.1920x1080.jpg?t=1777394972",
+    "observations": [
+      "The selected city plaza screenshot contains tall mostly white buildings, repeated horizontal façade ribs and window grids, violet shade, bright near-clipped sunlight, and small yellow signs/flags. Its actual accent is yellow rather than the often-associated red."
+    ],
+    "selection": "An arbitrary screenshot selected from the official or publisher-maintained gallery.",
+    "interpretation": "An original adaptation of visible graphical mechanisms on the fixed Atelier scene; not a reproduction of game assets or a claim about the original engine."
+  },
+  {
+    "id": "game-viewfinder",
+    "game": "Viewfinder",
+    "source": "https://store.steampowered.com/app/1382070/",
+    "screenshot": "https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/1382070/ss_1392613d4ff0f7c3f989cc899cb40ce93b3ff8fb.1920x1080.jpg?t=1764842475",
+    "observations": [
+      "A bright cyan tropical architectural scene is abruptly interrupted by a sharply rectangular monochrome photograph of a stone bridge. The central photograph has its own contrast, scale and material detail while the surrounding 3D scene stays saturated; its border is the key visual event."
+    ],
+    "selection": "An arbitrary screenshot selected from the official or publisher-maintained gallery.",
+    "interpretation": "An original adaptation of visible graphical mechanisms on the fixed Atelier scene; not a reproduction of game assets or a claim about the original engine."
+  }
+]

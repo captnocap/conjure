@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Carbon copy seance',medium:'mixed',scales:[],summary:'Ghost carbon copies of a room are woven from small shrouded figures, masks and inhabited corridors. Missing originals leave displaced micrographic transfers; torn slits reveal still smaller copies. Office rituals, spirit duplication and Fifth World images breeding between paper layers.'});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Coral of rooms',summary:"A branching coral grows arched rooms and small inhabited chambers from a gnarled holdfast. Its calcified substance and source surfaces carry interlocking faces, creatures and little settlements in multiscale drawing. Fifth World domestic reefs, broken branches, bleaching and new room buds.",medium:'mixed',scales:[]});

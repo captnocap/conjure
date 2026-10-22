@@ -1,0 +1,25 @@
+import { choice, defineLook, score } from '@conjure/kit';
+import { weave } from './micrograph';
+import { crop,develop,image,inks,label,paper,pixels,scratches,sheet,snapshot } from './plate';
+export default defineLook({questions:{
+  microWorld:choice('What small world lives inside the erased parchment?',{witnesses:'Masks, raised hands and little shrouded processions, with still smaller watchers inside their faces.',chimeras:'Serpents, reliquary birds and horned insects carrying tiny eyes and doorways.',rites:'Toothed corridors, ritual wheels and inhabited tooth palaces.',menagerie:'A shifting bestiary of witnesses, creatures and ritual architecture.'}),
+  hierarchy:score('How strongly do the hidden worlds separate into scales?',['Fine interwoven figures with delicate inner glyphs','Large stories with smaller attendants','Large creatures, intermediate scenes and tiny inner witnesses']),
+
+  wound:choice('What shape did the eraser leave?',{tear:'Long torn islands follow a diagonal across the page.',eye:'Three almond-shaped scraped windows like closed eyes.',wash:'Broad rounded stains break through the old drawing.'}),
+  pigment:choice('What underdrawing is revealed?',{iron:'Black iron gall under pale parchment.',rust:'A dark red sanguine drawing under chalk.',violet:'Bruised violet ink under bone white.'}),
+  state:choice('What is the erased witness doing?',{returning:'Returning upright beneath every attempt to remove it.',denying:'Reappearing reversed inside the largest scrape.',spreading:'The scraped page has begun reproducing itself.',buried:'The oldest image is buried under thin cursive bands.'}),
+  exposure:score('How much older image survives?',['A thin ghost beneath the page','A readable older scene','A strong earlier testimony']),
+  penetration:score('How deep does each opening look?',['Whole witnesses','Tight fragments','Tiny surfaces made enormous']),
+  script:choice('What writing crosses the erased surface?',{cursive:'Waves of small unreadable cursive.',notation:'Sparse hooks and mathematical cancellation marks.',rubbing:'Rough diagonal charcoal rubbings.'}),
+  nesting:score('How many erased pages hide inside the largest scar?',['One','Two','Four']),
+},async apply(c,a,ctx,signal){
+ const src=await develop(c,ctx,signal,'etch',inks[a.pigment]);await weave(c,src,ctx,signal,{vocabulary:a.microWorld,hierarchy:a.hierarchy,medium:'scraped'});const {canvas,g}=sheet(c.size);paper(g,ctx,'#cec2a7');await weave(c,canvas,ctx,signal,{vocabulary:a.microWorld,hierarchy:a.hierarchy,medium:'scraped',paper:true});g.globalAlpha=.68+a.exposure*.28;image(g,src,[32,35,656,650]);g.globalAlpha=1;
+ const centers=a.wound==='tear'?[[165,191,98,43],[533,471,111,56],[170,567,80,44]]:a.wound==='eye'?[[180,165,117,48],[537,394,100,49],[230,589,111,43]]:[[174,166,95,83],[546,414,100,73],[196,563,81,65]];
+ const path=(x:number,y:number,rx:number,ry:number)=>{g.beginPath();for(let j=0;j<=64;j++){const t=j*Math.PI/32,r=1+(ctx.mood.wear*.05+.035)*(Math.sin(j*.51+ctx.seed)+Math.sin(j*.21)*.7);const px=x+Math.cos(t)*rx*r,py=y+Math.sin(t)*ry*r; if(j===0)g.moveTo(px,py);else g.lineTo(px,py);}g.closePath();};
+ centers.forEach(([x,y,rx,ry],i)=>{g.save();path(x,y,rx+10,ry+10);g.fillStyle='#e7dec6';g.fill();path(x,y,rx,ry);g.clip();image(g,src,[x-rx,y-ry,rx*2,ry*2],crop(c,i,1+a.penetration*.9),a.state==='denying');g.restore();path(x,y,rx+6,ry+6);g.strokeStyle='rgba(84,58,39,.52)';g.lineWidth=.8;g.stroke();for(let j=0;j<22;j++){g.strokeStyle='rgba(242,233,211,.63)';g.beginPath();g.moveTo(x-rx-10,y-ry+j*ry/11);g.lineTo(x-rx+14,y-ry+j*ry/11-5);g.stroke();}});
+ g.save();g.globalAlpha=a.state==='buried'?.28:.13;g.strokeStyle='#513e35';g.lineWidth=.6;
+ for(let row=0;row<25;row++){const y=22+row*28;for(let start=18;start<700;start+=62+ctx.random()*38){const length=25+ctx.random()*55;g.beginPath();for(let x=start;x<Math.min(704,start+length);x+=2){const yy=y+(a.script==='cursive'?Math.sin(x*.43+row)*3+Math.sin(x*.13)*4:a.script==='notation'?((x/4+row)%7)*.7:Math.sin(x*.8)*7);if(x===start)g.moveTo(x,yy);else g.lineTo(x,yy);}g.stroke();}}g.restore();
+ const n:[number,number,number,number]=[518,65,150,142];for(let i=0;i<1+Math.round(a.nesting*3);i++){const copy=snapshot(canvas);g.save();path(593,136,79,77);g.clip();image(g,copy,n);g.restore();}path(593,136,82,80);g.strokeStyle='#a28d6b';g.lineWidth=2;g.stroke();
+ if(a.state==='spreading'){const small=snapshot(canvas);g.save();g.rotate(-.04);image(g,small,[363,600,74,76]);g.restore();}
+ label(g,'TESTIMONY REMOVED / IMAGE REMAINS',40,704,9,'#6d5944');scratches(g,ctx,1.5);return{pixels:pixels(canvas,signal),notes:[`Embedded ${a.microWorld}: three scales of drawn worlds inside erased parchment`,`${a.pigment} palimpsest, ${a.wound} erasures`,`${a.state}; older witnesses and nested scraped parchment`]};
+}});

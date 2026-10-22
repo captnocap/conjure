@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind:'look',medium:'mixed',title:'Reliquary tunnel',summary:'Monumental shrines recede around the cast, their ribs and votive portraits inhabited by smaller masks, stair creatures and minute chapels. Multiscale ink drawing binds the original scene into a dense living reliquary, with dark nave shadows and whole worlds inside the smallest offerings. Devotion, exhumation and Fifth World sacred dread.',scales:[]});

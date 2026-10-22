@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Spore observatory',summary:"Fleshy fungal observatories carry inhabited worlds in caps, with gills, shaded stalks and mycelium. Embedded masks, larvae, witnesses and little villages grow through the fungal tissue and source surfaces at three pictorial scales. Fifth World biological surveillance and a colony dreaming its surroundings.",medium:'mixed',scales:[]});

@@ -1,0 +1,46 @@
+#svg-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; }
+.frame.printed.layered #svg-overlay { opacity: 1; }
+.look-control { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; font-size: 12px; color: var(--faint); }
+.look-control select { min-width: 0; flex: 1; color: var(--ink); }
+#layer-lab { border: 1px solid var(--rule); background: #f7f8f1; margin-top: 18px; }
+#layer-lab summary { cursor: pointer; padding: 15px 16px; font: 22px/1.1 Georgia, serif; }
+#layer-lab summary span { float: right; font: 11px/2 system-ui, sans-serif; color: var(--faint); letter-spacing: 1px; }
+.layer-body { padding: 0 16px 16px; }
+.layer-intro { font-size: 12px; color: var(--faint); margin: 0 0 12px; }
+.layer-recipes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px; }
+.layer-recipes button { position: relative; text-align: left; border-color: var(--rule); padding: 10px 9px 10px 30px; font-size: 11px; }
+.layer-recipes button::before { content: ''; position: absolute; width: 13px; height: 13px; border: 1px solid currentColor; border-radius: 50%; left: 9px; top: 11px; }
+.layer-recipes [data-layer-recipe='moon'] { color: #915734; background: #f4ebdb; }
+.layer-recipes [data-layer-recipe='herbarium'] { color: #315846; background: #e8eddf; }
+.layer-recipes [data-layer-recipe='signal'] { color: #514698; background: #ebe8f0; }
+.layer-recipes [data-layer-recipe='terrain'] { color: #355d64; background: #e3eeee; }
+.layer-recipes [data-layer-recipe='signal']::before { border-radius: 0; transform: rotate(20deg); background: #eab72f; }
+.layer-recipes [data-layer-recipe='herbarium']::before { border-radius: 0 90% 0 90%; background: #96ad76; }
+.layer-add { display: flex; gap: 6px; }
+.layer-add select { min-width: 0; flex: 1; background: var(--paper); font-size: 12px; }
+.layer-add button { font-size: 12px; }
+.layer-stack-heading { display: flex; justify-content: space-between; color: var(--faint); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin: 16px 0 6px; }
+#layer-list { display: grid; gap: 4px; }
+.layer-row { display: flex; align-items: stretch; border: 1px solid var(--rule); min-width: 0; }
+.layer-row.selected { border-color: var(--ink); background: #e7ecdf; }
+.layer-row.muted .layer-name { opacity: 0.5; }
+.layer-row button { padding: 6px 8px; border: 0; font-size: 12px; }
+.layer-row .layer-name { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; text-align: left; background: transparent; color: var(--ink); }
+.layer-swatch { display: inline-block; flex: 0 0 11px; height: 11px; border-radius: 50%; }
+#layer-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; border-top: 1px solid var(--rule); margin-top: 12px; padding-top: 12px; }
+#layer-settings[hidden] { display: none; }
+.layer-settings-title { grid-column: 1 / -1; font: 14px Georgia, serif; margin: 0; }
+#layer-settings label { display: grid; grid-template-columns: 1fr auto; gap: 3px; font-size: 11px; color: var(--faint); min-width: 0; }
+#layer-settings input, #layer-settings select { width: 100%; min-width: 0; grid-column: 1 / -1; }
+#layer-settings input[type='range'] { accent-color: var(--ink); margin: 2px 0 0; height: 18px; }
+#layer-settings output { grid-column: 2; grid-row: 1; font-variant-numeric: tabular-nums; }
+#layer-settings input[type='color'] { height: 28px; padding: 2px; border: 1px solid var(--rule); background: transparent; }
+#layer-settings input[type='number'] { border: 1px solid var(--rule); background: transparent; padding: 5px; }
+#layer-settings select { font-size: 11px; }
+#layer-reroll { align-self: end; padding: 6px; font-size: 11px; }
+.layer-tools, .layer-exports { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.layer-tools button, .layer-exports button { font-size: 11px; padding: 5px 8px; }
+.layer-tools button { border-color: var(--rule); }
+#layer-status, .layer-export-note { color: var(--faint); font-size: 11px; margin: 10px 0 0; }
+.layer-export-note { font-size: 10px; }
+@media (max-width: 400px) { .layer-body { padding: 0 12px 12px; } .layer-row button { padding: 6px; } }

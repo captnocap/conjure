@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Negative reliquary',medium:'optical',scales:[],summary:'Folded photographic negatives enclose a positive room woven from tiny masks, pilgrims and impossible corridors. Small positives develop within negative forms and hold the enclosure again. Fifth World emulsion relics, nested worlds and silhouettes made from fine inhabited drawings.'});

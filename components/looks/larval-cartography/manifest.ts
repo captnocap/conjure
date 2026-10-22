@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Larval cartography',summary:"A segmented larva crosses a living map, carrying embryonic images through contours, pressure lines or survey marks. Smaller creatures, masks and inhabitants are drawn into its body and the captured terrain at three scales. Fifth World cartography of gestation, migration, molting and hatching.",medium:'mixed',scales:[]});

@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind:'look',medium:'mixed',title:'Inside out proscenium',summary:'A whole scene becomes the live stage of a folded theatre, with image-bearing wings and smaller performances in its fly tower. Curtains, cast and scenery resolve into miniature architectural masks, stair beasts and tiny rooms in multiscale ink drawing. Abandoned rehearsal, recursive spectacle and Fifth World stage horror.',scales:[]});

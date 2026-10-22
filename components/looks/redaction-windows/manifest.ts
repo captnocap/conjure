@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Redaction windows',medium:'mixed',scales:[],summary:'A censored archival scene whose larger forms are made from miniature witnesses, serpents and ritual rooms. Inspection holes expose finer worlds, while leaked drawings escape black censor strips. Institutional horror and Fifth World redactions that reveal more than they conceal.'});

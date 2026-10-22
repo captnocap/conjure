@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Conjure</title>
+    <link rel="stylesheet" href="/src/style.css" />
+    <link rel="stylesheet" href="/src/layers.css" />
+  </head>
+  <body>
+    <main>
+      <section class="stage">
+        <div class="frame">
+          <canvas id="stage" aria-label="The conjured scene in three dimensions"></canvas>
+          <canvas id="print" aria-label="The scene redrawn by the chosen treatment"></canvas>
+          <img id="svg-overlay" alt="The print with generative vector sheets" />
+        </div>
+        <div class="under">
+          <div class="toggle" role="group" aria-label="Which picture to show">
+            <button id="show-print" type="button" aria-pressed="true">Print</button>
+            <button id="show-scene" type="button" aria-pressed="false">Scene</button>
+          </div>
+          <p id="status" role="status">Type an idea, a mood, anything.</p>
+        </div>
+        <div class="scene-caption"><p id="scene-caption"></p><span class="save-buttons"><button id="save-loop" type="button" hidden>Save loop (WebM)</button><button id="save-series" type="button" hidden>Save series PNG</button><button id="save-picture" type="button" disabled>Save PNG</button></span></div>
+        <div id="plates" class="plates" hidden></div>
+        <div id="loop" class="loop" hidden><p class="plates-title">A moving print: the scene over a couple of seconds, drawn frame by frame</p><video id="loop-video" autoplay loop muted playsinline></video></div>
+      </section>
+      <section class="desk">
+        <h1>Conjure</h1>
+        <form id="ask">
+          <input id="idea" name="idea" type="text" autocomplete="off" maxlength="600" placeholder="the last bus home after a funeral" aria-label="An idea or a mood" />
+          <button type="submit">Conjure</button>
+        </form>
+        <div class="controls">
+          <button id="again" type="button" disabled>Roll again</button>
+          <button id="first" type="button" disabled>First choices</button>
+          <label>Model <select id="model"></select></label>
+        </div>
+        <p id="ledger"></p>
+        <label class="look-control">Next look <select id="look-select"><option value="">Let the idea decide</option></select></label>
+        <details id="layer-lab" open>
+          <summary>Layer lab <span>Generative SVG</span></summary>
+          <div class="layer-body">
+            <p class="layer-intro">Your idea chooses the vector sheets automatically. Fine-tune them here, or branch from Vector composition in the decision tree.</p>
+            <div class="layer-recipes" role="group" aria-label="Replace the stack with a starting point">
+              <button type="button" data-layer-recipe="moon" title="Replace the stack with orbits, stars and drafting marks">Lunar field notes</button>
+              <button type="button" data-layer-recipe="herbarium" title="Replace the stack with botanical curves, stipples and drafting marks">Wild herbarium</button>
+              <button type="button" data-layer-recipe="signal" title="Replace the stack with coloured geometry and ribbons">Playful signal</button>
+              <button type="button" data-layer-recipe="terrain" title="Replace the stack with topographic lines and orbits">Soft cartography</button>
+            </div>
+            <div class="layer-add"><select id="layer-motif" aria-label="Vector motif"></select><button id="layer-add" type="button">Add sheet</button></div>
+            <div class="layer-stack-heading"><span>Stack · front to back</span><span id="layer-count">0 / 8</span></div>
+            <div id="layer-list" aria-label="Vector sheets"></div>
+            <div id="layer-settings" hidden></div>
+            <div class="layer-tools"><button id="layers-toggle" type="button" aria-pressed="true">Show sheets</button><button id="layers-clear" type="button">Clear stack</button></div>
+            <p id="layer-status" role="status">Conjure a scene to open the layer desk.</p>
+            <div class="layer-exports"><button id="save-svg" type="button">Save layers SVG</button><button id="save-artwork-svg" type="button">Save artwork SVG</button></div>
+            <p class="layer-export-note">Layers: transparent, editable vectors. Artwork: vectors + the captured print. Save PNG includes visible sheets.</p>
+          </div>
+        </details>
+        <details id="trace-library">
+          <summary>Trace library <span>Your pictures, traced</span></summary>
+          <div class="trace-body">
+            <p class="trace-intro">Drop or paste pictures here. Each is traced into flat vector shapes and kept. Give it a name: a sentence that mentions it can cast it into the scene, where every look redraws it.</p>
+            <label class="trace-drop" id="trace-drop"><input id="trace-file" type="file" accept="image/*" multiple hidden />Drop pictures here, paste, or choose files</label>
+            <p id="trace-status" role="status"></p>
+            <div id="trace-list"></div>
+          </div>
+        </details>
+        <div class="library-launch">
+          <div><p class="eyebrow">A growing inventory of possibilities</p><p id="catalogue-count"></p></div>
+          <div class="library-actions"><button id="browse" type="button">Explore library</button><button id="invent" type="button">Invent an idea</button></div>
+        </div>
+        <div id="sheet" aria-live="polite"></div>
+      </section>
+    </main>
+    <dialog id="library" aria-labelledby="library-title">
+      <div class="library-header"><div><p class="eyebrow">From deep space to the corner shop</p><h2 id="library-title">The scene library</h2></div><button id="library-close" type="button" aria-label="Close the scene library">Close</button></div>
+      <div class="library-toolbar">
+        <div class="toggle" role="group" aria-label="Browse the library"><button type="button" data-library-tab="ideas" aria-pressed="true">Ideas</button><button type="button" data-library-tab="world" aria-pressed="false">Worlds</button><button type="button" data-library-tab="thing" aria-pressed="false">Things</button></div>
+        <input id="library-search" type="search" placeholder="Search the collection…" aria-label="Search the scene library" />
+        <select id="library-scale" aria-label="Filter the library by scale"><option value="">Every scale</option></select>
+        <button id="library-invent" type="button">Invent an idea</button>
+      </div>
+      <p id="library-count" role="status"></p>
+      <div id="library-results"></div>
+    </dialog>
+    <dialog id="plate-view" aria-label="One plate of the series"><figure><img alt="" /><figcaption></figcaption></figure><form method="dialog"><button type="submit">Close</button></form></dialog>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

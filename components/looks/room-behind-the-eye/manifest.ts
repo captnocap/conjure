@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind:'look',medium:'mixed',title:'Room behind the eye',summary:'An enormous observing eye contains the world or a magnified witness, with smaller ocular rooms inside its pupil. Sclera, iris and scene surfaces resolve into miniature faces, stair creatures and inhabited corridors in multiscale ink drawing. Recursive perception, weeping architecture and Fifth World horror.',scales:[]});
