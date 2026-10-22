@@ -30,14 +30,25 @@ Requires Node.js 22.12+.
 
 ```bash
 npm install
-cp .env.example .env     # add NANO_GPT_API_KEY to ask the model; everything else works without it
+cp .env.example .env     # add a decision-model API key; everything else works without one
 npm run dev              # http://localhost:3400
 ```
 
-The decision model is reached through [NanoGPT](https://nano-gpt.com) with the `@typesafe-ai/sdk`
-(`typesafe/jev-latest` by default; the offered models are listed in `.env`). It answers typed
-questions with probabilities, never with text, so an idea costs a fraction of a cent and every
-decision can be inspected and pinned. Without a key the studio still runs: add `?offline` to the
+The decision model answers typed questions with probabilities, never with text (the System One
+protocol), so an idea costs a fraction of a cent and every decision can be inspected and pinned.
+Any host of that protocol will do, and any number at once; set the key of each in `.env`:
+
+| Provider | Key | Models |
+| --- | --- | --- |
+| [TypeSafe AI](https://typesafe.ai) directly | `TYPESAFE_API_KEY` | `jev-latest`, `jev-preview` (Jev, $0.042 per million input tokens) |
+| [OpenRouter](https://openrouter.ai/models?output_modalities=decisions) | `OPENROUTER_API_KEY` | every decision model it lists: Jev, Liquid d1, Perplexity Decider, OpenAI Luna, Microsoft Decision-1, Cloudflare Clef, free tiers… |
+| [NanoGPT](https://nano-gpt.com) | `NANO_GPT_API_KEY` | `typesafe/jev-latest` and the decision models it carries |
+| Anything else | `CONJURE_API_KEY` + `CONJURE_BASE_URL` | whatever answers `POST /v1/systemone` |
+
+Every model is offered as `<provider>:<model>` in the model menu, so the **two critics**
+presentation can read one idea with two providers. `CONJURE_MODEL`, `CONJURE_MODELS` and
+`CONJURE_PROVIDER` narrow the menu (see `.env.example`); TypeSafe and OpenRouter are asked for their
+current decision models at startup. Without any key the studio still runs: add `?offline` to the
 address and every question settles as an even draw; catalogue studies and every check ask no model.
 `?idea=…&t=1&roll=2` conjures on load.
 
@@ -123,7 +134,7 @@ limit; the complete SVG request is checked against the actual server schema in t
 | `kit/` | The contract and helpers components are written against |
 | `components/` | Worlds, things, looks and directions, one folder each, discovered automatically |
 | `engine/` | Catalogue, director (what to ask), oracle (asking), settle (picking), stage, capture |
-| `server/` | Adds the API key, records spending (and caps it if a budget is set), returns probabilities |
+| `server/` | Adds the API key of the chosen provider, records spending (and caps it if a budget is set), returns probabilities |
 | `src/` | The page: prompt, stage, decision sheet |
 | `dev/` | Conformance check, treatment contact sheet, scaffold, screenshot helpers, browser checks |
 | `types/` | Ambient types for the Vite environment |
@@ -430,7 +441,9 @@ full six-roll check and visual review.
 
 Every request's cost is recorded in `.data/usage.json` (`/api/status` reports the total). There is
 no cap unless `CONJURE_BUDGET_USD` names a dollar amount; the server then refuses requests once the
-recorded total reaches it. An idea's cost
+recorded total reaches it. OpenRouter and NanoGPT report each request's cost; TypeSafe's own API
+reports tokens only, so its cost is computed at `CONJURE_INPUT_USD_PER_MILLION` (Jev's published
+$0.042) and counted as an estimate in the ledger. An idea's cost
 depends on the model, catalogue size and selected details; the ledger reports
 actual usage for each idea. The street sign alone offers a 365-sign catalogue. Rolling again
 is free unless it casts something new. Catalogue studies, conformance checks and exports

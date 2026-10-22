@@ -1,25 +1,27 @@
-import { APIError, TypeSafeClient, type Questions } from '@typesafe-ai/sdk';
 import express from 'express';
 import { resolve } from 'node:path';
 import { createServer } from 'node:http';
-import { z } from 'zod';
 import { BudgetLedger } from './budget';
 import { gallery } from './gallery';
 import { traces } from './traces';
 import { decideSchema } from './decision-schema';
+import { PROVIDERS, ProviderError, Providers } from './providers';
 
 /**
- * The browser holds the catalogue and writes the questions; this server only adds the
- * API key, enforces the spending limit and returns the model's probabilities.
+ * The browser holds the catalogue and writes the questions; this server only adds the API key,
+ * enforces the spending limit and returns the model's probabilities. The decision model can come
+ * from any configured provider (server/providers.ts); each model is named "<provider>:<model>".
  */
 const port = Number(process.env.CONJURE_PORT ?? 3400);
-const defaultModel = process.env.CONJURE_MODEL ?? 'typesafe/jev-latest';
-const models = (process.env.CONJURE_MODELS ?? defaultModel).split(',').map((model) => model.trim()).filter(Boolean);
-if (!models.includes(defaultModel)) models.unshift(defaultModel);
-const inputPrice = Number(process.env.CONJURE_INPUT_USD_PER_MILLION ?? 0.25);
 const REQUEST_TIMEOUT_MS = 30_000;
 /** Reserved before each request so concurrent batches cannot overrun the budget together. */
 const RESERVE_TOKENS = 12_000;
+
+const providers = new Providers(process.env);
+await providers.refresh();
+const configured = providers.configured.length > 0;
+if (configured) console.log(`Decision providers: ${providers.configured.map((provider) => `${provider.title} (${provider.models.length} models)`).join(', ')}. Default ${providers.defaultModel()}.`);
+else console.log(`No decision provider is configured: set one of ${Object.values(PROVIDERS).map((provider) => provider.keyEnv).join(', ')} in .env. The studio still works offline (?offline).`);
 
 // Spending is always recorded; it is only capped when CONJURE_BUDGET_USD names a dollar amount.
 const budgetSetting = process.env.CONJURE_BUDGET_USD?.trim();
@@ -27,28 +29,6 @@ const ledger = new BudgetLedger(
   resolve(process.env.CONJURE_LEDGER_PATH ?? '.data/usage.json'),
   !budgetSetting || /^(none|off|unlimited)$/i.test(budgetSetting) ? null : Number(budgetSetting),
 );
-const client = process.env.NANO_GPT_API_KEY
-  ? new TypeSafeClient({
-      apiKey: process.env.NANO_GPT_API_KEY,
-      baseURL: process.env.CONJURE_BASE_URL ?? 'https://nano-gpt.com/api',
-      defaultModel,
-      timeout: REQUEST_TIMEOUT_MS,
-      retry: { maxRetries: 0 },
-      logLevel: 'off',
-    })
-  : null;
-
-const probability = z.number().min(0).max(1);
-const answerSchema = z.union([
-  z.object({ type: z.literal('choice'), probabilities: z.record(z.string(), probability) }),
-  z.object({ type: z.literal('score'), score: z.number().nonnegative(), probabilities: z.record(z.string(), probability).optional() }),
-  z.object({ type: z.literal('noul'), noul: probability }),
-]);
-const resultSchema = z.object({
-  model: z.string(),
-  answers: z.record(z.string(), answerSchema),
-  usage: z.object({ input_tokens: z.number().nonnegative(), cost: z.number().nonnegative().optional(), estimated_cost: z.number().nonnegative().optional() }),
-});
 
 const app = express();
 const httpServer = createServer(app);
@@ -59,7 +39,13 @@ app.use(traces);
 app.use(express.json({ limit: '256kb' }));
 
 app.get('/api/status', (_request, response) =>
-  response.json({ configured: client !== null, defaultModel, models, usage: ledger.snapshot() }),
+  response.json({
+    configured,
+    defaultModel: providers.defaultModel(),
+    models: providers.offered(),
+    providers: providers.configured.map((provider) => ({ id: provider.id, title: provider.title, models: provider.models.length })),
+    usage: ledger.snapshot(),
+  }),
 );
 
 app.post('/api/decide', async (request, response) => {
@@ -72,64 +58,39 @@ app.post('/api/decide', async (request, response) => {
     response.status(400).json({ error: `Invalid decision request: ${parsed.error.issues[0].path.join('.')} ${parsed.error.issues[0].message}` });
     return;
   }
-  if (!client) {
-    response.status(503).json({ error: 'Add NANO_GPT_API_KEY to the .env file and restart the server.' });
+  if (!configured) {
+    response.status(503).json({ error: `No decision provider is configured. Add one of ${Object.values(PROVIDERS).map((provider) => provider.keyEnv).join(', ')} to the .env file and restart the server.` });
     return;
   }
   const { idea, brief, questions } = parsed.data;
-  const model = parsed.data.model ?? defaultModel;
-  if (!models.includes(model)) {
-    response.status(400).json({ error: `${model} is not in CONJURE_MODELS.` });
+  const model = parsed.data.model ?? providers.defaultModel()!;
+  let price: number;
+  try {
+    price = providers.resolve(model).provider.inputUsdPerMillion;
+  } catch (error) {
+    response.status(400).json({ error: error instanceof Error ? error.message : String(error) });
     return;
   }
-  const reservation = (RESERVE_TOKENS * inputPrice) / 1_000_000;
+  if (!providers.offered().includes(providers.canonicalise(model))) {
+    response.status(400).json({ error: `${model} is not among the offered models (CONJURE_MODELS).` });
+    return;
+  }
+  const reservation = (RESERVE_TOKENS * price) / 1_000_000;
   if (!ledger.reserve(reservation)) {
     response.status(402).json({ error: 'The configured budget is used. Raise CONJURE_BUDGET_USD to continue.' });
     return;
   }
-
-  const named: Questions = {};
-  questions.forEach((entry, index) => {
-    named[`q${index}`] =
-      entry.type === 'choice'
-        ? { type: 'choice', instructions: entry.ask, criteria: entry.options }
-        : entry.type === 'score'
-          ? { type: 'score', instructions: entry.ask, criteria: entry.levels as [string, string, ...string[]] }
-          : { type: 'noul', instructions: entry.ask };
-  });
-
   let settled = false;
   try {
-    const result = resultSchema.parse(await client.systemOne({ model, state: { task: brief, idea }, questions: named }));
-    const reported = result.usage.cost ?? result.usage.estimated_cost;
-    const costUsd = reported ?? (result.usage.input_tokens * inputPrice) / 1_000_000;
-    ledger.settle(reservation, { cost: costUsd, input: result.usage.input_tokens, output: 0, decisions: questions.length, estimated: reported === undefined });
+    const decision = await providers.decide(model, idea, brief, questions, { timeoutMs: REQUEST_TIMEOUT_MS });
+    ledger.settle(reservation, { cost: decision.costUsd, input: decision.inputTokens, output: 0, decisions: questions.length, estimated: decision.estimated });
     settled = true;
-    const verdicts = questions.map((entry, index) => {
-      const answer = result.answers[`q${index}`];
-      if (!answer || answer.type !== entry.type) throw new Error(`The model returned no ${entry.type} answer for question ${index}.`);
-      if (answer.type === 'choice') return { type: 'choice', probabilities: answer.probabilities };
-      if (answer.type === 'noul') return { type: 'noul', p: answer.noul };
-      const top = (entry as { levels: string[] }).levels.length - 1;
-      return {
-        type: 'score',
-        value: Math.min(1, answer.score / top),
-        probabilities: answer.probabilities ? Array.from({ length: top + 1 }, (_unused, level) => answer.probabilities![level] ?? 0) : [],
-      };
-    });
-    response.json({ model: result.model, inputTokens: result.usage.input_tokens, costUsd, verdicts });
+    response.json({ model: decision.model, inputTokens: decision.inputTokens, costUsd: decision.costUsd, verdicts: decision.verdicts });
   } catch (error) {
     // A failed response may still be billed; keep the reservation as a conservative charge.
     if (!settled) ledger.settle(reservation, { cost: reservation, input: 0, output: 0, decisions: 0, estimated: true });
-    const status = error instanceof APIError ? error.status : null;
     console.error('Decision request failed:', error instanceof Error ? error.message : error);
-    response.status(502).json({
-      error: status
-        ? `The decision model returned HTTP ${status}${error instanceof Error && error.message ? `: ${error.message.slice(0, 200)}` : '.'}`
-        : error instanceof z.ZodError
-          ? 'The decision model returned an answer in an unexpected shape.'
-          : 'The decision model could not be reached.',
-    });
+    response.status(502).json({ error: error instanceof ProviderError ? error.message : 'The decision model could not be reached.' });
   }
 });
 

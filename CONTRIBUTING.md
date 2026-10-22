@@ -26,8 +26,9 @@ npm test                               # the independence rules, no browser need
 
 No API key is needed for any of this. The check runs offline, and the studio runs with `?offline`
 so you can cast your component into scenes for free: **Explore library → Study this component**
-builds it with random answers in a fitting world. To see it chosen by a real model, add
-`NANO_GPT_API_KEY` to `.env` (a NanoGPT key); an idea costs a fraction of a cent.
+builds it with random answers in a fitting world. To see it chosen by a real model, add a
+decision-model key to `.env` (TypeSafe, OpenRouter or NanoGPT; OpenRouter has free decision
+models); an idea costs a fraction of a cent.
 
 Pick a name that is specific (`gas-station-roller-grill`, not `grill`): ids are folder paths and
 cannot collide, but the model casts from the summary, so a specific name helps you write one.

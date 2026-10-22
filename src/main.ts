@@ -29,6 +29,15 @@ printCanvas.width = printCanvas.height = FRAME_SIZE;
 
 const query = new URLSearchParams(location.search);
 const offline = query.has('offline');
+/** Models are named "<provider>:<model>"; the label drops the vendor path and names the provider only when several are configured. */
+const providerTitles = new Map<string, string>();
+function labelOf(model: string): string {
+  const colon = model.indexOf(':');
+  const provider = colon > 0 && providerTitles.has(model.slice(0, colon)) ? model.slice(0, colon) : '';
+  const name = provider ? model.slice(colon + 1) : model;
+  const short = name.split('/').pop() ?? name;
+  return provider && providerTitles.size > 1 ? `${short} · ${providerTitles.get(provider)}` : short;
+}
 const stage = new Stage($<HTMLCanvasElement>('#stage'));
 const layers = installLayers(() => showPrint(true));
 let conjuring: Conjuring | null = null;
@@ -206,7 +215,7 @@ async function conjure(temperature: number) {
         say(`${timing} A portrait of ${plan.cast[0].entry.title}, the scene ${blend === 'beside' ? 'beside it' : blend}.`);
       }
     }
-    const shortName = (model: string) => model.split('/').pop() ?? model;
+    const shortName = labelOf;
     const mine = conjuring.options.model ?? modelSelect.value;
     // A second critic is another configured model reading the same sentence from scratch.
     const critic = kind === 'critics' && !offline && !studying
@@ -422,9 +431,10 @@ $('#save-picture').addEventListener('click', async () => {
 if (!offline) {
   const response = await fetch('/api/status').catch(() => null);
   if (response?.ok) {
-    const { configured, models, defaultModel } = (await response.json()) as { configured: boolean; models: string[]; defaultModel: string };
-    for (const model of models) modelSelect.append(new Option(model.split('/').pop(), model, model === defaultModel, model === defaultModel));
-    if (!configured) say('Add NANO_GPT_API_KEY to the .env file and restart the server.', true);
+    const { configured, models, defaultModel, providers } = (await response.json()) as { configured: boolean; models: string[]; defaultModel: string | null; providers?: { id: string; title: string }[] };
+    for (const provider of providers ?? []) providerTitles.set(provider.id, provider.title);
+    for (const model of models) modelSelect.append(new Option(labelOf(model), model, model === defaultModel, model === defaultModel));
+    if (!configured) say('No decision provider is configured. Add an API key (TYPESAFE_API_KEY, OPENROUTER_API_KEY, NANO_GPT_API_KEY or CONJURE_API_KEY) to the .env file and restart the server.', true);
   } else say('The decision server is not running. Start it with npm run dev.', true);
 }
 
