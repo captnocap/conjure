@@ -1,4 +1,5 @@
 import type { Question, QuestionSet } from '@conjure/kit';
+import { announce } from './activity';
 import { BATCH_CHARACTERS, MAX_BRIEF_CHARACTERS, MAX_IDEA_CHARACTERS, MAX_NOUL_ASK_CHARACTERS, MAX_QUESTIONS_PER_REQUEST, WIDEST_CHOICE } from './decision-limits';
 
 /** What the decision model said about one question, before anything is picked. */
@@ -94,6 +95,8 @@ export interface ConsultOptions {
   offline?: boolean;
   /** Read the idea for its exact opposite: every brief says so. */
   stance?: 'opposite';
+  /** What this consultation is about, in a word, for the live activity feed: "direction", "casting", a component's title. */
+  about?: string;
 }
 
 /** Prefixed to every brief when the stance is the opposite of the idea. */
@@ -133,9 +136,12 @@ export async function consult(
   // Prepare the whole chain before sending anything: an impossible later question
   // must not spend money on earlier batches before its validation error is found.
   const chain = batches(widen(questions, capacity), capacity);
+  const about = options.about ?? '';
   try {
-    for (const batch of chain) {
+    for (const [at, batch] of chain.entries()) {
       options.signal?.throwIfAborted();
+      announce({ type: 'asking', about, questions: batch.length, batch: at + 1, batches: chain.length });
+      const sent = performance.now();
       const response = await fetch('/api/decide', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -164,6 +170,7 @@ export async function consult(
           throw new Error(`The decision service returned the wrong answer type for "${name}".`);
         verdicts[name] = result.verdicts[index];
       });
+      announce({ type: 'answered', about, questions: batch.length, milliseconds: performance.now() - sent });
       options.signal?.throwIfAborted();
     }
   } finally {

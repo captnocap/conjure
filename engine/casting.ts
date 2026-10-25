@@ -56,7 +56,7 @@ export class CastingDecisions {
       const missing = this.eligible(setting).filter((thing) => !this.#asked.has(thing.id));
       for (const thing of missing) this.#asked.add(thing.id);
       chain = missing.length
-        ? consult(this.idea, this.brief, questionsFor(missing), this.usage, this.options).then(
+        ? consult(this.idea, this.brief, questionsFor(missing), this.usage, { ...this.options, about: 'casting' }).then(
             (verdicts) => {
               for (const thing of missing) {
                 const verdict = verdicts[castName(thing.id)];
@@ -93,7 +93,7 @@ export class CastingDecisions {
         .sort((a, b) => ideaOnly(b) - ideaOnly(a))
         .slice(0, SHORTLIST);
       pending = shortlist.length
-        ? consult(this.idea, this.#settingBrief(setting), questionsFor(shortlist), this.usage, this.options).then(
+        ? consult(this.idea, this.#settingBrief(setting), questionsFor(shortlist), this.usage, { ...this.options, about: 'shortlist' }).then(
             (verdicts) => Object.fromEntries(shortlist.flatMap((thing) => {
               const verdict = verdicts[castName(thing.id)];
               return verdict?.type === 'noul' ? [[thing.id, verdict.p] as const] : [];

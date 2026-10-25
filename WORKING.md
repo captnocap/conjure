@@ -388,3 +388,32 @@ drips; `dev/replay-check.mjs` pins those defaults. Routing carries three more qu
 Validation: 9,691 unit tests, typecheck, `check:requests`, `check:styles`, `check:layers`, presentation checks
 (the loop changes 37% of the picture per frame). Original at `.data/fifth-world-before/vacui.ts.v1`.
 
+
+**A blank page, a live feed, and laps across a spread of ideas (Claude, 2026-10-25, at Josiah's request):**
+- The page now opens blank but for one centred line with a cursor blinking in it (`src/prompt.ts` draws the
+  caret itself, so it blinks the same with or without focus and quickens while the studio thinks); after 2.6 s
+  a hint and a faint line of links (library, invent, settings, gallery) fade in. On Enter the line moves to the
+  top and the studio's work is drawn in beneath it as it happens: `engine/activity.ts` is a small event bus,
+  `consult()` announces each batch (every call site names what it is about), the director announces each
+  settled decision in words (direction, mood, framing, presentation, setting, look, cast thing by thing,
+  relations, each component's first answers, vector sheets), `Stage.mount` each build, and `src/main.ts` the
+  print, portrait, plates and loop. `src/activity.ts` renders the rows (pulsing marker while asked, staggered
+  cast chips, a progress hairline, a seconds/questions/requests footer). `body[data-state]` is idle → thinking →
+  building → ready | failed; `body.scened` once a picture exists. The desk (rolls, model, next look, tree, labs)
+  sits under the picture; the layer lab and trace library fold closed by default. Every element id the dev
+  checks use is unchanged; `dev/layers-check.mjs` opens the lab and the settings itself.
+- `dev/laps.mjs` conjures a file of ideas headlessly with the real model and tallies what recurred. 48 varied
+  ideas at first choices (`.data/laps/spread-t0`, $0.31): four looks took 42 of 48 (watercolor studio 13, xerox
+  noir 12, photographic 9, old-master light 8) out of 62; night noir ⇒ xerox noir 12/12 and picture book ⇒
+  watercolor studio 5/5; as-written 63%, night noir 25%, bold poster never; plate 81% and approach 19%, the
+  other eight presentations never; accent never; settings (38 distinct) and cast (117 distinct) were diverse.
+- Found and fixed: the "does the person explicitly request a medium?" question read yes for every idea under
+  night noir, picture book and bold poster, because their briefs say "prefer … media"; the gallery shows the same
+  reading at 100% under the old Fifth World house brief on 2026-10-17 and about 1% before it. A yes settles the
+  medium and look at temperature 0, so rerolls never toured media. The question in `engine/styles.ts` now
+  judges the sentence alone and names the direction notes as the studio's own; a direct probe of 16 ideas put
+  plain ideas from 96% to about 10% yes with real requests ("a woodcut of a fox") still 97%+. A reroll lap of 16
+  of the affected ideas afterwards (`.data/laps/reroll-t1`, $0.10) visited 7 media and 11 looks.
+Validation: 9,740 unit tests, typecheck, `check:requests`, `check:styles`, `check:directions`, `check:layers`,
+`check:expansion`, `presentation-check approach`; three real walkthroughs (`.data/tour/tour.mjs`) and one
+offline. The laps and the probe asked the real model; nothing else did.

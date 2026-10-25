@@ -2,6 +2,7 @@ import { LOOK_MEDIA, type LookMedium, type QuestionSet } from '../kit/contract';
 import { choice, noul } from '../kit/questions';
 import { hashText, seeded } from '../kit/random';
 import { directed } from './art-direction';
+import { announce } from './activity';
 import { consult, type ConsultOptions, stanceBrief, type Usage, type Verdict } from './oracle';
 import { explore, settle, type Forced, type Ruling } from './settle';
 
@@ -15,12 +16,19 @@ export const STYLE_MEDIA: Record<LookMedium, string> = {
   mixed: 'Mixed media: layered studio experiments that combine painting, drawing and material effects in a coherent image.',
 };
 
+/** Each medium in a couple of words, for the activity feed. */
+export const MEDIUM_WORDS: Record<LookMedium, string> = {
+  realism: 'photographic', painting: 'painted', game: 'game graphics', print: 'a print', optical: 'optical', craft: 'craft', mixed: 'mixed media',
+};
+
 export interface StyleLook { id: string; title: string; summary: string; medium?: LookMedium }
 export const mediumOf = (look: StyleLook): LookMedium => look.medium ?? 'mixed';
 
 export function styleQuestions(looks: readonly StyleLook[]): QuestionSet {
   return {
-    styleSpecified: noul('Does the person explicitly request an art medium or rendering style? Mood, subject matter, weather and genre alone are not a request for a medium.'),
+    // Judged on the sentence alone: a direction's brief names media it prefers, and the model read that
+    // as the person's request for every idea under night noir or a picture book, locking the medium.
+    styleSpecified: noul('Does the sentence the person typed itself name an art medium or rendering style, such as oil paint, watercolour, pencil, woodcut, pixel art or a photograph? Judge the sentence alone. The direction notes in this brief are the studio\u2019s own, not the person\u2019s request, and mood, subject matter, weather and genre alone are not a request for a medium.'),
     medium: choice('Which art medium best expresses the idea? Treat each family as equally available regardless of how many looks it contains. For an open-ended idea, give several media meaningful probability.',
       Object.fromEntries(LOOK_MEDIA.filter((medium) => looks.some((look) => mediumOf(look) === medium)).map((medium) => [medium, STYLE_MEDIA[medium]]))),
   };
@@ -60,7 +68,7 @@ export class StyleDecisions {
     }
     if (!this.inventory.length) return null;
     const questions = styleQuestions(this.inventory);
-    this.#direction ??= consult(this.idea, stanceBrief(directed('Choose the art medium separately from the scene\'s objects and mood. Explicit requests outrank taste or variety.', this.direction), this.options), questions, this.usage, this.options);
+    this.#direction ??= consult(this.idea, stanceBrief(directed('Choose the art medium separately from the scene\'s objects and mood. Explicit requests outrank taste or variety.', this.direction), this.options), questions, this.usage, { ...this.options, about: 'medium' });
     const verdicts = await this.#direction;
     const random = seeded(hashText(`${this.idea}\u0000style\u0000${roll}`));
     const local: Ruling[] = [];
@@ -106,7 +114,7 @@ export class StyleDecisions {
     if (!pending) {
       pending = choices.length === 1
         ? Promise.resolve({ look: { type: 'choice' as const, probabilities: { [choices[0].id]: 1 } } })
-        : consult(this.idea, stanceBrief(directed(`Choose within the ${medium} medium. Explicit requests outrank taste or variety.`, this.direction), this.options), lookQuestions, this.usage, this.options);
+        : consult(this.idea, stanceBrief(directed(`Choose within the ${medium} medium. Explicit requests outrank taste or variety.`, this.direction), this.options), lookQuestions, this.usage, { ...this.options, about: 'look' });
       this.#looks.set(medium, pending);
     }
     const lookVerdicts = await pending;
@@ -128,6 +136,7 @@ export class StyleDecisions {
         : 'Each return to this medium visits another of its treatments, the model\u2019s favourite first. Percentages show model relevance.';
     }
     rulings.push(...lookRulings);
+    if (shift === 0) announce({ type: 'decided', stage: 'look', title: 'Look', detail: `${this.inventory.find((entry) => entry.id === picked)?.title ?? picked}, ${MEDIUM_WORDS[medium]}${specific ? ', as asked for' : ''}` });
     return picked;
   }
 }

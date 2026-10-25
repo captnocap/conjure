@@ -9,6 +9,7 @@ import { applyOtherworld } from './otherworld';
 import { applyVacui } from './vacui';
 import type { CameraOffset } from './motion';
 import type { CastMember, Plan } from './director';
+import { announce } from './activity';
 
 /** Looks are calibrated at this size; the canvas is scaled by CSS for display. */
 export const FRAME_SIZE = 720;
@@ -129,6 +130,7 @@ export class Stage {
       try {
         const built = await build();
         reports.push({ id: member.entry.id, milliseconds: Math.round(performance.now() - started), error: null });
+        announce({ type: 'built', id: member.entry.id, title: member.entry.title, milliseconds: reports.at(-1)!.milliseconds, error: null });
         return built;
       } catch (error) {
         console.error(`${member.entry.id} failed to build`, error);
@@ -137,6 +139,7 @@ export class Stage {
           milliseconds: Math.round(performance.now() - started),
           error: error instanceof Error ? error.message : String(error),
         });
+        announce({ type: 'built', id: member.entry.id, title: member.entry.title, milliseconds: reports.at(-1)!.milliseconds, error: reports.at(-1)!.error });
         return null;
       }
     };

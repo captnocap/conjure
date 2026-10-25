@@ -8,7 +8,7 @@ import { StyleDecisions } from './styles';
 import { BRIEF_BASE, HOUSE, HOUSE_NOTE, HOUSE_BRIEF, NO_DIRECTION, directed, directionOf, houseQuestion } from './art-direction';
 import { BELONGS_FLOOR, CastingDecisions, castName } from './casting';
 import { FRAMING_QUESTIONS, adjustFraming, framingOf } from './framing';
-import { PRESENTATION_QUESTIONS, type Presentation, adjustMood, presentationOf } from './presentation';
+import { PRESENTATIONS, PRESENTATION_QUESTIONS, type Presentation, adjustMood, presentationOf } from './presentation';
 import { type SceneSoFar, sceneBrief } from './scene-brief';
 import { relationBrief, relationQuestion } from './relations';
 import { NO_TRACES, traceLibrary } from './traces';
@@ -16,6 +16,7 @@ import { ACCENT_QUESTIONS, type AccentEdge, type AccentRegion } from './accent';
 import { OTHERWORLD_QUESTIONS, type Otherworld, otherworldOf } from './otherworld';
 import { VACUI_QUESTIONS, type Vacui, vacuiOf } from './vacui';
 import { MOTION_QUESTIONS, type CameraMove, cameraMoveOf } from './motion';
+import { announce } from './activity';
 import type { Relation } from '@conjure/kit';
 
 
@@ -199,7 +200,7 @@ export class Conjuring {
     const directions = this.#entries('direction');
     if (this.options.plain || !directions.length) return null;
     const questions = houseQuestion(directions);
-    this.#house ??= consult(this.idea, stanceBrief(`${BRIEF_BASE} ${HOUSE_BRIEF}`, this.options), questions, this.usage, this.options);
+    this.#house ??= consult(this.idea, stanceBrief(`${BRIEF_BASE} ${HOUSE_BRIEF}`, this.options), questions, this.usage, { ...this.options, about: 'direction' });
     const verdicts = await this.#house;
     const local: Ruling[] = [];
     const answers = settle('direction', questions, verdicts, temperature, seeded(seed ^ hashText(HOUSE)), local, pins, { roll, seed: hashText(`${this.idea}\u0000${HOUSE}`) });
@@ -207,6 +208,7 @@ export class Conjuring {
     if (ruling.note) ruling.note = HOUSE_NOTE;
     rulings.push(...local);
     const entry = entryOf(directionOf(answers, directions));
+    announce({ type: 'decided', stage: 'direction', title: 'Direction', detail: entry.title });
     const direction = await loadBuilder(entry as Entry & { kind: 'direction' });
     return { entry, direction };
   }
@@ -246,7 +248,7 @@ export class Conjuring {
               sceneBrief(stanceBrief(directed(BRIEF_BASE, entry.kind === 'look' ? direction.brief : direction.note), this.options), entry, scene),
               questions,
               this.usage,
-              this.options,
+              { ...this.options, about: `detail:${entry.id}` },
             )
           : {};
         return { questions, verdicts };
@@ -271,7 +273,7 @@ export class Conjuring {
     const finishes = this.options.plain ? {} : { ...(brings('otherworld') ? OTHERWORLD_QUESTIONS : {}), ...(brings('vacui') ? VACUI_QUESTIONS : {}), ...MOTION_QUESTIONS };
     let routed_ = this.#routed.get(directionKey);
     if (!routed_) {
-      routed_ = consult(this.idea, stanceBrief(directed(BRIEF_BASE, direction.brief), this.options), { ...routing, ...finishes }, this.usage, this.options).then((verdicts) => {
+      routed_ = consult(this.idea, stanceBrief(directed(BRIEF_BASE, direction.brief), this.options), { ...routing, ...finishes }, this.usage, { ...this.options, about: 'scene' }).then((verdicts) => {
         this.#routing.set(directionKey, verdicts);
       });
       this.#routed.set(directionKey, routed_);
@@ -284,6 +286,16 @@ export class Conjuring {
 
     const random = seeded(seed);
     const routed = settle('direction', routing, verdicts, temperature, random, rulings, pins);
+    const said = (name: string) => rulings.find((ruling) => ruling.owner === 'direction' && ruling.name === name)?.picked ?? '';
+    const words = (name: string) => said(name).split(/[:,]/)[0].toLowerCase();
+    announce({ type: 'decided', stage: 'scene', title: 'Mood', detail: ['cheer', 'wear', 'warmth', 'energy'].map(words).filter(Boolean).join(' · ') });
+    if (!this.options.plain) {
+      announce({ type: 'decided', stage: 'framing', title: 'Framing', detail: [words('distance'), words('elevation'), words('level')].filter(Boolean).join(' · ') });
+      const kind = presentationOf(routed).kind;
+      announce({ type: 'decided', stage: 'presentation', title: 'Presentation', detail: kind === 'plate' ? 'one plate' : `${kind}: ${PRESENTATIONS[kind].split(/[:.]/)[0].toLowerCase()}` });
+    }
+    const settingEntry = entryOf(this.options.world ?? (routed.world as string));
+    announce({ type: 'decided', stage: 'world', title: 'Setting', detail: settingEntry.title });
     // Rerolls tour every finish's choices. A replay of an entry made before a finish existed pins it off.
     const finish = <T>(questions: QuestionSet, name: string, read: (answers: Record<string, string | number | boolean>) => T): T | undefined =>
       this.options.plain ? undefined
@@ -314,7 +326,7 @@ export class Conjuring {
     let framing = framingOf(routed);
     if (series) framing = adjustFraming(framing, current.framing, rulings, note);
 
-    const worldEntry = entryOf(this.options.world ?? (routed.world as string));
+    const worldEntry = settingEntry;
     const scale = worldEntry.scales[0];
     const lookEntry = lookId ? entryOf(lookId) : null;
 
@@ -356,6 +368,7 @@ export class Conjuring {
           .slice(0, 10)
           .map((candidate) => ({ id: candidate.entry.id, title: candidate.entry.title, belongs: candidate.belongs }));
 
+    announce({ type: 'decided', stage: 'casting', title: 'Cast', detail: forced ? `${chosen.length} chosen for the study` : `${chosen.length} of ${eligible.length} things at this scale`, items: chosen.map((member) => member.entry.title) });
     const scene: SceneSoFar = { world: worldEntry, cast: chosen.map((member) => member.entry), look: lookEntry };
     // One typed question per supporting thing: where it stands in relation to the hero.
     const hero = chosen[0]?.entry;
@@ -367,7 +380,7 @@ export class Conjuring {
     let relations = this.#relations.get(relationKey);
     if (!relations) {
       relations = Object.keys(relationQuestions).length
-        ? consult(this.idea, relationBrief(stanceBrief(BRIEF_BASE, this.options), worldEntry.title, hero!.title), relationQuestions, this.usage, this.options)
+        ? consult(this.idea, relationBrief(stanceBrief(BRIEF_BASE, this.options), worldEntry.title, hero!.title), relationQuestions, this.usage, { ...this.options, about: 'relations' })
         : Promise.resolve({});
       this.#relations.set(relationKey, relations);
     }
@@ -385,6 +398,19 @@ export class Conjuring {
         const question = relationQuestions[entry.id];
         member.relation = settle(entry.id, { relation: question }, { relation: related[entry.id] }, temperature, seeded(seed ^ hashText(`${entry.id}:relation`)), rulings, pins).relation as Relation;
       }
+      // The feed hears the answers in words: the first few picks, then where the thing stands.
+      const words = rulings
+        .filter((ruling) => ruling.owner === entry.id && ruling.name !== 'relation')
+        .map((ruling) => ruling.kind === 'noul' ? (ruling.picked === 'yes' ? ruling.name.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase() : '') : ruling.picked.replace(/^(worlds|looks|things)\//, '').split(/[:,(]/)[0].replace(/[-_]+/g, ' ').trim().toLowerCase())
+        .filter(Boolean);
+      const asked = Object.keys(questions).length;
+      announce({
+        type: 'decided', stage: `detail:${entry.id}`, title: entry.title,
+        detail: [
+          words.length ? `${words.slice(0, 4).join(' · ')}${words.length > 4 ? ` · and ${words.length - 4} more` : ''}` : asked ? `${asked} question${asked === 1 ? '' : 's'} answered` : 'nothing to decide',
+          member.relation && hero ? `${member.relation} ${hero.title.toLowerCase()}` : '',
+        ].filter(Boolean).join(' · '),
+      });
       return member;
     };
     // A second style over part of the picture: the model's next most likely medium, unless pinned.
@@ -405,13 +431,21 @@ export class Conjuring {
         });
       }
     }
+    const designed = this.#designFor(directionKey, direction).plan({ seed, temperature, rulings, forced: forcedFor(force, 'design'), mood, look: lookEntry?.title, roll }).then((plan) => {
+      announce({ type: 'decided', stage: 'composition', title: 'Vector sheets', detail: plan.notes.join(', ') || `${plan.layers.length} sheet${plan.layers.length === 1 ? '' : 's'}` });
+      return plan;
+    });
     const [world, look, accentLook, design, ...cast] = await Promise.all([
       detail(worldEntry, 1),
       lookEntry ? detail(lookEntry, 1) : Promise.resolve(null),
       accentEntry ? detail(accentEntry, 1) : Promise.resolve(null),
-      this.#designFor(directionKey, direction).plan({ seed, temperature, rulings, forced: forcedFor(force, 'design'), mood, look: lookEntry?.title, roll }),
+      designed,
       ...chosen.map((candidate) => detail(candidate.entry, candidate.belongs)),
     ]);
+    if (Object.keys(relationQuestions).length) {
+      const placed = (cast as CastMember[]).filter((member) => member.relation).map((member) => `${member.entry.title.toLowerCase()} ${member.relation} ${hero!.title.toLowerCase()}`);
+      announce({ type: 'decided', stage: 'relations', title: 'Relations', detail: placed.join(', ') || 'none' });
+    }
 
     return {
       idea: this.idea,

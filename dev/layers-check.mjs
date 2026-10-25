@@ -95,6 +95,8 @@ try {
     return planned;
   };
   const study = async (look, duringBuild) => {
+    // On the blank page the look menu waits behind Settings.
+    if (!(await page.locator('#look-select').isVisible())) await page.locator('#settings').click();
     await page.locator('#look-select').selectOption(look);
     await page.locator('#browse').click();
     await page.locator('[data-library-tab="thing"]').click();
@@ -110,6 +112,8 @@ try {
   };
 
   await page.goto(`${base}/?offline`);
+  // The layer lab folds closed by default; this check reads its rows.
+  await page.locator('#layer-lab').evaluate((lab) => { lab.open = true; });
   const looks = await page.locator('#look-select option').evaluateAll((options) => options.map((option) => option.value));
   for (const look of ['looks/atelier', 'looks/graphic-press', 'looks/chromatic-darkroom', 'looks/ink-atlas']) assert.ok(looks.includes(look), `Missing look ${look}`);
   const initialGallery = page.waitForRequest((request) => new URL(request.url()).pathname === '/api/gallery' && request.method() === 'POST');
@@ -334,6 +338,7 @@ try {
   const query = new URLSearchParams({ offline: '', idea: 'A teapot with lunar field notes', world: 'worlds/worktable', cast: 'things/teapot', look: 'looks/ink-atlas', t: '1', roll: '2' });
   await page.goto(`${base}/?${query}`);
   await ready();
+  await page.locator('#layer-lab').evaluate((lab) => { lab.open = true; });
   await assertAutomaticStack();
   assert.equal(await page.locator('.frame').evaluate((frame) => frame.classList.contains('printed') && frame.classList.contains('layered')), true);
   assert.equal(await page.evaluate(() => window.__conjure.plan.look.entry.id), 'looks/ink-atlas');

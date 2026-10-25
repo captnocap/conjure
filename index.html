@@ -7,8 +7,17 @@
     <link rel="stylesheet" href="/src/style.css" />
     <link rel="stylesheet" href="/src/layers.css" />
   </head>
-  <body>
+  <body data-state="idle">
     <main>
+      <header class="prompt-bar">
+        <form id="ask" class="prompt" autocomplete="off">
+          <span class="mirror" aria-hidden="true"></span>
+          <input id="idea" name="idea" type="text" autocomplete="off" autofocus maxlength="600" placeholder="an idea, a mood, anything" aria-label="An idea or a mood" />
+          <span class="caret" aria-hidden="true"></span>
+          <button type="submit">Conjure</button>
+        </form>
+        <p id="status" role="status"></p>
+      </header>
       <section class="stage">
         <div class="frame">
           <canvas id="stage" aria-label="The conjured scene in three dimensions"></canvas>
@@ -20,26 +29,30 @@
             <button id="show-print" type="button" aria-pressed="true">Print</button>
             <button id="show-scene" type="button" aria-pressed="false">Scene</button>
           </div>
-          <p id="status" role="status">Type an idea, a mood, anything.</p>
+          <p id="scene-caption"></p>
+          <span class="save-buttons"><button id="save-loop" type="button" hidden>Save loop (WebM)</button><button id="save-series" type="button" hidden>Save series PNG</button><button id="save-picture" type="button" disabled>Save PNG</button></span>
         </div>
-        <div class="scene-caption"><p id="scene-caption"></p><span class="save-buttons"><button id="save-loop" type="button" hidden>Save loop (WebM)</button><button id="save-series" type="button" hidden>Save series PNG</button><button id="save-picture" type="button" disabled>Save PNG</button></span></div>
         <div id="plates" class="plates" hidden></div>
         <div id="loop" class="loop" hidden><p class="plates-title">A moving print: the scene over a couple of seconds, drawn frame by frame</p><video id="loop-video" autoplay loop muted playsinline></video></div>
       </section>
+      <section id="activity" aria-label="What the studio is deciding">
+        <ol></ol>
+        <p class="activity-foot"></p>
+      </section>
       <section class="desk">
-        <h1>Conjure</h1>
-        <form id="ask">
-          <input id="idea" name="idea" type="text" autocomplete="off" maxlength="600" placeholder="the last bus home after a funeral" aria-label="An idea or a mood" />
-          <button type="submit">Conjure</button>
-        </form>
-        <div class="controls">
+        <nav class="launch" aria-label="The library, the gallery and the settings">
+          <p id="catalogue-count"></p>
+          <div class="library-actions"><button id="browse" type="button">Explore library</button><button id="invent" type="button">Invent an idea</button><button id="settings" type="button" aria-expanded="false" aria-controls="controls">Settings</button></div>
+        </nav>
+        <div id="controls" class="controls">
           <button id="again" type="button" disabled>Roll again</button>
           <button id="first" type="button" disabled>First choices</button>
           <label>Model <select id="model"></select></label>
+          <label class="look-control">Next look <select id="look-select"><option value="">Let the idea decide</option></select></label>
         </div>
         <p id="ledger"></p>
-        <label class="look-control">Next look <select id="look-select"><option value="">Let the idea decide</option></select></label>
-        <details id="layer-lab" open>
+        <div id="sheet" aria-live="polite"></div>
+        <details id="layer-lab">
           <summary>Layer lab <span>Generative SVG</span></summary>
           <div class="layer-body">
             <p class="layer-intro">Your idea chooses the vector sheets automatically. Fine-tune them here, or branch from Vector composition in the decision tree.</p>
@@ -68,11 +81,6 @@
             <div id="trace-list"></div>
           </div>
         </details>
-        <div class="library-launch">
-          <div><p class="eyebrow">A growing inventory of possibilities</p><p id="catalogue-count"></p></div>
-          <div class="library-actions"><button id="browse" type="button">Explore library</button><button id="invent" type="button">Invent an idea</button></div>
-        </div>
-        <div id="sheet" aria-live="polite"></div>
       </section>
     </main>
     <dialog id="library" aria-labelledby="library-title">

@@ -12,6 +12,9 @@ import { loopMoves, recordLoop, showLoop } from './loop';
 import { installTraces } from './traces';
 import { composePortrait } from './portrait';
 import { MAX_IDEA_CHARACTERS } from '../engine/decision-limits';
+import { announce } from '../engine/activity';
+import { installActivity } from './activity';
+import { installPrompt } from './prompt';
 
 const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
 const frame = $('.frame');
@@ -40,6 +43,14 @@ function labelOf(model: string): string {
 }
 const stage = new Stage($<HTMLCanvasElement>('#stage'));
 const layers = installLayers(() => showPrint(true));
+const activity = installActivity($('#activity'));
+installPrompt($<HTMLFormElement>('#ask'), ideaInput);
+
+/** The page is blank but for the prompt until an idea is typed; then it thinks, builds, and is ready or has failed. */
+type State = 'idle' | 'thinking' | 'building' | 'ready' | 'failed';
+function setState(state: State) {
+  document.body.dataset.state = state;
+}
 let conjuring: Conjuring | null = null;
 let roll = 0;
 /** Answers pinned by branching in the decision tree, kept for the current idea. */
@@ -151,6 +162,8 @@ async function conjure(temperature: number) {
   $<HTMLButtonElement>('#save-series').hidden = true;
   loopBlob = null;
   void showLoop(null);
+  announce({ type: 'begin', idea: conjuring.idea });
+  setState('thinking');
   try {
     say(offline || studying ? 'Choosing a free study…' : 'Asking the model…');
     const started = performance.now();
@@ -160,19 +173,29 @@ async function conjure(temperature: number) {
     if (control.signal.aborted) return;
     const decided = performance.now();
     say(`Decided in ${seconds(decided - started)}. Building ${plan.cast.length + 1} components…`);
+    setState('building');
+    if (!document.body.classList.contains('scened')) {
+      document.body.classList.add('scened');
+      // The first picture of the visit: bring it into view as it is built.
+      requestAnimationFrame(() => $('.stage').scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    }
+    announce({ type: 'step', stage: 'build', title: 'Build', detail: `${plan.world.entry.title} and ${plan.cast.length} thing${plan.cast.length === 1 ? '' : 's'}` });
     const reports = await stage.mount(plan);
     if (control.signal.aborted) return;
     const built = performance.now();
+    announce({ type: 'step', stage: 'build', title: 'Build', detail: `${reports.filter((report) => !report.error).length} of ${reports.length} built in ${built - decided < 1000 ? `${Math.round(built - decided)} ms` : seconds(built - decided)}`, done: true });
     renderSheet(plan, reports, []);
     showTree(plan, reports, []);
     // Painted faces draw over the first few frames; let them land before the frame is captured.
     await new Promise((resolve) => setTimeout(resolve, 500));
     say(`Built in ${seconds(built - decided)}. Printing…`);
+    announce({ type: 'step', stage: 'print', title: 'Print', detail: plan.look ? `developing as ${plan.look.entry.title}` : 'the scene as it stands' });
     const printStarted = performance.now();
     // Capture identity for vector placement before a print's async treatment lets the scene move.
     const layerCapture = stage.capture();
     const result = await stage.develop(control.signal, layerCapture);
     if (control.signal.aborted) return;
+    announce({ type: 'step', stage: 'print', title: 'Print', detail: result ? `${plan.look?.entry.title ?? 'printed'}${result.notes.length ? `: ${result.notes.join(', ')}` : ''} · ${seconds(performance.now() - printStarted)}` : 'the scene as it stands', done: true });
     if (result) {
       printCanvas.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(result.pixels), FRAME_SIZE, FRAME_SIZE), 0, 0);
       printCanvas.dataset.ready = 'true';
@@ -191,6 +214,7 @@ async function conjure(temperature: number) {
     // A portrait: the hero alone, reframed tight and redrawn by the look, then joined with the scene.
     if (galleryPrint && kind === 'portrait' && plan.cast.length) {
       say(`${timing} Painting a portrait of ${plan.cast[0].entry.title}\u2026`);
+      announce({ type: 'step', stage: 'portrait', title: 'Portrait', detail: `of ${plan.cast[0].entry.title}` });
       const scenePrint = galleryPrint;
       const shot = await stage.portrait(plan, control.signal);
       if (control.signal.aborted) return;
@@ -213,6 +237,7 @@ async function conjure(temperature: number) {
         showSeries(images, 'portrait');
         $<HTMLButtonElement>('#save-series').hidden = false;
         say(`${timing} A portrait of ${plan.cast[0].entry.title}, the scene ${blend === 'beside' ? 'beside it' : blend}.`);
+        announce({ type: 'step', stage: 'portrait', title: 'Portrait', detail: `${plan.cast[0].entry.title}, the scene ${blend === 'beside' ? 'beside it' : blend}`, done: true });
       }
     }
     const shortName = labelOf;
@@ -235,6 +260,7 @@ async function conjure(temperature: number) {
         for (let at = 1; at < plates.length; at++) {
           let reader: Conjuring;
           let title = plates[at].title;
+          announce({ type: 'step', stage: 'plates', title: 'Series', detail: `plate ${at + 1} of ${plates.length}, ${kind === 'critics' ? `a second critic, ${shortName(critic!)}` : kind === 'opposite' ? 'the exact opposite' : 'passed on like a game of telephone'}` });
           if (kind === 'critics') {
             say(`${timing} Asking a second critic, ${shortName(critic!)}…`);
             reader = new Conjuring(plan.idea, { ...conjuring.options, model: critic! });
@@ -262,6 +288,7 @@ async function conjure(temperature: number) {
         for (let at = 0; at < plates.length; at++) {
           if (at === primary) continue;
           say(`${timing} Printing plate ${at + 1} of ${plates.length}, ${plates[at].title}…`);
+          announce({ type: 'step', stage: 'plates', title: 'Series', detail: `plate ${at + 1} of ${plates.length}, ${plates[at].title}` });
           const platePlan = await conjuring.plan({ temperature, roll, force, plate: at });
           if (control.signal.aborted) return;
           const plateTitle = kind === 'styles' ? platePlan.look?.entry.title ?? plates[at].title : plates[at].title;
@@ -276,16 +303,21 @@ async function conjure(temperature: number) {
       showSeries(images, kind);
       $<HTMLButtonElement>('#save-series').hidden = false;
       say(`${timing} ${plates.length} plates printed as ${kind}.`);
+      announce({ type: 'step', stage: 'plates', title: 'Series', detail: `${plates.length} plates as ${kind}`, done: true });
     }
     // A moving print: the live scene captured frame by frame while its things move.
     let loopData: string | null = null;
     if (galleryPrint && kind === 'loop') {
       if (!loopMoves(stage, plan)) say(`${timing} Nothing in the picture moves, so the loop stays a still plate.`);
       else {
-        loopBlob = await recordLoop(stage, plan, control.signal, (index) => say(`${timing} Recording the loop, frame ${index + 1}…`));
+        loopBlob = await recordLoop(stage, plan, control.signal, (index) => {
+          say(`${timing} Recording the loop, frame ${index + 1}…`);
+          announce({ type: 'step', stage: 'loop', title: 'Loop', detail: `frame ${index + 1}` });
+        });
         if (control.signal.aborted) return;
         loopData = await showLoop(loopBlob);
         say(loopBlob ? `${timing} A moving print of ${Math.round(loopBlob.size / 1024)} kB.` : `${timing} This browser cannot record a loop.`);
+        announce({ type: 'step', stage: 'loop', title: 'Loop', detail: loopBlob ? `a moving print of ${Math.round(loopBlob.size / 1024)} kB` : 'this browser cannot record one', done: true });
       }
     }
     const { usage } = conjuring;
@@ -303,6 +335,8 @@ async function conjure(temperature: number) {
       force,
       scene: $<HTMLCanvasElement>('#stage'), print: galleryPrint, series, readings, loop: loopData,
     });
+    activity.finish();
+    setState('ready');
     document.title = 'conjure-ready';
     $('#scene-caption').textContent = `${plan.world.entry.title} · ${plan.scale} · ${reports.filter((report) => !report.error && report.id.startsWith('things/')).length} things`;
     $<HTMLButtonElement>('#save-picture').disabled = false;
@@ -310,6 +344,8 @@ async function conjure(temperature: number) {
     if (control.signal.aborted) return;
     console.error(error);
     say(error instanceof Error ? error.message : String(error), true);
+    activity.fail();
+    setState('failed');
     document.title = 'conjure-failed';
   } finally {
     setTreeWaiting(false);
@@ -379,6 +415,11 @@ installLibrary({
   study(idea, study) { ideaInput.value = idea; void begin(idea, 1, study); },
 });
 
+// On the blank page the model and look menus wait behind one word.
+$('#settings').addEventListener('click', () => {
+  const open = document.body.classList.toggle('settings');
+  $('#settings').setAttribute('aria-expanded', String(open));
+});
 $<HTMLFormElement>('#ask').addEventListener('submit', (event) => {
   event.preventDefault();
   const idea = ideaInput.value.trim();
@@ -434,8 +475,14 @@ if (!offline) {
     const { configured, models, defaultModel, providers } = (await response.json()) as { configured: boolean; models: string[]; defaultModel: string | null; providers?: { id: string; title: string }[] };
     for (const provider of providers ?? []) providerTitles.set(provider.id, provider.title);
     for (const model of models) modelSelect.append(new Option(labelOf(model), model, model === defaultModel, model === defaultModel));
-    if (!configured) say('No decision provider is configured. Add an API key (TYPESAFE_API_KEY, OPENROUTER_API_KEY, NANO_GPT_API_KEY or CONJURE_API_KEY) to the .env file and restart the server.', true);
-  } else say('The decision server is not running. Start it with npm run dev.', true);
+    if (!configured) {
+      say('No decision provider is configured. Add an API key (TYPESAFE_API_KEY, OPENROUTER_API_KEY, NANO_GPT_API_KEY or CONJURE_API_KEY) to the .env file and restart the server.', true);
+      setState('failed');
+    }
+  } else {
+    say('The decision server is not running. Start it with npm run dev.', true);
+    setState('failed');
+  }
 }
 
 // ?idea=…&t=1&roll=2 conjures on load, for screenshots and tests.
@@ -451,6 +498,7 @@ if (preset) {
   ));
   if (query.has('world') && !forcedWorld) {
     say('That world is not in the catalogue. Choose a world from Explore library.', true);
+    setState('failed');
     document.title = 'conjure-failed';
   } else void begin(preset, Number(query.get('t') ?? 0), forcedWorld ? { world: forcedWorld.id, cast } : undefined);
 }

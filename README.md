@@ -58,6 +58,16 @@ ateliers repository, which is not part of this one. Link it as `./ateliers` (or 
 and of the typecheck, and nothing else changes. To serve other machines set `CONJURE_HOST=0.0.0.0` and `CONJURE_ALLOWED_HOSTS` to the
 hostnames they will use.
 
+The page opens blank but for one line of text in the middle, a cursor blinking in it; after a
+moment a hint and three links (library, invent an idea, gallery) fade in under it. Typing an idea and
+pressing Enter moves the line to the top, and the studio's work is drawn in beneath it as it happens:
+one row per decision, pulsing while its questions are out with the model and settling into the answer
+in words (the direction, the mood, the setting, the look, the cast thing by thing, each component's
+own questions, the vector sheets), then the build, the print and any portrait, series or loop, with a
+hairline creeping along above and a count of seconds, questions and requests below. The picture
+appears as soon as the scene is built and the print develops over it. Everything else, the rolls, the
+model menu, the decision tree, the layer lab and the trace library, sits under the picture.
+
 **Explore library** searches scene ideas, worlds and things at all seven scales. **Study
 this component** builds a free random variation, using Graphic press unless **Next look**
 selects another treatment; the ledger
@@ -133,9 +143,9 @@ limit; the complete SVG request is checked against the actual server schema in t
 | --- | --- |
 | `kit/` | The contract and helpers components are written against |
 | `components/` | Worlds, things, looks and directions, one folder each, discovered automatically |
-| `engine/` | Catalogue, director (what to ask), oracle (asking), settle (picking), stage, capture |
+| `engine/` | Catalogue, director (what to ask), oracle (asking), settle (picking), stage, capture, activity (what the page shows while it happens) |
 | `server/` | Adds the API key of the chosen provider, records spending (and caps it if a budget is set), returns probabilities |
-| `src/` | The page: prompt, stage, decision sheet |
+| `src/` | The page: prompt, live activity feed, stage, decision tree |
 | `dev/` | Conformance check, treatment contact sheet, scaffold, screenshot helpers, browser checks |
 | `types/` | Ambient types for the Vite environment |
 | `public/atelier/` | The Atelier rendering kit's runtime, served unmodified |
@@ -420,6 +430,8 @@ npm run check:directions # the direction tour, pins and finishes in the browser;
 node dev/presentation-check.mjs hours   # framing and a series (hours|strip|approach|plate); mocked model, nothing saved
 node dev/replay-check.mjs <gallery-entry.json> <out> '{"direction::accent":"detail"}'   # replay a saved generation with every answer pinned, plus extra pins; mocked model
 node dev/otherworld-sheet.mjs <gallery-entry.json> .data/otherworld/name own 0.5         # the same generation through each otherworld effect; mocked model
+node dev/laps.mjs ideas.txt --parallel 2        # conjure a spread of ideas with the real model and keep what each decided; asks and spends like the studio
+node dev/laps.mjs --tally .data/laps/<run>      # what recurred across that spread: directions, settings, looks, cast, finishes; free
 ```
 
 `/dev/looks.html` draws every Atelier treatment on one scene. `node dev/snap.mjs "<idea>"

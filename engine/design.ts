@@ -198,7 +198,7 @@ export class DesignDecisions {
       verdicts = consult(
         this.idea,
         designBrief(look, mood, (brief) => stanceBrief(brief, this.options), this.direction),
-        { ...DESIGN_QUESTIONS, ...traceSheetQuestions(traces) }, this.usage, this.options,
+        { ...DESIGN_QUESTIONS, ...traceSheetQuestions(traces) }, this.usage, { ...this.options, about: 'composition' },
       );
       this.#verdicts.set(key, verdicts);
     }
