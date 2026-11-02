@@ -41,6 +41,10 @@ const pad = (value: number, width = 2) => String(value).padStart(width, '0');
 let sequence = 0;
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
+/** Records are <id>.json; the light copy beside each one is <id>.summary.json and is not an entry itself. */
+const isRecord = (name: string) => name.endsWith('.json') && !name.endsWith('.summary.json');
+/** The listing's view of a record: everything but the decision tree, which is fetched with the entry. */
+export const summaryOf = ({ rulings: _rulings, nearly: _nearly, ...summary }: Record<string, unknown>) => summary;
 const ID = /^[a-z0-9-]+$/;
 const digest = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
 
@@ -50,7 +54,7 @@ const knownPictures = () => pictures ??= (async () => {
   const known = new Map<string, { day: string; id: string }>();
   const days = (await readdir(ROOT).catch(() => [] as string[])).filter((name) => DAY.test(name)).sort();
   for (const day of days) {
-    const names = (await readdir(join(ROOT, day))).filter((name) => name.endsWith('.json')).sort();
+    const names = (await readdir(join(ROOT, day))).filter(isRecord).sort();
     for (const name of names) {
       const id = name.slice(0, -'.json'.length);
       const bytes = await readFile(join(ROOT, day, `${id}.print.jpg`)).catch(() => readFile(join(ROOT, day, `${id}.scene.jpg`)).catch(() => null));
@@ -95,8 +99,11 @@ gallery.post('/api/gallery', express.json({ limit: '32mb' }), async (request, re
     if (print) await writeFile(join(folder, `${id}.print.jpg`), Buffer.from(print.slice(JPEG.length), 'base64'));
     if (series) await writeFile(join(folder, `${id}.series.jpg`), Buffer.from(series.slice(JPEG.length), 'base64'));
     if (loop) await writeFile(join(folder, `${id}.loop.webm`), Buffer.from(loop.slice(WEBM.length), 'base64'));
-    // The record is written last: an entry is listed only once its pictures exist.
-    await writeFile(join(folder, `${id}.json`), JSON.stringify({ id, day, savedAt: now.toISOString(), idea, hasPrint: print !== null, hasSeries: !!series, hasLoop: !!loop, ...record }));
+    // The server's own fields come after the record, so a client cannot forge an id, a day or a time.
+    const entry = { ...record, id, day, savedAt: now.toISOString(), idea, hasPrint: print !== null, hasSeries: !!series, hasLoop: !!loop };
+    await writeFile(join(folder, `${id}.summary.json`), JSON.stringify(summaryOf(entry)));
+    // The record is written last: an entry is listed only once its pictures and summary exist.
+    await writeFile(join(folder, `${id}.json`), JSON.stringify(entry));
     response.json({ id, day });
   } catch (error) {
     pictures = null;
@@ -114,7 +121,7 @@ gallery.get('/api/gallery', async (request, response) => {
     let skipped = 0;
     let total = 0;
     for (const day of days) {
-      const names = (await readdir(join(ROOT, day))).filter((name) => name.endsWith('.json')).sort().reverse();
+      const names = (await readdir(join(ROOT, day))).filter(isRecord).sort().reverse();
       total += names.length;
       for (const name of names) {
         if (skipped < offset) {
@@ -122,8 +129,14 @@ gallery.get('/api/gallery', async (request, response) => {
           continue;
         }
         if (entries.length >= limit) break;
-        // The listing stays light: the decision tree is fetched with the entry itself.
-        const { rulings: _rulings, nearly: _nearly, ...summary } = JSON.parse(await readFile(join(ROOT, day, name), 'utf8'));
+        // The listing stays light: it reads the summary beside each record, making it once for older entries.
+        const id = name.slice(0, -'.json'.length);
+        const summaryPath = join(ROOT, day, `${id}.summary.json`);
+        let summary = await readFile(summaryPath, 'utf8').then((text) => JSON.parse(text) as Record<string, unknown>).catch(() => null);
+        if (!summary) {
+          summary = summaryOf(JSON.parse(await readFile(join(ROOT, day, name), 'utf8')));
+          await writeFile(summaryPath, JSON.stringify(summary)).catch(() => undefined);
+        }
         entries.push(summary);
       }
     }
@@ -172,7 +185,9 @@ gallery.post('/api/gallery/entry/:day/:id/window', express.json({ limit: '12mb' 
     const recordPath = join(ROOT, day, `${id}.json`);
     const record = JSON.parse(await readFile(recordPath, 'utf8'));
     await writeFile(join(ROOT, day, `${id}.window.jpg`), Buffer.from(parsed.data.image.slice(JPEG.length), 'base64'));
-    await writeFile(recordPath, JSON.stringify({ ...record, hasWindow: true, window: parsed.data.view }));
+    const updated = { ...record, hasWindow: true, window: parsed.data.view };
+    await writeFile(recordPath, JSON.stringify(updated));
+    await writeFile(join(ROOT, day, `${id}.summary.json`), JSON.stringify(summaryOf(updated)));
     response.json({ id, day });
   } catch {
     response.status(404).json({ error: 'That generation is not in the gallery.' });

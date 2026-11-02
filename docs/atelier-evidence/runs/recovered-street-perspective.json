@@ -26,7 +26,7 @@
     "lifecycle": true,
     "geometry": true,
     "timeout": 120000,
-    "out": "/home/siah/Documents/Codex/2026-10-30/task/evidence/recovered-scenes"
+    "out": "<task>/evidence/recovered-scenes"
   },
   "scenes": [
     {

@@ -4,11 +4,11 @@ This is the pre-change source audit. Runtime validation and final implementation
 
 ## Provenance
 
-- Authoritative local source export: `/home/siah/code/jev/art/atelier-source.zip`, SHA-256 `d08d3876f689c9e845456d2923fcf61c1aca89dd8f80ca39932331d7c1b1cabe`. Its changelog begins with Render recovery and geometry portability (after Interior lattice / Study 84).
-- Every one of its **172 dist files is byte-identical** to `/home/siah/code/jev/conjure/public/atelier`; no missing or differing files. Source archive has 1,061 entries.
+- Authoritative local source export: `~/code/jev/art/atelier-source.zip`, SHA-256 `d08d3876f689c9e845456d2923fcf61c1aca89dd8f80ca39932331d7c1b1cabe`. Its changelog begins with Render recovery and geometry portability (after Interior lattice / Study 84).
+- Every one of its **172 dist files is byte-identical** to `<repo>/public/atelier`; no missing or differing files. Source archive has 1,061 entries.
 - Imported actual registries confirm **84 image studies and 26 3D material definitions**. The archive also contains three composition finishes: finite lenses, ink completed mix, fluted glass.
 - Authoritative hosted v83 source fetched by the coordinating parent at commit `56f12f27a0a69ee44443fb3fcea2334073afb586` in `../atelier-authoritative`. Runtime modules are identical to the archive; differences are packaging/handoff files only (`source.zip`, `handoff-source.json`, `style-handoff-dialog.js`, `index.html`). Site version number and study count are distinct.
-- `/home/siah/code/three` is a different collection of individual 3D ateliers; Conjure links it as `ateliers`. It is not the Rendering Studies catalogue.
+- `~/code/three` is a different collection of individual 3D ateliers; Conjure links it as `ateliers`. It is not the Rendering Studies catalogue.
 
 ## Baseline integration
 

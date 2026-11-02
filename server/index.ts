@@ -2,6 +2,7 @@ import express from 'express';
 import { resolve } from 'node:path';
 import { createServer } from 'node:http';
 import { BudgetLedger } from './budget';
+import { allowedHosts, apiGuard } from './guard';
 import { gallery } from './gallery';
 import { traces } from './traces';
 import { decideSchema } from './decision-schema';
@@ -23,16 +24,22 @@ const configured = providers.configured.length > 0;
 if (configured) console.log(`Decision providers: ${providers.configured.map((provider) => `${provider.title} (${provider.models.length} models)`).join(', ')}. Default ${providers.defaultModel()}.`);
 else console.log(`No decision provider is configured: set one of ${Object.values(PROVIDERS).map((provider) => provider.keyEnv).join(', ')} in .env. The studio still works offline (?offline).`);
 
-// Spending is always recorded; it is only capped when CONJURE_BUDGET_USD names a dollar amount.
+// Spending is always recorded and capped at $5 of recorded total unless CONJURE_BUDGET_USD names
+// another amount, or none for no cap. The ledger is cumulative: raise the cap or reset the file as it fills.
+const DEFAULT_BUDGET_USD = 5;
 const budgetSetting = process.env.CONJURE_BUDGET_USD?.trim();
-const ledger = new BudgetLedger(
-  resolve(process.env.CONJURE_LEDGER_PATH ?? '.data/usage.json'),
-  !budgetSetting || /^(none|off|unlimited)$/i.test(budgetSetting) ? null : Number(budgetSetting),
-);
+const budget = !budgetSetting ? DEFAULT_BUDGET_USD : /^(none|off|unlimited)$/i.test(budgetSetting) ? null : Number(budgetSetting);
+const ledger = new BudgetLedger(resolve(process.env.CONJURE_LEDGER_PATH ?? '.data/usage.json'), budget);
+console.log(budget === null ? 'Spending is recorded without a cap.' : `Spending is capped at $${budget} of recorded total (CONJURE_BUDGET_USD); $${ledger.snapshot().spentUsd.toFixed(2)} so far.`);
 
 const app = express();
 const httpServer = createServer(app);
 app.disable('x-powered-by');
+// The key sits behind these routes, so they answer only to this machine's own names.
+const hosts = allowedHosts(process.env);
+app.use(['/api', '/gallery'], apiGuard(hosts));
+const everywhere = ['0.0.0.0', '::', '[::]'].includes(process.env.CONJURE_HOST ?? '');
+console.log(`The API answers to ${[...hosts].join(', ')}${everywhere && !process.env.CONJURE_ALLOWED_HOSTS ? '; other machines need CONJURE_ALLOWED_HOSTS' : ''}.`);
 // The gallery takes whole pictures, so it parses its own larger bodies before the small default.
 app.use(gallery);
 app.use(traces);

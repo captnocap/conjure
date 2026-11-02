@@ -7,8 +7,8 @@ Final installed aggregate tests: **10,248/10,248 passed**. The complete before/a
 ## Authoritative source and baseline
 
 - Hosted source: Atelier Rendering Studies v83, authoritative checkout commit `56f12f27a0a69ee44443fb3fcea2334073afb586`. Version 83 is a Site version; there are 84 registered studies.
-- Local source export: `/home/siah/code/jev/art/atelier-source.zip`, SHA-256 `d08d3876f689c9e845456d2923fcf61c1aca89dd8f80ca39932331d7c1b1cabe`. All 172 runtime dist files matched the original Conjure vendor tree. The authoritative v83 runtime also matches this archive; its differing files are packaging/handoff metadata, not study algorithms.
-- The pre-change inventory found 48 selectable studies with no identified missing inputs, 24 selectable but partial studies, and 12 excluded studies. These were missing integration rather than missing source files. `/home/siah/code/three` is a different 3D Atelier collection.
+- Local source export: `~/code/jev/art/atelier-source.zip`, SHA-256 `d08d3876f689c9e845456d2923fcf61c1aca89dd8f80ca39932331d7c1b1cabe`. All 172 runtime dist files matched the original Conjure vendor tree. The authoritative v83 runtime also matches this archive; its differing files are packaging/handoff metadata, not study algorithms.
+- The pre-change inventory found 48 selectable studies with no identified missing inputs, 24 selectable but partial studies, and 12 excluded studies. These were missing integration rather than missing source files. `~/code/three` is a different 3D Atelier collection.
 - Provenance evidence: [verified Site version, source commit and exact archive differences](atelier-evidence/source/provenance.json), [original 84-study / 26-material inventory](atelier-evidence/source/inventory.json), [baseline audit and 172-file comparison](atelier-evidence/source/inventory.md), and [baseline catalogue log](atelier-evidence/catalogue/baseline.log). The ledger below records adaptations to that verified source; it does not claim the adapted source files remain byte-identical.
 
 ## Shared runtime and capture dependencies

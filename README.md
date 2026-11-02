@@ -58,7 +58,8 @@ Six things (chair, tree, robot, staircase, street sign, hover-car) wrap builders
 ateliers repository, which is not part of this one. Link it as `./ateliers` (or set
 `CONJURE_ATELIERS_DIR`) and they join the catalogue; without it they are left out of the catalogue
 and of the typecheck, and nothing else changes. To serve other machines set `CONJURE_HOST=0.0.0.0` and `CONJURE_ALLOWED_HOSTS` to the
-hostnames they will use.
+hostnames they will use. The `/api` and `/gallery` routes answer only to loopback and those names, so
+neither a stranger on the network nor a DNS-rebinding page can spend the key.
 
 The page opens blank but for one line of text in the middle, a cursor blinking in it; after a
 moment a hint and three links (library, invent an idea, gallery) fade in under it. Typing an idea and
@@ -508,9 +509,9 @@ full six-roll check and visual review.
 
 ## Spending
 
-Every request's cost is recorded in `.data/usage.json` (`/api/status` reports the total). There is
-no cap unless `CONJURE_BUDGET_USD` names a dollar amount; the server then refuses requests once the
-recorded total reaches it. OpenRouter and NanoGPT report each request's cost; TypeSafe's own API
+Every request's cost is recorded in `.data/usage.json` (`/api/status` reports the total). The cap is
+$5 of recorded total unless `CONJURE_BUDGET_USD` names another amount, or `none` for no cap; the server
+refuses requests once the ledger reaches it, so raise it or reset the ledger as the total grows. OpenRouter and NanoGPT report each request's cost; TypeSafe's own API
 reports tokens only, so its cost is computed at `CONJURE_INPUT_USD_PER_MILLION` (Jev's published
 $0.042) and counted as an estimate in the ledger. An idea's cost
 depends on the model, catalogue size and selected details; the ledger reports

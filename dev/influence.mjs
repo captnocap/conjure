@@ -29,7 +29,7 @@ const units = new Map(); // family|idea → { idea, family, versions, days, reco
 for (const day of readdirSync(root).sort()) {
   let names;
   try { names = readdirSync(join(root, day)); } catch { continue; }
-  for (const name of names.filter((n) => n.endsWith('.json'))) {
+  for (const name of names.filter((n) => n.endsWith('.json') && !n.endsWith('.summary.json'))) {
     let record;
     try { record = JSON.parse(readFileSync(join(root, day, name), 'utf8')); } catch { continue; }
     // Studies and offline prints settle on even draws, not on the model.

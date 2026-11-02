@@ -15,7 +15,7 @@ const duplicates = [];
 const days = (await readdir(root)).filter((name) => /^\d{4}-\d{2}-\d{2}$/.test(name)).sort();
 for (const day of days) {
   const names = await readdir(join(root, day));
-  for (const id of names.filter((name) => name.endsWith('.json')).map((name) => name.slice(0, -5)).sort()) {
+  for (const id of names.filter((name) => name.endsWith('.json') && !name.endsWith('.summary.json')).map((name) => name.slice(0, -5)).sort()) {
     const bytes = await readFile(join(root, day, `${id}.print.jpg`)).catch(() => readFile(join(root, day, `${id}.scene.jpg`)).catch(() => null));
     if (!bytes) continue;
     const hash = createHash('sha256').update(bytes).digest('hex');
