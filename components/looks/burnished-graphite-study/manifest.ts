@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Burnished graphite study',summary:'Fine pencil hatching, layered grey modelling, erased lights and silvery burnished darks. Precise object studies, measured architecture, softly drawn portraits and polished monochrome illustrations.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'painting'});

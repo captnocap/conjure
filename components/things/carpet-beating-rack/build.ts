@@ -135,6 +135,38 @@ export default defineThing({
       satchel: 'A school satchel dumped on the ground.',
     }),
     snow: score('How much snow is on the ground around it?', ['Bare mud and puddles', 'Patchy grey slush', 'Trampled snow', 'Deep fresh snow']),
+    frameSpan: score('How wide is the rack?', ['Narrow rack for a bedside rug', 'An ordinary courtyard span', 'Wide bars for a full room carpet']),
+    frameHeight: score('How high are the upper bars?', ['An adult can lean on the bar', 'An overhead carpet bar', 'A tall rack reached with outstretched arms']),
+    footing: choice('What anchors the upright posts?', {
+      concrete: 'Round concrete collars poured around the posts.',
+      plates: 'Square steel base plates bolted into the ground.',
+      blocks: 'Broad rectangular concrete footings stand above the ground.',
+      brick: 'Low square brick plinths surround the post bases.',
+    }),
+    rugFastening: choice('If a rug is hanging, how is it kept from slipping?', {
+      loose: 'It simply hangs over the bar under its own weight.',
+      pegs: 'Two big wooden clamps grip its fold.',
+      straps: 'Two dark webbing straps loop over the folded rug.',
+      cord: 'Short cords tie the two edges around the bar.',
+    }),
+    rugEdge: choice('If a rug is hanging, what trims its free edge?', {
+      plain: 'A plain bound edge.',
+      short: 'A row of short pale fringe strands.',
+      tassels: 'Widely spaced long knotted tassels.',
+      braid: 'A thick braided binding along the bottom edge.',
+    }),
+    toolRest: choice('Where can cleaning tools be set down?', {
+      none: 'There is no storage attached to the rack.',
+      hooks: 'Three small S-hooks hang from the right upright.',
+      shelf: 'A short wooden shelf is braced to the right upright.',
+      box: 'An open timber cleaning box sits beside the right post.',
+    }),
+    beaterHead: choice('If the carpet beater is present, what shape is its woven head?', {
+      pretzel: 'The familiar looped wicker pretzel.',
+      oval: 'An oval wire frame crossed with wicker strands.',
+      heart: 'Two broad heart-shaped lobes joined above the handle.',
+      lattice: 'A rectangular paddle with an open crisscross weave.',
+    }),
   },
 
   build(a, context) {
@@ -158,18 +190,26 @@ export default defineThing({
     };
     const elbow = (at: P3) => s.ball([R * 1.15, R * 1.15, R * 1.15], at, paint, 10);
 
-    const tall = 2.05 + random() * 0.1, half = a.frame === 'twin' ? 0.95 : 1.15;
+    const tall = mix(1.8, 2.55, a.frameHeight) + random() * 0.03, half = mix(0.9, 1.45, a.frameSpan);
     const sag = mood.wear * 0.05;
     const bars: { x0: number; x1: number; y: number }[] = [];
     const posts: P3[] = [];
-    const post = (x: number, h: number) => { pipe([x, -0.04, 0], [x, h, 0]); elbow([x, h, 0]); posts.push([x, 0, 0]); s.cylinder(0.09, 0.11, 0.05, [x, 0.02, 0], s.material('#9b9a94'), 10); };
+    const post = (x: number, h: number) => {
+      pipe([x, -0.04, 0], [x, h, 0]); elbow([x, h, 0]); posts.push([x, 0, 0]);
+      if (a.footing === 'concrete') s.cylinder(0.09, 0.11, 0.05, [x, 0.02, 0], s.material('#9b9a94'), 10);
+      else if (a.footing === 'plates') {
+        s.box([0.25, 0.025, 0.25], [x, 0.0125, 0], paint);
+        for (const dx of [-0.085, 0.085]) for (const z of [-0.085, 0.085]) s.cylinder(0.016, 0.016, 0.022, [x + dx, 0.035, z], rust, 6);
+      } else if (a.footing === 'blocks') s.box([0.33, 0.15, 0.35], [x, 0.075, 0], s.material('#9b9a94'));
+      else for (const dx of [-0.11, 0.11]) for (const z of [-0.085, 0.085]) s.box([0.2, 0.085, 0.15], [x + dx, 0.0425, z], s.material('#9a6551'));
+    };
     const bar = (x0: number, x1: number, y: number) => {
       const mid = (x0 + x1) / 2;
       pipe([x0, y, 0], [mid, y - sag, 0]); pipe([mid, y - sag, 0], [x1, y, 0]);
       bars.push({ x0, x1, y: y - sag / 2 });
     };
     if (a.frame === 'twin') {
-      const x0 = -1.75, x1 = 0.15, x2 = 1.75, low = 1.35;
+      const x0 = -half * 1.5, x1 = half * 0.13, x2 = half * 1.5, low = tall * 0.64;
       post(x0, tall); post(x1, tall); post(x2, low);
       bar(x0, x1, tall); bar(x1, x2, low);
     } else {
@@ -181,7 +221,7 @@ export default defineThing({
     const centre = (top.x0 + top.x1) / 2, span = top.x1 - top.x0;
 
     // Ground: a trampled oval, darker and muddier where the snow is thin.
-    const groundR = (a.frame === 'twin' ? 2.05 : 1.45);
+    const groundR = a.frame === 'twin' ? half * 1.5 + 0.3 : half + 0.3;
     const earth = new THREE.Color('#5d5246').lerp(new THREE.Color('#dfe3e6'), Math.min(1, a.snow * 1.25));
     const pad = s.cylinder(groundR, groundR + 0.08, 0.05, [0, -0.02, -0.15], new THREE.MeshStandardMaterial({ color: earth, roughness: 1 }), 40);
     pad.scale.z = 0.72;
@@ -219,15 +259,43 @@ export default defineThing({
         heap.position.set(centre + (random() - 0.5) * 0.2, 0.01, 0.3);
         heap.castShadow = heap.receiveShadow = true;
         s.root.add(heap);
+        heap.updateMatrixWorld(true); heap.position.y += 0.005 - new THREE.Box3().setFromObject(heap, true).min.y;
       } else {
         swing = new THREE.Group();
         swing.position.set(0, top.y, 0);
         s.root.add(swing);
         const pair = a.load === 'pair';
-        const front = Math.min(mix(1.0, 1.55, random()), top.y - 0.25);
-        const rug = drape(pair ? width * 0.8 : width, length, front, R + 0.012, rugMat, random() * 6);
+        const front = Math.max(length - Math.PI * (R + 0.012) - top.y + 0.2, Math.min(mix(1.0, 1.55, random()), top.y - 0.25));
+        const rugPhase = random() * 6;
+        const rug = drape(pair ? width * 0.8 : width, length, front, R + 0.012, rugMat, rugPhase);
         rug.position.x = centre + (pair ? -span * 0.18 : (random() - 0.5) * 0.2);
         swing.add(rug);
+        const actualWidth = pair ? width * 0.8 : width;
+        const edgeMaterial = s.material('#d9c8a4', { roughness: 1 });
+        const edgeZ = (x: number) => R + 0.012 + 0.035 * front + 0.03 * Math.sin(x * 6 + rugPhase + front * 2.5) * Math.min(front, 1);
+        if (a.rugEdge === 'braid') {
+          const points = Array.from({length: 11}, (_, i) => { const x = -actualWidth / 2 + i * actualWidth / 10; return [rug.position.x + x, -front, edgeZ(x)] as P3; });
+          const binding = s.tube(points, 0.012, edgeMaterial); swing.add(binding);
+        } else if (a.rugEdge !== 'plain') {
+          const count = a.rugEdge === 'short' ? 22 : 9, length = a.rugEdge === 'short' ? 0.055 : 0.12;
+          for (let i = 0; i < count; i++) {
+            const x = -actualWidth / 2 + i * actualWidth / (count - 1);
+            const z = edgeZ(x);
+            const strand = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.006, length, 6), edgeMaterial);
+            strand.position.set(rug.position.x + x, -front - length / 2, z); swing.add(strand);
+          }
+        }
+        if (a.rugFastening !== 'loose') {
+          for (const side of [-1, 1]) {
+            const x = rug.position.x + side * actualWidth * 0.37;
+            if (a.rugFastening === 'pegs') {
+              const clamp = s.box([0.045, 0.16, 0.085], [x, top.y - 0.015, 0], s.material('#ad915e'));
+              clamp.rotation.z = side * 0.06;
+            } else if (a.rugFastening === 'straps') {
+              s.tube([[x, top.y - 0.2, 0.06], [x, top.y + 0.055, 0.06], [x, top.y + 0.065, -0.06], [x, top.y - 0.2, -0.06]], 0.012, s.material('#68604b'));
+            } else s.tube([[x, top.y - 0.15, 0.06], [x, top.y + 0.05, 0.055], [x, top.y + 0.055, -0.055], [x, top.y - 0.15, -0.06]], 0.005, s.material('#ded2ac'));
+          }
+        }
         if (pair) {
           const other = (Object.keys(PATTERNS) as (keyof typeof PATTERNS)[]).filter((k) => k !== a.pattern && k !== 'runner' && k !== 'deer');
           const matTexture = rugTexture(other[Math.floor(random() * other.length)], random, fade);
@@ -244,7 +312,17 @@ export default defineThing({
       const b = new Sculpture(context);
       const wicker = b.material('#c79a55', { roughness: 0.8 });
       b.rod([0, 0, 0], [0, 0.42, 0], 0.012, wicker);
-      b.tube([[0, 0.4, 0], [-0.1, 0.5, 0.004], [-0.13, 0.62, 0], [-0.06, 0.72, -0.004], [0.05, 0.62, 0.004], [0, 0.52, 0], [-0.05, 0.62, -0.004], [0.06, 0.72, 0.004], [0.13, 0.62, 0], [0.1, 0.5, -0.004], [0, 0.4, 0]], 0.009, wicker);
+      if (a.beaterHead === 'pretzel') b.tube([[0, 0.4, 0], [-0.1, 0.5, 0.004], [-0.13, 0.62, 0], [-0.06, 0.72, -0.004], [0.05, 0.62, 0.004], [0, 0.52, 0], [-0.05, 0.62, -0.004], [0.06, 0.72, 0.004], [0.13, 0.62, 0], [0.1, 0.5, -0.004], [0, 0.4, 0]], 0.009, wicker);
+      else if (a.beaterHead === 'oval') {
+        const ring = b.ring(0.15, 0.008, [0, 0.56, 0], wicker); ring.scale.set(0.8, 1.1, 1);
+        for (const dx of [-0.06, 0, 0.06]) b.rod([dx, 0.56 - Math.sqrt(1 - (dx / 0.12) ** 2) * 0.165, 0], [dx, 0.56 + Math.sqrt(1 - (dx / 0.12) ** 2) * 0.165, 0], 0.005, wicker);
+        b.rod([-0.12, 0.56, 0], [0.12, 0.56, 0], 0.005, wicker);
+      } else if (a.beaterHead === 'heart') b.tube([[0, 0.4, 0], [-0.14, 0.57, 0], [-0.1, 0.71, 0], [0, 0.64, 0], [0.1, 0.71, 0], [0.14, 0.57, 0], [0, 0.4, 0]], 0.009, wicker);
+      else {
+        b.tube([[-0.12, 0.41, 0], [-0.12, 0.71, 0], [0.12, 0.71, 0], [0.12, 0.41, 0], [-0.12, 0.41, 0]], 0.009, wicker);
+        for (const x of [-0.06, 0, 0.06]) b.rod([x, 0.41, 0], [x, 0.71, 0], 0.004, wicker);
+        for (const y of [0.47, 0.53, 0.59, 0.65]) b.rod([-0.12, y, 0], [0.12, y, 0], 0.004, wicker);
+      }
       b.ring(0.03, 0.006, [0, -0.03, 0], wicker);
       for (const y of [0.05, 0.2, 0.38]) b.cylinder(0.016, 0.016, 0.03, [0, y, 0], b.material('#8a6a3a'), 8);
       const g = b.root;
@@ -253,6 +331,21 @@ export default defineThing({
       else if (a.beater === 'leaning') { g.rotation.z = 0.28; g.position.set(px + 0.26, 0.02, 0.06); }
       else { g.rotation.x = Math.PI / 2 - 0.04; g.rotation.z = 0.7 + random(); g.position.set(centre + 0.3 + random() * 0.4, 0.05, 0.75); }
       s.root.add(g);
+      if (a.beater !== 'hung') { g.updateMatrixWorld(true); g.position.y += 0.005 - new THREE.Box3().setFromObject(g, true).min.y; }
+    }
+
+    if (a.toolRest !== 'none') {
+      const x = posts[posts.length - 1][0], wood = s.material('#a18559');
+      if (a.toolRest === 'hooks') for (const y of [0.7, 0.9, 1.1]) s.tube([[x, y + 0.03, -0.035], [x + 0.04, y + 0.06, 0], [x + 0.065, y, 0.04], [x + 0.1, y - 0.03, 0.04], [x + 0.13, y, 0.04]], 0.008, paint);
+      else if (a.toolRest === 'shelf') {
+        s.box([0.45, 0.035, 0.24], [x, 0.8, 0.12], wood);
+        for (const dx of [-0.12, 0.12]) { s.rod([x, 0.5, 0], [x + dx, 0.78, 0.22], 0.012, paint); s.rod([x, 0.78, 0], [x + dx, 0.78, 0.22], 0.012, paint); }
+      } else {
+        const cx = x - 0.35, cz = 0.5;
+        s.box([0.4, 0.025, 0.3], [cx, 0.0175, cz], wood);
+        for (const dx of [-0.19, 0.19]) s.box([0.02, 0.2, 0.3], [cx + dx, 0.13, cz], wood);
+        for (const dz of [-0.14, 0.14]) s.box([0.4, 0.2, 0.02], [cx, 0.13, cz + dz], wood);
+      }
     }
 
     // What a child left behind.
@@ -278,6 +371,7 @@ export default defineThing({
       sl.tube([[-0.16, 0.2, 0.4], [0, 0.03, 0.9], [0.16, 0.2, 0.4]], 0.006, sl.material('#d8cfb8'));
       sl.root.rotation.x = -Math.PI / 2 + 0.3; sl.root.rotation.y = 0.2; sl.root.position.set(lx - 0.05, 0.42, 0.22);
       s.root.add(sl.root);
+      sl.root.updateMatrixWorld(true); sl.root.position.y += 0.005 - new THREE.Box3().setFromObject(sl.root, true).min.y;
     } else if (a.left === 'satchel') {
       const leather = s.material('#7a3f24');
       const bx = lx + 0.4;

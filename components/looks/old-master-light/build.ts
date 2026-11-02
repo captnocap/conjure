@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type Palette, type PaletteRole, choice, clamp01, defineLook, mix, rekey, rekeyOne, score, seeded } from '@conjure/kit';
 
 /**
  * Old master light: the frame repainted in oils, built on light rather than line.
@@ -163,7 +163,7 @@ const LIGHTS = {
     drain: 0,
   },
   candle: {
-    description: 'A single candle or oil lamp close by: a small, deep-orange pool, the dark pressing in all round it.',
+    description: 'A single candle or oil lamp close by: a small, deep, glowing pool, the dark pressing in all round it.',
     colour: '#ffad5c',
     pool: 0.62,
     beam: 0,
@@ -172,7 +172,7 @@ const LIGHTS = {
     drain: 0.1,
   },
   sun: {
-    description: 'Low sun through glass: long slanting shapes of light with crisp edges, everything it touches turned gold.',
+    description: 'Low sun through glass: long slanting shapes of light with crisp edges, everything it touches glowing.',
     colour: '#ffd890',
     pool: 1.3,
     beam: 0.6,
@@ -190,7 +190,7 @@ const LIGHTS = {
     drain: 0.05,
   },
   moon: {
-    description: 'Moonlight through an open shutter: a cold silver light, the colour drained out, the shadows blue-black.',
+    description: 'Moonlight through an open shutter: a cold, pale light, the colour drained out, the shadows nearly black.',
     colour: '#b5c5e0',
     pool: 1.05,
     beam: 0.5,
@@ -203,7 +203,7 @@ const LIGHTS = {
 const PALETTES = {
   earth: {
     description:
-      'The old-master earth palette: lead white, Naples yellow, ochres, siennas, vermilion, madder, umbers and bone black, with only a greyed smalt for blue; everything pulled toward warm brown and gold.',
+      'The old-master earth palette: lead white, Naples yellow, ochres, siennas, madder, umbers and bone black, with one bright accent pigment and a greyed distance; everything pulled toward warm brown and gold.',
     pigments: ['#ede4cf', '#e2c47e', '#c49a48', '#a8713a', '#8c4a2a', '#9c3d27', '#c2462e', '#7a2630', '#5f4b33', '#4a3121', '#2f2119', '#1b1714', '#6f7556', '#5b6a78', '#58542f'],
     pull: 0.62,
     wall: '#6b5638',
@@ -214,7 +214,7 @@ const PALETTES = {
   },
   jewel: {
     description:
-      'Earth colours set with costly pigments: ultramarine, crimson lake, malachite green and lead-tin yellow glowing in the lit things, as in a rich commission.',
+      'Earth colours set with costly pigments: a precious deep accent, its answering stone, crimson lake and lead-tin yellow glowing in the lit things, as in a rich commission.',
     pigments: ['#efe7d3', '#ead06a', '#c79a45', '#8c4a2a', '#c8402a', '#8e1b2c', '#5c1424', '#2a3f95', '#1f2a5e', '#3d7a55', '#24483a', '#4a3121', '#231a14', '#121014', '#6b84a8'],
     pull: 0.5,
     wall: '#4a3a2c',
@@ -225,7 +225,7 @@ const PALETTES = {
   },
   verdaccio: {
     description:
-      'A Renaissance panel palette: cool green-grey verdaccio showing in the half-tones, olive shadows, ivory and pale rose lights, slate-blue distance.',
+      'A Renaissance panel palette: cool green-grey verdaccio showing in the half-tones, olive shadows, ivory and pale tinted lights, a cool far distance.',
     pigments: ['#ebe3cb', '#dcc2a0', '#c9a27a', '#b99459', '#a56a58', '#7f826b', '#5f6656', '#3f4232', '#6c7a5e', '#6e7c88', '#94a5ac', '#4b3d2c', '#2b271c', '#8b6a3e'],
     pull: 0.6,
     wall: '#5a5640',
@@ -236,7 +236,7 @@ const PALETTES = {
   },
   american: {
     description:
-      'Twentieth-century tube colours: cadmium yellow and cream in the sun, viridian-teal and slate in the shade, brick red; a clean American light of the 1930s and 40s.',
+      'Twentieth-century tube colours: cadmium yellow and cream in the sun, a clean cool colour and slate in the shade, one strong accent; a clean American light of the 1930s and 40s.',
     pigments: ['#f3ecdc', '#f0cf74', '#e2b968', '#c98b52', '#b4553a', '#c4392d', '#7a2c2a', '#5d8679', '#4b6d63', '#2f4a43', '#4f6c8c', '#9fc3cf', '#5b3d2b', '#23272a', '#a3a58a'],
     pull: 0.55,
     wall: '#cdb886',
@@ -247,7 +247,7 @@ const PALETTES = {
   },
   tonal: {
     description:
-      'Almost monochrome, a brown study in tone: umber, ochre and white with a single note of red, the way a master laid in a picture before colour.',
+      'Almost monochrome, a brown study in tone: umber, ochre and white with a single note of colour, the way a master laid in a picture before colour.',
     pigments: ['#ebe1cb', '#d4bf96', '#b28d55', '#8a5a33', '#5a4028', '#2c2118', '#15110d', '#a33a2a'],
     pull: 0.86,
     wall: '#5a4630',
@@ -257,6 +257,35 @@ const PALETTES = {
     ground: '#8a6440',
   },
 } as const;
+
+/**
+ * The picture's palette touches an old-master painting lightly, so the tradition still reads: each
+ * option's accent pigments (earth's vermilion, jewel's ultramarine and malachite, verdaccio's rose,
+ * the American brick red and viridian shade, the tonal study's single red) take the ink or the second;
+ * the distance (sky, haze, hills) takes the second; the wall and floor are tinted by the ground; and
+ * the light leans halfway toward the ink. The body of earths, whites and blacks stays as the
+ * tradition ground them.
+ */
+const ACCENTS: Record<string, Record<number, PaletteRole>> = {
+  earth: { 6: 'ink' },
+  jewel: { 7: 'ink', 8: 'ink', 14: 'ink', 9: 'second', 10: 'second' },
+  verdaccio: { 4: 'ink' },
+  american: { 5: 'ink', 7: 'second', 8: 'second', 9: 'second' },
+  tonal: { 7: 'ink' },
+};
+const bytesOf = (h: string) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)] as const;
+const hexOf = (c: readonly [number, number, number]) => `#${c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
+function keyHexes(colours: readonly string[], palette: Palette, roles: Record<number, PaletteRole>): string[] {
+  const keyed = rekey(Object.fromEntries(colours.map((c, k) => [k, bytesOf(c)])), palette, roles);
+  return colours.map((c, k) => (roles[k] ? hexOf(keyed[k]) : c));
+}
+type Pigments = { pigments: readonly string[]; pull: number; wall: string; sky: string; haze: string; hills: readonly string[]; ground: string };
+function keyPigments(pal: Pigments, key: string, palette: Palette | undefined): Pigments {
+  if (!palette) return pal;
+  const [sky, haze, ...hills] = keyHexes([pal.sky, pal.haze, ...pal.hills], palette, { 0: 'second', 1: 'second', 2: 'second', 3: 'second', 4: 'second' });
+  const [wall, ground] = keyHexes([pal.wall, pal.ground], palette, { 0: 'ground', 1: 'ground' });
+  return { ...pal, pigments: keyHexes(pal.pigments, palette, ACCENTS[key] ?? {}), wall, sky, haze, hills, ground };
+}
 
 const SUPPORTS = {
   linen: {
@@ -354,7 +383,7 @@ export default defineLook({
     ]),
     edge: score('How sharp is the edge where light turns to shadow?', ['Melting like smoke', 'Soft', 'Firm', 'Cut like a blade']),
     behind: choice('What becomes of everything behind the subject?', BEHIND),
-    palette: choice('Which pigments are on the palette?', describe(PALETTES)),
+    palette: choice('Which pigments are on the palette? Its accents take the picture\u2019s palette.', describe(PALETTES)),
     handling: score('How is the paint handled?', [
       'Glazed smooth as enamel, no brush visible',
       'Fine and fused',
@@ -379,7 +408,7 @@ export default defineLook({
 
     const trad = TRADITIONS[a.tradition];
     const lightSpec = LIGHTS[a.light];
-    const pal = PALETTES[a.palette];
+    const pal = keyPigments(PALETTES[a.palette], a.palette, context.palette);
     const sup = SUPPORTS[a.support];
     const cond = CONDITIONS[a.condition];
     const hard = a.tradition === 'hard-light';
@@ -469,6 +498,7 @@ export default defineLook({
     const ux = l2 > 0.12 ? lx / l2 : -0.6, uy = l2 > 0.12 ? ly / l2 : -0.8;
 
     let lightCol = hex(lightSpec.colour);
+    if (context.palette) lightCol = mixRGB(lightCol, hex(hexOf(rekeyOne(bytesOf(lightSpec.colour), context.palette, 'ink'))), 0.5);
     const lowSun = Math.abs(mood.daylight - 0.5) * 2;
     const warm = (mood.warmth - 0.5) * 0.7 + lowSun * 0.12;
     lightCol = warm > 0 ? mulRGB(lightCol, mixRGB([1, 1, 1], [1.05, 0.93, 0.74], warm)) : mulRGB(lightCol, mixRGB([1, 1, 1], [0.9, 0.98, 1.1], -warm));

@@ -1,0 +1,377 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-30T13:45:54.370303+00:00",
+  "complete": true,
+  "manifestExcludesItself": true,
+  "selectedStudies": {
+    "scenes": 5,
+    "perScene": 84,
+    "renders": 420,
+    "failures": 0
+  },
+  "rawInitialRenderFailures": 15,
+  "materials": {
+    "renders": 22,
+    "repeats": 6,
+    "stableMemory": {
+      "geometries": 24,
+      "textures": 7
+    },
+    "passed": true
+  },
+  "customMaterialProfiles": {
+    "customShaderKinds": [
+      "RawShaderMaterial",
+      "ShaderMaterial"
+    ],
+    "actualGpuCases": 2,
+    "sourceFactoriesUnchanged": 22,
+    "priorSceneFixturesUseNativeProfiles": [
+      "perspective",
+      "room",
+      "street",
+      "tabletop",
+      "topology"
+    ],
+    "nativePbrUnchanged": true,
+    "baseline": {
+      "method": "Installed pre-fix comparison passed before guarded integration; repeatable baseline reconstructs that function by removing only the three validated ordinal additions.",
+      "removedFragments": [
+        "const customInstances=new Map;",
+        "if((source.isShaderMaterial||source.isRawShaderMaterial)&&!customInstances.has(original))customInstances.set(original,customInstances.size+1);",
+        "customInstance:customInstances.get(original),"
+      ],
+      "beforeFunctionSha256": "3d21173f9350afb276074f7f8157bbbd9dfbfa0430aade4c766ed2c65c933c22",
+      "afterFunctionSha256": "25d6f81f7c7bd19b0b9add7d6d135aaa5e43850f21037bcef4fc21cb6d96b4ab"
+    },
+    "gpuReport": "capture/custom-shader-profiles.json",
+    "parityReport": "capture/custom-shader-native-parity.json",
+    "image": "images/custom-shader-actual2color.png",
+    "initialAuditDiagnostic": {
+      "report": "capture/custom-shader-audit-initial.json",
+      "passed": false,
+      "reason": "Instrumentation imported a second Vite CaptureRig class and observed zero actual fixture captures; the final proof imports the loaded module identity.",
+      "customGpuCasesPassed": 2,
+      "missedFixtureCaptures": 5,
+      "countsTowardFinalVerification": false
+    }
+  },
+  "catalogue": {
+    "baseline": 1986,
+    "installed": 1986,
+    "unique": 1986,
+    "failures": 0,
+    "historicalDiagnostic": {
+      "initialAttempt": "catalogue/after-1-initial.log",
+      "failedIds": [
+        "worlds/circus-ring-big-top"
+      ],
+      "observedError": "Uncaught TypeError reading 'copy'",
+      "cause": "Duplicate Three module generations reproduce the same failure mechanism; attribution of the historical incident remains inferred because its optimizer hash and browser module URLs were not preserved.",
+      "mechanismReproduction": {
+        "source": "catalogue/optimizer-collision.mjs",
+        "log": "catalogue/optimizer-collision.log",
+        "historicalAttribution": "inferred, not established"
+      },
+      "isolatedDiagnostic": {
+        "log": "catalogue/circus-diagnostic.log",
+        "reproduced": false
+      },
+      "precedingSequenceDiagnostic": {
+        "log": "catalogue/circus-sequence-diagnostic.log",
+        "ids": [
+          "worlds/bootes-void",
+          "worlds/bronze-pour-foundry-floor",
+          "worlds/budapest-danube-embankment",
+          "worlds/buenos-aires-milonga-after-midnight",
+          "worlds/business-hotel-room-night",
+          "worlds/cairo-rooftop-over-the-nile",
+          "worlds/cedar-shrine-approach",
+          "worlds/chemistry-lab-bench",
+          "worlds/chess-park-under-plane-trees",
+          "worlds/circuit-board-city",
+          "worlds/circus-ring-big-top"
+        ],
+        "reproduced": false
+      },
+      "coveragePolicy": "Only both complete clean catalogue-after-1.log and catalogue-after-2.log count toward final coverage.",
+      "codeChangesAttributedToThisIncident": false
+    }
+  },
+  "sourceRegression": {
+    "pass": 15,
+    "total": 16,
+    "identityGateFailure": "contact-worker"
+  },
+  "unit": {
+    "original": {
+      "tests": 10248,
+      "pass": 10248,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "staging": {
+      "tests": 10237,
+      "pass": 10237,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    }
+  },
+  "build": {
+    "original": {
+      "typecheck": "passed as prerequisite of vite build",
+      "build": "passed",
+      "duration": "1m 18s"
+    },
+    "staging": {
+      "typecheck": "passed as prerequisite of vite build",
+      "build": "passed",
+      "duration": "59.90s"
+    }
+  },
+  "ui": {
+    "styles": {
+      "passed": true,
+      "checks": 7,
+      "providerCalls": 0,
+      "names": [
+        "all-families-in-one-open-cycle-and-repeatable-cached-replay",
+        "svg-reconsults-per-look-and-reuses-repeat-look",
+        "pinned-look-and-pinned-family-remain-stable",
+        "typed-explicit-style-keeps-its-medium-and-tours-treatments",
+        "explicit-look-option-skips-style-selection",
+        "style-failure-leaves-no-routing-or-detail-requests-running",
+        "actual-tree-family-and-look-pins-replace-each-other-and-survive-roll"
+      ]
+    },
+    "requests": {
+      "passed": true,
+      "providerCalls": 0,
+      "errors": [],
+      "galleryIntercepted": true,
+      "requestCount": 43,
+      "questionCount": 1820
+    },
+    "layers": {
+      "passed": true,
+      "checks": 15,
+      "modelRequests": 0,
+      "names": [
+        "automatic-typed-design-preview-png-and-gallery",
+        "look-chooser-and-free-study",
+        "design-tree-branch-and-release",
+        "automatic-design-roll-and-first-choice-reproducibility",
+        "four-vector-recipes",
+        "layer-visibility-and-paint-order",
+        "seed-reproducibility-opacity-and-colors",
+        "density-transform-blend-and-captured-placement",
+        "add-and-remove-layer",
+        "transparent-and-composed-svg-downloads",
+        "layered-png-and-scene-print-preservation",
+        "mobile-layer-studio",
+        "second-new-look-study",
+        "clear-stack",
+        "look-url-with-automatic-design"
+      ]
+    },
+    "atelierLook": {
+      "passed": true,
+      "rolls": 6
+    }
+  },
+  "installedManifestEntries": 96,
+  "files": {
+    "README.md": {
+      "sha256": "ff09aa8a1342558eac992ce5b23dc927a1628efc2c04b1157c5588ce7b9e4257",
+      "bytes": 2981
+    },
+    "capture/custom-shader-audit-initial.json": {
+      "sha256": "6845fadcfffd5c0fa4f8f2ffc1e7874bd9aea5ba8d4fd626c980114b24256650",
+      "bytes": 9075
+    },
+    "capture/custom-shader-gpu-check.mjs": {
+      "sha256": "86dc358096ebf3247d3306929d742896624f44119a7f8ce1d04fd75e40ec0b80",
+      "bytes": 13943
+    },
+    "capture/custom-shader-native-parity.json": {
+      "sha256": "d6bb2464cb4e06b9df1efff90624b63bafba67cce88a503dfec1fff9024f871f",
+      "bytes": 10972
+    },
+    "capture/custom-shader-native-parity.mjs": {
+      "sha256": "6f5cd4bbf60c0850ce94755b279e05e7b3288c8d596f1eef0545d8ecc81179b2",
+      "bytes": 5424
+    },
+    "capture/custom-shader-profiles.json": {
+      "sha256": "ee94d926c35c57aeb6f0210b99b149223219665fdd5f01b097fa38047d7d4441",
+      "bytes": 8524
+    },
+    "catalogue/after-1-initial.log": {
+      "sha256": "74212dfd4d0162886aa17832db1756a7dbf470cded47ba477c7d5a95bc7f1592",
+      "bytes": 61302
+    },
+    "catalogue/after-1.log": {
+      "sha256": "8fb3057e544ffec1133acf6ea062ba960a082f03a6ab2487a3981579839c0f85",
+      "bytes": 61151
+    },
+    "catalogue/after-2.log": {
+      "sha256": "0e0198eb5830e332427988e73bb8cdb6181618fe6e7d8cea11b40997eb2d60ef",
+      "bytes": 60972
+    },
+    "catalogue/baseline.log": {
+      "sha256": "cfb4c32ad08e8bcf90d1ae67f29561889f0292cb1c69cf351713cc6b1e4f90c1",
+      "bytes": 121635
+    },
+    "catalogue/circus-diagnostic.log": {
+      "sha256": "23c6601fe5854bb21d7c10d47e8a476506fce3b334d6b2ec84e939779dde6cca",
+      "bytes": 348
+    },
+    "catalogue/circus-sequence-diagnostic.log": {
+      "sha256": "7e7f8b8a3163c7e2a2f3715db85d7981f070c5b356481d08d3a0796816fe2c61",
+      "bytes": 2494
+    },
+    "catalogue/optimizer-collision.log": {
+      "sha256": "7c3491dd262b0890901c652faf8dab05bc6b7823d5d73209720e8c98e78c0986",
+      "bytes": 1234
+    },
+    "catalogue/optimizer-collision.mjs": {
+      "sha256": "d808260087a26078d9623ce0ee8ef27fe706338a413b0bc5f2c4ef7c71aae35b",
+      "bytes": 3902
+    },
+    "catalogue/shards.json": {
+      "sha256": "7a9619412d5e76bc6d3f394257341ad1d0fe39d327019a4685747de5996ebb68",
+      "bytes": 140178
+    },
+    "catalogue/verification.json": {
+      "sha256": "dced7d0ecd209bc33002373d7f2ed6bd6835d07b8d984cd00dde013d30f893ec",
+      "bytes": 69656
+    },
+    "checks.json": {
+      "sha256": "d87abd93eac17a05c6cd0588cffae7ab82c293fcfc4db2517128a92e4e4e8ca6",
+      "bytes": 4543
+    },
+    "images/custom-shader-actual2color.png": {
+      "sha256": "d26152f12d1a95902896ce77fa175c462ce8e88fd3df34987a1fc0f1d13de6b0",
+      "bytes": 4522
+    },
+    "images/index.json": {
+      "sha256": "b42a8acad37bbbf5b9123c0fa80312cdc2780e4bb1bdc34be5913103bb5a52bd",
+      "bytes": 1832
+    },
+    "images/materials-22-and-repeat-cycles.png": {
+      "sha256": "1788bc2bfd2685b3663b782619d3e4324f40efbfaed5842fb2633347497e4cbd",
+      "bytes": 157491
+    },
+    "images/perspective-recovered-84.png": {
+      "sha256": "9af25a6535a92321b8a0bf44e4ce9e78444cc1f9e150ab02c6b4806bf4da6047",
+      "bytes": 3248546
+    },
+    "images/room-anchor-supplement-2.png": {
+      "sha256": "ff865ce672527fa28a9839c8f75bbeb11a4229099c5a8bc79dceafaa47cc0e94",
+      "bytes": 75931
+    },
+    "images/room-base-84.png": {
+      "sha256": "9dab33571d532d042bc03f298e9a6c3e6bf57da7c271596bb728623e7749a3da",
+      "bytes": 1832394
+    },
+    "images/street-recovered-84.png": {
+      "sha256": "2444d96b5f70c09c8cba3f89729fcbea0bbbd74c9045cf7998f41fffa7f39faa",
+      "bytes": 1969694
+    },
+    "images/tabletop-anchor-supplement-2.png": {
+      "sha256": "e3651c05bdf21022f62d9ccb207d8c7a09386b8eb91cfbfd306e1d135c189893",
+      "bytes": 39983
+    },
+    "images/tabletop-base-84.png": {
+      "sha256": "c60bda22f33a69e95359d4cce0fcf558364e5f0d92cf68d069ea01016f446945",
+      "bytes": 1347878
+    },
+    "images/topology-anchor-supplement-2.png": {
+      "sha256": "e395bd807cead906347db534b70c9a787ae37e2aae15b2c1c3a3ffb32d20bb5a",
+      "bytes": 72556
+    },
+    "images/topology-base-84.png": {
+      "sha256": "b51c70845c21f2cc14d6fcb100a474bf283ebd1e17334e81280505365124d80a",
+      "bytes": 1617414
+    },
+    "installed-file-hashes.json": {
+      "sha256": "b9c85750a08665d7a363f48c3cc338638406d96dccfeac1d93eb1e25b1b1f3d9",
+      "bytes": 10803
+    },
+    "logs/atelier-look-final-original.log": {
+      "sha256": "63f2fbbc45a9257714dac4c98cd40241bc4e77c2e3bd74df5d3f60ac841238a2",
+      "bytes": 150
+    },
+    "logs/build-final-original.log": {
+      "sha256": "1425abdd2633a92fc13eb37f7b6a24ca71076813d8c6fd08d242f340c78de799",
+      "bytes": 156210
+    },
+    "logs/build-final-staging.log": {
+      "sha256": "34d9f85b3c4589901e6eed799bc670b0c041da1fba95230c1350a984572add30",
+      "bytes": 156210
+    },
+    "logs/observed-service-restarts.log": {
+      "sha256": "1c12353b74b9c5fc82f180fe0efc9e20ff0149da063ac836c3b4d11dc17234b1",
+      "bytes": 814
+    },
+    "logs/source-regression-final.log": {
+      "sha256": "df652edff6c4c646aeeaf53a4a22fa9e9ab57faf0d522df148e41117321745e7",
+      "bytes": 172177
+    },
+    "logs/typecheck-final.log": {
+      "sha256": "d577d2e054d11a067a533ada2465b7b4b2735d308f1bc9f0d7abf8641af1bb3e",
+      "bytes": 53
+    },
+    "logs/ui-layers-final-original.log": {
+      "sha256": "968b5355ac759b1a000a0bcae38e87ac5049cd689270b6726f2f47a0be10b036",
+      "bytes": 700
+    },
+    "logs/ui-requests-final-original.log": {
+      "sha256": "d42aa164062e6e2ae48f62fd6532c3b6596c1231ebe1eb72af301276e328f0ce",
+      "bytes": 8768
+    },
+    "logs/ui-styles-final-original.log": {
+      "sha256": "a83e1901d37f092d5186d3f49c17a873cae6ad14a429ecd878c6d7180854290a",
+      "bytes": 2215
+    },
+    "logs/unit-final-original.log": {
+      "sha256": "fcb4677f0e3efc0a79811d8b26d2dd8662f56f581bcdfc5326b73db1766d2ef1",
+      "bytes": 2242058
+    },
+    "logs/unit-final-staging.log": {
+      "sha256": "15949c609553fcc51983e1e04103e8ebff25f99cef00a98eb7daa1176d3bfc2c",
+      "bytes": 2238472
+    },
+    "runs/anchor-supplements.json": {
+      "sha256": "37497d610e00b977dad96a5712768b5ea62e36ceef31373ed2a1ef5e97741a0c",
+      "bytes": 36886
+    },
+    "runs/initial-five-scenes.json": {
+      "sha256": "f4ffd9d61d5b7213f27dffdf1278e36e8164640058f91dc1960a2935a658f875",
+      "bytes": 191212
+    },
+    "runs/recovered-street-perspective.json": {
+      "sha256": "5402b68e5760b617f13202af6350e4920b6a7918f744a37d0b5698d450bee1d0",
+      "bytes": 218747
+    },
+    "source/inventory.json": {
+      "sha256": "461001d40dabe9d28367c2a311ed381b189ed3d1507576ee77f5c89e3b53d6ab",
+      "bytes": 42192
+    },
+    "source/inventory.md": {
+      "sha256": "11e749b6f7ad17cf4eae0f6bc269cd5de4f6809baa77c6e7f37c971e76f7aa64",
+      "bytes": 27593
+    },
+    "source/provenance.json": {
+      "sha256": "be114888ace1b930e1541fa53c2e5b3cb41e627821b440a03206e8c94d888173",
+      "bytes": 253
+    },
+    "studies.json": {
+      "sha256": "68715abee7b91a130c68207c6fea643ac9886ec014f7fe7c7553b29e90c22082",
+      "bytes": 215976
+    }
+  }
+}

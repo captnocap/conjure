@@ -1,0 +1,31 @@
+import * as THREE from 'three';
+import { Sculpture, choice, score, noul, diorama, defineThing, defineWorld, figure } from '@conjure/kit';
+export default defineThing({
+  questions: {
+    frame: choice("What conveyor frame is built?", {"timber": "A heavy twin-timber incline.", "truss": "A light diagonally braced truss.", "iron": "A narrow iron angle frame.", "boxed": "A broad wooden trough frame."}),
+    incline: choice("How steep is the loading run?", {"low": "A shallow shore loading incline.", "standard": "A moderate storage-door incline.", "steep": "A steep icehouse loading incline.", "long": "A long rising run with low slope."}),
+    chain: choice("How many hauling chains run?", {"single": "One central chain line.", "double": "Two parallel hauling chains.", "edge": "Chains run along the outer edges.", "rope": "A hauling cable carries cross cleats."}),
+    cleats: choice("What pushes the ice cakes?", {"bars": "Simple straight wooden crossbars.", "hooks": "Iron cleats with rising hook tips.", "wide": "Wide low wooden push plates.", "pairs": "Close pairs of narrow pushing bars."}),
+    drive: choice("How is the elevator driven?", {"crank": "A large side hand crank.", "wheel": "A broad belt pulley at the high end.", "gear": "An exposed geared drive and handle.", "drum": "A rope drum on the lower axle."}),
+    load: choice("How many cakes are on the run?", {"empty": "The inclined run is empty.", "one": "One cake near the foot.", "three": "Three spaced cakes climb the run.", "full": "A close line of ice cakes."}),
+    rail: choice("What keeps the cakes on track?", {"high": "Two tall side guide rails.", "low": "Low edge curbs.", "posts": "Short separate guide posts.", "one": "A single raised guide rail."}),
+    foot: choice("What feeds the elevator?", {"apron": "A broad flat timber apron.", "water": "A short dark water channel.", "rollers": "Three intake rollers.", "bridge": "A narrow plank feeding bridge."}),
+    landing: choice("What receives the cakes at the top?", {"deck": "A small raised landing deck.", "chute": "A short downward discharge chute.", "rollers": "Two discharge rollers.", "stop": "A stout removable stop beam."}),
+    state: choice("What maintenance state is shown?", {"running": "The chain is tensioned for hauling.", "slack": "A slack return chain hangs below.", "blocked": "A timber chock stops the lower drum.", "service": "A spare cleat lies beside the base."}),
+    length: score("How long is the elevator?", ["Compact shoreline elevator", "Standard icehouse loader", "Long storage elevator"])
+  },
+  build(a,context){
+ const s=new Sculpture(context),wood=s.material('#9b805a'),light=s.material('#c2ac83'),iron=s.material('#52696c',{metalness:.42}),dark=s.material('#405557'),stone=s.material('#adb9b1'),snow=s.material('#e6ebe0'),ice=s.material('#bed5ce',{roughness:.28}),rope=s.material('#a79370'),water=s.material('#80aaa8',{transparent:true,opacity:.6,depthWrite:false});
+
+ const L=2+a.length*1.1,ang=a.incline==='low'?.25:a.incline==='steep'?.7:a.incline==='long'?.32:.48,W=.8,B=.27,dy=Math.sin(ang),dz=Math.cos(ang),top=B+L*dy,zTop=-L*dz/2;const pt=(u:number,x=0,h=0)=>[x,B+u*dy+h,(L/2-u)*dz] as [number,number,number];
+ for(const x of [-W/2,W/2]){s.rod(pt(0,x),pt(L,x),.055,a.frame==='iron'?iron:wood);for(const u of [0,L*.48,L]){const p=pt(u,x);s.box([.08,p[1],.08],[x,p[1]/2,p[2]],wood);s.box([.3,.07,.3],[x,.035,p[2]],wood);}if(a.frame==='truss')for(let j=0;j<4;j++){s.rod(pt(j*L/4,x,-.2),pt((j+1)*L/4,x),.025,iron);s.rod(pt(j*L/4,x,-.2),pt((j+1)*L/4,x,-.2),.025,iron);}if(a.frame==='boxed')s.rod(pt(0,x,.12),pt(L,x,.12),.09,wood);}
+ for(const u of [0,L])s.cylinder(.11,.11,W+.15,pt(u),iron,20).rotation.z=Math.PI/2;const chainX=a.chain==='single'?[0]:a.chain==='edge'?[-.38,.38]:[-.23,.23];for(const x of chainX){s.rod(pt(0,x,.02),pt(L,x,.02),.013,a.chain==='rope'?rope:iron);s.tube([pt(0,x,-.05),pt(L/2,x,a.state==='slack'?-.3:-.12),pt(L,x,-.05)],.01,iron);}
+ const N=Math.round(L/.23);for(let j=0;j<=N;j++){const u=j*L/N;for(const off of a.cleats==='pairs'?[-.035,.035]:[0]){s.rod(pt(u+off,-.34,.04),pt(u+off,.34,.04),a.cleats==='wide'?.045:.025,wood);}if(a.cleats==='hooks')for(const x of [-.3,.3])s.rod(pt(u,x,.04),pt(u,x,.13),.018,iron);}
+ for(const x of a.rail==='one'?[-.46]:[-.46,.46]){if(a.rail!=='posts')s.rod(pt(0,x,a.rail==='high'?.28:.1),pt(L,x,a.rail==='high'?.28:.1),.025,wood);for(let j=0;j<6;j++)s.rod(pt(j*L/5,x),pt(j*L/5,x,a.rail==='high'?.28:.16),.018,iron);}
+ const n=a.load==='empty'?0:a.load==='one'?1:a.load==='three'?3:5;for(let j=0;j<n;j++){const u=(j+.6)*L/(n+1);const cake=s.box([.58,.25,.33],pt(u,0,.18),ice);cake.rotation.x=ang;}
+ const driveU=a.drive==='drum'?0:L,dp=pt(driveU,.57);if(a.drive==='wheel'||a.drive==='gear'){s.cylinder(a.drive==='wheel'?.25:.17,a.drive==='wheel'?.25:.17,.06,dp,iron,24).rotation.z=Math.PI/2;for(let j=0;j<6;j++){const t=j*Math.PI/3;s.rod(dp,[dp[0],dp[1]+Math.cos(t)*.23,dp[2]+Math.sin(t)*.23],.012,wood);}}if(a.drive==='crank'||a.drive==='gear'){s.rod(dp,[dp[0],dp[1]+.2,dp[2]+.1],.018,iron);s.rod([dp[0],dp[1]+.2,dp[2]+.1],[dp[0]+.18,dp[1]+.2,dp[2]+.1],.025,wood);}if(a.drive==='drum')s.cylinder(.17,.17,.3,dp,wood,20).rotation.z=Math.PI/2;
+ const fz=L*dz/2+.35;if(a.foot==='water'){s.box([1.1,.08,.75],[0,.04,fz],dark);s.box([1,.01,.7],[0,.085,fz],water);}else if(a.foot==='rollers')for(let j=0;j<3;j++){s.cylinder(.09,.09,.8,[0,.12,fz-.25+j*.2],iron,16).rotation.z=Math.PI/2;for(const x of [-.42,.42])s.box([.07,.12,.12],[x,.06,fz-.25+j*.2],wood);}else{s.box([a.foot==='bridge'?.6:1.1,.1,.8],[0,.05,fz],wood);for(const x of [-.25,.25])s.rod([x,.1,fz-.4],pt(0,x),.03,wood);}
+ if(a.landing==='deck'){s.box([1.1,.08,.55],[0,top-.03,zTop-.3],wood);for(const x of [-.45,.45])s.box([.08,top,.08],[x,top/2,zTop-.5],wood);}if(a.landing==='chute')for(const x of [-.35,.35])s.rod(pt(L,x),[x,top-.15,zTop-.65],.05,wood);if(a.landing==='rollers')for(const z of [zTop-.15,zTop-.35]){s.cylinder(.08,.08,.85,[0,top,z],iron,16).rotation.z=Math.PI/2;for(const x of [-.4,.4])s.box([.06,top,.06],[x,top/2,z],wood);}if(a.landing==='stop')s.rod(pt(L,-.4,.15),pt(L,.4,.15),.06,wood);if(a.state==='blocked')s.box([.6,.1,.15],[0,.05,L*dz/2+.05],wood);if(a.state==='service')s.box([.65,.05,.08],[.85,.025,0],light);
+return s.finish();
+  },
+});

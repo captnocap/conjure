@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Capillary wetting contact line bench", "summary": "A fixed wetting-measurement stage retains a supported droplet, real substrate contact, an optical side-view frame and a syringe-feed fixture. The permanent supported sessile drop, open feed fixture and side-view frame identify a wetting bench in every cast. Tilted and elliptical caps are explicitly pinned teaching models, with real substrate contact and retained volume cuts.", "scales": ["tabletop", "room"]});

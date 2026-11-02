@@ -58,13 +58,49 @@ export default defineThing({
       red: 'Brick red.',
       assorted: 'One of each: white, blue, red and yellow.',
     }),
+    units: choice('How is the measuring scale printed?', {
+      metric: 'Centimetres with fine millimetre subdivisions along one edge.',
+      imperial: 'Large inch numerals and alternating eighth-inch ticks.',
+      dual: 'Two opposed rows: centimetres above and inches below.',
+      drafting: 'A bold half-scale drafting tape with boxed ten-unit intervals.',
+    }),
+    width: choice('How wide is the flexible tape?', {
+      narrow: 'A narrow twelve-millimetre ribbon for small fittings.',
+      standard: 'A normal twenty-two-millimetre tailoring tape.',
+      broad: 'A broad twenty-eight-millimetre tape with roomy figures.',
+      wide: 'An extra-wide thirty-five-millimetre measuring belt.',
+    }),
+    tip: choice('What reinforces the ends?', {
+      brass: 'Flat folded brass end caps.',
+      steel: 'Silver end caps with small dark rivets.',
+      stitched: 'Folded cloth ends secured by contrasting stitches.',
+      eyelet: 'Long brass ends pierced by a hanging eyelet.',
+    }),
+    reference: choice('What fitting references have been added to the tape?', {
+      plain: 'No added marks.',
+      bands: 'Three red reference bands mark repeated measurements.',
+      initials: 'Small handwritten initials sit between the graduations.',
+      repair: 'A pale stitched repair patch crosses the middle of the tape.',
+    }),
+    keeper: choice('If the tape is coiled or cased, how is it kept together?', {
+      none: 'Nothing holds it closed.',
+      elastic: 'A dark elastic band embraces the coil or case.',
+      ribbon: 'A tied ribbon crosses the coil or case, with two bow loops.',
+      clip: 'A small spring clip grips its upper rim.',
+    }),
+    storage: choice('What storage lies beside the tape?', {
+      none: 'No storage.',
+      pouch: 'A soft leather sleeve with a folded opening.',
+      carton: 'An open shallow cardboard box with a separate lid.',
+      wallet: 'An open felt needle wallet with its fastening button.',
+    }),
     marked: noul('Are there chalk fitting marks, dashes and crosses, on the surface under it?'),
   },
 
   build(a, context) {
     const s = new Sculpture(context);
     const { mood, random } = context;
-    const W = 0.022, low = 0.0014;
+    const W = { narrow: 0.012, standard: 0.022, broad: 0.028, wide: 0.035 }[a.width], low = 0.0014;
     const [paper, ink] = INK[a.tape];
     const rubbed = a.tape === 'linen' ? 0.75 : mood.wear * 0.7;
 
@@ -78,12 +114,20 @@ export default defineThing({
     ctx.globalAlpha = 1 - rubbed * 0.7;
     ctx.font = 'bold 30px sans-serif';
     ctx.textBaseline = 'middle';
-    for (let cm = 0; cm < 50; cm++) {
-      const x = cm * 40.96;
-      ctx.fillRect(x, 0, 4, 34);
-      ctx.fillRect(x + 20, 0, 3, 18);
-      for (const mm of [8, 12, 28, 33]) ctx.fillRect(x + mm, 0, 1.6, 10);
-      if (cm) ctx.fillText(String(cm), x + 6, 46, 32);
+    const divisions = a.units === 'imperial' ? 20 : a.units === 'drafting' ? 25 : 50;
+    for (let n = 0; n < divisions; n++) {
+      const step = 2048 / divisions, x = n * step;
+      ctx.fillRect(x, 0, 3, a.units === 'dual' ? 19 : 32);
+      const parts = a.units === 'imperial' ? 8 : 10;
+      for (let j = 1; j < parts; j++) ctx.fillRect(x + j * step / parts, 0, 1.5, j === parts / 2 ? 20 : 10);
+      ctx.font = a.units === 'dual' ? 'bold 19px sans-serif' : 'bold 28px sans-serif';
+      if (n) ctx.fillText(String(a.units === 'drafting' ? n * 2 : n), x + 5, a.units === 'dual' ? 24 : 46, step - 7);
+      if (a.units === 'drafting' && n % 5 === 0) ctx.strokeRect(x + 2, 28, step - 4, 32);
+    }
+    if (a.units === 'dual') for (let n = 0; n < 20; n++) {
+      const x = n * 102.4;
+      ctx.fillRect(x, 44, 3, 20); ctx.fillText(String(n), x + 7, 49, 35);
+      for (let j = 1; j < 8; j++) ctx.fillRect(x + j * 12.8, j === 4 ? 50 : 57, 1.5, j === 4 ? 14 : 7);
     }
     ctx.globalAlpha = 1;
     ctx.fillStyle = 'rgba(120,90,50,0.3)';
@@ -164,20 +208,83 @@ export default defineThing({
       samples.forEach((sample, index) => { if (index < 8) sample.w.set(0, 1, 0).lerp(new THREE.Vector3(0, 0, 1), smooth(index / 8)).normalize(); });
     }
     s.mesh(ribbon(samples, W, 0.5), tapeMat);
+    if (a.reference !== 'plain') {
+      // Reference annotations use one full-length UV run; only the graduations repeat.
+      let total = 0;
+      for (let i = 1; i < samples.length; i++) total += samples[i].p.distanceTo(samples[i - 1].p);
+      const marks = document.createElement('canvas'); marks.width = 2048; marks.height = 64;
+      const mc = marks.getContext('2d')!;
+      if (a.reference === 'bands') { mc.fillStyle = '#aa2d37'; for (const x of [410, 1024, 1638]) mc.fillRect(x, 0, Math.max(5, 2048 * 0.003 / total), 64); }
+      else if (a.reference === 'initials') { mc.fillStyle = '#35353a'; mc.font = 'italic 28px cursive'; mc.fillText('A.B.', 1450, 55, Math.max(75, 2048 * 0.02 / total)); }
+      else { const width = Math.min(700, 2048 * 0.022 / total), x = 1024 - width / 2; mc.fillStyle = '#e8dcc0'; mc.fillRect(x, 0, width, 64); mc.strokeStyle = '#7a6451'; mc.lineWidth = 2; mc.setLineDash([5, 4]); mc.strokeRect(x + 3, 5, Math.max(4, width - 6), 54); }
+      const map = new THREE.CanvasTexture(marks); map.colorSpace = THREE.SRGBColorSpace;
+      const overlay = ribbon(samples, W, Math.max(total, 0.001));
+      // Bias the coplanar ink toward the camera on both ribbon faces, including twists.
+      s.mesh(overlay, s.material('#ffffff', { map, transparent: true, depthWrite: false, side: THREE.DoubleSide, roughness: 0.85, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }));
+    }
 
     // Brass tips.
-    const brass = s.material('#c79a3e', { metalness: 0.85, roughness: 0.3 });
+    const brass = s.material(a.tip === 'steel' ? '#c6d0d5' : a.tip === 'stitched' ? '#d8c5a2' : '#c79a3e', { metalness: a.tip === 'stitched' ? 0 : 0.85, roughness: a.tip === 'stitched' ? 0.9 : 0.3 });
     for (const end of a.lay === 'cased' ? [samples.at(-1)!] : [samples[0], samples.at(-1)!]) {
-      const tip = s.box([0.006, 0.0012, W + 0.001], [end.p.x, end.p.y, end.p.z], brass);
+      const tip = s.box([a.tip === 'eyelet' ? 0.012 : 0.006, 0.0012, W + 0.001], [end.p.x, end.p.y, end.p.z], brass);
       const other = end === samples[0] ? samples[1] : samples.at(-2)!;
       const tangent = end.p.clone().sub(other.p).normalize(), normal = new THREE.Vector3().crossVectors(tangent, end.w).normalize();
       tip.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(tangent, normal, end.w));
+      if (a.tip === 'eyelet') {
+        const hole = new THREE.Mesh(new THREE.TorusGeometry(0.002, 0.0005, 5, 16), brass);
+        hole.rotation.x = Math.PI / 2; hole.position.y = 0.001; tip.add(hole);
+        const dark = new THREE.Mesh(new THREE.CircleGeometry(0.0015, 14), s.material('#3f382b'));
+        dark.rotation.x = -Math.PI / 2; dark.position.y = 0.0007; tip.add(dark);
+      } else if (a.tip === 'stitched' || a.tip === 'steel') {
+        for (let k = -1; k <= 1; k++) {
+          const stitch = new THREE.Mesh(new THREE.BoxGeometry(a.tip === 'steel' ? 0.001 : 0.003, 0.0005, 0.0008), s.material('#4b4336'));
+          stitch.position.set(0, 0.0008, k * W * 0.3); tip.add(stitch);
+        }
+      }
     }
 
     const bounds = new THREE.Box3();
     for (const sample of samples) bounds.expandByPoint(sample.p);
     if (a.lay === 'cased') bounds.expandByPoint(new THREE.Vector3(-0.032, 0, -0.032)).expandByPoint(new THREE.Vector3(0, 0, 0.032));
     const frontZ = bounds.max.z + 0.03, midX = (bounds.min.x + bounds.max.x) / 2;
+
+    if ((a.lay === 'coil' || a.lay === 'cased') && a.keeper !== 'none') {
+      const radius = a.lay === 'cased' ? 0.033 : 0.007 + 0.0021 * mix(17, 10, a.length);
+      const topY = a.lay === 'cased' ? 0.027 : W + 0.001;
+      const strap = s.material(a.keeper === 'ribbon' ? '#94495c' : '#493f37');
+      if (a.keeper === 'clip') {
+        s.box([0.016, 0.002, 0.009], [radius - 0.004, topY + 0.001, 0], brass);
+        s.rod([radius + 0.003, topY, 0], [radius + 0.003, 0.004, 0], 0.001, brass);
+      } else {
+        s.box([radius * 2, 0.001, 0.008], [0, topY, 0], strap);
+        for (const side of [-1, 1]) s.box([0.001, topY, 0.008], [side * radius, topY / 2, 0], strap);
+        if (a.keeper === 'ribbon') for (const side of [-1, 1]) {
+          const loop = s.ring(0.009, 0.0012, [side * 0.008, topY + 0.002, 0], strap);
+          loop.rotation.x = -Math.PI / 2; loop.scale.z = 0.6;
+        }
+      }
+    }
+    if (a.storage !== 'none') {
+      const x = bounds.min.x - 0.075, z = (bounds.min.z + bounds.max.z) / 2;
+      const cover = s.material(a.storage === 'pouch' ? '#815a40' : a.storage === 'wallet' ? '#6c8790' : '#c7ad83');
+      if (a.storage === 'pouch') {
+        s.box([0.11, 0.004, 0.075], [x, 0.002, z], cover);
+        s.box([0.105, 0.005, 0.06], [x, 0.008, z + 0.006], cover);
+        s.box([0.1, 0.002, 0.014], [x, 0.012, z - 0.025], cover);
+      } else if (a.storage === 'carton') {
+        s.box([0.11, 0.002, 0.075], [x, 0.001, z], cover);
+        for (const side of [-1, 1]) {
+          s.box([0.002, 0.022, 0.075], [x + side * 0.054, 0.013, z], cover);
+          s.box([0.11, 0.022, 0.002], [x, 0.013, z + side * 0.036], cover);
+        }
+        s.box([0.116, 0.005, 0.081], [x, 0.0025, z + 0.095], cover);
+      } else {
+        s.box([0.14, 0.003, 0.08], [x, 0.0015, z], cover);
+        s.box([0.065, 0.003, 0.07], [x + 0.035, 0.0045, z], s.material('#e8d9ba'));
+        for (let i = 0; i < 5; i++) s.rod([x + 0.014 + i * 0.01, 0.0065, z - 0.02], [x + 0.014 + i * 0.01, 0.0065, z + 0.02], 0.0006, brass);
+        s.cylinder(0.004, 0.004, 0.002, [x - 0.055, 0.004, z], brass, 12);
+      }
+    }
 
     const chalkTints = { white: ['#f4f2ea'], blue: ['#4f7fc4'], red: ['#b5553f'], assorted: ['#f4f2ea', '#4f7fc4', '#b5553f', '#e6c23a'] }[a.chalk];
     if (a.company === 'chalk') {

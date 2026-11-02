@@ -1,0 +1,60 @@
+[
+  {
+    "path": "images/custom-shader-actual2color.png",
+    "run": "custom-shader-profiles",
+    "role": "Actual ShaderMaterial and RawShaderMaterial uniform pigments with distinct captured profile tokens"
+  },
+  {
+    "path": "images/tabletop-base-84.png",
+    "run": "initial-five-scenes",
+    "scene": "tabletop",
+    "role": "Base full catalogue; see separately named current anchor supplement."
+  },
+  {
+    "path": "images/room-base-84.png",
+    "run": "initial-five-scenes",
+    "scene": "room",
+    "role": "Base full catalogue; see separately named current anchor supplement."
+  },
+  {
+    "path": "images/topology-base-84.png",
+    "run": "initial-five-scenes",
+    "scene": "topology",
+    "role": "Base full catalogue; see separately named current anchor supplement."
+  },
+  {
+    "path": "images/materials-22-and-repeat-cycles.png",
+    "run": "initial-five-scenes",
+    "role": "Material render and resource checks"
+  },
+  {
+    "path": "images/street-recovered-84.png",
+    "run": "recovered-street-perspective",
+    "scene": "street",
+    "role": "Complete clean replacement scene"
+  },
+  {
+    "path": "images/perspective-recovered-84.png",
+    "run": "recovered-street-perspective",
+    "scene": "perspective",
+    "role": "Complete clean replacement scene"
+  },
+  {
+    "path": "images/tabletop-anchor-supplement-2.png",
+    "run": "anchor-supplements",
+    "scene": "tabletop",
+    "role": "Current Naturalist / surface-dot supplement only"
+  },
+  {
+    "path": "images/room-anchor-supplement-2.png",
+    "run": "anchor-supplements",
+    "scene": "room",
+    "role": "Current Naturalist / surface-dot supplement only"
+  },
+  {
+    "path": "images/topology-anchor-supplement-2.png",
+    "run": "anchor-supplements",
+    "scene": "topology",
+    "role": "Current Naturalist / surface-dot supplement only"
+  }
+]

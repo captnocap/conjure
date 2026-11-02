@@ -59,6 +59,42 @@ export default defineThing({
       antique: 'Hand-forged all-steel shears with big round bows, dark with age.',
       shears: 'Large bent-handled dressmaker\'s shears, black enamel bows and long bright blades.',
     }),
+    profile: choice('What is the blade profile?', {
+      straight: 'Long straight blades taper to sharp points.',
+      rounded: 'The blade ends have broad, rounded safety tips.',
+      curved: 'The blades sweep gently upward along their outer edges.',
+      broad: 'Wide heavy blades with strong backs.',
+    }),
+    pivot: choice('What holds the blades together?', {
+      screw: 'A plain slotted brass screw.',
+      rivet: 'A smooth silver rivet.',
+      wing: 'A projecting wing screw for adjusting the tension.',
+      dial: 'A wide knurled adjustment dial.',
+    }),
+    engraving: choice('What is etched on a blade?', {
+      none: 'No inscription.',
+      rule: 'A fine measuring scale with numbered ticks.',
+      maker: 'A small maker stamp and steel-grade inscription.',
+      initials: 'The owner’s initials inside a narrow decorative cartouche.',
+    }),
+    binding: choice('How are the handle bows dressed?', {
+      bare: 'The original bare handles.',
+      leather: 'Leather grips wrap the bows.',
+      thread: 'Contrasting thread winds round both bows.',
+      rubber: 'Thick dark rubber sleeves cushion the bows.',
+    }),
+    sheath: choice('What protective cover lies beside them?', {
+      none: 'No cover.',
+      leather: 'A long stitched leather blade sleeve.',
+      felt: 'An open felt roll with a ribbon tie.',
+      card: 'A folded cardboard protective sleeve.',
+    }),
+    maintenance: choice('What maintenance item has been left nearby?', {
+      none: 'Nothing.',
+      oil: 'A small oil can with a fine spout.',
+      stone: 'A sharpening stone on a wooden cradle.',
+      driver: 'A short screwdriver for adjusting the pivot.',
+    }),
     open: score('How far open are the blades?', ['Shut tight', 'Slightly parted', 'Open, mid-cut', 'Gaping wide']),
     cut: choice('What was just cut?', {
       cloth: 'A length of good cloth, the cut half made, the offcut strip already swinging away.',
@@ -84,14 +120,16 @@ export default defineThing({
       orange: { blade: 0.12, width: 0.019, handle: 0.08, bows: [[0.015, 0.013], [0.03, 0.016]], tube: 0.0058 },
       antique: { blade: 0.135, width: 0.022, handle: 0.085, bows: [[0.02, 0.019], [0.022, 0.02]], tube: 0.0036 },
     }[kind];
+    if (a.profile === 'broad') dims.width *= 1.35;
     const rust = new THREE.Color('#7b5a40');
     const steelTint = new THREE.Color(kind === 'antique' ? '#7d7f80' : kind === 'embroidery' ? '#d9b65a' : '#d5d9dc').lerp(rust, mood.wear * (kind === 'antique' ? 0.5 : 0.25));
     const steel = new THREE.MeshStandardMaterial({ color: steelTint, metalness: 0.85, roughness: mix(0.22, 0.6, mood.wear), side: THREE.DoubleSide });
     const edgeMat = new THREE.MeshStandardMaterial({ color: '#f2f4f5', metalness: 0.6, roughness: 0.25 });
-    const grip = kind === 'shears' || kind === 'pinking' ? s.material('#17171a', { roughness: 0.35, metalness: 0.2 })
+    let grip = kind === 'shears' || kind === 'pinking' ? s.material('#17171a', { roughness: 0.35, metalness: 0.2 })
       : kind === 'orange' ? s.material('#ee6a1c', { roughness: 0.45 })
       : kind === 'embroidery' ? s.material('#d2a63f', { metalness: 0.85, roughness: 0.3 }) : steel;
 
+    if (a.binding !== 'bare') grip = s.material(a.binding === 'leather' ? '#79543d' : a.binding === 'thread' ? '#8c586e' : '#373a3a', { roughness: a.binding === 'rubber' ? 0.9 : 0.75 });
     const angle = mix(0, 1.05, a.open);
     const half = (sign: 1 | -1, y: number, bow: number[]) => {
       const g = new THREE.Group();
@@ -101,6 +139,8 @@ export default defineThing({
         const teeth = Math.floor(L / 0.007);
         for (let i = 1; i < teeth; i++) points.push([L - i * (L / teeth), w * 0.2 + (w * 0.3) * (i / teeth) + (i % 2 ? 0.0032 : 0)]);
       }
+      if (a.profile === 'rounded') { points[2] = [L * 0.97, -w * 0.08]; points.splice(3, 0, [L, w * 0.05], [L * 0.97, w * 0.25]); }
+      if (a.profile === 'curved') { points[1][1] -= w * 0.25; points[2][1] -= w * 0.2; }
       points.push([0, w / 2], [-0.02 * (L / 0.14), w / 2]);
       const outline = points.map(([x, z]) => new THREE.Vector2(x, z * sign));
       if (sign < 0) outline.reverse();
@@ -110,10 +150,21 @@ export default defineThing({
       geometry.translate(0, thick, 0);
       const blade = new THREE.Mesh(geometry, steel);
       g.add(blade);
+      if (a.engraving !== 'none') {
+        const tex = canvasTexture(512, (c) => {
+          c.clearRect(0, 0, 512, 512); c.fillStyle = c.strokeStyle = '#454a4e'; c.lineWidth = 6;
+          if (a.engraving === 'rule') { c.font = 'bold 70px sans-serif'; for (let i = 0; i < 6; i++) { const x = 20 + i * 82; c.fillRect(x, 180, 5, 90); c.fillText(String(i), x, 360); for (let k = 1; k < 4; k++) c.fillRect(x + k * 20, 180, 3, 45); } }
+          else { c.font = 'bold 75px serif'; c.textAlign = 'center'; c.fillText(a.engraving === 'maker' ? 'SHEAR STEEL' : 'A.B.', 256, 285, 470); c.strokeRect(12, 140, 488, 220); }
+        });
+        const mark = new THREE.Mesh(new THREE.PlaneGeometry(L * 0.6, w * 0.45), new THREE.MeshStandardMaterial({ map: tex, transparent: true, depthWrite: false }));
+        mark.rotation.x = -Math.PI / 2; mark.position.set(L * 0.36, thick + 0.0005, 0); g.add(mark);
+      }
       if (kind !== 'pinking') {
         // The ground bevel along the cutting edge catches the light.
-        const from = new THREE.Vector3(L * 0.98, thick + 0.0002, w * 0.2 * sign), to = new THREE.Vector3(0.004, thick + 0.0002, w * 0.47 * sign);
-        const bevel = new THREE.Mesh(new THREE.BoxGeometry(from.distanceTo(to), 0.0004, w * 0.16), edgeMat);
+        const tipX = L * (a.profile === 'rounded' ? 0.97 : 1), tipZ = w * (a.profile === 'curved' ? 0 : a.profile === 'rounded' ? 0.25 : 0.2);
+        const cuttingEdge = (x: number) => w * 0.5 + (tipZ - w * 0.5) * x / tipX;
+        const from = new THREE.Vector3(tipX * 0.94, thick + 0.0002, (cuttingEdge(tipX * 0.94) - w * 0.06) * sign), to = new THREE.Vector3(0.004, thick + 0.0002, (cuttingEdge(0.004) - w * 0.06) * sign);
+        const bevel = new THREE.Mesh(new THREE.BoxGeometry(from.distanceTo(to), 0.0004, w * 0.1), edgeMat);
         bevel.position.copy(from).add(to).multiplyScalar(0.5);
         bevel.rotation.y = -Math.atan2(to.z - from.z, to.x - from.x);
         g.add(bevel);
@@ -122,7 +173,12 @@ export default defineThing({
       const centre = new THREE.Vector3(-dims.handle, thick / 2, sign * (bow[1] + dims.tube * 0.6 + w * 0.12));
       const loop: THREE.Vector3[] = [];
       for (let i = 0; i < 20; i++) loop.push(new THREE.Vector3(centre.x + Math.cos(i / 20 * Math.PI * 2) * bow[0], centre.y, centre.z + Math.sin(i / 20 * Math.PI * 2) * bow[1]));
-      g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(loop, true), 48, dims.tube, 8, true), grip));
+      g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(loop, true), 48, dims.tube * (a.binding === 'rubber' ? 1.3 : 1), 8, true), grip));
+      if (a.binding === 'thread' || a.binding === 'leather') for (let k = 0; k < 20; k++) {
+        const t = k / 20 * Math.PI * 2;
+        const stitch = new THREE.Mesh(new THREE.SphereGeometry(dims.tube * 0.24, 6, 4), s.material('#e5d9b9'));
+        stitch.position.set(centre.x + Math.cos(t) * bow[0], centre.y + dims.tube * 0.94, centre.z + Math.sin(t) * bow[1]); g.add(stitch);
+      }
       const start = new THREE.Vector3(-0.016 * (L / 0.14), thick / 2, sign * w * 0.1), end = new THREE.Vector3(centre.x + bow[0], thick / 2, centre.z - sign * bow[1] * 0.35);
       const shank = new THREE.Mesh(new THREE.CylinderGeometry(dims.tube * 1.05, w * 0.34, start.distanceTo(end), 10), grip);
       shank.position.copy(start).add(end).multiplyScalar(0.5);
@@ -145,6 +201,16 @@ export default defineThing({
     screw.position.y = thickness + 0.0004;
     screw.castShadow = true;
     scissors.add(screw);
+    if (a.pivot === 'rivet') { screw.material = (screw.material as THREE.MeshStandardMaterial).clone(); screw.material.color.set('#c5cdd0'); }
+    if (a.pivot === 'dial') { screw.scale.set(1.6, 1.5, 1.6); for (let k = 0; k < 12; k++) {
+      const t = k / 12 * Math.PI * 2, r = dims.width * 0.29;
+      const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.0012, thickness * 2, 0.002), edgeMat);
+      tooth.position.set(Math.cos(t) * r, thickness + 0.0005, Math.sin(t) * r); tooth.rotation.y = -t; scissors.add(tooth);
+    } }
+    if (a.pivot === 'wing' || a.pivot === 'screw') {
+      const slot = new THREE.Mesh(new THREE.BoxGeometry(dims.width * (a.pivot === 'wing' ? 0.9 : 0.28), a.pivot === 'wing' ? 0.004 : 0.0003, 0.0015), a.pivot === 'wing' ? edgeMat : s.material('#4c4941'));
+      slot.position.y = thickness * 2 + (a.pivot === 'wing' ? 0.002 : 0.0013); scissors.add(slot);
+    }
     s.root.add(scissors);
 
     // What they were cutting.
@@ -328,6 +394,37 @@ export default defineThing({
     }
     snips.castShadow = snips.receiveShadow = true;
     s.root.add(snips);
+
+    s.root.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(s.root), mid = bounds.getCenter(new THREE.Vector3());
+    if (a.sheath !== 'none') {
+      const x = mid.x, z = bounds.min.z - 0.035;
+      const cover = s.material(a.sheath === 'leather' ? '#865137' : a.sheath === 'felt' ? '#727b84' : '#c2ab82');
+      const L = dims.blade * 1.2, W = dims.width * 1.8;
+      s.box([L, 0.003, W], [x, 0.0015, z], cover);
+      if (a.sheath === 'felt') {
+        s.box([L, 0.002, W * 0.5], [x, 0.004, z - W * 0.25], cover);
+        s.tube([[x, 0.001, z + W / 2], [x + 0.025, 0.001, z + W], [x + 0.045, 0.001, z + W * 0.8]], 0.001, grip);
+      } else {
+        s.box([L * 0.95, 0.003, W * 0.95], [x, 0.006, z], cover);
+        if (a.sheath === 'leather') for (let k = 0; k < 14; k++) for (const side of [-1, 1]) s.box([0.003, 0.001, 0.0008], [x - L * 0.44 + k * L * 0.068, 0.008, z + side * W * 0.4], edgeMat);
+      }
+    }
+    if (a.maintenance !== 'none') {
+      const x = bounds.max.x + 0.04, z = mid.z;
+      const wood = s.material('#9e7650');
+      if (a.maintenance === 'oil') {
+        s.cylinder(0.014, 0.019, 0.027, [x, 0.0135, z], s.material('#a66045'), 20);
+        s.cylinder(0.006, 0.009, 0.009, [x, 0.0315, z], edgeMat, 12);
+        s.rod([x, 0.035, z], [x + 0.026, 0.052, z], 0.0015, edgeMat);
+      } else if (a.maintenance === 'stone') {
+        s.box([0.04, 0.006, 0.09], [x, 0.003, z], wood);
+        s.box([0.031, 0.009, 0.075], [x, 0.0105, z], s.material('#6d7170'));
+      } else {
+        s.rod([x, 0.005, z - 0.045], [x, 0.005, z + 0.018], 0.002, edgeMat);
+        s.cylinder(0.006, 0.006, 0.035, [x, 0.006, z + 0.025], wood, 12).rotation.x = Math.PI / 2;
+      }
+    }
 
     return s.finish();
   },

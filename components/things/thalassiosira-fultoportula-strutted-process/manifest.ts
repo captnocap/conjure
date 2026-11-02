@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Thalassiosira fultoportula strutted process", "summary": "A genus-identified strutted process shows its central tube and documented satellite supports within a valve patch. A comparative Thalassiosira process with a central tube and real satellite openings. Counts compare documented taxa; the section is schematic and does not imply one species freely changes its normal anatomy.", "scales": ["macro", "tabletop"]});

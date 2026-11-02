@@ -64,6 +64,42 @@ export default defineThing({
       fruit: 'The raw ingredient beside it: the fruit it was made from.',
       toast: 'A slice of toast on a plate, thickly spread.',
     }),
+    glassTint: choice('What sort of glass was the jar made from?', {
+      clear: 'Clear nearly colourless glass.',
+      green: 'Faint green recycled glass.',
+      amber: 'Warm amber-tinted glass.',
+      blue: 'Pale blue glass from an older preserving jar.',
+    }),
+    relief: choice('What moulded detail is in the jar glass?', {
+      smooth: 'A smooth plain jar body.',
+      ribs: 'Fine vertical ribs run around the lower body.',
+      dimples: 'Small shallow glass dimples circle the base.',
+      bands: 'Three raised glass bands encircle the jar.',
+    }),
+    labelShape: choice('How was the paper label cut?', {
+      rectangle: 'A square-cornered rectangular label.',
+      oval: 'A large oval preserving label.',
+      scallop: 'A label with little scallops along its edge.',
+      clipped: 'A rectangular label with clipped corners.',
+    }),
+    capPattern: choice('Which pattern decorates the cover or its printed top?', {
+      checks: 'A familiar small gingham check.',
+      stripes: 'Long narrow coloured stripes.',
+      dots: 'Small regularly spaced dots.',
+      flowers: 'Simple tiny five-petalled flowers.',
+    }),
+    handle: choice('What handle does the preserving knife or spoon have?', {
+      bone: 'Cream bone-coloured handle scales.',
+      wood: 'Warm wooden scales with two small rivets.',
+      steel: 'An all-steel handle with a dark hanging hole.',
+      striped: 'A striped painted handle.',
+    }),
+    tasting: choice('What little preparation item remains beside the preserve?', {
+      dish: 'A small tasting dish with one spoonful of preserve.',
+      recipe: 'A folded recipe card with handwritten lines.',
+      labels: 'A short stack of unused preserving labels.',
+      twine: 'A wooden spool of string with a loose curled end.',
+    }),
   },
 
   build(a, context) {
@@ -75,7 +111,7 @@ export default defineThing({
     const tint = TINT[a.kind];
     const open = a.cover === 'off' || a.knife === 'stuck';
 
-    const glass = new THREE.MeshPhysicalMaterial({ color: '#e9f3f0', transparent: true, opacity: 0.21, roughness: 0.06, side: THREE.DoubleSide, flatShading: a.jar === 'hex' });
+    const glass = new THREE.MeshPhysicalMaterial({ color: {clear:'#e9f3f0',green:'#a9c4aa',amber:'#d2b572',blue:'#b0cad4'}[a.glassTint], transparent: true, opacity: a.glassTint==='clear'?.21:.3, roughness: 0.06, side: THREE.DoubleSide, flatShading: a.jar === 'hex' });
     const preserveTexture = paint(256, 256, (g, w, h) => {
       g.fillStyle = tint;
       g.fillRect(0, 0, w, h);
@@ -118,7 +154,10 @@ export default defineThing({
     const cloth = (hues: readonly [string, string]) => paint(128, 128, (g) => {
       g.fillStyle = '#f6f1e4'; g.fillRect(0, 0, 128, 128);
       g.fillStyle = hues[0]; g.globalAlpha = 0.55;
-      for (let i = 0; i < 128; i += 32) { g.fillRect(i, 0, 16, 128); g.fillRect(0, i, 128, 16); }
+      if(a.capPattern==='checks')for(let i=0;i<128;i+=32){g.fillRect(i,0,16,128);g.fillRect(0,i,128,16);}
+      if(a.capPattern==='stripes')for(let i=0;i<128;i+=24)g.fillRect(i,0,9,128);
+      if(a.capPattern==='dots')for(let y=12;y<128;y+=24)for(let x=12;x<128;x+=24){g.beginPath();g.arc(x,y,5,0,Math.PI*2);g.fill();}
+      if(a.capPattern==='flowers')for(let y=16;y<128;y+=32)for(let x=16;x<128;x+=32){for(let i=0;i<5;i++){const t=i*Math.PI*2/5;g.beginPath();g.ellipse(x+Math.cos(t)*5,y+Math.sin(t)*5,4,3,t,0,Math.PI*2);g.fill();}g.fillStyle='#d0b45b';g.beginPath();g.arc(x,y,2.5,0,Math.PI*2);g.fill();g.fillStyle=hues[0];}
       g.globalAlpha = 1;
     });
     const clothHue: readonly [string, string] = mood.cheer > 0.5 ? ['#c8322c', '#fff'] : ['#3b5f9a', '#fff'];
@@ -126,10 +165,10 @@ export default defineThing({
     const coverOn = (group: Sculpture, kind: 'cloth' | 'wax' | 'lid', r: number, h: number) => {
       const neck = r * 0.83;
       if (kind === 'lid') {
-        group.cylinder(neck + 0.002, neck + 0.002, 0.013, [0, h - 0.004, 0], group.material('#c9a544', { metalness: 0.85, roughness: 0.3 }), 32);
+        group.cylinder(neck + 0.002, neck + 0.002, 0.013, [0, h - 0.004, 0], group.material('#c9a544', { metalness: 0.65, roughness: 0.35, map: cloth(clothHue) }), 32);
         return h + 0.0025;
       }
-      const texture = kind === 'cloth' ? cloth(clothHue) : null;
+      const texture = cloth(kind==='cloth'?clothHue:['#b8a573','#fff']);
       if (texture) { texture.wrapS = texture.wrapT = THREE.RepeatWrapping; texture.repeat.set(6, 2); }
       const skin = new THREE.MeshStandardMaterial({ color: kind === 'cloth' ? '#ffffff' : '#efe6c8', map: texture, roughness: 1, side: THREE.DoubleSide });
       const flare = kind === 'cloth' ? 1.5 : 1.22, drop = kind === 'cloth' ? 0.034 : 0.022;
@@ -155,6 +194,10 @@ export default defineThing({
       body.castShadow = true;
       body.renderOrder = 2;
       group.ring(R * 0.83 + 0.001, 0.0022, [0, H - 0.002, 0], glass).rotation.x = Math.PI / 2;
+      const raisedGlass=glass.clone();raisedGlass.opacity=.4;
+      if(a.relief==='ribs')for(let i=0;i<24;i++){const t=i*Math.PI*2/24;group.rod([Math.sin(t)*R,H*.08,Math.cos(t)*R],[Math.sin(t)*R,H*.32,Math.cos(t)*R],.0009,raisedGlass);}
+      if(a.relief==='dimples')for(let i=0;i<22;i++){const t=i*Math.PI*2/22;group.ball([.002,.0024,.001],[Math.sin(t)*R,H*.13,Math.cos(t)*R],raisedGlass,8).rotation.y=t;}
+      if(a.relief==='bands')for(const h of [.1,.23,.7])group.ring(wall(H*h,R)+.0005,.0011,[0,H*h,0],raisedGlass).rotation.x=Math.PI/2;
       const fillTop = Math.max(0.004, H * 0.88 * level);
       group.mesh(new THREE.LatheGeometry(profile(R - 0.0028, fillTop, true), sides), preserve);
       if (level < 0.4) {
@@ -171,6 +214,12 @@ export default defineThing({
         const lw = a.jar === 'hex' ? R * 0.92 : R * arc, lh = Math.min(0.04, H * 0.42);
         const texture = paint(512, Math.round(512 * lh / lw), (g, w, h) => {
           const old = a.label === 'faded' ? 1 : mood.wear;
+          g.save();g.beginPath();
+          if(a.labelShape==='oval')g.ellipse(w/2,h/2,w/2-2,h/2-2,0,0,Math.PI*2);
+          else if(a.labelShape==='clipped'){const cut=Math.min(w,h)*.12;g.moveTo(cut,0);g.lineTo(w-cut,0);g.lineTo(w,cut);g.lineTo(w,h-cut);g.lineTo(w-cut,h);g.lineTo(cut,h);g.lineTo(0,h-cut);g.lineTo(0,cut);g.closePath();}
+          else if(a.labelShape==='scallop'){g.roundRect(7,7,w-14,h-14,12);for(let x=20;x<w-10;x+=30){g.moveTo(x+12,12);g.arc(x,12,12,0,Math.PI*2);g.moveTo(x+12,h-12);g.arc(x,h-12,12,0,Math.PI*2);}for(let y=20;y<h-10;y+=30){g.moveTo(24,y);g.arc(12,y,12,0,Math.PI*2);g.moveTo(w,y);g.arc(w-12,y,12,0,Math.PI*2);}}
+          else g.rect(0,0,w,h);
+          g.clip();
           g.fillStyle = `rgb(${245 - old * 30},${238 - old * 40},${218 - old * 60})`;
           g.fillRect(0, 0, w, h);
           g.strokeStyle = a.label === 'fete' ? '#b03a30' : '#2b4a8a';
@@ -194,8 +243,9 @@ export default defineThing({
           });
           g.globalAlpha = 1;
           if (old > 0.5) for (let i = 0; i < 6; i++) { g.fillStyle = `rgba(120,90,40,${0.1 + random() * 0.15})`; g.beginPath(); g.ellipse(random() * w, random() * h, 30 + random() * 60, 20 + random() * 40, random() * 3, 0, Math.PI * 2); g.fill(); }
+          g.restore();
         });
-        const paper = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.9, side: THREE.DoubleSide });
+        const paper = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.9, side: THREE.DoubleSide, transparent: true, alphaTest:.1 });
         const y = H * 0.42;
         if (a.jar === 'hex') {
           const flat = group.mesh(new THREE.PlaneGeometry(lw, lh), paper, [0, y, R * Math.cos(Math.PI / 6) + 0.0006]);
@@ -236,7 +286,7 @@ export default defineThing({
         lid.rotation.z = 0;
         s.cylinder(R * 0.78, R * 0.78, 0.001, [lx, 0.0125, lz], s.material('#f1ecd9', { roughness: 0.5 }), 24);
       } else {
-        const texture = kind === 'cloth' ? cloth(clothHue) : null;
+        const texture = cloth(kind==='cloth'?clothHue:['#b8a573','#fff']);
         if (texture) { texture.wrapS = texture.wrapT = THREE.RepeatWrapping; texture.repeat.set(3, 3); }
         const flat = s.mesh(new THREE.CircleGeometry(R * 1.35, 28), new THREE.MeshStandardMaterial({ color: kind === 'cloth' ? '#ffffff' : '#efe6c8', map: texture, roughness: 1, side: THREE.DoubleSide }), [lx, 0.0025, lz]);
         flat.rotation.x = -Math.PI / 2;
@@ -254,8 +304,11 @@ export default defineThing({
       const group = new Sculpture(context);
       group.box([0.095, 0.0014, 0.016], [0.045, 0, 0], steel);
       group.cylinder(0.008, 0.008, 0.0014, [0.0925, 0, 0], steel, 16);
-      const handleSkin = group.material(mood.wear > 0.5 ? '#e5d9b6' : '#f1ead6', { roughness: 0.4 });
+      const handleSkin = group.material(a.handle==='wood'?'#8e603a':a.handle==='steel'?'#bec8c6':mood.wear>.5?'#e5d9b6':'#f1ead6', { roughness:a.handle==='steel'?.24:.4, metalness:a.handle==='steel'?.85:0 });
       group.box([0.08, 0.008, 0.013], [-0.042, 0, 0], handleSkin);
+      if(a.handle==='wood')for(const x of [-.065,-.02])group.cylinder(.0017,.0017,.0007,[x,.0043,0],steel,10);
+      if(a.handle==='striped')for(let i=0;i<6;i++)group.box([.005,.0007,.0132],[-.075+i*.011,.0043,0],group.material(i%2?'#3f708b':'#bd5145'));
+      if(a.handle==='steel')group.cylinder(.002,.002,.0003,[-.073,.0043,0],group.material('#53605d'),12);
       group.ball([0.03, 0.0028, 0.0085], [0.062, 0.0015, 0], sticky, 12);
       return group;
     };
@@ -284,6 +337,7 @@ export default defineThing({
       group.ball([0.008, 0.0038, 0.012], [0, 0.0015, 0], sticky, 12);
       group.rod([0, 0, 0.014], [0, 0, 0.11], 0.0026, steel, 0.0018);
       group.ball([0.005, 0.002, 0.008], [0, 0, 0.112], steel, 10);
+      if(a.handle!=='steel'){const grip=group.material(a.handle==='wood'?'#8e603a':'#e9ddbd');group.ball([.0035,.0026,.027],[0,0,.08],grip,12);if(a.handle==='striped')for(let i=0;i<4;i++)group.box([.006,.0006,.003],[0,.0028,.06+i*.012],group.material(i%2?'#3f708b':'#bd5145'));}
       group.root.position.set(R + 0.03, 0.004, 0.055);
       group.root.rotation.set(0, -0.5 + wobble(0.3), 0);
       s.root.add(group.root);
@@ -344,6 +398,23 @@ export default defineThing({
       spread.rotation.y = 0.4;
     }
 
+    const tx=.145,tz=-.075,paper=s.material('#e9dfbd'),wood=s.material('#b68b54');
+    if(a.tasting==='dish'){
+      s.lathe([[0,.004],[.017,.004],[.025,.009],[.027,.007],[.021,.001],[0,.001]],s.material('#f3e9d0'),[tx,0,tz]);
+      s.ball([.009,.002,.008],[tx,.005,tz],sticky,14);
+    }else if(a.tasting==='recipe'){
+      s.box([.062,.001,.045],[tx,.0005,tz],paper);
+      for(let i=0;i<5;i++)s.box([.04-i*.004,.0003,.0006],[tx-.005,.0012,tz-.014+i*.006],s.material('#6f614e'));
+      const label=s.label('RECIPE',.034,.008,[tx,.0013,tz-.018],'#6f614e','#e9dfbd');label.rotation.x=-Math.PI/2;
+    }else if(a.tasting==='labels'){
+      for(let i=0;i<4;i++){const label=s.box([.045,.0008,.027],[tx+i*.002,.0004+i*.0008,tz+i*.002],paper);label.rotation.y=.06*i;}
+      const label=s.label('PRESERVES',.033,.012,[tx+.006,.0037,tz+.006],'#3e5f81','#e9dfbd');label.rotation.x=-Math.PI/2;
+    }else{
+      s.cylinder(.009,.009,.026,[tx,.013,tz],twine,20);
+      for(const y of [.002,.026])s.cylinder(.013,.013,.004,[tx,y,tz],wood,24);
+      for(let i=0;i<9;i++)s.ring(.0093,.0004,[tx,.005+i*.0023,tz],twine).rotation.x=Math.PI/2;
+      s.tube([[tx,.002,tz+.008],[tx+.018,.001,tz+.013],[tx+.024,.001,tz],[tx+.038,.001,tz+.004]],.0006,twine);
+    }
     return s.finish();
   },
 });

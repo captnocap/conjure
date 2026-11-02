@@ -44,6 +44,42 @@ export default defineThing({
       second: 'A second cup set out, clean and unused.',
       tin: 'An open tin of ground coffee with a scoop.',
     }),
+    facets: choice('How is the metal body shaped?', {
+      eight: 'The familiar eight flat facets.',
+      six: 'Six broad angular facets.',
+      ten: 'Ten narrower facets catch the light.',
+      round: 'A smooth round-bodied pot.',
+    }),
+    grip: choice('What material forms the handle and lid grip?', {
+      black: 'Black moulded heat-resistant grips.',
+      wood: 'Warm wooden grips.',
+      cream: 'Cream-coloured moulded grips.',
+      red: 'Red moulded grips matching a bright kitchen.',
+    }),
+    knob: choice('What shape is the lid knob?', {
+      round: 'A rounded knob on a short neck.',
+      cone: 'A broad shallow conical knob.',
+      square: 'A small squared-off block knob.',
+      disc: 'A flat wide disc on a narrow stem.',
+    }),
+    lidShape: choice('How is the hinged lid pressed?', {
+      dome: 'A shallow faceted dome.',
+      flat: 'A nearly flat lid with a raised edge.',
+      stepped: 'Two shallow concentric steps rise to the knob.',
+      ridged: 'A domed lid with fine raised radial ribs.',
+    }),
+    cupMarks: choice('How is the accompanying cup decorated?', {
+      plain: 'Plain undecorated cup walls.',
+      stripes: 'Three narrow horizontal colour bands.',
+      dots: 'A row of small dots around the lower rim.',
+      stamp: 'A small coffee-house medallion on the front.',
+    }),
+    preparation: choice('Which small coffee-making item lies nearby?', {
+      spoon: 'A small long-handled coffee spoon.',
+      brush: 'A short cleaning brush with a wooden handle.',
+      measure: 'An open measuring scoop with a metal handle.',
+      note: 'A folded paper card with serving notes.',
+    }),
   },
 
   build(a, context) {
@@ -55,12 +91,12 @@ export default defineThing({
     const hot = a.state === 'brewing' || a.state === 'poured' || a.state === 'over';
 
     const raw = { aluminium: '#c5c9ca', polished: '#e6e9ea', red: '#c5c9ca', black: '#26272a', copper: '#c77a48', mint: '#c5c9ca' }[a.finish];
-    const metalParams = { flatShading: true, metalness: a.finish === 'black' ? 0.3 : a.finish === 'copper' ? 0.45 : 0.85, roughness: a.finish === 'polished' ? 0.1 : a.finish === 'copper' ? 0.25 : 0.4 + mood.wear * 0.25 };
+    const metalParams = { flatShading: a.facets!=='round', metalness: a.finish === 'black' ? 0.3 : a.finish === 'copper' ? 0.45 : 0.85, roughness: a.finish === 'polished' ? 0.1 : a.finish === 'copper' ? 0.25 : 0.4 + mood.wear * 0.25 };
     const lower = new THREE.MeshStandardMaterial({ color: new THREE.Color(raw).lerp(new THREE.Color('#4a3a2c'), mood.wear * 0.45), ...metalParams });
     const upperTint = a.finish === 'red' ? '#c2261f' : a.finish === 'mint' ? '#a9d9c2' : raw;
     const upper = new THREE.MeshStandardMaterial({ color: upperTint, ...metalParams, ...(a.finish === 'red' || a.finish === 'mint' ? { metalness: 0.1, roughness: 0.25 } : {}) });
     const band = new THREE.MeshStandardMaterial({ color: raw, metalness: 0.85, roughness: 0.35 });
-    const bakelite = s.material('#17171a', { roughness: 0.35 });
+    const bakelite = s.material({black:'#17171a',wood:'#93643d',cream:'#e5d8b6',red:'#b5372f'}[a.grip], { roughness:a.grip==='wood'?.65:.35 });
     const brass = s.material('#c9a544', { metalness: 0.9, roughness: 0.3 });
     const coffee = new THREE.MeshStandardMaterial({ color: '#2a160c', roughness: 0.15 });
     const china = s.material('#f5f2ea', { roughness: 0.28, side: THREE.DoubleSide });
@@ -110,12 +146,12 @@ export default defineThing({
 
     // The pot, built at three-cup size and scaled.
     const pot = new Sculpture(context);
-    const eighth = Math.PI / 8;
+    const sides={eight:8,six:6,ten:10,round:40}[a.facets],eighth=Math.PI/sides;
     const hBase = 0.066 * tall, hTop = 0.072 * tall, collar = 0.012;
     const yWaist = hBase + collar, yRim = yWaist + hTop;
     const baseGroup = new Sculpture(context), topGroup = new Sculpture(context);
     const part = (group: Sculpture, top: number, bottom: number, height: number, y: number, skin: THREE.Material) => {
-      const mesh = group.mesh(new THREE.CylinderGeometry(top, bottom, height, 8), skin, [0, y, 0]);
+      const mesh = group.mesh(new THREE.CylinderGeometry(top, bottom, height, sides), skin, [0, y, 0]);
       mesh.rotation.y = eighth;
       return mesh;
     };
@@ -128,8 +164,9 @@ export default defineThing({
     baseGroup.ball([0.0032, 0.0032, 0.0032], [0, hBase * 0.62, 0.0455], brass, 8);
 
     // Top section, origin at the waist.
-    part(topGroup, 0.047, 0.035, hTop, hTop / 2, upper);
-    part(topGroup, 0.049, 0.049, 0.004, hTop, upper);
+    // The upper collector is hollow, so the opened lid reveals the chimney and coffee.
+    const collector=topGroup.mesh(new THREE.LatheGeometry([[0,0],[.035,0],[.047,hTop],[.045,hTop],[.033,.003],[0,.003]].map(([r,y])=>new THREE.Vector2(r,y)),sides),upper);collector.rotation.y=eighth;
+    const lip=topGroup.mesh(new THREE.LatheGeometry([[.047,hTop-.002],[.049,hTop-.002],[.049,hTop+.002],[.045,hTop+.002],[.045,hTop-.002]].map(([r,y])=>new THREE.Vector2(r,y)),sides),upper);lip.rotation.y=eighth;
     const spout = topGroup.mesh(new THREE.CylinderGeometry(0.017, 0.006, 0.03, 3), upper, [0.046, hTop - 0.013, 0]);
     spout.rotation.set(0, -Math.PI / 2, 0);
     spout.scale.set(1, 1, 0.9);
@@ -143,10 +180,17 @@ export default defineThing({
     topGroup.mesh(handleGeometry, bakelite);
     // Lid on a hinge at the handle side.
     const lid = new Sculpture(context);
-    const dome = lid.mesh(new THREE.CylinderGeometry(0.012, 0.048, 0.016, 8), upper, [0.046, 0.008, 0]);
-    dome.rotation.y = eighth;
-    lid.cylinder(0.006, 0.0085, 0.008, [0.046, 0.02, 0], bakelite, 12);
-    lid.ball([0.0095, 0.007, 0.0095], [0.046, 0.028, 0], bakelite, 12);
+    const lidHeight=a.lidShape==='flat'?.004:a.lidShape==='stepped'?.014:.016;
+    const dome=lid.mesh(new THREE.CylinderGeometry(a.lidShape==='flat'?.048:.012,.048,lidHeight,sides),upper,[.046,lidHeight/2,0]);dome.rotation.y=eighth;
+    if(a.lidShape==='stepped')for(const [r,y]of [[.037,.009],[.025,.015]] as const)lid.cylinder(r,r,.005,[.046,y,0],upper,sides).rotation.y=eighth;
+    if(a.lidShape==='flat')lid.ring(.047,.0013,[.046,.004,0],band).rotation.x=Math.PI/2;
+    if(a.lidShape==='ridged')for(let i=0;i<sides;i++){const t=(i+.5)/sides*Math.PI*2;lid.rod([.046+Math.sin(t)*.014,.017,Math.cos(t)*.014],[.046+Math.sin(t)*.045,.002,Math.cos(t)*.045],.0007,band);}
+    lid.cylinder(.006,.0085,.008,[.046,lidHeight+.004,0],bakelite,12);
+    const knobY=lidHeight+.012;
+    if(a.knob==='round')lid.ball([.0095,.007,.0095],[.046,knobY,0],bakelite,12);
+    if(a.knob==='cone')lid.cylinder(.006,.013,.012,[.046,knobY,0],bakelite,16);
+    if(a.knob==='square')lid.box([.018,.012,.018],[.046,knobY,0],bakelite);
+    if(a.knob==='disc')lid.cylinder(.014,.014,.005,[.046,knobY,0],bakelite,24);
     lid.root.position.set(-0.046, hTop + 0.002, 0);
     const openLid = a.state === 'poured' || a.state === 'apart' || (a.state === 'over' && random() > 0.5);
     lid.root.rotation.z = openLid ? 1.75 : 0;
@@ -154,7 +198,7 @@ export default defineThing({
     if (openLid) {
       // Looking down the chimney: the centre column and the coffee that is left.
       topGroup.cylinder(0.005, 0.007, hTop * 0.8, [0, hTop * 0.5, 0], band, 10);
-      if (a.state !== 'apart') topGroup.cylinder(0.04, 0.04, 0.002, [0, hTop * (a.state === 'poured' ? 0.35 : 0.8), 0], coffee, 8).rotation.y = eighth;
+      if (a.state !== 'apart') {const level=a.state==='poured'?.35:.8,rr=mix(.033,.045,level);topGroup.cylinder(rr,rr,.002,[0,hTop*level,0],coffee,sides).rotation.y=eighth;}
     }
 
     pot.root.add(baseGroup.root);
@@ -162,11 +206,11 @@ export default defineThing({
       // Funnel basket full of spent grounds sits in the base; the top stands apart.
       pot.cylinder(0.033, 0.033, 0.004, [0, yWaist + 0.001, 0], band, 24);
       pot.cylinder(0.03, 0.03, 0.003, [0, yWaist + 0.003, 0], s.material('#3a2415', { roughness: 1 }), 24);
-      topGroup.root.position.set(0.105, 0, 0.065);
+      topGroup.root.position.set(.105,a.stand==='burner'?0:-lift/k,.065);
       topGroup.root.rotation.y = -0.5 + wobble(0.3);
       // The rubber gasket and filter plate, left out.
-      pot.ring(0.03, 0.004, [-0.03, 0.004, 0.105], s.material('#e8e2d2', { roughness: 0.8 })).rotation.x = Math.PI / 2;
-      pot.cylinder(0.028, 0.028, 0.002, [-0.03, 0.002, 0.105], band, 20);
+      pot.ring(0.03, 0.004, [-0.03,0.004-(a.stand==='burner'?0:lift/k),0.105], s.material('#e8e2d2', { roughness: 0.8 })).rotation.x = Math.PI / 2;
+      pot.cylinder(0.028, 0.028, 0.002, [-0.03,0.002-(a.stand==='burner'?0:lift/k),0.105], band, 20);
     } else {
       topGroup.root.position.y = yWaist;
       topGroup.root.rotation.y = wobble(0.03);
@@ -236,6 +280,12 @@ export default defineThing({
         cup.ring(0.0615, 0.0012, [0, 0.062, 0], cup.material(mood.cheer > 0.5 ? '#c8322c' : '#35558c')).rotation.x = Math.PI / 2;
         top = 0.068; r = 0.057;
       } else return;
+
+      const marking=cup.material('#9e5036');
+      const outerR=(y:number)=>kind==='enamel'?.036:kind==='glass'?mix(.023,.029,y/top):kind==='bowl'?mix(.027,.062,Math.max(0,(y-.012)/(top-.012))):mix(.018,.0285,Math.max(0,(y-.012)/(top-.012)));
+      if(a.cupMarks==='stripes')for(const t of [.63,.71,.79])cup.ring(outerR(top*t)+.0005,.00065,[0,top*t,0],marking).rotation.x=Math.PI/2;
+      if(a.cupMarks==='dots')for(let i=0;i<18;i++){const t=i/18*Math.PI*2,y=top*.67,rr=outerR(y)+.0005;cup.ball([.0016,.0016,.0006],[Math.sin(t)*rr,y,Math.cos(t)*rr],marking,8).rotation.y=t;}
+      if(a.cupMarks==='stamp'){const y=top*.6,rr=outerR(y);cup.ball([.007,.007,.0008],[0,y,rr+.0005],marking,16);cup.label('C',.008,.009,[0,y,rr+.0015],'#f1dfb8','#9e5036');}
       const wallIn = kind === 'espresso' ? 0.012 : kind === 'bowl' ? 0.02 : 0.006;
       if (fill > 0.02) {
         const y = mix(wallIn + 0.003, top - 0.006, fill);
@@ -278,6 +328,19 @@ export default defineThing({
       s.rod([bx - 0.005, 0.062, bz], [bx + 0.03, 0.105, bz + 0.03], 0.0025, s.material('#d9dcdc', { metalness: 0.9, roughness: 0.3 }));
     }
 
+    const px=-.13*k,pz=-.09*k,wood=s.material('#ad8250'),steel=s.material('#bdc7c9',{metalness:.8,roughness:.3});
+    if(a.preparation==='spoon'){
+      s.ball([.009,.002,.014],[px,.002,pz],steel,14);s.rod([px,.003,pz+.01],[px,.003,pz+.085],.002,steel);s.ball([.004,.002,.007],[px,.003,pz+.087],steel,12);
+    }else if(a.preparation==='brush'){
+      s.box([.017,.008,.05],[px,.004,pz],wood);s.cylinder(.004,.004,.05,[px,.004,pz+.046],wood,12).rotation.x=Math.PI/2;
+      for(let i=0;i<5;i++)for(let j=0;j<3;j++)s.rod([px+(j-1)*.005,.008,pz+(i-2)*.009],[px+(j-1)*.005,.015,pz+(i-2)*.009],.0012,s.material('#c9b690'));
+    }else if(a.preparation==='measure'){
+      s.lathe([[0,.002],[.014,.002],[.019,.023],[.017,.023],[.012,.004],[0,.004]],steel,[px,0,pz]);s.rod([px,.014,pz+.017],[px,.014,pz+.077],.0024,steel);
+    }else{
+      s.box([.063,.001,.046],[px,.0005,pz],s.material('#e8dfc7'));
+      const t=s.label('COFFEE',.044,.011,[px,.0012,pz-.012],'#635340','#e8dfc7');t.rotation.x=-Math.PI/2;
+      for(let i=0;i<4;i++)s.box([.043-i*.005,.0003,.0006],[px-.004,.0012,pz+i*.005],s.material('#635340'));
+    }
     const speed = mix(0.25, 1.6, mood.energy);
     return s.finish({
       update: puffs.length || flames.length

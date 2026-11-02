@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Ion pump vacuum chamber section", "summary": "A cut-open pump canister shows repeated plate and tube cells attached to a real flange and support. A beam-transport engineering specimen with a clear vacuum aperture, connected mechanisms and an exposed service view.", "scales": ["tabletop", "room"]});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Sunspot penumbral filament section", "summary": "A long tapered filament has a distinct head, body and tail in an open surrounding layer, using verified observation-based structure. A schematic penumbral filament relief with a bright head, elongated body and tapering tail; field traces summarize inferred structure rather than a rendered MHD simulation.", "scales": ["planetary", "macro"]});

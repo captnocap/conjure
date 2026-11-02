@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Lobate scarp terminal fold plunge", "summary": "An arcuate scarp dwindles into a plunging low fold with continuous surface relief and no detached contour strips. A steep scarp continuously loses relief into a plunging low fold and surrounding plain. The terminal branches and real terrain sections expose how mapped relief dies out, without claiming a precise subsurface fault solution.", "scales": ["planetary", "landscape", "tabletop"]});

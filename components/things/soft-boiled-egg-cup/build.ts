@@ -25,6 +25,12 @@ const eggRadius = (t: number) => EGG_R * Math.sqrt(Math.max(0, 4 * t * (1 - t)))
 
 export default defineThing({
   questions: {
+    form: choice('What is the shape of the egg cup?',{footed:'A narrow stem above a broad round foot.',barrel:'A compact straight-sided barrel cup.',cone:'A simple tapered cup without a separate stem.',ribbed:'A footed cup with gently fluted sides.'}),
+    breakEdge: choice('How was the eggshell top removed?',{tapped:'An uneven rim from tapping with a spoon.',cut:'A clean level rim from an egg-top cutter.',scallop:'A ring of small rounded chips.',chip:'One larger missing chip at the front.'}),
+    spoonHandle: choice('What handle does the egg spoon have?',{steel:'A plain polished steel handle.',ivory:'A cream resin handle with a metal collar.',wood:'A warm turned wooden handle.',blue:'A blue painted handle with pale dots.'}),
+    seasoning: choice('What seasoning is visible on the egg?',{pepper:'A few dark cracked pepper grains.',paprika:'A light dusting of red paprika.',chives:'Several short green chive pieces.',salt:'Tiny pale flakes of salt.'}),
+    soldierCut: choice('How were the toast soldiers cut?',{slim:'Narrow delicate fingers.',broad:'Broad thick fingers for dipping.',square:'Regular square-edged sticks.',crinkle:'Wavy crinkle-cut sides.'}),
+    companion: choice('Which small breakfast accessory sits nearby?',{sand:'A tiny wooden three-minute sand timer.',dial:'A round mechanical kitchen timer.',napkin:'A neatly folded linen napkin.',rest:'A small ceramic spoon rest.'}),
     pattern: choice('What is the egg cup like?', {
       white: 'Plain white china, a hotel or hospital cup.',
       cornish: 'Broad blue and white bands, classic kitchen stripeware.',
@@ -79,6 +85,8 @@ export default defineThing({
     const { mood, random } = context;
     const wobble = (amount: number) => (random() - 0.5) * 2 * amount;
 
+    const cupProfile: [number,number][]=CUP.map(([r,y])=>[a.form==='barrel'&&y>.003?mix(.021,.0258,y/.058):a.form==='cone'&&y>.003?mix(.016,.0258,y/.058):r,y]);
+    const actualCupRadius=(y:number)=>{for(let i=1;i<cupProfile.length;i++)if(y<=cupProfile[i][1])return mix(cupProfile[i-1][0],cupProfile[i][0],(y-cupProfile[i-1][1])/Math.max(.0001,cupProfile[i][1]-cupProfile[i-1][1]));return .0258;};
     // Plate.
     const plateTint = { saucer: '#f3f0e6', enamel: '#f4f3ee', melamine: ['#f2c230', '#e85d4a', '#4aa3d8', '#6cc070'][Math.floor(random() * 4)], board: '#b98852' }[a.plate];
     const plateSkin = s.material(plateTint, { roughness: a.plate === 'board' ? 0.8 : 0.3, side: THREE.DoubleSide });
@@ -161,7 +169,8 @@ export default defineThing({
       });
 
     const cupAt = (x: number, z: number, open: boolean) => {
-      const cup = s.lathe(CUP, cupSkin, [x, top, z]);
+      const cup = s.lathe(cupProfile, cupSkin, [x, top, z]);
+      if(a.form==='ribbed'){const pos=cup.geometry.getAttribute('position');for(let i=0;i<pos.count;i++){const xx=pos.getX(i),zz=pos.getZ(i),f=1+.055*Math.cos(Math.atan2(zz,xx)*12);if(pos.getY(i)>.026)pos.setXYZ(i,xx*f,pos.getY(i),zz*f);}cup.geometry.computeVertexNormals();}
       cup.rotation.y = Math.PI;
       const base = top + 0.03;
       if (!open) {
@@ -172,7 +181,7 @@ export default defineThing({
       // A ragged edge where the top was tapped off.
       const position = shell.geometry.getAttribute('position');
       for (let i = 0; i < position.count; i++)
-        if (position.getY(i) > CUT * EGG_H - 0.0005) position.setY(i, position.getY(i) + wobble(0.0022));
+        if (position.getY(i) > CUT * EGG_H - 0.0005) {const theta=Math.atan2(position.getZ(i),position.getX(i));const delta=a.breakEdge==='cut'?0:a.breakEdge==='scallop'?-.0015*Math.abs(Math.sin(theta*9)):a.breakEdge==='chip'?(Math.cos(theta-Math.PI/2)>.83?-.006:0):wobble(.0022);position.setY(i,position.getY(i)+delta);}
       shell.geometry.computeVertexNormals();
       return base;
     };
@@ -188,6 +197,12 @@ export default defineThing({
       const dome = s.ball([inner * 0.78 * mix(0.55, 1, yolkLeft), 0.003 + 0.004 * yolkLeft * (1 - a.yolk * 0.5), inner * 0.78 * mix(0.55, 1, yolkLeft)], [cx + wobble(0.002), base + level * EGG_H, cz + wobble(0.002)], yolkSkin, 20);
       dome.castShadow = false;
     }
+    // Seasoning follows the exposed edible surface, with only residue in an empty shell.
+    const seasoning=s.material({pepper:'#4e3b2d',paprika:'#a74526',chives:'#5b793c',salt:'#fffdf2'}[a.seasoning],{roughness:1});
+    for(let i=0;i<(a.seasoning==='paprika'?32:12);i++){const t=random()*Math.PI*2,r=Math.sqrt(random())*inner*.65;const y=base+level*EGG_H+(yolkLeft>.03?.0035:0);
+      if(a.seasoning==='chives')s.rod([cx+Math.cos(t)*r,y,cz+Math.sin(t)*r],[cx+Math.cos(t)*r+.003,y+.0003,cz+Math.sin(t)*r+.001],.00045,seasoning);
+      else s.ball([a.seasoning==='paprika'?.00055:.0008,.0004,.0008],[cx+Math.cos(t)*r,y+.0003,cz+Math.sin(t)*r],seasoning,6);
+    }
     // Yolk escaping down the shell and the cup.
     const runs = a.yolk > 0.5 && a.eaten < 0.9 ? Math.round((a.yolk - 0.45) * 6 + random()) : 0;
     for (let i = 0; i < runs; i++) {
@@ -197,7 +212,7 @@ export default defineThing({
       const cutY = base + CUT * EGG_H;
       for (let d = -0.002; d <= reach; d += 0.004) {
         const y = cutY - d;
-        const r = d < 0 ? eggRadius(CUT) * 0.85 : Math.max(eggRadius((y - base) / EGG_H), y - top < 0.058 ? cupRadius(y - top) : 0) + 0.0008;
+        const r = d < 0 ? eggRadius(CUT) * 0.85 : Math.max(eggRadius((y - base) / EGG_H), y - top < 0.058 ? actualCupRadius(y - top) : 0) + 0.0008;
         const drift = angle + Math.sin(d * 60 + i) * 0.04;
         points.push([cx + Math.sin(drift) * r, y, cz + Math.cos(drift) * r]);
       }
@@ -218,6 +233,7 @@ export default defineThing({
     cap.add(capShell, capWhite);
     cap.rotation.set(Math.PI + wobble(0.25), wobble(3), wobble(0.25));
     cap.position.set(cx + 0.035 + wobble(0.006), top + 0.0005, cz + 0.045 + wobble(0.006));
+    cap.updateMatrixWorld(true);cap.position.y+=top-new THREE.Box3().setFromObject(cap,true).min.y;
     s.root.add(cap);
     const bits = Math.round(mix(1, 9, a.eaten) * mix(0.6, 1.5, mood.density));
     s.scatter(new THREE.TetrahedronGeometry(1), shellSkin, Array.from({ length: bits }, () => {
@@ -237,6 +253,10 @@ export default defineThing({
     tip.position.z = 0.09;
     bowl.castShadow = handle.castShadow = tip.castShadow = true;
     spoon.add(bowl, handle, tip);
+    if(a.spoonHandle!=='steel'){
+      const grip=new THREE.Mesh(new THREE.CylinderGeometry(.003,.004,.055,12),s.material({ivory:'#e6d9b9',wood:'#a66f39',blue:'#4e7194'}[a.spoonHandle]));grip.rotation.x=Math.PI/2;grip.position.z=.066;spoon.add(grip);
+      if(a.spoonHandle==='blue')for(let i=0;i<5;i++){const dot=new THREE.Mesh(new THREE.SphereGeometry(.0009,6,4),white);dot.position.set(0,.0038,.046+i*.01);spoon.add(dot);}
+    }
     if (a.eaten > 0.2 && a.eaten < 0.85 && !a.dipped) {
       spoon.position.set(cx, base + level * EGG_H + 0.003, cz);
       spoon.rotation.set(-0.95, 0.7 + wobble(0.5), 0);
@@ -250,15 +270,17 @@ export default defineThing({
     const crust = s.material('#9a5f2a', { roughness: 0.9 });
     const crumb = s.material(a.soldiers === 'marmite' ? '#3d2412' : '#e9c47c', { roughness: 0.85 });
     const butter = s.material('#f6dc7a', { roughness: 0.3 });
+    const soldierWidth={slim:.014,broad:.027,square:.02,crinkle:.021}[a.soldierCut];
     const soldier = (x: number, y: number, z: number, turn: number, length = 0.082, tilt = 0) => {
       const group = new THREE.Group();
-      const body = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.011, length), crust);
-      const face = new THREE.Mesh(new THREE.BoxGeometry(0.0165, 0.0115, length - 0.004), crumb);
+      const body = new THREE.Mesh(new THREE.BoxGeometry(soldierWidth, 0.011, length), crust);
+      const face = new THREE.Mesh(new THREE.BoxGeometry(soldierWidth-.0035, 0.0115, length - 0.004), crumb);
       face.position.y = 0.0006;
       const melt = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.0122, length * 0.6), a.soldiers === 'marmite' ? crumb : butter);
       melt.position.set(0.001, 0.0004, 0.004);
       body.castShadow = body.receiveShadow = true;
       group.add(body, face, melt);
+      if(a.soldierCut==='crinkle')for(const side of [-1,1])for(let i=0;i<10;i++){const nub=new THREE.Mesh(new THREE.CylinderGeometry(.002,.002,.011,8),crust);nub.position.set(side*soldierWidth/2,0,-length/2+.004+i*(length-.008)/9);group.add(nub);}
       group.position.set(x, y, z);
       group.rotation.set(tilt, turn, 0);
       s.root.add(group);
@@ -328,6 +350,21 @@ export default defineThing({
       }));
     }
 
+    const accessory=new Sculpture(context),wood=accessory.material('#b58a56'),linen=accessory.material('#eee6d1');
+    if(a.companion==='sand'){
+      for(const y of [.004,.077])accessory.cylinder(.024,.024,.008,[0,y,0],wood,20);
+      for(let i=0;i<3;i++){const t=i*Math.PI*2/3;accessory.rod([Math.cos(t)*.02,.008,Math.sin(t)*.02],[Math.cos(t)*.02,.073,Math.sin(t)*.02],.002,wood);}
+      accessory.lathe([[.015,.009],[.016,.018],[.009,.03],[.002,.04],[.009,.05],[.016,.065],[.015,.072]],new THREE.MeshPhysicalMaterial({color:'#e2ece8',transparent:true,opacity:.28,roughness:.08,side:THREE.DoubleSide}));
+      accessory.cylinder(.003,.013,.018,[0,.018,0],accessory.material('#d4b56c'),20);accessory.cylinder(.011,.002,.014,[0,.061,0],accessory.material('#d4b56c'),20);accessory.rod([0,.031,0],[0,.052,0],.00055,accessory.material('#d4b56c'));
+    }
+    if(a.companion==='dial'){
+      accessory.cylinder(.027,.03,.025,[0,.0125,0],accessory.material('#ece6d6'),32);
+      const face=paint(128,128,(g)=>{g.fillStyle='#f5f0dd';g.fillRect(0,0,128,128);g.strokeStyle='#34444b';for(let i=0;i<12;i++){const t=i*Math.PI/6;g.lineWidth=i%3?2:4;g.beginPath();g.moveTo(64+Math.sin(t)*45,64-Math.cos(t)*45);g.lineTo(64+Math.sin(t)*54,64-Math.cos(t)*54);g.stroke();}g.lineWidth=4;g.beginPath();g.moveTo(64,64);g.lineTo(92,40);g.stroke();});
+      accessory.mesh(new THREE.CircleGeometry(.026,32),new THREE.MeshStandardMaterial({map:face}),[0,.0253,0]).rotation.x=-Math.PI/2;accessory.box([.012,.009,.027],[0,.03,0],accessory.material('#567d8c'));
+    }
+    if(a.companion==='napkin'){accessory.box([.075,.003,.065],[0,.0015,0],linen);const fold=accessory.box([.037,.003,.065],[-.015,.0045,0],linen);fold.rotation.y=.08;for(let i=0;i<12;i++)accessory.rod([-.034+i*.006,.002,.033],[-.034+i*.006,.002,.038],.0004,linen);}
+    if(a.companion==='rest'){const dish=accessory.lathe([[0,0],[.014,0],[.022,.004],[.024,.008],[.021,.009],[.014,.003],[0,.003]],s.material('#c8d9d9',{roughness:.3,side:THREE.DoubleSide}));dish.scale.z=1.8;}
+    accessory.root.position.set(-.13,0,-.075);accessory.root.rotation.y=.24;s.root.add(accessory.root);
     return s.finish();
   },
 });

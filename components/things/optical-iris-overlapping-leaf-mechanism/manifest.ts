@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Optical iris overlapping leaf mechanism", "summary": "An iris assembly uses independently rotated overlapping leaves around a genuine variable aperture, with supported pivots and an outer drive ring. Rigid leaves overlap around a real polygonal aperture. Spaced teaching layers and offset support yokes expose the fixed pivots without piercing neighboring leaves; true radial slots receive connected drive pins.", "scales": ["macro", "tabletop"]});

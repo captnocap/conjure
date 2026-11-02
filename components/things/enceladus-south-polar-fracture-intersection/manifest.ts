@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Enceladus south polar fracture intersection", "summary": "Two finite icy fracture slots meet in a real branching intersection with connected surfaces and explicit retained walls. A scaled south-polar fracture-junction study with real connected slots and finite retained walls. The comparative angles and sectioned strata describe plausible schematic geometry, not a named mapped junction.", "scales": ["planetary", "landscape", "tabletop"]});

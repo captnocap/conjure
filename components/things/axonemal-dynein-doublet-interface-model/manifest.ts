@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Axonemal dynein doublet interface model", "summary": "Two adjacent microtubule doublets retain schematic dynein-arm bridges, nexin links and a genuine inspection gap. Two shared-wall doublets expose dynein attachment from one A tubule toward the neighboring B tubule. Motor heads, link spacing and release states are explanatory shapes, not atomic structures or measured force states.", "scales": ["macro", "tabletop"]});

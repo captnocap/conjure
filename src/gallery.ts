@@ -25,10 +25,10 @@ export async function saveToGallery(options: {
   readings?: string[];
   /** A short looping WebM of the scene moving, as a data URL, when the presentation asked for one. */
   loop?: string | null;
-}): Promise<void> {
+}): Promise<{ day: string; id: string } | null> {
   const { plan, reports, notes, temperature, roll, source, model, force, scene, print, series, readings, loop } = options;
   try {
-    const member = (cast: Plan['world']) => ({ id: cast.entry.id, belongs: cast.belongs, answers: cast.answers, ...(cast.relation ? { relation: cast.relation } : {}) });
+    const member = (cast: Plan['world']) => ({ id: cast.entry.id, belongs: cast.belongs, answers: cast.answers, ...(cast.relation ? { relation: cast.relation } : {}), ...(cast.material ? { material: cast.material } : {}) });
     const response = await fetch('/api/gallery', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -53,6 +53,7 @@ export async function saveToGallery(options: {
           accent: plan.accent ? { ...member(plan.accent.look), region: plan.accent.region, edge: plan.accent.edge } : null,
           otherworld: plan.otherworld ?? null,
           vacui: plan.vacui ?? null,
+          materialize: plan.materialize ?? null,
           camera: plan.camera ?? null,
           direction: plan.direction ? { id: plan.direction.entry.id, finishes: plan.direction.finishes } : null,
           // Keep the model's typed vector choices with the composited image so its
@@ -70,9 +71,31 @@ export async function saveToGallery(options: {
         },
       }),
     });
-    if (!response.ok) console.warn('The gallery did not save this generation:', response.status);
+    if (!response.ok) {
+      console.warn('The gallery did not save this generation:', response.status);
+      return null;
+    }
+    const saved = (await response.json()) as { day: string; id: string; duplicate?: boolean };
+    // The same picture is already kept; nothing more belongs with that entry.
+    if (saved.duplicate) return null;
+    return saved;
   } catch (error) {
     console.warn('The gallery did not save this generation:', error);
+    return null;
+  }
+}
+
+/** Attach a window print to an entry already saved. */
+export async function saveWindowToGallery(where: { day: string; id: string }, print: HTMLCanvasElement, view: unknown): Promise<void> {
+  try {
+    const response = await fetch(`/api/gallery/entry/${where.day}/${encodeURIComponent(where.id)}/window`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: print.toDataURL('image/jpeg', 0.9), view }),
+    });
+    if (!response.ok) console.warn('The gallery did not keep the window print:', response.status);
+  } catch (error) {
+    console.warn('The gallery did not keep the window print:', error);
   }
 }
 

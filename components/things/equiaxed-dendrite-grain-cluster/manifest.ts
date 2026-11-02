@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Equiaxed dendrite grain cluster", "summary": "Several separate star-like crystalline grains carry branched arms and meet at irregular impingement boundaries. A magnified materials-science model with solid branches, actual open interdendritic spaces and clearly identified teaching sections.", "scales": ["macro", "tabletop"]});

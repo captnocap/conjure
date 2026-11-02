@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Endgrain wood engraving',summary:'Fine white burin cuts open a dark endgrain wood block, with tapered tool marks, crossed luminous hatching and small printing imperfections. Illustrated books, natural history plates and sharply modeled miniature scenes.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'print'});

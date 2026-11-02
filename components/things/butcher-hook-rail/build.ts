@@ -44,13 +44,20 @@ export default defineThing({
       sold: 'SOLD OUT',
       none: 'There is no board.',
     }),
+    railHeight: score('How high is the hanging rail?', ['A low rail over the worktop', 'At eye level', 'A tall hanging display']),
+    counterDepth: score('How deep is the counter?', ['A narrow ledge', 'A normal chopping counter', 'A deep preparation bench']),
+    hookType: choice('What sort of hooks carry the meat?', { fine: 'Fine steel S hooks.', heavy: 'Thick forged hooks.', broad: 'Wide curved hooks with long stems.', brass: 'Golden brass hooks for the roast display.' }),
+    dripChannel: choice('How are the drips caught?', { none: 'No separate channel.', narrow: 'A narrow steel channel along the rear.', divided: 'A divided drip tray with three bays.', pipe: 'A gutter draining through a side pipe.' }),
+    wrapping: choice('What packaging station is attached at the side?', { none: 'No extra station.', paper: 'A paper roll above a small shelf.', boxes: 'A stack of flat takeaway cartons on a shelf.', bags: 'Red bags hanging from a side bar.' }),
+    knifeStore: choice('How are spare knives stored?', { none: 'Only the working cleaver is out.', rack: 'Three blades in a magnetic side rack.', slots: 'Three knives in a wooden slotted block.', steel: 'A honing steel and a spare cleaver on hooks.' }),
+    footRail: choice('What runs along the counter base?', { plain: 'A plain counter base.', pipe: 'A tubular foot rail on brackets.', kick: 'A broad ribbed kick plate.', curb: 'A raised tiled curb.' }),
   },
 
   build(a, context) {
     const s = new Sculpture(context);
     const { mood, random } = context;
     const pick = <T,>(list: readonly T[]) => list[Math.floor(random() * list.length)];
-    const W = 2.0, D = 0.62, TOP = 0.9, RAIL = 2.02, RZ = -0.02;
+    const W = 2.0, D = mix(.5,.9,a.counterDepth), TOP = 0.9, RAIL = mix(1.72,2.3,a.railHeight), RZ = -0.02;
     const steel = s.material('#c5cbcd', { metalness: 0.7, roughness: mix(0.25, 0.5, mood.wear) });
     const dark = s.material('#34393c', { roughness: 0.6 });
     const wood = s.material('#b88a54', { roughness: 0.85 });
@@ -107,13 +114,14 @@ export default defineThing({
 
     // Hooks.
     const swinging: { group: THREE.Group; phase: number; amount: number }[] = [];
-    const hookArc = new THREE.TorusGeometry(0.03, 0.006, 6, 14, Math.PI * 1.25);
+    const hookArc = new THREE.TorusGeometry(a.hookType==='broad'?.045:.03,a.hookType==='heavy'?.01:.006,6,14,Math.PI*1.25);
+    const hookMat=a.hookType==='brass'?s.material('#b78c40',{metalness:.7,roughness:.3}):steel;
     const hang = (x: number) => {
       const group = new THREE.Group();
       group.position.set(x, RAIL - 0.02, RZ);
-      const top = new THREE.Mesh(hookArc, steel); top.position.y = 0.0; top.rotation.z = -0.4;
-      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.08, 6), steel); stem.position.y = -0.06;
-      const bottom = new THREE.Mesh(hookArc, steel); bottom.position.y = -0.12; bottom.rotation.z = Math.PI - 0.4;
+      const top = new THREE.Mesh(hookArc, hookMat); top.position.y = 0.0; top.rotation.z = -0.4;
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(a.hookType==='heavy'?.01:.006,a.hookType==='heavy'?.01:.006,a.hookType==='broad'?.1:.08,6),hookMat); stem.position.y = -0.06;
+      const bottom = new THREE.Mesh(hookArc, hookMat); bottom.position.y = -0.12; bottom.rotation.z = Math.PI - 0.4;
       group.add(top, stem, bottom);
       s.root.add(group);
       swinging.push({ group, phase: random() * 6, amount: 1 });
@@ -315,6 +323,38 @@ export default defineThing({
     }
     // Drips under the hanging meat on a busy day.
     if (a.full > 0.3) for (let i = 0; i < 6; i++) s.cylinder(0.02 + random() * 0.03, 0.02, 0.003, [(random() - 0.5) * 1.2, TOP + 0.002, -0.12 + random() * 0.14], a.shop === 'raw' ? paint('#8e1a1e') : paint('#6a2a10', { roughness: 0.1 }), 10);
+
+    if(a.dripChannel!=='none') {
+      const z=-D/2+.1;
+      s.box([W-.18,.014,.14],[0,TOP+.007,z],steel);
+      for(const dz of[-.065,.065])s.box([W-.18,.045,.012],[0,TOP+.03,z+dz],steel);
+      for(const x of[-W/2+.1,W/2-.1])s.box([.014,.045,.14],[x,TOP+.03,z],steel);
+      if(a.dripChannel==='divided')for(const x of[-.3,.3])s.box([.012,.045,.14],[x,TOP+.03,z],steel);
+      if(a.dripChannel==='pipe')s.tube([[W/2-.1,TOP+.02,z],[W/2+.1,TOP+.02,z],[W/2+.1,.15,z]],.022,steel);
+    }
+    if(a.wrapping!=='none') {
+      const x=W/2+.18,z=.02,y=TOP-.13;
+      s.box([.34,.025,.42],[x,y,z],wood);
+      for(const dz of[-.15,.15])s.rod([W/2,y-.18,z+dz],[x+.12,y-.012,z+dz],.012,steel);
+      if(a.wrapping==='paper') {s.cylinder(.08,.08,.28,[x,y+.105,z-.08],s.material('#cbb58a'),20).rotation.z=Math.PI/2;for(const dx of[-.16,.16])s.rod([x+dx,y,z-.08],[x+dx,y+.105,z-.08],.01,steel);}
+      else if(a.wrapping==='boxes')for(let i=0;i<6;i++)s.box([.26,.018,.2],[x,y+.0215+i*.018,z],s.material(i%2?'#e3d3aa':'#c7b489'));
+      else {s.rod([x-.15,y+.3,z],[x+.15,y+.3,z],.01,steel);for(const dx of[-.15,.15])s.rod([x+dx,y,z],[x+dx,y+.3,z],.01,steel);for(const dx of[-.09,0,.09]){s.ring(.025,.006,[x+dx,y+.28,z],lacquer);s.box([.08,.16,.025],[x+dx,y+.18,z],lacquer);}}
+    }
+    if(a.knifeStore!=='none') {
+      const x=-W/2-.035;
+      if(a.knifeStore==='slots')s.box([.12,.16,.36],[x-.02,TOP-.08,.01],wood);
+      else s.box([.025,.055,.36],[x,TOP-.09,.01],dark);
+      const n=a.knifeStore==='steel'?2:3;
+      for(let i=0;i<n;i++) {
+        const z=-.1+i*.11;
+        if(a.knifeStore==='steel'&&i===0)s.rod([x-.04,TOP-.27,z],[x-.04,TOP+.08,z],.007,steel);
+        else s.box([.009,.18,.065],[x-.04,TOP-.13,z],steel);
+        s.box([.022,.09,.026],[x-.04,TOP+.005,z],dark);
+      }
+    }
+    if(a.footRail==='pipe'){s.rod([-.86,.16,D/2+.12],[.86,.16,D/2+.12],.023,steel);for(const x of[-.75,.75])s.rod([x,.16,D/2],[x,.16,D/2+.12],.018,steel);}
+    else if(a.footRail==='kick'){s.box([1.88,.2,.02],[0,.12,D/2+.018],steel);for(let i=0;i<25;i++)s.box([.014,.17,.012],[-.9+i*.075,.12,D/2+.034],dark);}
+    else if(a.footRail==='curb'){s.box([2.14,.09,D+.18],[0,.045,0],s.material('#b6b3a6'));for(let i=0;i<14;i++)s.box([.145,.01,.1],[-.975+i*.15,.095,D/2+.05],s.material(i%2?'#e1d9bb':'#658878'));}
 
     const energy = mood.energy;
     return s.finish({

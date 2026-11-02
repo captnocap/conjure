@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Sixteen colour adventure',summary:'A restricted sixteen-colour adventure-game image with deliberate pixels, ordered dithering, simple value groups and crisp object outlines. Retro computer scenes, game backgrounds and richly coloured low-resolution illustrations.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'game'});

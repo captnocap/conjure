@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Photospheric magnetic flux tube cutaway", "summary": "An expanding trumpet-like magnetic-field bundle is embedded in a retained photospheric section with explicit diagrammatic field lines. Explicit diagrammatic magnetic-field lines expand through a cut solar-surface model; flux concentrations and inferred photospheric structure, not observed solid tubes.", "scales": ["planetary", "macro"]});

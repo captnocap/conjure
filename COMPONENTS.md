@@ -67,6 +67,19 @@ export default defineThing({
 });
 ```
 
+## A thing that is a model file
+
+A thing does not have to be built from primitives. `loadModel(url, context, { height })` from
+`@conjure/kit` loads a GLB that sits in the component's own folder, clones it for each build, stands
+it on y = 0 centred on the origin and scales it to `height` metres; the engine's paint and material
+passes then dress it like any procedural thing. Keep such files out of the public catalogue (the
+`components/things/tripo-*` folders on rack are gitignored): the public inventory is procedural.
+
+```ts
+const TAKES = [new URL('./take-1.glb', import.meta.url).href, new URL('./take-2.glb', import.meta.url).href];
+build: (answers, context) => loadModel(TAKES[Math.floor(context.random() * TAKES.length)], context, { height: 1.2 }),
+```
+
 ## Questions are the inventory
 
 Every question is put to the decision model together with the idea, and it answers with
@@ -83,6 +96,136 @@ question is asked whether or not it ends up mattering.
 
 Do not ask about what `context.mood` already settles: `wear`, `warmth`, `energy`, `density`,
 `daylight` and `cheer` are decided once per idea so that separate components agree. Read them.
+
+## Colour
+
+The decision model can colour anything. Every cast thing is asked for a main colour and a trim
+colour, and every world for a main colour, a trim colour, a light colour and a sky colour. Each
+question's first answer is "as made", so a component keeps its own colours unless the idea names
+some ("a red bicycle", "a pink city at night", "a grey overcast"). The engine repaints after
+`build`: surfaces are grouped by colour, the largest group takes the main colour, the rest take the
+trim colour, shading inside a group is kept, and gold, silver and copper also make the surface
+metallic. You do not have to do anything for this to work, but it works best when:
+
+- the main body and the trim are different materials (or different vertex colours), not one texture;
+- glass is `transparent` with `opacity` under 0.6, which the repaint leaves alone;
+- painted patterns and lettering are textures (`map`), which are tinted rather than replaced.
+
+When a component has a colour that matters on its own terms (a neon sign's tube, a flag's field, a
+bus company's livery), ask about it in the shared vocabulary: `paint(ask, names?)` from
+`@conjure/kit` is a `choice` among the named colours in `PAINTS`, and `paintHex(answer)` gives its
+hex (`paintIsMetal(answer)` says whether to raise metalness). Using the same names as the engine
+means the model's sense of "teal" or "crimson" is the same everywhere.
+
+```ts
+questions: {
+  neon: paint('What colour is the neon tube?', ['magenta', 'turquoise', 'red', 'lime', 'amber', 'white']),
+},
+build(answers, context) {
+  const tube = s.material(paintHex(answers.neon), { emissive: paintHex(answers.neon), emissiveIntensity: 2 });
+```
+
+Do not name your own questions `paintBody`, `paintTrim`, `paintLight` or `paintSky`: the engine
+asks those. Plain studies and conformance checks skip the engine's colour questions, so your
+contact sheet shows the component as made.
+
+### The palette (looks)
+
+Paint colours the objects; the palette colours the print. Once per idea the model chooses
+`context.palette`: an `ink` (the colour that carries the picture), a `ground` (the paper, stock or
+field) and a `second` colour (echoes, separations, accents), all paint names, toured on rerolls. A
+look that prints in inks of its own design must not pick their hues itself. Keep the designed set
+(its lightness and contrast are the look) and re-key it:
+
+```ts
+const TONERS = { ember: { black: [25, 12, 28], hot: [236, 91, 47], flash: [255, 191, 92], drift: [137, 70, 125] }, … };
+const ROLES = { black: 'ground', hot: 'ink', flash: 'ink', drift: 'second' } as const;
+const { black, hot, flash, drift } = rekey(TONERS[answers.toner], context.palette, ROLES);
+```
+
+Each colour keeps its tonal place (black stock stays black, a flash stays pale), lands on its role's
+hue with the group's internal hue offsets kept, and takes the palette's vividness; a grey palette
+drains it. Leave out a colour that must not move (a colourless bone toner, paper white, the
+graphite of a pencil). `rekeyOne(colour, palette, role)` does one colour. Without a palette (plain
+studies, conformance checks, replays of older pictures) `rekey` returns the set unchanged.
+
+If a question chooses among those sets, describe each option by its character (electric, smouldering,
+pale, earthy), not its hues: the hues come from the palette, so naming them would mislead the model
+and the decision sheet. Keep the option keys, which older pictures pin. Naturalistic looks
+(photographic, old-master light) and looks whose colour comes from the capture ignore the palette.
+
+Lessons from converting the catalogue:
+
+- If the look matches the scene's colours to a designed set (stones, glass, pigments, floss), match
+  against the set as designed and paint with the re-keyed one, so each piece keeps its place.
+- A wide-hue set (a rainbow, a riso set, a pigment box) keeps its offsets and so stays a rainbow in a
+  new place. Halve the offsets, or split the set between `ink` and `second`, for the palette to show.
+- Single-colour options that differ only in hue all land on the same colour; give each its own
+  lightness or vividness after re-keying so the choice still means something.
+- Dark line on pale paper: a pale ink is lifted toward its own lightness, so keep the line below the
+  paper by its designed margin.
+- Machine and tradition palettes (a Game Boy's greens, CGA, a Byzantine gold ground, a red seal) stay;
+  the free options beside them follow.
+- `node dev/palette-sheet.mjs looks/<name> <question>` renders the look as made and under five
+  palettes, one row per option, into `.data/palettes/`. Read it before you call a look done.
+
+## Materials
+
+Paint colours a thing; a material says how its surface meets the light. Every cast thing is asked
+what the idea says it is made of (one question, "as made" first), and every setting what its stuff
+and its backdrop are made of, in a shared vocabulary of twelve: chrome, brushed, gloss, satin, matte,
+velvet, rubber, leather, glass, glitter, wet and glow (`MATERIALS` in `@conjure/kit`). "A chrome
+skull", "a velvet armchair", "a glitter void of stars" and "a wet street after rain" work for
+components that never thought about their surfaces: the engine dresses what was built, after the
+paint. The body surfaces (the same body the paint colours, or everything for a setting) are tagged
+and their metalness, roughness, transparency and glow set to suit; glitter and leather take a relief
+the live render catches the light with. You do not have to do anything for this to work.
+
+The capture carries every surface's material to the print. `capture.material` holds metalness,
+roughness, the named material and glow per pixel; `surfaceAt(capture, index)` decodes it, and the
+backdrop reports the setting's `capture.backdrop`. Surfaces nobody named still say what they are: a
+thing built with `metalness: 1, roughness: 0.1` is chrome in the print, a `roughness: 0.1` lacquer
+is glossy, an emissive tube is luminous. `impliedMaterial(surface)` gives the material a surface
+shows and how strongly. Shine, sparkle and light are read from a build, never flatness, so an
+ordinary thing in an ordinary print is left alone.
+
+When a thing has a surface that matters on its own terms, declare it: `madeOf(material, name)` tags
+a Three.js material for the capture and sets it to suit, and `material(ask, names?)` is a choice
+among the shared names for a component's own questions, like `paint`.
+
+```ts
+build(answers, context) {
+  const seat = madeOf(s.material('#5a1c2c'), 'velvet');
+  const frame = madeOf(s.material('#c9ccd1'), 'chrome');
+```
+
+Do not name your own questions `materialBody` or `materialSky`: the engine asks those. Plain studies
+and conformance checks skip them, so your contact sheet shows the component as built.
+
+### Materials in a look
+
+After the look and any accent, the engine's materialize pass (`engine/materialize.ts`) shows each
+material through the print in the print's own lightest and darkest colours, so a watercolour stays
+a watercolour and a toner print a toner print: mirror metal takes banded reflections, brushed metal
+long streaks, lacquer a hard glint, satin a broad sheen, chalk loses its highlights and gains a
+tooth, velvet darkens where it faces you and lights along its edges, rubber dulls, leather takes a
+pebble grain and creases, glass rims with light, glitter twinkles (a sky of stars on a dark backdrop,
+dark sequins on pale paper), wet things darken with tall streaked highlights, and a luminous thing
+haloes. One typed routing decision, how much the surfaces show through the medium, scales it from
+nothing to fully and tours on rerolls. Plain studies and replays of older pictures skip it.
+
+A look that can do better in its own medium declares `materials: 'own'` and reads `surfaceAt`
+itself; the engine then leaves its print alone. Stained glass is the model: metal becomes silvered
+mirror glass that reflects the room instead of passing the light behind it, brushed metal and
+leather take a hammered sheet, glitter a seedy one full of flashing bubbles, wet things water glass,
+matte goes sandblasted, rubber and velvet near-opaque dark glass, glass clear crown glass, and a
+luminous pane burns brighter and spills more halation. Keep the medium: a material is a different
+glass, pigment, stroke or plate, never a highlight pasted over the print. `sparkleAt(x, y, normal,
+half, cell, seed, step)` is the shared glitter, so every medium twinkles the same way round a loop.
+
+`node dev/materialize-sheet.mjs [--looks looks/a,looks/b] [--world … --cast … --idea … --name …]`
+prints one scene with the hero in every material, and under a glitter and a velvet backdrop,
+through several looks into `.data/materials/`. Read it before you call a look's materials done.
 
 ## Rules for a thing
 
@@ -110,13 +253,16 @@ Do not ask about what `context.mood` already settles: `wear`, `warmth`, `energy`
 ## Rules for a look
 
 - `apply(capture, answers, context, signal)` receives one 720 × 720 `Capture` (display colour, view-space
-  normals, linear depth, an identity map with one id per placed thing, and the scene lit plain) and
-  returns opaque RGBA pixels. Read `kit/contract.ts` for the exact packing.
+  normals, linear depth, an identity map with one id per placed thing, the scene lit plain, and what
+  each surface is made of) and returns opaque RGBA pixels. Read `kit/contract.ts` for the exact packing.
 - Every surface goes through the same renderer: things, set and ground all take the treatment, each
   with marks sized to its own extent (the identity pass gives it). A background that reads as the
   style with flat-shaded objects pasted on is the common failure.
 - Deterministic for `context.seed`, a few seconds on the CPU, and `signal.throwIfAborted()` inside
-  long loops. Declare `medium` in the manifest so the model chooses the family before the look.
+  long loops.
+- The same look also develops the window print (the scene widened to the person's browser window), a
+  capture up to 2048 pixels square. Read `capture.size`, never assume 720: scale marks by
+  `capture.size / 720` and keep the cost linear in the number of pixels. Declare `medium` in the manifest so the model chooses the family before the look.
 - It should be a distinct medium, not a filter preset. Looks are calibrated on a light backdrop
   with darker subjects.
 

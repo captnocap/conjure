@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Sea ice pressure ridge keel section", "summary": "Tilted ice blocks contact one another in a grounded section through a sail and submerged keel, with real interblock gaps. A schematic pressure-ridge cross-section with consolidated ice, a rubble keel and sail above the ocean reference; deformation and polar fieldwork.", "scales": ["macro", "tabletop"]});

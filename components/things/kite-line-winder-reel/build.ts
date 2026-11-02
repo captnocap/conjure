@@ -1,0 +1,24 @@
+import * as THREE from 'three';
+import { Sculpture, choice, score, noul, defineThing, figure } from '@conjure/kit';
+const questions = {
+  form: choice("What form is the winder?", {"spool": "A round hand-held spool.", "h": "A traditional H shaped line winder.", "wheel": "A spoked circular reel.", "handle": "A round reel with a long hand grip.", "cross": "A crossed-stick string winder."}),
+  state: choice("How is the line being handled?", {"full": "A full coil waits for flying.", "out": "A taut line runs to a small ground stake.", "loose": "A loose coil lies beside the winder.", "empty": "An almost empty spool shows its core.", "rewind": "The crank is fitted for winding in."}),
+  detail: choice("What material is used?", {"wood": "Pale varnished wood.", "bamboo": "Golden bamboo.", "green": "Green painted timber.", "red": "Red painted wood.", "metal": "Grey metal frame."}),
+  support: choice("How is it resting?", {"flat": "Laid flat on a board.", "stand": "Upright in a small display cradle.", "case": "Resting in an open carrying tray.", "peg": "Held on a low spindle peg.", "bare": "Laid directly on the grass."}),
+  extra: choice("What lies nearby?", {"glove": "A single line-handling glove.", "clip": "A small line clip.", "paper": "A folded flight note.", "tail": "A small ribbon repair bundle.", "none": "Only the reel."}),
+  mark: choice("How is the line identified?", {"white": "Plain white line.", "red": "A red middle wrap.", "blue": "A blue leader knot.", "tag": "A LINE 30M tag.", "number": "A numbered spool cheek."}),
+  extent: score("How broad is the winder?", ["A small child’s winder", "A comfortable hand reel", "A broad long-line reel"]),
+  load: score("How much line is left on it?", ["A few turns", "A working coil", "A full heavy coil"]),
+  closed: noul("Is a small brass line guide fitted at the edge?"),
+};
+export default defineThing({
+  questions,
+  build(a, context) {
+    const s = new Sculpture(context), { random, mood } = context;
+    const f = Object.keys(questions.form.options).indexOf(a.form), t = Object.keys(questions.state.options).indexOf(a.state), d = Object.keys(questions.detail.options).indexOf(a.detail), u = Object.keys(questions.support.options).indexOf(a.support), e = Object.keys(questions.extra.options).indexOf(a.extra), m = Object.keys(questions.mark.options).indexOf(a.mark);
+    const wood = s.material('#a47c4e'), pale = s.material('#e0d2ac'), metal = s.material('#8f9995', { metalness: 0.7, roughness: 0.35 }), dark = s.material('#3d443c'), green = s.material('#667e50');
+    const colors = ['#a64d39', '#497e70', '#d4af55', '#59778c', '#b47b8c'];
+
+    const R=.1+a.extent*.09,w=.09,mat=s.material(['#bda173','#c5ad73','#708c64','#ac6c55','#94a093'][d]),g=new THREE.Group(),line=s.material(m===1?'#a96a59':'#d5ccb0');if(f===1||f===4){for(const q of [-1,1]){if(f===1){g.add(s.rod([-R,0,q*R],[R,0,q*R],.017,mat));g.add(s.rod([q*R*.7,0,-R],[q*R*.7,0,R],.012,mat));}else g.add(s.rod([-R,0,q*R],[R,0,-q*R],.015,mat));}if(t!==3)for(let i=0;i<4+Math.round(a.load*9);i++)g.add(s.tube([[-R*.8,.018+i*.002,-R*.7],[R*.8,.018+i*.002,-R*.7],[R*.8,.018+i*.002,R*.7],[-R*.8,.018+i*.002,R*.7],[-R*.8,.018+i*.002,-R*.7]],.002,line));}else{for(const y of [-w/2,w/2]){if(f===2){g.add(s.ring(R,.009,[0,y,0],mat).rotateX(Math.PI/2));for(let i=0;i<6;i++)g.add(s.rod([0,y,0],[Math.cos(i*Math.PI/3)*R,y,Math.sin(i*Math.PI/3)*R],.009,mat));}else g.add(s.cylinder(R,R,.015,[0,y,0],mat,28));}g.add(s.cylinder(.03,.03,w,[0,0,0],wood,18));if(t!==3)g.add(s.cylinder(.035+a.load*R*.65,.035+a.load*R*.65,w*.8,[0,0,0],line,28));if(f===3)g.add(s.rod([0,-w/2,0],[0,-w/2,R+.18],.02,wood));if(t===4){g.add(s.rod([0,w*.7,0],[R*.8,w*.7,0],.009,metal));g.add(s.rod([R*.8,w*.7,0],[R*.8,w*.7+.06,0],.014,wood));}}if(a.closed)g.add(s.ring(.018,.004,[R,0,0],metal));if(m===2)g.add(s.ball([.012,.008,.012],[R*.5,w*.5,0],s.material('#708f9e'),10));if(m===3||m===4)g.add(s.label(m===3?'LINE 30M':'07',R*1.1,.035,[0,w*.5+.01,0]).rotateX(-Math.PI/2));const base=u===4?0:.025;if(u===1){g.rotation.x=Math.PI/2;g.position.y=f===3?R+.23:R+.04;for(const x of [-R*.7,R*.7])s.rod([x,0,-.08],[x,g.position.y,0],.015,wood);s.rod([-R*.7,g.position.y,0],[R*.7,g.position.y,0],.012,wood);}else g.position.y=base+(f===1||f===4?.02:w/2);s.root.add(g);if(u!==4)s.box([R*2.6,.025,R*2.8],[0,.013,0],wood);if(u===2)for(const x of [-R*1.25,R*1.25])s.box([.02,.07,R*2.8],[x,.04,0],wood);if(u===3)s.rod([0,0,0],[0,.2,0],.008,wood);if(t===1){s.rod([R,.04,0],[R+.4,.005,.2],.002,line);s.rod([R+.4,0,.2],[R+.4,.13,.2],.008,wood);}if(t===2)for(let i=0;i<4;i++)s.ring(.06+i*.008,.002,[R+.2,.004+i*.002,0],line).rotation.x=Math.PI/2;const ex=-R-.16;if(e===0)s.ball([.07,.015,.1],[ex,.015,0],pale,12);if(e===1)s.ring(.025,.004,[ex,.005,0],metal).rotation.x=Math.PI/2;if(e===2)s.label('WIND NE',.16,.1,[ex,.002,0]).rotation.x=-Math.PI/2;if(e===3)s.box([.12,.018,.13],[ex,.009,0],green);return s.finish();
+  },
+});

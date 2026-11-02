@@ -4,7 +4,7 @@ import { Press, compose, pause, sameRGB } from './common';
 import { constructivism } from './constructivism';
 import { haring } from './haring';
 import { kusama } from './kusama';
-import { type Ctx, PAPER_STOCK, rolesFor } from './palette';
+import { type Ctx, PAPER_STOCK, paperTone, rolesFor } from './palette';
 import { type Layout, analyse } from './scene';
 
 const TRADITION_NAMES = {
@@ -35,13 +35,13 @@ export default defineLook({
       kusama:
         'Yayoi Kusama: hand-drawn dots in a hexagonal net cover the wall, the floor and every thing, each in its own two colours, red with white, yellow with black, dots sized to each thing. Obsession, infinity, pumpkins, mirrored rooms, the self dissolving into pattern.',
     }),
-    palette: choice('Which inks are on the press?', {
+    palette: choice('Which inks are on the press? Apart from the movement\u2019s own, their colours come from the picture\u2019s palette.', {
       canon: "The movement's own inks at full strength: Bauhaus primaries, Constructivist red and black, Haring's yellow, green and pure brights, Kusama's red, white, yellow and black.",
-      faded: 'Faded earth inks: brick, ochre, slate blue and soot, like a poster kept in a drawer for a hundred years. Historical, solemn, archival.',
-      hot: 'Hot pop inks: vermilion, fluorescent pink, lemon and turquoise, loud, young and electric.',
-      spot: 'Only one colour and black: a cheap, stark two-ink run. The colour follows the mood, red when warm, blue when cold.',
-      cool: 'Cool modern inks: cobalt, teal and grey with one orange accent, calm, architectural, Scandinavian.',
-      pastel: 'Soft pastels: salmon, butter yellow, powder blue and mint, gentle, sweet and nursery-like.',
+      faded: 'Faded inks: dulled, dusty and earthy beside soot black, like a poster kept in a drawer for a hundred years. Historical, solemn, archival.',
+      hot: 'Hot pop inks: fluorescent, fully saturated and brilliant, the brightest the press can lay down, loud, young and electric.',
+      spot: 'Only one colour and black: a cheap, stark two-ink run, the colour in full, in tints and in shade.',
+      cool: 'Cool modern inks: deep, restrained and greyed with one bright accent, calm, architectural, Scandinavian.',
+      pastel: 'Soft pastels: pale, chalky, milky tints of every ink, gentle, sweet and nursery-like.',
     }),
     abstraction: score('How far is the subject abstracted?', [
       'Legible: objects keep their silhouettes, faces, details and shadows',
@@ -85,7 +85,10 @@ export default defineLook({
     const mood = context.mood;
     const tradition = answers.tradition;
     const paper = PAPER_STOCK[answers.paper];
-    const inks = rolesFor(answers.palette, tradition, mood, paper.dark);
+    // The movement's canon prints as it always did; every other set, and its stock, takes the idea's palette.
+    const keyed = answers.palette === 'canon' ? undefined : context.palette;
+    const inks = rolesFor(answers.palette, tradition, mood, paper.dark, keyed);
+    const tone = paperTone(paper.tone, keyed);
 
     // Layout: an inset sheet with a margin, or a picture tipped onto a diagonal.
     const sign = random() < 0.5 ? -1 : 1;
@@ -123,7 +126,7 @@ export default defineLook({
       tradition,
       inks,
       key: paper.dark ? inks.light : inks.key,
-      paper: paper.tone,
+      paper: tone,
       dark: paper.dark,
       abstraction: answers.abstraction,
       mark: answers.mark,
@@ -153,7 +156,7 @@ export default defineLook({
     const chalk = new Set<number>();
     if (tradition === 'haring' && paper.dark) chalk.add(press.ink(ctx.key));
     const pixels = compose(press, {
-      paper: paper.tone,
+      paper: tone,
       dark: paper.dark,
       tooth: paper.tooth,
       wear: mood.wear,

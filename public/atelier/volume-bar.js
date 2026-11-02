@@ -3,6 +3,7 @@ import { decodeVolumeBarBake, VOLUME_BAR_BAKE_META } from './volume-bar-bake.js'
 import { sourceGeometrySignature } from './volume-bar-signature.js';
 import { matchesAcceptedSourceGeometry } from './accepted-source-reference.js';
 import { rasterSectionRibDepth } from './volume-bar-depth.js';
+import { prepareConjureProxy, validateConjureProxyField, renderConjureProxy } from './conjure-proxies.js';
 export const VOLUME_BAR = Object.freeze({version:1,model:'volume-bar-v1',supersample:2,shadowSize:2048,background:Object.freeze([229,231,222])});
 // Private to this module: callers cannot mutate the decoded accepted geometry.
 let acceptedBake;
@@ -74,6 +75,7 @@ function cull(geometry, direction) {
 
 // Mutable inputs are validated/copied before preparation; only the compact field survives.
 export function prepareVolumeBar(snapshot, lighting, materialColor) {
+  if (snapshot?.source === 'conjure') return prepareConjureProxy(snapshot, lighting, materialColor, 'interior-lattice');
   validateVolumeBarGeometry(snapshot); validateCamera(snapshot);
   if(typeof materialColor !== 'function')throw Error('Volume bars require original object pigments');
   const light=copyLighting(lighting),V=Array.from(snapshot.view),P=Array.from(snapshot.projection),M=light.shadowMatrix,directional=light.directional;
@@ -133,6 +135,7 @@ export function prepareVolumeBar(snapshot, lighting, materialColor) {
 
 const planKeys=['version','model','size','samples','groups','colors'];
 export function validateVolumeBarField(plan) {
+  if (plan?.model === 'conjure-interior-lattice-v1') return validateConjureProxyField(plan, 'interior-lattice');
   const G=VOLUME_BAR_BAKE_META.groupCount;
   if(!equalKeys(plan,planKeys)||plan.version!==1||plan.model!==VOLUME_BAR.model||!sizeOK(plan.size)||
     !(plan.samples instanceof Uint16Array)||plan.samples.length!==4*plan.size*plan.size||
@@ -143,6 +146,7 @@ export function validateVolumeBarField(plan) {
   return plan;
 }
 export function renderVolumeBar(plan) {
+  if (plan?.model === 'conjure-interior-lattice-v1') return renderConjureProxy(plan);
   const ambient=.32,directScale=.68/4.5;validateVolumeBarField(plan);
   const {size,samples,groups,colors}=plan,G=groups.length/5,N=size*2,lookup=new Uint8Array((G*2+1)*3);
   lookup.set(VOLUME_BAR.background);

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Scroll-sawn plywood fretwork',summary:'A pierced wooden picture built from scroll-sawn slots, narrow connecting bridges and layered plywood edges, with shadows visible through the openings. Workshop gifts, toy-theatre scenery and patient hand-cut decorative panels.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'craft'});

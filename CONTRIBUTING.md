@@ -107,6 +107,14 @@ improving and re-checking per component is normal.
   components need the same general helper, propose it for `kit/` in a separate change.
 - Line endings LF, two-space indentation, single quotes, as in the files around you.
 
+## Leave main current
+
+On rack, Josiah does not look at git: he assumes the code the studio serves at the local address is
+the committed, merged `main`. Work on a branch or in a worktree if it helps, but merge it back into
+`main` and commit before your session ends, and never leave finished work only in a working tree.
+Run `git status` when you start and when you stop; if another agent left work uncommitted, commit
+it and say so in the message. Pushing to GitHub is a separate step: ask first.
+
 ## Changing the kit or the engine
 
 `kit/` is the contract every component compiles against and `engine/` runs them, so a change there

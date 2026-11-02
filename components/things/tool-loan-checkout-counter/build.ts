@@ -1,0 +1,26 @@
+import * as THREE from 'three';
+import { Sculpture, choice, score, noul, defineThing, figure } from '@conjure/kit';
+const questions = {
+  form: choice("What shape is the desk?", {"straight": "A long straight checkout counter.", "corner": "An L shaped counter with a short return.", "compact": "A compact square volunteer desk.", "standing": "A tall narrow standing counter.", "open": "An open trestle checkout desk."}),
+  state: choice("What is happening at checkout?", {"ready": "An open ledger waits for the next borrower.", "return": "A drill is waiting to be checked back in.", "repair": "A red repair tag lies beside the returned drill.", "closed": "A CLOSED sign stands on the desk.", "busy": "A ledger and several returned tools cover the desk."}),
+  detail: choice("What is the counter made from?", {"pine": "Pale reclaimed pine.", "paint": "Green painted timber.", "ply": "Warm exposed plywood.", "white": "Cream painted panels.", "dark": "Dark old workshop timber."}),
+  support: choice("What is beneath the worktop?", {"shelf": "A low shelf for returned cases.", "drawers": "Three shallow drawers.", "doors": "Two cupboard doors.", "bins": "Two open sorting bins.", "clear": "A clear knee space."}),
+  extra: choice("What equipment helps the volunteer?", {"lamp": "A small articulated desk lamp.", "bell": "A brass service bell.", "cup": "A pencil cup.", "tray": "A tray of paper loan cards.", "none": "A clear worktop."}),
+  mark: choice("What sign faces the borrower?", {"borrow": "BORROW AND RETURN.", "tools": "TOOL LIBRARY.", "hours": "SATURDAY 10—2.", "repair": "ASK ABOUT REPAIRS.", "plain": "A plain counter front."}),
+  extent: score("How wide is the checkout desk?", ["One volunteer", "A generous desk", "A shared checkout counter"]),
+  load: score("How many returned cases wait below?", ["No returned cases", "Two cases", "Four cases"]),
+  closed: noul("Is a raised privacy lip fitted at the rear?"),
+};
+export default defineThing({
+  questions,
+  build(a, context) {
+    const s = new Sculpture(context), { random, mood } = context;
+    const f = Object.keys(questions.form.options).indexOf(a.form), t = Object.keys(questions.state.options).indexOf(a.state), d = Object.keys(questions.detail.options).indexOf(a.detail), u = Object.keys(questions.support.options).indexOf(a.support), e = Object.keys(questions.extra.options).indexOf(a.extra), m = Object.keys(questions.mark.options).indexOf(a.mark);
+    const wood = s.material('#a47c4e'), pale = s.material('#e0d2ac'), metal = s.material('#8f9995', { metalness: 0.7, roughness: 0.35 }), dark = s.material('#3d443c'), green = s.material('#667e50');
+    const colors = ['#a64d39', '#497e70', '#d4af55', '#59778c', '#b47b8c'];
+
+    const W=(f===2?.75:1.2)+a.extent*.65,D=f===3?.45:.65,H=f===3?1.05:.78,mat=s.material(['#c2ab7c','#748d6d','#ba9869','#d4d0bb','#6e5b46'][d]);s.box([W,.065,D],[0,H-.032,0],mat);for(const x of [-W*.44,W*.44])for(const z of [-D*.38,D*.38])s.box([.05,H-.065,.05],[x,(H-.065)/2,z],wood);if(f!==4)s.box([W-.08,H*.7,.035],[0,H*.52,D*.4],mat);if(f===1){s.box([.45,.065,.7],[W/2+.19,H-.032,-.16],mat);for(const z of [-.45,.12])s.rod([W/2+.36,0,z],[W/2+.36,H,z],.028,wood);}if(a.closed)s.box([W,.12,.025],[0,H+.03,-D*.46],mat);
+    if(u===0||u===3){s.box([W-.1,.035,D*.8],[0,.2,0],wood);if(u===3)for(const x of [-W*.24,W*.24]){s.box([W*.42,.16,.025],[x,.3,D*.3],mat);for(const dx of [-W*.2,W*.2])s.box([.02,.16,D*.6],[x+dx,.3,0],mat);}}if(u===1)for(let i=0;i<3;i++){s.box([W*.85,.14,.02],[0,.26+i*.17,D*.42],mat);s.rod([-.09,.26+i*.17,D*.45],[.09,.26+i*.17,D*.45],.01,metal);}if(u===2)for(const x of [-W*.22,W*.22]){s.box([W*.43,.5,.025],[x,.4,D*.42],mat);s.ball([.018,.018,.018],[x+(x<0?.12:-.12),.42,D*.46],metal,10);}if(u===0||u===3)for(let i=0;i<Math.round(a.load*4);i++){s.box([.23,.1,.25],[(i%2-.5)*W*.45,.265+Math.floor(i/2)*.11,0],dark);s.rod([(i%2-.5)*W*.45-.04,.28+Math.floor(i/2)*.11,.14],[(i%2-.5)*W*.45+.04,.28+Math.floor(i/2)*.11,.14],.007,metal);}
+    if(t!==3){s.box([.27,.016,.2],[-W*.18,H+.008,.04],green);s.label('LOANS',.12,.07,[-W*.18,H+.018,.04]).rotation.x=-Math.PI/2;}else{s.box([.36,.18,.025],[0,H+.09,0],dark);s.label('CLOSED',.3,.12,[0,H+.09,.016]);}const drill=(x:number)=>{s.box([.18,.07,.07],[x,H+.06,0],green);s.box([.05,.12,.07],[x+.04,H+.03,0],dark);s.rod([x-.09,H+.06,0],[x-.17,H+.06,0],.012,metal);};if(t===1||t===2||t===4)drill(W*.2);if(t===2)s.box([.1,.005,.07],[W*.2,H+.003,.15],s.material('#b56e55'));if(t===4){s.rod([-.15,H+.015,.2],[.2,H+.015,.2],.012,wood);s.box([.07,.05,.13],[.2,H+.025,.2],metal);}if(e===0){s.cylinder(.08,.08,.018,[-W*.4,H+.009,-D*.2],metal,18);s.rod([-W*.4,H,-D*.2],[-W*.4,H+.3,-D*.2],.012,metal);s.rod([-W*.4,H+.3,-D*.2],[-W*.3,H+.4,0],.012,metal);s.mesh(new THREE.ConeGeometry(.09,.1,16),green,[-W*.3,H+.37,0]);}if(e===1){s.lathe([[.06,0],[.05,.05],[.015,.07]],metal,[W*.4,H,.1]);s.ball([.015,.01,.015],[W*.4,H+.08,.1],dark,10);}if(e===2){s.cylinder(.035,.035,.07,[W*.4,H+.035,.1],pale,14);for(let i=0;i<4;i++)s.rod([W*.4+(i-1.5)*.01,H+.02,.1],[W*.4+(i-1.5)*.01,H+.14,.1],.004,wood);}if(e===3){s.box([.22,.025,.16],[W*.32,H+.012,-.17],wood);s.box([.18,.02,.12],[W*.32,H+.035,-.17],pale);}if(m!==4&&f!==4){s.box([W*.75,.2,.04],[0,H*.55,D*.42+.01],pale);s.label(['BORROW + RETURN','TOOL LIBRARY','SATURDAY 10—2','ASK ABOUT REPAIRS'][m],W*.7,.15,[0,H*.55,D*.42+.032]);}return s.finish();
+  },
+});

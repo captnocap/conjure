@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Radial pyroxene chondrule section", "summary": "Fine crystals radiate from a restricted nucleation region inside a rounded inclusion, with actual sector cuts. A schematic radial-pyroxene chondrule with needles radiating from a restricted rim-side nucleus; mineral growth textures and primitive meteorites.", "scales": ["macro", "tabletop"]});

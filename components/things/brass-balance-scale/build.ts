@@ -36,6 +36,36 @@ export default defineThing({
       scattered: 'Scattered on the table, some toppled, with the tweezers.',
       none: 'Nowhere to be seen.',
     }),
+    pan: choice('What shape are the weighing pans?', {
+      shallow: 'Wide shallow dishes with a fine turned lip.',
+      deep: 'Deep rounded bowls keep loose samples contained.',
+      square: 'Square flat trays with a raised rim.',
+      scalloped: 'Circular dishes with a softly scalloped decorative edge.',
+    }),
+    suspension: choice('How are the pans suspended?', {
+      wires: 'Three slender straight wires on each pan.',
+      chains: 'Three little linked chains hang from each end of the beam.',
+      ribbons: 'Flat metal ribbons replace the round wires.',
+      yoke: 'A rigid two-sided yoke carries each pan.',
+    }),
+    beam: choice('What structure stiffens the balance beam?', {
+      simple: 'A plain straight beam with two narrow braces.',
+      lattice: 'A light triangular lattice spans between the pivots.',
+      arch: 'A graceful arched brace rises above the beam.',
+      rider: 'A graduated beam carries a tiny sliding calibration rider.',
+    }),
+    arrest: choice('How is the balance held between weighings?', {
+      free: 'The beam is free to sway as the pans settle.',
+      fork: 'A raised two-pronged arrest fork supports the beam.',
+      pin: 'A removable pin holds the central pivot still.',
+      clamp: 'A small knurled clamp locks the beam for transport.',
+    }),
+    record: choice('What records or assists this weighing?', {
+      plain: 'The balance is ready with no extra record.',
+      ledger: 'An open ruled ledger sits in front of the base.',
+      magnifier: 'A little stem-mounted lens enlarges the central index.',
+      certificate: 'A calibration card is propped beside the base.',
+    }),
   },
 
   build(a, context) {
@@ -78,6 +108,24 @@ export default defineThing({
     onBeam(s.cylinder(0.0001, 0.011, 0.02, [0, 0.016, 0], metal, 4));
     onBeam(s.rod([0, 0, 0.009], [0, -0.148, 0.009], 0.0022, s.material('#2a2622', { metalness: 0.5 }), 0.0006));
 
+    if (a.beam === 'lattice') for (let i = 0; i < 8; i++) {
+      const x = -arm + i * arm / 4;
+      onBeam(s.rod([x, 0.004, 0], [x + arm / 8, 0.03, 0], 0.0018, metal));
+      onBeam(s.rod([x + arm / 8, 0.03, 0], [x + arm / 4, 0.004, 0], 0.0018, metal));
+    }
+    if (a.beam === 'arch') onBeam(s.tube(Array.from({ length: 25 }, (_, i): P3 => { const t = i / 24 * Math.PI; return [Math.cos(t) * arm, Math.sin(t) * 0.048, 0]; }), 0.0025, metal));
+    if (a.beam === 'rider') {
+      for (let i = 0; i < 18; i++) onBeam(s.box([0.001, i % 3 ? 0.006 : 0.01, 0.002], [-0.13 + i * 0.015, 0.013, 0.004], s.material('#332f27')));
+      onBeam(s.box([0.009, 0.024, 0.013], [0.045, 0.005, 0], brass));
+    }
+    if (a.arrest !== 'free') {
+      const lift = a.arrest === 'fork' ? pivotY - 0.008 : bh + 0.14;
+      s.rod([0.024, bh, 0.025], [0.024, lift, 0.025], 0.004, frame);
+      if (a.arrest === 'fork') for (const side of [-1, 1]) s.rod([0.024, lift - 0.017, 0.025], [side * 0.026, lift, 0.003], 0.0025, metal);
+      if (a.arrest === 'pin') s.rod([-0.02, pivotY, 0.01], [0.02, pivotY, 0.01], 0.0025, brass);
+      if (a.arrest === 'clamp') { s.box([0.032, 0.024, 0.024], [0, pivotY, 0], frame); const knob = s.cylinder(0.011, 0.011, 0.008, [0, pivotY, 0.022], brass, 12); knob.rotation.x = Math.PI / 2; }
+    }
+
     // Pans on their chains.
     const drop = 0.2, panR = 0.058;
     const panMat = a.style === 'grocer' ? s.material('#c3c8ca', { metalness: 0.85, roughness: 0.3 }) : metal;
@@ -85,15 +133,29 @@ export default defineThing({
       const g = new THREE.Group();
       s.root.add(g);
       const add = <T extends THREE.Object3D>(o: T) => { g.add(o); return o; };
-      add(s.lathe([[0, -drop], [panR * 0.5, -drop], [panR * 0.92, -drop + 0.008], [panR, -drop + 0.016], [panR * 0.96, -drop + 0.0165], [panR * 0.5, -drop + 0.004], [0, -drop + 0.003]], panMat));
-      for (let i = 0; i < 3; i++) {
-        const t = i * (Math.PI * 2) / 3 + Math.PI / 2;
-        add(s.rod([0, -0.016, 0], [Math.cos(t) * panR * 0.97, -drop + 0.016, Math.sin(t) * panR * 0.97], 0.0014, panMat));
+      if (a.pan === 'square') {
+        add(s.box([panR * 1.8, 0.004, panR * 1.8], [0, -drop + 0.002, 0], panMat));
+        for (const side of [-1, 1]) { add(s.box([panR * 1.8, 0.012, 0.003], [0, -drop + 0.008, side * panR * 0.88], panMat)); add(s.box([0.003, 0.012, panR * 1.8], [side * panR * 0.88, -drop + 0.008, 0], panMat)); }
+      } else {
+        const dip = a.pan === 'deep' ? 0.026 : 0;
+        add(s.lathe([[0, -drop - dip], [panR * 0.5, -drop - dip], [panR * 0.92, -drop + 0.008], [panR, -drop + 0.016], [panR * 0.96, -drop + 0.0165], [panR * 0.5, -drop + 0.004 - dip], [0, -drop + 0.003 - dip]], panMat));
+        if (a.pan === 'scalloped') for (let i = 0; i < 18; i++) { const angle = i / 18 * Math.PI * 2; add(s.ball([0.005, 0.0025, 0.005], [Math.cos(angle) * panR * 0.98, -drop + 0.016, Math.sin(angle) * panR * 0.98], panMat, 8)); }
+      }
+      const count = a.suspension === 'yoke' ? 2 : 3;
+      for (let i = 0; i < count; i++) {
+        const t = i * (Math.PI * 2) / count + Math.PI / 2;
+        const from = new THREE.Vector3(0, -0.016, 0), to = new THREE.Vector3(Math.cos(t) * panR * 0.97, -drop + 0.016, Math.sin(t) * panR * 0.97);
+        if (a.suspension === 'chains') {
+          for (let k = 0; k < 14; k++) { const point = from.clone().lerp(to, k / 13); const link = add(s.ring(0.0036, 0.0009, [point.x, point.y, point.z], panMat)); link.scale.y = 1.35; link.rotation.y = k % 2 * Math.PI / 2; }
+        } else if (a.suspension === 'ribbons' || a.suspension === 'yoke') {
+          const ribbon = add(s.box([a.suspension === 'yoke' ? 0.006 : 0.004, from.distanceTo(to), 0.0015], [0, 0, 0], panMat));
+          ribbon.position.copy(from.clone().add(to).multiplyScalar(0.5)); ribbon.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), to.clone().sub(from).normalize());
+        } else add(s.rod([from.x, from.y, from.z], [to.x, to.y, to.z], 0.0014, panMat));
       }
       return g;
     });
     const [left, right] = hangers;
-    const panY = -drop + 0.005;
+    const panY = -drop + 0.005 - (a.pan === 'deep' ? 0.026 : 0);
 
     // The thing being weighed.
     const inLeft = <T extends THREE.Object3D>(o: T) => { left.add(o); return o; };
@@ -188,6 +250,24 @@ export default defineThing({
       s.ball([0.006, 0.006, 0.006], [0, bh + lifted + t / 2, cd / 2 + 0.006], brass, 10);
     }
 
+    if (a.record === 'ledger') {
+      const z = z0 + 0.09;
+      for (const side of [-1, 1]) { const page = s.box([0.075, 0.009, 0.1], [side * 0.039, 0.006, z], s.material('#e8dfc7')); page.rotation.z = side * 0.05; }
+      for (let i = 0; i < 7; i++) s.box([0.13, 0.001, 0.001], [0, 0.013, z - 0.036 + i * 0.012], s.material('#6f8290'));
+      s.rod([0.065, 0.015, z + 0.025], [0.115, 0.015, z - 0.015], 0.002, s.material('#843f28'));
+    }
+    if (a.record === 'magnifier') {
+      s.rod([0.06, bh, 0.055], [0, bh + 0.15, 0.05], 0.003, brass);
+      s.ring(0.03, 0.0024, [0, bh + 0.15, 0.05], brass);
+      const lens = s.cylinder(0.029, 0.029, 0.003, [0, bh + 0.15, 0.05], s.material('#cfe8e4', { transparent: true, opacity: 0.23, depthWrite: false }), 24); lens.rotation.x = Math.PI / 2;
+    }
+    if (a.record === 'certificate') {
+      const x = bw / 2 + 0.055;
+      const card = s.box([0.085, 0.095, 0.003], [x, 0.048, 0.025], s.material('#e9dec2')); card.rotation.x = -0.16;
+      s.rod([x, 0, -0.02], [x, 0.068, 0.014], 0.003, wood);
+      s.label('CALIBRATED', 0.074, 0.023, [x, 0.063, 0.031], '#343e36', '#e9dec2').rotation.x = -0.16;
+    }
+
     const theta0 = { level: 0, nearly: 0.05, heavy: 0.3, light: -0.3 }[a.tilt];
     const pose = (theta: number) => {
       beam.rotation.z = theta;
@@ -196,7 +276,7 @@ export default defineThing({
     };
     pose(theta0);
     left.rotation.y = random() * 0.6; right.rotation.y = random() * 0.6;
-    const sway = (a.tilt === 'level' || a.tilt === 'nearly' ? 0.035 : 0.008) * mix(0.1, 1, mood.energy) * (cased && a.housing === 'cased' ? 0.3 : 1);
+    const sway = (a.arrest === 'free' ? 1 : 0) * (a.tilt === 'level' || a.tilt === 'nearly' ? 0.035 : 0.008) * mix(0.1, 1, mood.energy) * (cased && a.housing === 'cased' ? 0.3 : 1);
     const thing = s.finish({ update: (_dt, time) => pose(theta0 + Math.sin(time * 1.7) * sway) });
     return thing;
   },

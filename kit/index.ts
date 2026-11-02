@@ -7,3 +7,7 @@ export * from './measure';
 export * from './geometry';
 export * from './diorama';
 export * from './figure';
+export * from './paint';
+export * from './palette';
+export * from './material';
+export * from './model';

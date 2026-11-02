@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Enceladus plume curtain vent array", "summary": "Several narrow schematic vapor/ice curtains originate at distinct real openings along one retained fissure. A scaled Cassini-inspired source-and-curtain model with actual open ice slots. Vapor sheets and ice grains are explanatory geometry rather than a measured flow simulation.", "scales": ["planetary", "landscape", "tabletop"]});

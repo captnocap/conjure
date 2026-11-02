@@ -19,9 +19,16 @@ export const BELONGS_FLOOR = 0.2;
 const UNJUDGED = 0.6;
 
 export const castName = (id: string) => `cast:${id}`;
+export const subjectName = (id: string) => `subject:${id}`;
+/** A thing the model is at least this sure the idea is about leads the cast, whatever else belongs more. */
+export const SUBJECT_FLOOR = 0.5;
 
 const questionsFor = (things: readonly CastCandidate[]): QuestionSet =>
   Object.fromEntries(things.map((thing) => [castName(thing.id), noul(`Would this belong in the scene? ${thing.title}: ${thing.summary}`)]));
+
+/** Belonging says what could be there; this says what the idea is about, so a named landmark is not out-cast by its own surroundings. */
+const subjectsFor = (things: readonly CastCandidate[]): QuestionSet =>
+  Object.fromEntries(things.map((thing) => [subjectName(thing.id), noul(`Is this what the idea is about: the subject it names or plainly means, not only something that would be nearby? ${thing.title}: ${thing.summary}`)]));
 
 /**
  * Casting in two stages. First every thing that exists at the setting's scales is asked
@@ -34,7 +41,7 @@ export class CastingDecisions {
   #byIdea: Record<string, number> = {};
   #asked = new Set<string>();
   #chains = new Map<string, Promise<void>>();
-  #bySetting = new Map<string, Promise<Record<string, number>>>();
+  #bySetting = new Map<string, Promise<{ judged: Record<string, number>; subject: Record<string, number> }>>();
 
   constructor(
     readonly idea: string,
@@ -93,21 +100,31 @@ export class CastingDecisions {
         .sort((a, b) => ideaOnly(b) - ideaOnly(a))
         .slice(0, SHORTLIST);
       pending = shortlist.length
-        ? consult(this.idea, this.#settingBrief(setting), questionsFor(shortlist), this.usage, { ...this.options, about: 'shortlist' }).then(
-            (verdicts) => Object.fromEntries(shortlist.flatMap((thing) => {
-              const verdict = verdicts[castName(thing.id)];
-              return verdict?.type === 'noul' ? [[thing.id, verdict.p] as const] : [];
-            })),
+        ? consult(this.idea, this.#settingBrief(setting), { ...questionsFor(shortlist), ...subjectsFor(shortlist) }, this.usage, { ...this.options, about: 'shortlist' }).then(
+            (verdicts) => {
+              const read = (name: (id: string) => string) => Object.fromEntries(shortlist.flatMap((thing) => {
+                const verdict = verdicts[name(thing.id)];
+                return verdict?.type === 'noul' ? [[thing.id, verdict.p] as const] : [];
+              }));
+              return { judged: read(castName), subject: read(subjectName) };
+            },
             (error: unknown) => {
               this.#bySetting.delete(setting.id);
               throw error;
             },
           )
-        : Promise.resolve({});
+        : Promise.resolve({ judged: {}, subject: {} });
       this.#bySetting.set(setting.id, pending);
     }
-    const judged = await pending;
+    const { judged } = await pending;
     const scale = Object.keys(judged).length ? UNJUDGED : 1;
     return new Map(eligible.map((thing) => [thing.id, thing.id in judged ? judged[thing.id] : ideaOnly(thing) * scale]));
+  }
+
+  /** How sure the model is that each shortlisted thing is what the idea is about. Asked with the shortlist. */
+  async subjects(setting: CastSetting): Promise<Map<string, number>> {
+    await this.belongs(setting);
+    const { subject } = await this.#bySetting.get(setting.id)!;
+    return new Map(Object.entries(subject));
   }
 }

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Mushy zone liquid channel", "summary": "A real narrow liquid channel winds between connected dendrite arms and opens into a wider feeding reservoir. A magnified materials-science model with solid branches, actual open interdendritic spaces and clearly identified teaching sections.", "scales": ["macro", "tabletop"]});

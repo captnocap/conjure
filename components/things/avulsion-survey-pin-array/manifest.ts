@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Avulsion survey pin array", "summary": "A grounded field frame has measured pins across a rough sediment section and an attached profile scale. A geometric field-process specimen showing actual sediment relief, channel cuts and connected surveying structures.", "scales": ["landscape", "tabletop"]});

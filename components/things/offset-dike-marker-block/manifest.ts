@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Offset dike marker block", "summary": "A narrow intrusive sheet crosses two actual displaced rock halves, exposing corresponding cut faces. An exposed structural-geology teaching specimen with matching fault surfaces, connected mineral growth and physically cut sections.", "scales": ["tabletop", "macro"]});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Palette knife impasto',summary:'Loaded palette-knife colour planes, raised lips of paint, scraped streaks and raking relief light. Bold painted cityscapes, tactile still lifes and landscapes shaped by broad pigment deposits.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'painting'});

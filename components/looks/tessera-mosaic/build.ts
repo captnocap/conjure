@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type Palette as Colours, type PaletteRole, choice, clamp01, defineLook, fromOklch, mix, oklch, paintRGB, rekey, score, seeded } from '@conjure/kit';
 import { distanceTransform } from './sdf';
 
 /**
@@ -126,6 +126,41 @@ const TRADITIONS = {
   },
 } as const satisfies Record<string, Tradition>;
 
+/**
+ * How each tradition takes the picture's palette. Roman and pebble floors keep their natural stones
+ * (Rome lets its few cool glass stones answer in the second colour), Ostia stays black and white,
+ * Byzantium keeps its gold, flesh and silver but re-keys its coloured glass, and trencadis follows the
+ * palette fully. The border's two accent strands follow everywhere but Ostia and the pebbles.
+ */
+type Role = PaletteRole | undefined;
+const KEYING: Record<string, { hues?: Role[] | 'split'; neutrals?: Role[]; inks: Role[] }> = {
+  roman: { hues: [, , , , , , , 'second', 'second', 'second', 'second', 'second'], inks: ['ground', , 'ink', 'ink', 'second', 'second'] },
+  byzantine: { hues: ['second', 'second', 'second', 'second', 'ink', 'ink', , , , , 'ink'], inks: [, 'second', 'ink', 'ink', 'second', 'second'] },
+  trencadis: { hues: 'split', neutrals: [, 'ground'], inks: [, 'second', 'ink', 'ink', 'second', 'second'] },
+};
+/** Re-key a list of hex stones by role; each role keeps its hue offsets, drawn in by half so the palette reads. */
+function rekeyStones(list: readonly string[], palette: Colours | undefined, roles: Role[] | 'split'): string[] {
+  if (!palette || !list.length) return list.slice();
+  const bytes = list.map((h) => hex(h).map((v) => v * 255) as unknown as readonly [number, number, number]);
+  const lch = bytes.map(oklch);
+  const anchor = lch.reduce((best, c, i) => (c[1] > lch[best][1] ? i : best), 0);
+  const role = (i: number): Role => {
+    if (roles !== 'split') return roles[i];
+    const [, C, h] = lch[i];
+    if (C < 0.03) return undefined;
+    return Math.abs(Math.atan2(Math.sin(h - lch[anchor][2]), Math.cos(h - lch[anchor][2]))) < 0.9 ? 'ink' : 'second';
+  };
+  const out = rekey(Object.fromEntries(bytes.map((c, i) => [i, c])), palette, Object.fromEntries(list.map((_, i) => [i, role(i)])));
+  return list.map((h, i) => {
+    const r = role(i);
+    if (!r) return h;
+    const [L, C, hue] = oklch(out[i]);
+    const target = oklch(paintRGB(palette[r]))[2];
+    const c = fromOklch(L, C, target + Math.atan2(Math.sin(hue - target), Math.cos(hue - target)) * 0.5);
+    return '#' + c.map((v) => v.toString(16).padStart(2, '0')).join('');
+  });
+}
+
 const GROUT: Record<string, string> = { lime: '#d6cdb9', grey: '#8e8a82', dark: '#34302c', red: '#a8644c', white: '#f0ede5' };
 const SETTINGS = {
   floor: { bevel: 0.7, dome: 0.02, tilt: 0.6, gloss: 0 },
@@ -139,23 +174,28 @@ interface Palette {
   rgb: Float32Array;
   size: number;
 }
-function buildPalette(tradition: Tradition): Palette {
-  const entries: RGB[] = [];
-  for (const stock of tradition.hues) {
-    const [L, A, B] = toLab(...hex(stock));
-    for (const offset of [-0.25, -0.12, 0, 0.1]) {
-      const keep = offset > 0 ? 1 - offset * 3 : 1 - Math.abs(offset) * 0.5;
-      entries.push(fromLab(Math.max(0.18, Math.min(0.96, L + offset)), A * keep, B * keep));
+/** The box of stones: matched by their designed colour (`lab`), laid in their keyed colour (`rgb`). */
+function buildPalette(tradition: Tradition, keyedHues: readonly string[] = tradition.hues, keyedNeutrals: readonly string[] = tradition.neutrals): Palette {
+  const shades = (hues: readonly string[], neutrals: readonly string[] = tradition.neutrals) => {
+    const entries: RGB[] = [];
+    for (const stock of hues) {
+      const [L, A, B] = toLab(...hex(stock));
+      for (const offset of [-0.25, -0.12, 0, 0.1]) {
+        const keep = offset > 0 ? 1 - offset * 3 : 1 - Math.abs(offset) * 0.5;
+        entries.push(fromLab(Math.max(0.18, Math.min(0.96, L + offset)), A * keep, B * keep));
+      }
     }
-  }
-  for (const stone of tradition.neutrals) entries.push(hex(stone));
-  const lab = new Float32Array(entries.length * 3), rgb = new Float32Array(entries.length * 3);
-  entries.forEach((entry, i) => {
+    for (const stone of neutrals) entries.push(hex(stone));
+    return entries;
+  };
+  const designed = shades(tradition.hues), keyed = shades(keyedHues, keyedNeutrals);
+  const lab = new Float32Array(designed.length * 3), rgb = new Float32Array(designed.length * 3);
+  designed.forEach((entry, i) => {
     const [L, A, B] = toLab(...entry);
     lab.set([L, A, B], i * 3);
-    rgb.set(entry, i * 3);
+    rgb.set(keyed[i], i * 3);
   });
-  return { lab, rgb, size: entries.length };
+  return { lab, rgb, size: designed.length };
 }
 /** The nearest stones in the box, one of the closest three chosen with a little chance. */
 function pick(palette: Palette, L: number, A: number, B: number, spread: number, roll: number): number {
@@ -227,11 +267,11 @@ const NEIGHBOURS: [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1]
 export default defineLook({
   questions: {
     tradition: choice('Which mosaic tradition lays the picture?', {
-      roman: 'A Roman villa floor in the Pompeii manner: matte marble and limestone cubes in cream, ochre, terracotta, rose and slate, figures outlined in dark stone and haloed in white, rows following every contour.',
+      roman: 'A Roman villa floor in the Pompeii manner: matte marble and limestone cubes in cream, ochre, terracotta and rose with a few cooler coloured stones, figures outlined in dark stone and haloed in white, rows following every contour.',
       ostia: 'A black-and-white Roman bath floor, as at Ostia: figures as black silhouettes with white lines for their details, on a white ground. Stark, graphic, classical.',
-      byzantine: 'A Byzantine church mosaic: glittering gold smalti grounds (deep starry blue in cold light), deep blue, crimson and emerald glass, everything shimmering and solemn.',
+      byzantine: 'A Byzantine church mosaic: glittering gold smalti grounds (deep starry blue in cold light), deep jewel-toned glass, everything shimmering and solemn.',
       pebble: 'A Greek pebble mosaic, as at Pella: rounded river pebbles in natural whites, ochres, greys and blacks set in dark mortar, soft and domed.',
-      trencadis: "Gaudi's trencadis: broken glazed tiles and plates in bright cobalt, yellow, orange, green and white, glossy irregular shards in wide white joints. Barcelona, playful, sunny.",
+      trencadis: "Gaudi's trencadis: broken glazed tiles and plates in bright, saturated glazes and white, glossy irregular shards in wide white joints. Barcelona, playful, sunny.",
     }),
     stone: score('How large are the stones?', [
       'Minute vermiculatum chips, almost painterly',
@@ -259,7 +299,7 @@ export default defineLook({
       meander: 'A Greek key meander: a squared line folding back on itself all the way round.',
       guilloche: 'A guilloche: two coloured strands braided like a rope, with dark eyes between them.',
       jewels: 'A jewelled band: oval gems and pairs of pearls set in a dark ribbon.',
-      bands: 'Plain coloured bands: a broad red frame ruled with dark and gold lines.',
+      bands: 'Plain coloured bands: a broad strong-coloured frame ruled with dark and contrasting lines.',
       none: 'No border: the picture runs out to the edge.',
     }),
     halo: score('How strongly is each figure set off by a halo of pale stones laid around it?', [
@@ -913,8 +953,14 @@ export default defineLook({
       }
       if (tone && tone[p] < 2) (toneSum[k] += tone[p]), toneCount[k]++;
     }
-    const palette = buildPalette(T);
-    const inkRGB = T.inks.map(hex);
+    const keying = KEYING[a.tradition];
+    const palette = buildPalette(
+      T,
+      keying?.hues ? rekeyStones(T.hues, context.palette, keying.hues) : T.hues,
+      keying?.neutrals ? rekeyStones(T.neutrals, context.palette, keying.neutrals) : T.neutrals,
+    );
+    const inkRGB = (keying ? rekeyStones(T.inks, context.palette, keying.inks) : T.inks).map(hex);
+    const glazes = rekeyStones(['#1f4fb4', '#3a9a3c'], a.tradition === 'trencadis' ? context.palette : undefined, ['second', 'second']).map(hex);
     const stoneR = new Float32Array(K), stoneG = new Float32Array(K), stoneB = new Float32Array(K);
     const tiltOf = new Float32Array(K), glossOf = new Float32Array(K), missing = new Uint8Array(K), plateCurve = new Float32Array(K);
     const pattern = new Uint8Array(K), patternAngle = new Float32Array(K), patternRGB = new Float32Array(K * 3);
@@ -1100,7 +1146,7 @@ export default defineLook({
         pattern[k] = r(19) < 0.6 ? 1 : 2;
         patternAngle[k] = r(20) * Math.PI;
         const light = R + Gc + Bc > 2.2;
-        patternRGB.set(light ? hex(r(21) < 0.5 ? '#1f4fb4' : '#3a9a3c') : hex('#f6f4ee'), k * 3);
+        patternRGB.set(light ? glazes[r(21) < 0.5 ? 0 : 1] : hex('#f6f4ee'), k * 3);
       }
       // Loss: lacunae at a dig, the odd stone gone with age, and doubtful figures only half laid.
       let lost = false;

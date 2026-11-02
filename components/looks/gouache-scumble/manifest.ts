@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Gouache scumble',summary:'Opaque chalky gouache, broad painted planes and dry brushmarks catching a coloured ground. Picture-book streets, painted still lifes, travel posters and quiet studies with deliberate brushwork.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'painting'});

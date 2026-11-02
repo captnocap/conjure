@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Enceladus ice grain plume trajectory study", "summary": "Distinct schematic ice-grain trajectories emerge from a shared vent within a supported source-and-path teaching frame. A scaled source-and-trajectory study with distinct ballistic arcs and grain markers. It uses an explicit local uniform-gravity approximation; it does not claim an escape-orbit or plume-flow prediction.", "scales": ["planetary", "landscape", "tabletop"]});

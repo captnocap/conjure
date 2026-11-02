@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Crayon lithograph',summary:'A greasy crayon drawing printed from grained stone, with broken tooth, rubbed strokes, scraped highlights and a separately registered tint stone. Expressive portraits, quiet streets and nineteenth-century travel sketches.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'print'});

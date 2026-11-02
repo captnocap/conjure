@@ -83,6 +83,42 @@ export default defineThing({
       packets: 'Small folded paper packets of the finished powder, a dose in each.',
       vial: 'A little corked glass vial and a spoon.',
     }),
+    handles: choice('How is the heavy bowl held?', {
+      plain: 'A smooth bowl without handles.',
+      ears: 'Two broad little ear handles project beside the rim.',
+      loops: 'Two raised loop handles make the bowl easy to carry.',
+      lugs: 'Four small squared gripping lugs sit below the rim.',
+    }),
+    grip: choice('How is the pestle handle finished?', {
+      smooth: 'A smooth polished handle.',
+      grooved: 'Five shallow turned rings give the fingers a grip.',
+      wrapped: 'A short cord wrap surrounds the upper handle.',
+      capped: 'A contrasting rounded cap closes the end of the handle.',
+    }),
+    lid: choice('What covers the mortar when work is finished?', {
+      none: 'No cover is kept with it.',
+      wood: 'A turned wooden lid with a small knob lies beside the bowl.',
+      stone: 'A matching heavy stone lid has been set down behind the bowl.',
+      cloth: 'A folded square of linen lies ready to cover the contents.',
+    }),
+    transfer: choice('What helps move or finish the ground material?', {
+      none: 'No extra transfer tool.',
+      sieve: 'A tiny handled sieve waits to separate the coarse pieces.',
+      funnel: 'A small metal funnel stands ready to fill a bottle.',
+      spatula: 'A slender flat spatula lies beside the pestle.',
+    }),
+    mark: choice('What identifies this mortar or its batch?', {
+      plain: 'The bowl has no mark.',
+      batch: 'A small paper batch number is stuck to the outside.',
+      seal: 'A round maker’s seal stands in relief on the front.',
+      tied: 'A paper label is tied around the bowl with fine string.',
+    }),
+    station: choice('What supports the whole grinding station?', {
+      bare: 'The mortar and tools stand directly on the table.',
+      tray: 'A shallow wooden tray catches spills around the tools.',
+      pad: 'A thick square cloth pad softens the sound of grinding.',
+      board: 'A handled wooden board keeps the bowl and tools together.',
+    }),
   },
 
   build(a, context) {
@@ -120,6 +156,17 @@ export default defineThing({
     }
     if (a.material === 'brass') for (const y of [0.05, 0.1]) put(s.ring(mix(0.041, 0.055, (y - 0.04) / 0.07), 0.0022, [0, y, 0], body)).rotation.x = Math.PI / 2;
 
+    const outerRadius = (y: number) => {
+      for (let i = 1; i < form.profile.length; i++) { const previous = form.profile[i - 1], next = form.profile[i]; if (next[1] > previous[1] && y >= previous[1] && y <= next[1]) return mix(previous[0], next[0], (y - previous[1]) / (next[1] - previous[1])); }
+      return form.rimR;
+    };
+    if (a.handles === 'ears') for (const side of [-1, 1]) put(s.ball([0.022, 0.008, 0.013], [side * (form.rimR + 0.01), form.rimY - 0.013, 0], body, 14));
+    if (a.handles === 'loops') for (const side of [-1, 1]) { const loop = put(s.ring(0.018, 0.005, [side * (form.rimR + 0.008), form.rimY - 0.015, 0], body)); loop.rotation.y = Math.PI / 2; for (const z of [-0.011, 0.011]) put(s.rod([side * form.rimR * 0.9, form.rimY - 0.015, z], [side * (form.rimR + 0.008), form.rimY - 0.015, z], 0.004, body)); }
+    if (a.handles === 'lugs') for (let i = 0; i < 4; i++) { const angle = i * Math.PI / 2; const lug = put(s.box([0.018, 0.013, 0.018], [Math.cos(angle) * form.rimR, form.rimY - 0.016, Math.sin(angle) * form.rimR], body)); lug.rotation.y = -angle; }
+    if (a.mark === 'batch' || a.mark === 'tied') put(s.label(a.mark === 'tied' ? 'GROUND / 12' : 'BATCH 07', 0.047, 0.022, [0, form.rimY * 0.57, outerRadius(form.rimY * 0.57) + 0.001], '#3d4637', '#e9dfc4'));
+    if (a.mark === 'tied') { const cord = put(s.ring(outerRadius(form.rimY * 0.6) + 0.001, 0.001, [0, form.rimY * 0.6, 0], s.material('#9e8053'))); cord.rotation.x = Math.PI / 2; put(s.rod([0, form.rimY * 0.6, form.rimR * 0.86], [0.018, form.rimY * 0.39, form.rimR * 0.86], 0.001, s.material('#9e8053'))); }
+    if (a.mark === 'seal') { const seal = put(s.cylinder(0.012, 0.012, 0.004, [0, form.rimY * 0.53, outerRadius(form.rimY * 0.53) + 0.001], body, 14)); seal.rotation.x = Math.PI / 2; put(s.label('M', 0.015, 0.016, [0, form.rimY * 0.53, outerRadius(form.rimY * 0.53) + 0.004], '#675943', '#d2c5a6')); }
+
     // What is in the bowl.
     const moundMat = s.material(stuff.mound, { roughness: a.contents === 'herbs' || a.contents === 'petals' ? 0.5 : 1 });
     const geometry = { leaf: new THREE.SphereGeometry(1, 8, 6), chunk: new THREE.DodecahedronGeometry(1, 0), ball: new THREE.SphereGeometry(1, 8, 6), pill: new THREE.CylinderGeometry(1, 1, 0.45, 12) }[stuff.shape];
@@ -154,6 +201,10 @@ export default defineThing({
     const len = stubby ? 0.115 : 0.165;
     part(s.lathe(stubby ? [[0, 0], [0.018, 0.004], [0.026, 0.025], [0.024, 0.05], [0.017, 0.09], [0.014, 0.108], [0, 0.115]] : [[0, 0], [0.013, 0.003], [0.019, 0.018], [0.018, 0.036], [0.012, 0.062], [0.0098, 0.14], [0.0125, 0.156], [0.008, 0.164], [0, 0.165]], pestleMat));
     if (a.material === 'porcelain') part(s.lathe([[0.0125, 0.066], [0.0105, 0.14], [0.013, 0.156], [0.008, 0.1645], [0, 0.1655]], s.material('#9a6b3c', { roughness: 0.7 })));
+    const gripY = stubby ? 0.088 : 0.129;
+    if (a.grip === 'grooved') for (let i = 0; i < 5; i++) { const ring = part(s.ring(stubby ? 0.016 : 0.011, 0.0014, [0, gripY - 0.014 + i * 0.005, 0], pestleMat)); ring.rotation.x = Math.PI / 2; }
+    if (a.grip === 'wrapped') part(s.tube(Array.from({ length: 90 }, (_, i): P3 => { const angle = i / 89 * Math.PI * 12; return [Math.cos(angle) * (stubby ? 0.017 : 0.012), gripY - 0.015 + i / 89 * 0.03, Math.sin(angle) * (stubby ? 0.017 : 0.012)]; }), 0.0015, s.material('#bca16a')));
+    if (a.grip === 'capped') part(s.ball([0.014, 0.007, 0.014], [0, len - 0.002, 0], s.material('#68543d'), 14));
     if (!empty) part(s.ball([0.0195, 0.008, 0.0195], [0, 0.008, 0], moundMat, 12)).scale.multiplyScalar(stubby ? 1.3 : 1);
     s.root.add(pestle);
     const aim = (from: THREE.Vector3, to: THREE.Vector3) => {
@@ -230,6 +281,30 @@ export default defineThing({
       s.ball([0.009, 0.003, 0.007], [bx - 0.026, 0.003, 0.0275], horn, 10);
     }
 
+    if (a.lid === 'wood' || a.lid === 'stone') {
+      const material = a.lid === 'stone' ? body : s.material('#b48b50');
+      const x = -reach - 0.045, z = -reach * 0.3;
+      s.lathe([[0, 0], [reach * 0.72, 0], [reach * 0.78, 0.008], [reach * 0.7, 0.014], [0.008, 0.02], [0, 0.02]], material, [x, 0, z]);
+      s.ball([0.011, 0.009, 0.011], [x, 0.025, z], material, 14);
+    }
+    if (a.lid === 'cloth') {
+      const linen = s.material('#dfd6bc');
+      for (let i = 0; i < 3; i++) { const fold = s.box([0.072 - i * 0.003, 0.003, 0.06], [-reach - 0.045, 0.0015 + i * 0.003, -0.015], linen); fold.rotation.y = i * 0.035; }
+      for (let i = 0; i < 7; i++) s.box([0.001, 0.001, 0.058], [-reach - 0.071 + i * 0.008, 0.01, -0.015], s.material('#7a9595'));
+    }
+    const toolX = 0.02, toolZ = -reach - 0.075, steel = s.material('#b4b8b9', { metalness: 0.7, roughness: 0.35 });
+    if (a.transfer === 'sieve') {
+      s.lathe([[0, 0.004], [0.024, 0.004], [0.031, 0.018], [0.029, 0.02], [0.023, 0.006], [0, 0.006]], steel, [toolX, 0, toolZ]);
+      for (let i = -3; i <= 3; i++) { const r = Math.sqrt(0.023 ** 2 - (i * 0.006) ** 2); s.rod([toolX - r, 0.007, toolZ + i * 0.006], [toolX + r, 0.007, toolZ + i * 0.006], 0.0004, s.material('#4e5758')); s.rod([toolX + i * 0.006, 0.007, toolZ - r], [toolX + i * 0.006, 0.007, toolZ + r], 0.0004, s.material('#4e5758')); }
+      s.rod([toolX + 0.026, 0.016, toolZ], [toolX + 0.074, 0.006, toolZ], 0.003, steel);
+    }
+    if (a.transfer === 'funnel') {
+      s.lathe([[0.003, 0], [0.003, 0.024], [0.026, 0.052], [0.025, 0.054], [0.002, 0.026], [0.002, 0]], steel, [toolX, 0, toolZ]);
+      const stand = s.ring(0.027, 0.002, [toolX, 0.05, toolZ], steel); stand.rotation.x = Math.PI / 2;
+      for (let i = 0; i < 3; i++) { const angle = i * Math.PI * 2 / 3; s.rod([toolX + Math.cos(angle) * 0.027, 0.05, toolZ + Math.sin(angle) * 0.027], [toolX + Math.cos(angle) * 0.035, 0.001, toolZ + Math.sin(angle) * 0.035], 0.0015, steel); }
+    }
+    if (a.transfer === 'spatula') { s.rod([toolX - 0.04, 0.004, toolZ], [toolX + 0.024, 0.004, toolZ], 0.002, steel); s.box([0.028, 0.002, 0.011], [toolX + 0.035, 0.003, toolZ], steel); }
+
     if (bits.length) {
       const mesh = new THREE.InstancedMesh(geometry, s.material('#ffffff', { roughness: stuff.shape === 'chunk' && a.contents !== 'charcoal' ? 0.35 : 0.8 }), bits.length);
       const matrix = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
@@ -243,6 +318,17 @@ export default defineThing({
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
       mesh.castShadow = mesh.receiveShadow = true;
       s.root.add(mesh);
+    }
+    if (a.station !== 'bare') {
+      s.root.updateMatrixWorld(true);
+      const bounds = new THREE.Box3().setFromObject(s.root), extent = bounds.getSize(new THREE.Vector3()), centre = bounds.getCenter(new THREE.Vector3());
+      const w = extent.x + 0.025, d = extent.z + 0.025, h = a.station === 'pad' ? 0.005 : 0.009;
+      for (const object of s.root.children) object.position.y += h;
+      const base = s.material(a.station === 'pad' ? '#697e73' : '#a17a4b');
+      s.box([w, h, d], [centre.x, h / 2, centre.z], base);
+      if (a.station === 'tray') for (const side of [-1, 1]) { s.box([w, 0.016, 0.006], [centre.x, h + 0.008, centre.z + side * d / 2], base); s.box([0.006, 0.016, d], [centre.x + side * w / 2, h + 0.008, centre.z], base); }
+      if (a.station === 'board') for (const side of [-1, 1]) s.tube([[centre.x + side * w / 2, h / 2, centre.z - 0.025], [centre.x + side * (w / 2 + 0.022), h / 2, centre.z - 0.023], [centre.x + side * (w / 2 + 0.022), h / 2, centre.z + 0.023], [centre.x + side * w / 2, h / 2, centre.z + 0.025]], 0.004, base);
+      if (a.station === 'pad') for (let i = 0; i < 16; i++) for (const side of [-1, 1]) s.box([0.006, 0.0007, 0.001], [centre.x - w * 0.45 + i * w * 0.9 / 15, h + 0.0004, centre.z + side * (d / 2 - 0.006)], s.material('#d3c6a2'));
     }
     return s.finish();
   },

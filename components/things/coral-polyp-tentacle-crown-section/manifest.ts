@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Coral polyp tentacle crown section", "summary": "A connected oral disc and tentacle crown sit above a cut cylindrical body cavity. Retain recognizability in retracted views. A schematic twelve-tentacled coral polyp with a real oral opening and cut tissue layers; feeding, contraction and reef anatomy.", "scales": ["macro", "tabletop"]});

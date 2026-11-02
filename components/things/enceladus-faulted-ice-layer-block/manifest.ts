@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Enceladus faulted ice layer block", "summary": "A layered ice block has two displaced strata packages meeting a real dipping fracture plane. A comparative icy fracture teaching block has real displaced layer interfaces and an open dipping slot. The offset is a schematic section, not an assertion that every tiger stripe has one normal-fault geometry.", "scales": ["planetary", "landscape", "tabletop"]});

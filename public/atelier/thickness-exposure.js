@@ -1,3 +1,4 @@
+import { prepareConjureThickness } from './thickness-conjure.js';
 // Frozen geometric thickness exposure; dependency-free worker core.
 // Four fixed subpixels; separate closed/sheet sums; transmission-average film.
 // Caller owns cancellation via Worker.terminate and immutable capture association.
@@ -238,6 +239,7 @@ export function filmThickness(total, size, exposure = MODEL.exposure) {
 }
 
 export function prepareThickness(snapshot) {
+  if (snapshot?.source === 'conjure') return prepareConjureThickness(snapshot);
   const sourceStats=validateSnapshot(snapshot);
   const worldFromClip=multiplyMatrices(invertMatrix(snapshot.view),invertMatrix(snapshot.projection));
   const geometry=getGeometry(snapshot,worldFromClip);

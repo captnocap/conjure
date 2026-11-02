@@ -55,12 +55,17 @@ export default defineThing({
       ashtray: 'An ashtray with a cigarette still burning.',
     }),
     pouf: noul('Is a leather pouf pulled up beside it?'),
+    rim: choice('How is the tray edge finished?', {rolled:'A continuous rolled brass rim.',scalloped:'Small rounded scallops around the rim.',beaded:'A row of small bead bosses on the rim.',handles:'Two loop carrying handles attached to the rim.'}),
+    engraving: choice('What is engraved on the tray face?', {rosette:'A central star rosette with a ring of petals.',rings:'Several close concentric engraved rings.',lattice:'A fine crossed diamond lattice.',plain:'A plain face with only two fine edge rules.'}),
+    profile: choice('What shape are the tea glasses?', {flared:'Small tumblers flaring toward the lip.',straight:'Straight cylindrical tumblers.',faceted:'Six-sided faceted tea glasses.',waisted:'Gently waisted glasses with broad lips.'}),
+    utensils: choice('What serving tool rests on the tray?', {spoon:'A little long-handled teaspoon.',tongs:'A pair of curved sugar tongs.',strainer:'A tiny open tea strainer with a wire handle.',rest:'A small empty porcelain spoon rest.'}),
+    napkin: choice('How is a napkin arranged beside the pot?', {folded:'A small folded cloth square.',rolled:'A rolled napkin tied with a narrow band.',fan:'A pleated fan-fold napkin.',clear:'No napkin, leaving the brass exposed.'}),
   },
 
   build(a, context) {
     const s = new Sculpture(context);
     const { mood, random } = context;
-    const T = 0.43, R = 0.37;
+    let T = 0.43; const R = 0.37;
     const brass = s.material('#c99a3c', { metalness: 0.8, roughness: 0.32, side: THREE.DoubleSide });
     const gold = s.material('#e0b84a', { metalness: 0.85, roughness: 0.25 });
 
@@ -101,15 +106,23 @@ export default defineThing({
       s.cylinder(0.32, 0.32, 0.025, [0, T - 0.012, 0], s.material('#5e3a22'), 8);
     }
 
+    // Set the tray on the actual stand top, keeping the optional pouf on the floor.
+    const standBounds=new THREE.Box3().setFromObject(s.root,true),lift=-standBounds.min.y;
+    for(const part of s.root.children)part.position.y+=lift;
+    T=standBounds.max.y+lift;
     // Tray with an engraved face.
     s.lathe([[0, 0], [R - 0.04, 0], [R - 0.012, 0.012], [R, 0.04], [R + 0.012, 0.04]], brass, [0, T, 0]);
+    if(a.rim==='scalloped'||a.rim==='beaded')for(let i=0;i<32;i++){const t=i*Math.PI/16;s.ball(a.rim==='beaded'?[.008,.008,.008]:[.017,.006,.017],[Math.sin(t)*R,T+.04,Math.cos(t)*R],brass,10);}
+    if(a.rim==='handles')for(const sign of[-1,1])s.tube([[sign*R,T+.025,-.08],[sign*(R+.075),T+.07,-.055],[sign*(R+.075),T+.07,.055],[sign*R,T+.025,.08]],.009,brass);
+    if(a.rim==='rolled')s.ring(R,.008,[0,T+.04,0],brass).rotateX(Math.PI/2);
     const face = document.createElement('canvas');
     face.width = face.height = 256;
     const g = face.getContext('2d')!;
     g.fillStyle = '#d2a444'; g.fillRect(0, 0, 256, 256);
     g.strokeStyle = '#7a5a1c'; g.lineWidth = 2.5;
-    for (const r of [122, 112, 78, 70, 30]) { g.beginPath(); g.arc(128, 128, r, 0, 7); g.stroke(); }
-    for (let k = 0; k < 16; k++) {
+    for (const r of (a.engraving==='rings'?[120,112,104,96,88,80,72,64,56,48,40,32,24]:a.engraving==='plain'?[122,112]:[122,112,78,70,30])) { g.beginPath(); g.arc(128, 128, r, 0, 7); g.stroke(); }
+    if(a.engraving==='lattice'){g.save();g.beginPath();g.arc(128,128,110,0,Math.PI*2);g.clip();for(let i=-256;i<512;i+=28){g.beginPath();g.moveTo(i,0);g.lineTo(i+256,256);g.moveTo(i,0);g.lineTo(i-256,256);g.stroke();}g.restore();}
+    if(a.engraving==='rosette')for (let k = 0; k < 16; k++) {
       const angle = k * Math.PI / 8;
       g.beginPath(); g.moveTo(128 + Math.cos(angle) * 30, 128 + Math.sin(angle) * 30); g.lineTo(128 + Math.cos(angle + 0.2) * 70, 128 + Math.sin(angle + 0.2) * 70); g.lineTo(128 + Math.cos(angle + 0.39) * 30, 128 + Math.sin(angle + 0.39) * 30); g.stroke();
       g.beginPath(); g.arc(128 + Math.cos(angle) * 95, 128 + Math.sin(angle) * 95, 13, 0, 7); g.stroke();
@@ -158,7 +171,7 @@ export default defineThing({
       lidMesh.scale.setScalar(1.25);
       lidMesh.position.set(-0.27, top + 0.03, 0.08);
       lidMesh.rotation.set(1.9, 0, 0.4);
-      s.root.add(lidMesh);
+      s.root.add(lidMesh);lidMesh.updateMatrixWorld(true);lidMesh.position.y+=top-new THREE.Box3().setFromObject(lidMesh,true).min.y;
     } else {
       const tip = new THREE.Vector3(hip + 0.13, 0.2 * tallness, 0).multiplyScalar(1.25).applyAxisAngle(new THREE.Vector3(0, 1, 0), pot.rotation.y);
       steam(-0.1 + tip.x, top + tip.y, -0.1 + tip.z, a.state === 'half' ? 0.6 : 1.2);
@@ -184,8 +197,9 @@ export default defineThing({
         group.add(mesh);
         return mesh;
       };
-      const h = 0.1, rt = 0.034, rb = 0.026;
-      add(new THREE.CylinderGeometry(rt, rb, h, 14, 1, true), glass, h / 2);
+      const h = a.profile==='waisted'?.115:.1, rt = a.profile==='straight'?.031:.034, rb = a.profile==='straight'?.031:.026;
+      if(a.profile==='waisted')add(new THREE.LatheGeometry([[rb,0],[rb*.86,h*.4],[rt,h]].map(p=>new THREE.Vector2(...p)),24),glass,0);
+      else add(new THREE.CylinderGeometry(rt, rb, h, a.profile==='faceted'?6:20, 1, true), glass, h / 2);
       add(new THREE.CylinderGeometry(rb, rb, 0.008, 14), a.paint === 'plain' ? s.material('#c9d0cc') : gold, 0.004);
       if (a.paint !== 'plain') {
         add(new THREE.CylinderGeometry(rt + 0.001, rt - 0.001, 0.012, 14, 1, true), gold, h - 0.008);
@@ -204,9 +218,9 @@ export default defineThing({
         group.position.y = top + rt;
         s.cylinder(0.055, 0.055, 0.003, [x * 0.8, top + 0.002, z * 0.8], tea, 18).scale.set(1.3, 1, 0.8);
       }
-      s.root.add(group);
+      s.root.add(group);group.updateMatrixWorld(true);group.position.y+=top-new THREE.Box3().setFromObject(group,true).min.y;
       if (a.mint === 'glasses' && a.state !== 'waiting' && i !== tipped)
-        for (let k = 0; k < 5; k++) leaves.push({ at: [x + (random() - 0.5) * 0.04, top + h + random() * 0.035, z + (random() - 0.5) * 0.04], size: 0.9 + random() * 0.5, color: random() < 0.5 ? '#3f9a3a' : '#5cb84a' });
+        for (let k = 0; k < 5; k++) {const point:[number,number,number]=[x+(random()-.5)*.04,top+h+random()*.035,z+(random()-.5)*.04];s.rod([x,top+.012,z],point,.0018,leaf);leaves.push({at:point,size:.9+random()*.5,color:random()<.5?'#3f9a3a':'#5cb84a'});}
       if (a.state === 'poured') steam(x, top + h, z, 0.8);
     }
     if (a.mint === 'sprig' || a.mint === 'bunch') {
@@ -230,13 +244,13 @@ export default defineThing({
     } else if (a.sugar === 'lumps') {
       s.lathe([[0, 0], [0.05, 0.004], [0.075, 0.03]], brass, [-0.22, top, 0.12]);
       const white = s.material('#fbfaf5', { roughness: 0.9 });
-      for (let k = 0; k < 7; k++) s.box([0.022, 0.018, 0.026], [-0.22 + (random() - 0.5) * 0.07, top + 0.018 + random() * 0.02, 0.12 + (random() - 0.5) * 0.07], white).rotation.set(random(), random() * 3, random());
+      for (let k = 0; k < 7; k++){const angle=k*Math.PI*2/7,rr=k===6?0:.035,lump=s.box([.022,.018,.026],[-.22+Math.cos(angle)*rr,top+.02,.12+Math.sin(angle)*rr],white);lump.rotation.set(random()*.3,random()*3,random()*.3);lump.updateMatrixWorld(true);lump.position.y+=top+.008-new THREE.Box3().setFromObject(lump,true).min.y;}
     }
 
     const lx = 0.14, lz = -0.2;
     if (a.left === 'coins') {
       const silver = s.material('#c9cccf', { metalness: 0.9, roughness: 0.3 });
-      for (let k = 0; k < 5; k++) s.cylinder(0.014, 0.014, 0.003, [lx + (random() - 0.5) * 0.1, top + 0.003 + (k % 2) * 0.003, lz + (random() - 0.5) * 0.08], k % 2 ? gold : silver, 12);
+      for (let k = 0; k < 5; k++) s.cylinder(0.014, 0.014, 0.003, [lx + (random() - 0.5) * 0.1, top + 0.0015, lz + (random() - 0.5) * 0.08], k % 2 ? gold : silver, 12);
     } else if (a.left === 'spectacles') {
       const paper = s.label('LE MATIN', 0.2, 0.14, [lx, top + 0.016, lz], '#2a2a2a', '#e6e1d2');
       paper.rotation.set(-Math.PI / 2, 0, 0.4);
@@ -262,6 +276,15 @@ export default defineThing({
       s.ring(0.292, 0.006, [px, 0.15, pz], stitch).rotation.x = Math.PI / 2;
     }
 
+    const ux=.22,uz=-.13,toolY=top+.007,utensil=s.material('#c5cbca',{metalness:.8,roughness:.26});
+    if(a.utensils==='spoon'){s.rod([ux-.075,toolY,uz],[ux+.055,toolY,uz],.003,utensil);s.ball([.025,.005,.014],[ux+.065,toolY,uz],utensil,14);}
+    if(a.utensils==='tongs')for(const sign of[-1,1])s.tube([[ux-.075,toolY,uz],[ux,toolY+.008,uz+sign*.014],[ux+.06,toolY,uz+sign*.02]],.003,utensil);
+    if(a.utensils==='strainer'){s.lathe([[.007,0],[.024,.006],[.032,.016],[.028,.016],[.02,.008],[.007,.003]],utensil,[ux+.03,top,uz]);s.rod([ux,top+.014,uz],[ux-.09,top+.014,uz],.003,utensil);for(let j=0;j<3;j++)s.ring(.012+j*.006,.001,[ux+.03,top+.006+j*.003,uz],utensil).rotateX(Math.PI/2);}
+    if(a.utensils==='rest')s.lathe([[0,0],[.055,.002],[.065,.012],[.058,.016],[0,.004]],s.material('#e5dec8'),[ux,top,uz]);
+    const cloth=s.material('#d5c8a8'),nx=.04,nz=-.29;
+    if(a.napkin==='folded')for(let i=0;i<3;i++)s.box([.11,.002,.065],[nx,top+.001+i*.002,nz],cloth);
+    if(a.napkin==='rolled'){const roll=s.cylinder(.014,.014,.1,[nx,top+.014,nz],cloth,16);roll.rotateZ(Math.PI/2);s.ring(.015,.002,[nx,top+.014,nz],gold).rotateY(Math.PI/2);}
+    if(a.napkin==='fan')for(let i=0;i<6;i++){const fold=s.box([.07,.003,.016],[nx,top+.004,nz],cloth);fold.rotation.y=(i-2.5)*.2;fold.position.x+=Math.cos(fold.rotation.y)*.03;fold.position.z-=Math.sin(fold.rotation.y)*.03;}
     const drift = mix(0.4, 1.6, mood.energy);
     return s.finish({
       update: (_dt, time) => {

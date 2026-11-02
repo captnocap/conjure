@@ -23,6 +23,12 @@ const BASE: Record<keyof typeof GENRES, string> = { romance: '#d8346a', pulp: '#
 
 export default defineThing({
   questions: {
+    format: choice('What size of paperback is it?',{pocket:'A small pocket paperback.',standard:'An ordinary mass-market paperback.',trade:'A taller trade paperback.',large:'A broad large-format paperback.'}),
+    finish: choice('How is the printed cover finished?',{matte:'Soft matte paper with little reflection.',gloss:'A glossy coated cover catches the light.',textured:'Fine cross-grain texture covers the printed jacket.',faded:'Sun-faded ink softens the whole cover.'}),
+    paper: choice('What colour are the page edges?',{cream:'Warm cream paper.',white:'Bright white pages.',yellow:'Yellowed old book paper.',tinted:'Muted green tinted page edges.'}),
+    provenance: choice('What evidence of ownership is on the cover?',{new:'A small new-edition seal.',library:'A library label and lending-date panel.',used:'A small secondhand-shop price sticker.',gift:'A pale gift inscription label inside a drawn frame.'}),
+    spine: choice('What condition is the bent spine in?',{smooth:'A smooth barely creased spine.',creased:'Many narrow pale reading creases.',taped:'A broad strip of cloudy repair tape.',sewn:'Several visible repair stitches bridge the spine.'}),
+    readingAid: choice('What reading accessory lies nearby?',{ruler:'A narrow transparent reading ruler.',magnifier:'A small handled magnifying glass.',case:'A folded cloth spectacle case.',note:'A small handwritten reading note.'}),
     genre: choice('What kind of book is it, judging by the cover?', GENRES),
     progress: score('How far through is the reader?', ['Barely started', 'A third in', 'Halfway', 'Nearly finished']),
     eyewear: choice('What is resting on the book?', {
@@ -56,7 +62,8 @@ export default defineThing({
   build(a, context) {
     const s = new Sculpture(context);
     const { mood, random } = context;
-    const w = 0.108, d = 0.178, cover = 0.0018, thickness = a.genre === 'poetry' ? 0.014 : mix(0.024, 0.036, random());
+    const [w,d]={pocket:[.092,.148],standard:[.108,.178],trade:[.125,.205],large:[.145,.22]}[a.format];
+    const cover = 0.0018, thickness = a.genre === 'poetry' ? 0.014 : mix(0.024, 0.036, random());
     const base = BASE[a.genre];
     const title = TITLES[a.genre][Math.floor(random() * 3)];
     const author = ['M. HALE', 'R. QUILL', 'J. ASHBY', 'D. MARLOWE', 'E. VANCE'][Math.floor(random() * 5)];
@@ -116,22 +123,33 @@ export default defineThing({
     for (let i = 0; i < (a.genre === 'classic' ? 12 : 22); i++) ctx.fillRect(32, (a.genre === 'classic' ? 142 : 46) + i * 10, (BW - 64) * (i % 6 === 5 ? 0.5 : 0.85 + random() * 0.15), 3);
     ctx.fillStyle = '#ffffff'; ctx.fillRect(140, 312, 76, 50); ctx.fillStyle = '#111';
     for (let i = 0; i < 22; i++) ctx.fillRect(146 + i * 3, 318, 1 + (i * 7) % 2, 38);
+    // Ownership marks remain on the visible back cover.
+    ctx.save();ctx.translate(26,294);ctx.rotate(-.06);ctx.fillStyle='#eee4c6';
+    if(a.provenance==='new'){ctx.beginPath();ctx.arc(28,24,24,0,Math.PI*2);ctx.fill();ctx.fillStyle='#765c35';ctx.font='bold 12px serif';ctx.textAlign='center';ctx.fillText('NEW',28,22);ctx.fillText('EDITION',28,35);}
+    else{ctx.fillRect(0,0,88,58);ctx.strokeStyle='#8e7a50';ctx.lineWidth=1.5;ctx.strokeRect(3,3,82,52);ctx.fillStyle='#554d43';ctx.font='12px sans-serif';ctx.textAlign='left';
+      if(a.provenance==='library'){ctx.fillText('LENDING COPY',7,16);ctx.font='10px monospace';ctx.fillText('12 OCT',8,32);ctx.fillText('RETURN 26 OCT',8,46);}
+      if(a.provenance==='used'){ctx.fillText('OLD BOOKS',8,19);ctx.font='bold 22px serif';ctx.fillText('50¢',20,43);}
+      if(a.provenance==='gift'){ctx.font='italic 12px serif';ctx.fillText('For your travels',8,21);ctx.fillText('with love, A.',8,39);}
+    }ctx.restore();
     // Spine: darker strip, title running along it, and the white cracks of a book bent back.
     ctx.fillStyle = 'rgba(0,0,0,0.16)'; ctx.fillRect(SX, 0, SW, H);
     ctx.save(); ctx.translate(SX + SW / 2 + 5, H / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = ink; ctx.textAlign = 'center'; ctx.font = 'bold 16px Georgia, serif'; ctx.fillText(title.join(' '), 0, 0, H - 80); ctx.restore();
-    const cracks = 2 + Math.round(a.progress * 5 + mood.wear * 9);
+    const cracks = a.spine==='smooth'?1:a.spine==='creased'?12+Math.round(a.progress*6):4;
     for (let i = 0; i < cracks; i++) { ctx.strokeStyle = `rgba(255,252,240,${0.5 + random() * 0.4})`; ctx.lineWidth = 0.8 + random() * 1.6; ctx.beginPath(); const x = SX + 5 + random() * (SW - 10); ctx.moveTo(x, 0); for (let y = 0; y <= H; y += 48) ctx.lineTo(x + (random() - 0.5) * 3, y); ctx.stroke(); }
     // Wear: scuffed corners, a sun-faded patch, a ring from a glass.
     for (let i = 0; i < mood.wear * 40; i++) { ctx.fillStyle = 'rgba(255,250,235,0.5)'; const edge = random() < 0.5; ctx.fillRect(edge ? random() * 512 : (random() < 0.5 ? 0 : 506), edge ? (random() < 0.5 ? 0 : H - 6) : random() * H, 3 + random() * 14, 3 + random() * 6); }
     if (mood.wear > 0.55) { ctx.strokeStyle = 'rgba(90,60,30,0.45)'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(FX + 150, 300, 44, 0, 7); ctx.stroke(); }
+    if(a.spine==='taped'){ctx.fillStyle='rgba(239,229,196,.38)';ctx.fillRect(SX-5,0,SW+10,H);ctx.strokeStyle='rgba(255,250,225,.6)';ctx.lineWidth=2;ctx.strokeRect(SX-5,0,SW+10,H);}
+    if(a.finish==='textured'){ctx.strokeStyle='rgba(245,235,209,.17)';ctx.lineWidth=1;for(let y=0;y<H;y+=4){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(512,y);ctx.stroke();}ctx.strokeStyle='rgba(39,33,26,.09)';for(let x=0;x<512;x+=5){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}}
+    if(a.finish==='faded'){ctx.fillStyle='rgba(238,222,182,.28)';ctx.fillRect(0,0,512,H);}
     const jacket = (offset: number, span: number) => {
       const map = new THREE.CanvasTexture(canvas);
       map.colorSpace = THREE.SRGBColorSpace;
       map.offset.x = offset; map.repeat.x = span;
-      return new THREE.MeshStandardMaterial({ map, roughness: 0.55 });
+      return new THREE.MeshStandardMaterial({map,roughness:a.finish==='gloss'?.15:a.finish==='textured'?.95:.75});
     };
-    const paper = s.material('#efe6cc', { roughness: 0.95 });
-    const paperEdge = s.material('#d9cdaa', { roughness: 0.95 });
+    const pageTint={cream:'#efe6cc',white:'#f5f3ea',yellow:'#d8bf84',tinted:'#b5c49d'}[a.paper];
+    const paper=s.material(pageTint,{roughness:.95});const paperEdge=s.material(new THREE.Color(pageTint).multiplyScalar(.89).getStyle(),{roughness:.95});
 
     const book = new THREE.Group();
     const ridge = thickness + 0.03, spineWidth = Math.max(0.012, thickness * 0.55);
@@ -160,6 +178,11 @@ export default defineThing({
     spine.position.y = ridge + 0.0004;
     add(new THREE.Mesh(new THREE.BoxGeometry(spineWidth, 0.004, d - 0.004), paper), book).position.y = ridge - cover - 0.002;
 
+    if(a.spine==='sewn'){
+      const repairs=new Sculpture(context),thread=repairs.material('#d6bd8c');
+      for(let i=0;i<6;i++){const z=-d*.38+i*d*.15;repairs.tube([[-spineWidth*.45,ridge+.001,z],[-spineWidth*.2,ridge+.0025,z+.002],[spineWidth*.45,ridge+.001,z+.005]],.0007,thread);}
+      book.add(repairs.root);
+    }
     // The bookmark sticks out of the read side.
     const marked = halves[0].pages > halves[1].pages ? halves[0] : halves[1];
     const tab = new THREE.Group();
@@ -277,6 +300,24 @@ export default defineThing({
       }
       s.ball([0.02, 0.011, 0.015], [spot[0] - 0.01, 0.011, spot[1] + 0.075], s.material('#7f8689', { roughness: 0.6 }), 12);
     }
+    const aid=new Sculpture(context),cream=aid.material('#eee4cc'),wood=aid.material('#9c754b');
+    if(a.readingAid==='ruler'){
+      aid.box([.027,.0015,.145],[0,.00075,0],aid.material('#b7cfcb',{transparent:true,opacity:.6,roughness:.2}));
+      for(let i=0;i<15;i++)aid.rod([-.011,.0016,-.068+i*.0095],[i%5===0?.002:-.005,.0016,-.068+i*.0095],.00025,aid.material('#485955'));
+    }
+    if(a.readingAid==='magnifier'){
+      const metal=aid.material('#b8a05e',{metalness:.7,roughness:.3});aid.ring(.023,.003,[0,.003,0],metal).rotation.x=Math.PI/2;
+      aid.cylinder(.022,.022,.0015,[0,.003,0],aid.material('#d7e8e3',{transparent:true,opacity:.25,roughness:.05}),24);aid.rod([0,.003,.024],[0,.003,.085],.004,wood);
+    }
+    if(a.readingAid==='case'){
+      aid.box([.055,.006,.13],[0,.003,0],aid.material('#7d918d'));const flap=aid.box([.046,.002,.125],[.003,.007,0],aid.material('#a0afa5'));flap.rotation.z=.05;
+      for(let i=0;i<16;i++)aid.rod([-.025,.006,-.06+i*.008],[-.02,.006,-.06+i*.008],.00035,cream);
+    }
+    if(a.readingAid==='note'){
+      aid.box([.074,.001,.058],[0,.0005,0],cream);const note=aid.label('CHAPTER 7',.063,.012,[0,.0011,-.014],'#46536a','#eee4cc');note.rotation.x=-Math.PI/2;
+      for(let i=0;i<3;i++)aid.rod([-.026,.0013,.004+i*.009],[.02-i*.006,.0013,.004+i*.009],.0004,aid.material('#66738b'));
+    }
+    aid.root.position.set(-w-.055,0,.015);aid.root.rotation.y=-.2;s.root.add(aid.root);
     return s.finish();
   },
 });

@@ -1,10 +1,10 @@
 import {choice,defineLook,score} from '@conjure/kit';
-import {anatomy,prepare,organ,oval,scene,membrane,crop,rim,vein,line,label,finish,stop,canvas} from './organic';
+import {anatomy,prepare,organ,oval,scene,membrane,crop,rim,vein,line,label,finish,stop,canvas,tint} from './organic';
 import {micrograph} from './micrograph';
 export default defineLook({questions:{
  inhabitants:choice('What beings are drawn inside the world’s own surfaces?',{masks:'Nested skull-masks, staring faces and little witnesses inhabit the skin.',vermin:'Worms, tooth-beasts, bird larvae and searching roots weave through the surfaces.',settlements:'Tiny doorways, crooked villages and inhabited cliffs grow inside the larger forms.',choir:'A mixed bestiary of faces, creatures, small people and impossible little places.'}),
  hierarchy:score('How do the inner pictures divide their scales?',['A dense web of fine creatures with a few larger masks','Balanced large inhabitants, smaller scenes and tiny pictorial details','Broad masks and creatures whose bodies shelter smaller drawings']),
-pigment:choice('Which substances form the image?',{bone:'Ivory marrow, olive shadows and rust-red markings.',rust:'Iron oxide, dried red clay and pale flesh.',verdigris:'Green copper salts and bone with a rusty accent.',charcoal:'Carbon, ash and sepia on old tissue.'}),
+pigment:choice('Which substances form the image?',{bone:'Pale warm tissue, soft mid shadows and sharp contrasting marks.',rust:'Toned, smouldering stock with heavy shadows and sombre marks.',verdigris:'Cool mineral salts, vivid mid tones and a hot contrasting accent.',charcoal:'Restrained, ashen, near-monochrome on old tissue.'}),
  section:choice('How was the colossal bone sectioned?',{shaft:'A long horizontal femur opens into one broad marrow landscape.',vertebra:'A vertebral ring surrounds a central landscape and four smaller cavities.',jaw:'A curved jawbone carries a row of tooth-like image sockets.',ribs:'Overlapping rib arches surround the main landscape cavity.'}),
  marrow:choice('What fills the cavity rims?',{lace:'Fine branching ivory trabeculae.',pores:'Clusters of round dark pores.',fibres:'Parallel fibrous scratches following the bone.',crystals:'Angular mineral spurs at the bone edge.'}),
  opening:score('How far has the bone been opened?',['A narrow surgical window','An exposed central cavity','A broad landscape inside the skeleton']),
@@ -21,16 +21,16 @@ const f=await prepare(cap,ctx,signal,a.pigment),d=f.d;
  }else{
  bone.moveTo(.07,.26);bone.bezierCurveTo(.02,.65,.08,.84,.5,.90);bone.bezierCurveTo(.92,.84,.98,.65,.93,.26);bone.lineTo(.80,.23);bone.bezierCurveTo(.78,.37,.70,.39,.5,.40);bone.bezierCurveTo(.30,.39,.22,.37,.20,.23);bone.closePath();
  }
- const bg=d.createLinearGradient(.1,.1,.8,.95);bg.addColorStop(0,'#f2e7c9');bg.addColorStop(.28,f.p.paper);bg.addColorStop(.66,f.p.mid);bg.addColorStop(1,'#eee1c0');d.fillStyle=bg;d.fill(bone);anatomy(f,bone);rim(f,bone,.009,false);
+ const bg=d.createLinearGradient(.1,.1,.8,.95);bg.addColorStop(0,tint('#f2e7c9',ctx,'ground'));bg.addColorStop(.28,f.p.paper);bg.addColorStop(.66,f.p.mid);bg.addColorStop(1,tint('#eee1c0',ctx,'ground'));d.fillStyle=bg;d.fill(bone);anatomy(f,bone);rim(f,bone,.009,false);
  const rx=a.section==='vertebra'?.30:.35,ry=.225+a.opening*.036;
  const cavity=organ(.5,.51,rx,ry,.022,.7);scene(f,cavity,[.5-rx,.51-ry,rx*2,ry*2]);d.strokeStyle=f.p.ink;d.lineWidth=.013;d.stroke(cavity);d.strokeStyle=f.p.paper;d.lineWidth=.004;d.stroke(cavity);
  // Mineral trabeculae are clipped to the solid bone, with a clear central marrow landscape.
- d.save();d.clip(bone);f.h.save();f.h.clip(bone);
+ const pale=tint('#eee4c8',ctx,'ground');d.save();d.clip(bone);f.h.save();f.h.clip(bone);
  for(let i=0;i<360;i++){stop(signal);const t=ctx.random()*Math.PI*2,band=ctx.random(),x=.5+Math.cos(t)*(rx+.025+band*.14),y=.51+Math.sin(t)*(ry+.022+band*.17),r=.002+ctx.random()*.008;
   if(a.marrow==='pores'){d.fillStyle=f.p.ink;d.globalAlpha=.45;d.fill(oval(x,y,r,r*.7));}
   else if(a.marrow==='fibres')line(f,[x,y,x+Math.cos(t)*.028,y+Math.sin(t)*.022],f.p.mid,.0014);
   else if(a.marrow==='crystals')line(f,[x-r,y+r,x,y-r*2,x+r,y+r],f.p.ink,.0012);
-  else{line(f,[x,y,x+Math.cos(t)*.025,y+Math.sin(t)*.025],'#eee4c8',.004);line(f,[x,y,x+.014,y-.012],f.p.ink,.0011);}
+  else{line(f,[x,y,x+Math.cos(t)*.025,y+Math.sin(t)*.025],pale,.004);line(f,[x,y,x+.014,y-.012],f.p.ink,.0011);}
  }d.globalAlpha=1;d.restore();f.h.restore();
  const sockets=a.section==='jaw'?[[.18,.26],[.34,.28],[.50,.30],[.66,.28],[.82,.26]]:a.section==='vertebra'?[[.1,.41],[.9,.41],[.28,.79],[.73,.79]]:[[.15,.26],[.84,.25],[.16,.73],[.84,.73]];
  sockets.forEach(([x,y],i)=>{const r=a.section==='jaw'?.054:.059;let opening:Path2D;

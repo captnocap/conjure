@@ -20,6 +20,13 @@ const METAL = { brass: '#c9973a', copper: '#b8693d', silver: '#c5c9cc', iron: '#
 export default defineThing({
   questions: {
     shape: choice('What shape are the lanterns?', SHAPES),
+    piercing: choice('What pattern is cut through the metal skins?', {stars:'Rows of eight-point star openings.',dots:'Bands of small round punched holes.',diamonds:'A lattice of elongated diamond openings.',slots:'Narrow vertical slits with round end holes.'}),
+    crown: choice('What ornament tops each lantern?', {point:'A pointed metal finial.',ball:'A small round bead finial.',leaf:'A paired leaf-shaped finial.',disc:'A small perforated disk finial.'}),
+    foot: choice('What supports each lantern base?', {ring:'A broad circular foot ring.',pads:'Three small rounded foot pads.',legs:'Three short splayed metal feet.',plinth:'A low polygonal base plate.'}),
+    joinery: choice('How are the metal skins joined?', {rolled:'A rolled seam along one side.',rivets:'A line of small round rivet heads.',straps:'Two slim metal reinforcing straps.',plain:'Plain joined edges with no extra hardware.'}),
+    suspension: choice('If lanterns hang, what suspends them?', {wire:'A single slim dark wire.',chain:'A chain of linked metal rings.',cord:'A pale knotted cord.',double:'Two parallel suspension wires.'}),
+    rank: choice('How are the floor lanterns arranged?', {straight:'Even ranks facing the viewer.',arc:'A shallow arc of lanterns.',stagger:'Alternating forward and backward positions.',pairs:'Small pairs gather with gaps between them.'}),
+    surface: choice('What surface carries the display?', {bare:'The bare ground.',rug:'A low woven display mat.',stone:'A shallow stone display slab.',boards:'A low platform of individual wooden boards.'}),
     glass: choice('What colour is the glass and the glow behind the piercing?', {
       amber: 'Honey amber, candle-warm.',
       ruby: 'Deep ruby red.',
@@ -57,23 +64,22 @@ export default defineThing({
     const blank = new THREE.MeshStandardMaterial({ color: metalColour.clone().multiplyScalar(0.8), metalness: 0.5, roughness: 0.75 });
     const glowPower = mix(1.1, 2.2, mood.cheer);
 
-    const sheet = (glow: boolean, hole: string) => {
+    const sheet = (glow: boolean, hole: string, inverse=false) => {
       const canvas = document.createElement('canvas');
       canvas.width = canvas.height = 256;
       const g = canvas.getContext('2d')!;
-      g.fillStyle = glow ? '#000000' : `#${metalColour.getHexString()}`;
+      g.fillStyle = inverse?'#ffffff':glow ? '#000000' : `#${metalColour.getHexString()}`;
       g.fillRect(0, 0, 256, 256);
-      g.fillStyle = glow ? '#ffffff' : hole;
+      g.fillStyle = inverse?'#000000':glow ? '#ffffff' : hole;
       const dot = (x: number, y: number, r: number) => { g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); };
       for (let i = 0; i < 8; i++) {
         const x = i * 32 + 16;
         for (const y of [20, 236]) dot(x, y, 7);
         for (const y of [52, 204]) dot(x + 16, y, 9);
-        // A row of eight-point stars round the belly.
-        g.save(); g.translate(x, 128);
-        for (let k = 0; k < 2; k++) { g.rotate(Math.PI / 4); g.fillRect(-13, -13, 26, 26); }
-        g.restore();
-        dot(x + 16, 92, 6); dot(x + 16, 164, 6);
+        if(a.piercing==='stars'){g.save();g.translate(x,128);for(let k=0;k<2;k++){g.rotate(Math.PI/4);g.fillRect(-13,-13,26,26);}g.restore();dot(x+16,92,6);dot(x+16,164,6);}
+        else if(a.piercing==='dots')for(const y of[82,108,134,160,182])dot(x+(y%3?0:14),y,5);
+        else if(a.piercing==='diamonds')for(const y of[90,128,166]){g.beginPath();g.moveTo(x,y-15);g.lineTo(x+8,y);g.lineTo(x,y+15);g.lineTo(x-8,y);g.closePath();g.fill();}
+        else{g.fillRect(x-3,86,6,82);dot(x,80,5);dot(x,174,5);}
       }
       const texture = new THREE.CanvasTexture(canvas);
       texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
@@ -81,7 +87,7 @@ export default defineThing({
       if (!glow) texture.colorSpace = THREE.SRGBColorSpace;
       return texture;
     };
-    const glowMap = sheet(true, '#fff');
+    const glowMap = sheet(true, '#fff'),cutMap=sheet(true,'#fff',true);
     const skins = new Map<string, THREE.MeshStandardMaterial>();
     const litSkins: THREE.MeshStandardMaterial[] = [];
     const skin = (glass: string, lit: boolean) => {
@@ -90,7 +96,7 @@ export default defineThing({
       if (!found) {
         const dark = new THREE.Color(glass).multiplyScalar(0.28);
         found = new THREE.MeshStandardMaterial({
-          map: sheet(false, `#${dark.getHexString()}`), metalness: 0.55, roughness: mix(0.35, 0.7, mood.wear),
+          map: sheet(false, `#${dark.getHexString()}`), alphaMap:cutMap,alphaTest:.5, metalness: 0.55, roughness: mix(0.35, 0.7, mood.wear),
           emissiveMap: glowMap, emissive: new THREE.Color(glass), emissiveIntensity: lit ? glowPower : 0, side: THREE.DoubleSide,
         });
         skins.set(key, found);
@@ -121,6 +127,7 @@ export default defineThing({
         mesh.position.y = y;
         mesh.castShadow = true;
         group.add(mesh);
+        if(!bare&&material===body){const liner=new THREE.Mesh(geometry,pane(glass,lit));liner.position.y=y;liner.scale.setScalar(.967);liner.castShadow=true;group.add(liner);}
         return mesh;
       };
       const body = bare ? blank : skin(glass, lit);
@@ -173,9 +180,24 @@ export default defineThing({
         add(merged, bare ? blank : pane(glass, lit), h / 2);
         add(new THREE.CylinderGeometry(r * 0.08, r * 0.08, r * 0.12, 8), plain, h - r * 0.03);
       }
-      const ring = add(new THREE.TorusGeometry(r * 0.13, r * 0.03, 6, 12), plain, h + r * 0.1);
+      const skinRadius=(t:number)=>{if(shape==='teardrop'){const keys=[[0,.3],[.04,.34],[.1,.6],[.24,.95],[.36,1],[.5,.86],[.66,.52],[.8,.27],[.9,.14],[.93,.2],[1,.04]];for(let i=1;i<keys.length;i++)if(t<=keys[i][0])return r*mix(keys[i-1][1],keys[i][1],(t-keys[i-1][0])/(keys[i][0]-keys[i-1][0]));return r*.04;}if(shape==='globe')return Math.sqrt(Math.max(r*r*.01,r*r-(t*h-(h*.08+r))**2));return shape==='square'?r*.75:shape==='cylinder'?r*.82:r*.34;};
+      if(a.joinery==='rolled'&&shape!=='star')for(let i=0;i<8;i++){const t=.2+i*.05,tt=t+.05,start=new THREE.Vector3(0,h*t,skinRadius(t)+r*.015),end=new THREE.Vector3(0,h*tt,skinRadius(tt)+r*.015),delta=end.clone().sub(start),seam=add(new THREE.CylinderGeometry(r*.018,r*.018,delta.length(),6),plain,0);seam.position.copy(start.add(end).multiplyScalar(.5));seam.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());}
+      if(a.joinery==='rivets'&&shape!=='star')for(let i=0;i<7;i++){const t=.2+i*.07,rivet=add(new THREE.SphereGeometry(r*.045,8,5),plain,h*t);rivet.position.z=skinRadius(t)+r*.015;}
+      if(a.joinery==='straps'&&shape!=='star')for(const y of[.25,.55]){if(shape==='square')for(const side of[-1,1]){const front=add(new THREE.BoxGeometry(r*1.52,r*.045,r*.03),plain,h*y);front.position.z=side*r*.76;const edge=add(new THREE.BoxGeometry(r*.03,r*.045,r*1.52),plain,h*y);edge.position.x=side*r*.76;}else add(new THREE.TorusGeometry(skinRadius(y)+r*.015,r*.025,6,32),plain,h*y).rotateX(Math.PI/2);}
+      if(a.crown==='point')add(new THREE.ConeGeometry(r*.1,r*.32,10),plain,h+r*.12);
+      if(a.crown==='ball')add(new THREE.SphereGeometry(r*.12,12,8),plain,h+r*.1);
+      if(a.crown==='leaf')for(const side of[-1,1]){const leaf=add(new THREE.SphereGeometry(r*.13,10,6),plain,h+r*.12);leaf.scale.set(.5,1.4,.3);leaf.rotation.z=side*.5;leaf.position.x=side*r*.07;}
+      if(a.crown==='disc')add(new THREE.TorusGeometry(r*.12,r*.03,6,16),plain,h+r*.13);
+      add(new THREE.CylinderGeometry(r*.028,r*.028,r*.4,8),plain,h+r*.24);
+      const ring = add(new THREE.TorusGeometry(r * 0.13, r * 0.03, 6, 12), plain, h + r * 0.42);
       ring.rotation.y = random() * 3;
-      return { group, h: h + r * 0.2 };
+      // Raise the shell onto its selected foot; all supports start at the same floor.
+      const footLift=r*.12;for(const part of group.children)part.position.y+=footLift;
+      if(a.foot==='ring')add(new THREE.CylinderGeometry(r*.4,r*.46,footLift,16),plain,footLift/2);
+      else if(a.foot==='plinth')add(new THREE.CylinderGeometry(r*.45,r*.5,footLift,6),plain,footLift/2);
+      else for(let i=0;i<3;i++){const t=i*Math.PI*2/3,foot=add(a.foot==='pads'?new THREE.SphereGeometry(r*.1,10,6):new THREE.CylinderGeometry(r*.04,r*.08,footLift*1.2,8),plain,footLift/2);foot.position.x=Math.cos(t)*r*.3;foot.position.z=Math.sin(t)*r*.3;if(a.foot==='legs')foot.rotation.z=Math.cos(t)*.25;}
+      group.updateMatrixWorld(true);let bounds=new THREE.Box3().setFromObject(group,true);for(const part of group.children)part.position.y-=bounds.min.y;group.updateMatrixWorld(true);bounds=new THREE.Box3().setFromObject(group,true);
+      return {group,h:bounds.max.y};
     };
 
     const total = 5 + Math.round(mood.density * 5);
@@ -227,8 +249,9 @@ export default defineThing({
       const drop = (i % 2 ? 0.5 : 0.12) + random() * 0.32;
       const pivot = new THREE.Group();
       pivot.position.set(x, top - thick, (i % 2 ? 0.07 : -0.07));
-      const link = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, drop, 5), chain);
-      link.position.y = -drop / 2;
+      const link=new THREE.Group();
+      if(a.suspension==='chain'){const count=Math.max(3,Math.ceil(drop/.032)),step=drop/count;for(let j=0;j<count;j++){const ring=new THREE.Mesh(new THREE.TorusGeometry(step*.55,.003,5,10),chain);ring.position.y=-step*(j+.5);ring.rotation.y=j%2?Math.PI/2:0;link.add(ring);}}
+      else{const mat=a.suspension==='cord'?s.material('#c9b389'):chain;for(const offset of(a.suspension==='double'?[-.012,.012]:[0])){const cord=new THREE.Mesh(new THREE.CylinderGeometry(a.suspension==='cord'?.009:.006,a.suspension==='cord'?.009:.006,drop,6),mat);cord.position.set(offset,-drop/2,0);link.add(cord);}if(a.suspension==='cord')for(const yy of[-.035,-drop+.035]){const knot=new THREE.Mesh(new THREE.SphereGeometry(.016,8,5),mat);knot.position.y=yy;link.add(knot);}}
       lantern.group.position.y = -drop - lantern.h;
       lantern.group.rotation.y = random() * 6;
       pivot.add(link, lantern.group);
@@ -243,10 +266,10 @@ export default defineThing({
       const flawed = i === 0 && (a.flaw === 'dented' || a.flaw === 'unfinished');
       const r = (hanging === 0 ? 0.17 : 0.14) + random() * 0.09;
       const lantern = make(shapeOf(), r, lit && !flawed, glass, flawed && a.flaw === 'unfinished');
-      const x = perRow === 1 ? 0 : mix(-width / 2 + 0.3, width / 2 - 0.3, col / (perRow - 1)) + (row ? 0.14 : 0) + (random() - 0.5) * 0.1;
-      const z = (hanging === 0 ? 0 : 0.5) + row * 0.6 + (random() - 0.5) * 0.12;
+      const x = (perRow === 1 ? 0 : mix(-width / 2 + 0.3, width / 2 - 0.3, col / (perRow - 1)) + (row ? 0.14 : 0) + (random() - 0.5) * 0.1)+(a.rank==='pairs'?(col%2?-.07:.07):0);
+      const z = (hanging === 0 ? 0 : 0.5) + row * 0.6 + (random() - 0.5) * 0.12+(a.rank==='arc'?.3*(x/(width/2))**2:a.rank==='stagger'?(col%2?.2:-.1):0);
       lantern.group.position.set(x, 0, z);
-      lantern.group.rotation.y = random() * 6;
+      lantern.group.rotation.y = a.rank==='straight'?(random()-.5)*.15:random()*6;
       if (flawed && a.flaw === 'dented') {
         lantern.group.scale.set(1.08, 0.78, 0.7);
         lantern.group.rotation.z = 0.24;
@@ -258,7 +281,7 @@ export default defineThing({
         s.box([0.045, 0.045, 0.1], [x + r * 1.5 + 0.24, 0.025, z + 0.2], s.material('#55585c', { metalness: 0.7 })).rotation.y = 0.4;
         s.rod([x - r * 1.6, 0.01, z + 0.16], [x - r * 1.6 - 0.14, 0.01, z + 0.1], 0.007, s.material('#55585c', { metalness: 0.7 }));
       }
-      s.root.add(lantern.group);
+      s.root.add(lantern.group);lantern.group.updateMatrixWorld(true);lantern.group.position.y-=new THREE.Box3().setFromObject(lantern.group,true).min.y;
       if (lit && !flawed) spill(x, z, glass, r * 3.4);
     }
     if (a.flaw === 'fallen') {
@@ -267,10 +290,11 @@ export default defineThing({
       const x = (random() - 0.5) * width * 0.5;
       lantern.group.rotation.set(0, random() * 6, Math.PI / 2 - 0.12, 'YXZ');
       lantern.group.position.set(x + lantern.h / 2, r * 1.02, 1.5);
-      s.root.add(lantern.group);
+      s.root.add(lantern.group);lantern.group.updateMatrixWorld(true);lantern.group.position.y-=new THREE.Box3().setFromObject(lantern.group,true).min.y;
       s.rod([x * 0.5, top - thick, 0], [x * 0.5 + 0.03, top - 0.55, 0], 0.006, chain);
       s.tube([[x - 0.1, 0.008, 1.47], [x - 0.22, 0.008, 1.4], [x - 0.3, 0.008, 1.51], [x - 0.42, 0.008, 1.45]], 0.006, chain);
     }
+    if(a.surface!=='bare')for(let i=dots.length-1;i>=0;i--)if(Math.abs(dots[i].at[0])>width/2+.32||dots[i].at[2]<-.57||dots[i].at[2]>1.87)dots.splice(i,1);
     if (dots.length) {
       const disc = new THREE.CircleGeometry(1, 10);
       disc.rotateX(-Math.PI / 2);
@@ -278,6 +302,10 @@ export default defineThing({
       glow.castShadow = glow.receiveShadow = false;
     }
 
+    if(a.surface!=='bare'){const floor=a.surface==='rug'?.012:a.surface==='stone'?.07:.08;for(const part of s.root.children)part.position.y+=floor;
+      if(a.surface==='boards'){const wood=s.material('#9c7850');for(let i=0;i<10;i++)s.box([(width+.7)/10-.008,floor,2.5],[-(width+.7)/2+(i+.5)*(width+.7)/10,floor/2,.65],wood);}
+      else s.box([width+.7,floor,2.5],[0,floor/2,.65],s.material(a.surface==='rug'?'#a97757':'#a7a48e'));
+    }
     const sway = mix(0.01, 0.07, mood.energy);
     return s.finish({
       update: (_dt, time) => {

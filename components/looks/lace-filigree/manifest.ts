@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({ kind: 'look', title: 'Knotted lace picture', medium: 'craft', scales: ['cosmic', 'planetary', 'landscape', 'street', 'room', 'tabletop', 'macro'], summary: 'An openwork lace image with fine knotted nets, denser stitched forms, scalloped edges and shadows beneath the thread. Heirloom curtains, patient needlework, delicate domestic records and a picture held together by tiny bridges.' });

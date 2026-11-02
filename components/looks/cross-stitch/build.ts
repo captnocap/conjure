@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score } from '@conjure/kit';
+import { type Palette, type PaletteRole, type RGB as Paint, choice, clamp01, defineLook, mix, paintIsMetal, rekey, rekeyOne, score } from '@conjure/kit';
 
 type RGB = [number, number, number];
 const hex = (h: string): RGB => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
@@ -35,6 +35,37 @@ const FLOSS: Record<string, { colors: string[]; mono?: boolean; accent?: string;
   neon: { colors: ['#ff2fa0', '#39ff6a', '#22e6ff', '#fff12e', '#ff7a1a', '#a64dff', '#ffffff', '#2b2bd6'] },
 };
 
+/**
+ * Under the picture's palette each card keeps its design: multi-colour cards split into their two
+ * families (one on the ink, the other on the second colour, each keeping its spread), one-colour
+ * work (redwork, delft) is stitched in the ink, and white, black and grey floss stay as they are.
+ * Blackwork keeps its black silk, and its gold unless the ink is itself a metal.
+ * i = ink, s = second, - = fixed, per colour in order.
+ */
+const FLOSS_ROLES: Record<string, { colors: string; dark?: string }> = {
+  sampler: { colors: 'iissssii-i--' },
+  folk: { colors: 'i--ssiiiss' },
+  redwork: { colors: 'iii', dark: 'iii' },
+  delft: { colors: 'iiiii-' },
+  pastel: { colors: 'isissi--sis' },
+  wool: { colors: 'siisi-isis-' },
+  neon: { colors: 'issiii-s' },
+};
+const ROLE_OF: Record<string, PaletteRole | undefined> = { i: 'ink', s: 'second' };
+const paintHexOf = (c: Paint) => `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+function flossIn(key: string, palette: Palette | undefined): (typeof FLOSS)[string] {
+  const card = FLOSS[key];
+  if (!palette) return card;
+  if (key === 'blackwork') return paintIsMetal(palette.ink) && card.accent ? { ...card, accent: paintHexOf(rekeyOne(hex(card.accent), palette, 'ink')) } : card;
+  const roles = FLOSS_ROLES[key];
+  if (!roles) return card;
+  const keyed = (list: string[], pattern: string) => {
+    const out = rekey(Object.fromEntries(list.map((h, i) => [i, hex(h) as Paint])), palette, Object.fromEntries(list.map((_, i) => [i, ROLE_OF[pattern[i]]])));
+    return list.map((_, i) => paintHexOf(out[i]));
+  };
+  return { ...card, colors: keyed(card.colors, roles.colors), dark: card.dark && roles.dark ? keyed(card.dark, roles.dark) : card.dark };
+}
+
 const LETTERS = [
   '010101111101101', '110101110101110', '011100100100011', '110101101101110', '111100110100111', '111100110100100',
   '011100101101011', '101101111101101', '111010010010111', '001001001101010', '101101110101101', '100100100100111',
@@ -51,16 +82,16 @@ export default defineLook({
       satin: 'Free embroidery: long glossy satin stitches that follow the direction of each surface.',
       knots: 'French knots: every square a small raised bead of thread, like candlewick or a rag rug.',
     }),
-    palette: choice('Which floss is in the workbox?', {
+    palette: choice('What character has the floss in the workbox? Its colours come from the picture\u2019s palette.', {
       matched: "Skeins matched to the picture's own colours, a faithful needle-painting.",
-      sampler: 'Antique sampler shades: brick red, indigo, olive, ochre, walnut and faded rose.',
-      folk: 'Bright folk embroidery: scarlet, emerald, cobalt, sunflower and magenta with black and white.',
-      redwork: 'Redwork: a single turkey-red thread, with tone carried by how densely it is stitched.',
+      sampler: 'Antique sampler shades: two faded, earthy families of thread with cream and near-black.',
+      folk: 'Bright folk embroidery: two families of strong, saturated thread with black and white.',
+      redwork: 'Redwork: a single strong thread, with tone carried by how densely it is stitched.',
       blackwork: 'Blackwork: black silk with a touch of gold, severe and Tudor.',
-      delft: 'Blue and white only, like Delft tiles or willow-pattern china.',
-      pastel: 'Nursery pastels: baby pink, mint, lemon, lilac and sky.',
-      wool: 'Tapestry wools: moss, rust, mustard, teal and plum, a seventies cushion.',
-      neon: 'Fluorescent floss: hot pink, acid green and electric cyan, modern and cheeky.',
+      delft: 'One colour and white only, in deep-to-pale shades, like Delft tiles or willow-pattern china.',
+      pastel: 'Nursery pastels: soft, pale, milky tints with gentle greys.',
+      wool: 'Tapestry wools: dense, earthy, muted shades in two families, a seventies cushion.',
+      neon: 'Fluorescent floss: the loudest, most electric shades with white, modern and cheeky.',
     }),
     colours: score('How many colours of floss does the pattern call for?', [
       'Three or four skeins',
@@ -86,7 +117,7 @@ export default defineLook({
       ecru: 'Warm cream aida, soft and old-fashioned.',
       linen: 'Raw natural linen, uneven slubby threads the colour of oatmeal.',
       black: 'Black aida, so the colours glow like a night scene.',
-      dyed: 'Hand-dyed cloth, mottled dusty colour.',
+      dyed: 'Hand-dyed cloth, a mottled dusty tint.',
       canvas: 'Stiff open-mesh needlepoint canvas, holes showing wherever it is left bare.',
     }),
     coverage: choice('How much of the cloth has been stitched?', {
@@ -203,7 +234,7 @@ export default defineLook({
     // ── the cloth, and where on it the work sits ────────────────────────────
     const FAB: Record<typeof a.fabric, RGB> = {
       white: hex('#f0eee4'), ecru: hex('#e2d4b4'), linen: hex('#b9a887'), black: hex('#1d1d22'),
-      dyed: [mix(132, 214, mood.warmth), mix(158, 160, mood.warmth), mix(178, 146, mood.warmth)],
+      dyed: [...rekeyOne([mix(132, 214, mood.warmth), mix(158, 160, mood.warmth), mix(178, 146, mood.warmth)], context.palette, 'ground')],
       canvas: hex('#e4d9bb'),
     };
     const fab = FAB[a.fabric];
@@ -259,7 +290,7 @@ export default defineLook({
     const outline = a.coverage === 'linework' || voided ? Math.max(0.8, a.outline) : a.outline;
 
     // ── choose the floss ────────────────────────────────────────────────────
-    const card = a.palette === 'matched' ? null : FLOSS[a.palette];
+    const card = a.palette === 'matched' ? null : flossIn(a.palette, context.palette);
     const wanted = Math.round(mix(4, 20, a.colours));
     const cpal = new Int16Array(N).fill(-1);
     const half = new Uint8Array(N);

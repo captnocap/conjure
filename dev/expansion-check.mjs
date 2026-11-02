@@ -35,9 +35,9 @@ try {
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(`${base}/?offline`);
   await page.locator('#browse').click();
-  assert.equal(await page.locator('.library-card').count(), 140);
+  assert.equal(await page.locator('.library-card').count(), 280);
   await page.locator('#library-scale').selectOption('cosmic');
-  assert.equal(await page.locator('.library-card').count(), 20);
+  assert.equal(await page.locator('.library-card').count(), 40);
   await page.locator('#library-search').fill('black hole');
   assert.ok(await page.locator('.library-card').count() >= 1);
   await page.getByRole('button', { name: 'Use this idea' }).first().click();

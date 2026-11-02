@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Cryogenic radio receiver dewar", "summary": "A compact cylindrical vacuum dewar on a service cradle with connected waveguide horns, cold-head plumbing and access flange. Remote radio astronomy, precise timing, quiet signals and field maintenance in desert arrays.", "scales": ["landscape", "tabletop", "room"]});

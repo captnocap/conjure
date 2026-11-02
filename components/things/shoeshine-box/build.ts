@@ -49,6 +49,12 @@ export default defineThing({
       schoolbook: 'A school exercise book and a pencil stub.',
       tea: 'A glass of tea going cold.',
     }),
+    restSurface: choice('What grips the shoe on the footrest?', { plain: 'Plain shaped wood or brass.', strips: 'Three narrow rubber grip strips.', studs: 'Two rows of small brass studs.', felt: 'A dark felt pad on the sole plate.' }),
+    boxHinges: choice('What hinges are on the box lid?', { plain: 'No exposed hinges.', straps: 'Two long iron strap hinges.', brass: 'Two short bright brass hinges.', piano: 'A narrow continuous rear hinge.' }),
+    carryingHandle: choice('What handle is fitted to the box side?', { none: 'Only the original shoulder strap.', leather: 'A curved leather side grip.', wire: 'A squared wire handle.', rope: 'A knotted rope loop.' }),
+    brushRack: choice('Where are spare brushes stored?', { none: 'No separate brush rack.', rail: 'A small upright rack fixed to the box end.', tray: 'A shallow divided wooden tray.', pouch: 'A hanging leather tool pouch with brush handles.' }),
+    waterPot: choice('What water container stands beside the kit?', { none: 'No extra water container.', tin: 'A little open galvanized tin.', bottle: 'A blue screw-cap bottle.', jug: 'A squat earthenware water jug.' }),
+    laceKit: choice('What is laid out for minor shoe repairs?', { none: 'Polishing equipment only.', laces: 'Two coils of spare black laces.', nails: 'A small open tin of heel tacks.', repair: 'A rubber heel patch and a cobbler’s awl.' }),
   },
 
   build(a, context) {
@@ -87,7 +93,7 @@ export default defineThing({
       s.box([bw * 0.8, 0.075, 0.02], [bx, 0.07, bz + bd / 2 + open], a.box === 'plain' ? darkWood : bodyMaterial);
       s.box([bw * 0.76, 0.06, open], [bx, 0.068, bz + bd / 2 + open / 2], darkWood);
       s.ball([0.014, 0.014, 0.014], [bx, 0.07, bz + bd / 2 + open + 0.018], brass, 8);
-      for (const x of [-1, 1]) for (const z of [-1, 1]) s.box([0.022, bh + 0.004, 0.022], [bx + x * bw / 2, bh / 2, bz + z * bd / 2], a.box === 'plain' ? darkWood : brass);
+      for (const x of [-1, 1]) for (const z of [-1, 1]) s.box([0.022, bh + 0.004, 0.022], [bx + x * bw / 2, (bh + 0.004) / 2, bz + z * bd / 2], a.box === 'plain' ? darkWood : brass);
     }
     s.box([bw + 0.02, 0.018, bd + 0.02], [bx, bh + 0.009, bz], a.box === 'brass' ? brass : darkWood);
     if (a.box === 'proud' || a.box === 'brass') {
@@ -114,7 +120,7 @@ export default defineThing({
     const restGeometry = new THREE.ExtrudeGeometry(sole(0.25, 0.095), { depth: 0.016, bevelEnabled: false });
     restGeometry.rotateX(-Math.PI / 2);
     const rest = s.mesh(restGeometry, a.box === 'plain' || a.box === 'crate' ? wood : brass, [restX, restY, bz + 0.02]);
-    rest.rotation.x = 0.2;
+    rest.rotation.x = 0.2; rest.name = 'shoeshine-footrest';
     s.box([0.07, 0.03, 0.012], [restX, restY + 0.005, bz - 0.095], darkWood).rotation.x = 0.2;
     // Shoulder strap slumped over the back.
     s.tube([[bx - bw / 2, bh * 0.8, bz], [bx - bw / 2 - 0.06, bh * 0.5, bz - 0.06], [bx - bw / 2 - 0.02, 0.012, bz - bd / 2 - 0.1], [bx, 0.012, bz - bd / 2 - 0.16], [bx + bw / 2 + 0.03, 0.012, bz - bd / 2 - 0.08], [bx + bw / 2 + 0.04, bh * 0.5, bz - 0.03], [bx + bw / 2, bh * 0.8, bz]], 0.012, leatherStrap);
@@ -148,7 +154,9 @@ export default defineThing({
     const ragMaterial = s.material(mood.cheer > 0.5 ? '#e9c53a' : '#c9b98c', { roughness: 1 });
     if (a.shoe === 'working') {
       const g = shoe([restX, restY + 0.012, bz + 0.02], 0, false);
-      g.rotation.x = 0.2;
+      rest.add(g); g.name = 'working-shoe';
+      g.position.set(0, a.restSurface === 'strips' ? .021 : a.restSurface === 'studs' ? .024 : a.restSurface === 'felt' ? .019 : .016, 0);
+      g.rotation.set(0, 0, 0);
       // The rag draped across the toe.
       s.tube([[restX - 0.09, restY + 0.03, bz - 0.03], [restX - 0.03, restY + 0.12, bz - 0.05], [restX + 0.04, restY + 0.115, bz - 0.04], [restX + 0.1, restY + 0.02, bz - 0.02], [restX + 0.13, bh + 0.03, bz + 0.02]], 0.018, ragMaterial);
     } else if (a.shoe === 'finished') shoe([0.47, 0.009, 0.14 + rnd(-0.03, 0.03)], rnd(-0.4, 0.2), true);
@@ -212,9 +220,12 @@ export default defineThing({
       s.root.add(g);
     }
     // Liquid polish bottle with a dauber and a dented water tin.
-    const bottle = s.cylinder(0.024, 0.026, 0.1, [-0.36, 0.058, 0.5], s.material('#1c1b1d', { roughness: 0.25 }), 12);
-    s.cylinder(0.012, 0.014, 0.03, [-0.36, 0.123, 0.5], s.material('#c8281f'), 10);
-    if (mess > 0.8) { bottle.rotation.z = Math.PI / 2; bottle.position.y = 0.034; bottle.position.x = -0.32; }
+    const bottle = new THREE.Group(); bottle.name = 'polish-bottle-with-cap';
+    bottle.add(s.cylinder(0.024, 0.026, 0.1, [0, 0.05, 0], s.material('#1c1b1d', { roughness: 0.25 }), 12));
+    bottle.add(s.cylinder(0.012, 0.014, 0.03, [0, 0.115, 0], s.material('#c8281f'), 10));
+    bottle.position.set(-0.36, 0.008, 0.5);s.root.add(bottle);
+    if (mess > 0.8) { bottle.rotation.z = Math.PI / 2; bottle.position.x = -0.27; }
+    bottle.updateMatrixWorld(true);bottle.position.y += .008 - new THREE.Box3().setFromObject(bottle, true).min.y;
     if (a.shoe !== 'working') {
       // The rag: folded square when tidy, a dropped twist when not.
       if (mess < 0.5) { s.box([0.14, 0.014, 0.1], [0.36, 0.015, 0.52], ragMaterial); s.box([0.13, 0.01, 0.09], [0.365, 0.027, 0.522], ragMaterial).rotation.y = 0.06; }
@@ -222,6 +233,7 @@ export default defineThing({
     }
 
     // ---- the seat and what is beside it ------------------------------------
+    const seatBefore = new Set(s.root.children);
     const sx = -0.62, sz = 0.12;
     if (a.seat === 'stool') {
       const top = s.box([0.26, 0.025, 0.2], [sx, 0.19, sz], wood); turned(top, rnd(-0.2, 0.2));
@@ -238,6 +250,9 @@ export default defineThing({
     } else {
       s.box([0.3, 0.008, 0.26], [sx, 0.004, sz], s.material('#9a8a66', { roughness: 1 })).rotation.y = 0.2;
     }
+    const seatGroup = new THREE.Group();seatGroup.name = 'shoeshiner-seat';
+    for(const child of [...s.root.children])if(!seatBefore.has(child))seatGroup.add(child);
+    s.root.add(seatGroup);seatGroup.updateMatrixWorld(true);seatGroup.position.y -= new THREE.Box3().setFromObject(seatGroup, true).min.y;
     const lx = sx + 0.02, lz = sz + 0.34;
     if (a.beside === 'sandals') {
       const rubber = s.material(pick(['#3a66b0', '#4a8a4c', '#8a3a3a']), { roughness: 0.9 });
@@ -257,6 +272,34 @@ export default defineThing({
       const cup = s.cylinder(0.032, 0.024, 0.085, [lx, 0.0425, lz], new THREE.MeshStandardMaterial({ color: '#e9f4f2', transparent: true, opacity: 0.3, roughness: 0.08, depthWrite: false }), 12);
       cup.castShadow = false;
       s.cylinder(0.027, 0.022, 0.05, [lx, 0.027, lz], s.material('#a9703c', { roughness: 0.3 }), 12);
+    }
+
+    if(a.restSurface==='strips')for(const z of[-.065,0,.065]){const strip=s.box([.08,.004,.018],[0,.019,z],s.material('#33372f'));rest.add(strip);}
+    else if(a.restSurface==='studs')for(const x of[-.025,.025])for(let i=0;i<5;i++)rest.add(s.ball([.004,.004,.004],[x,.02,-.09+i*.04],brass,6));
+    else if(a.restSurface==='felt'){const pad=s.mesh(new THREE.ShapeGeometry(sole(.22,.08)),s.material('#46473c'));pad.rotation.x=-Math.PI/2;pad.position.y=.019;rest.add(pad);}
+    if(a.boxHinges!=='plain'){
+      const n=a.boxHinges==='piano'?1:2;for(let i=0;i<n;i++){const x=bx+(n===1?0:(i-.5)*.28),w=a.boxHinges==='piano'?bw*.9:a.boxHinges==='straps'?.045:.065,mat=a.boxHinges==='brass'?brass:tinMetal;s.box([w,.05,.01],[x,bh-.005,bz-bd/2-.008],mat);s.cylinder(.009,.009,w,[x,bh+.015,bz-bd/2-.01],mat,8).rotation.z=Math.PI/2;}
+    }
+    if(a.carryingHandle!=='none'){
+      const x=bx-bw/2-.015,y=bh*.63;
+      if(a.carryingHandle==='wire')s.tube([[x,y,bz-.07],[x-.045,y-.04,bz-.07],[x-.045,y-.04,bz+.07],[x,y,bz+.07]],.005,tinMetal);
+      else{s.tube([[x,y,bz-.075],[x-.065,y-.06,bz],[x,y,bz+.075]],a.carryingHandle==='rope'?.008:.012,a.carryingHandle==='rope'?s.material('#b39b74'):leatherStrap);if(a.carryingHandle==='rope')for(const dz of[-.075,.075])s.ball([.012,.012,.012],[x,y,bz+dz],leatherStrap,6);}
+    }
+    if(a.brushRack!=='none'){
+      const x=bx+bw/2+.04,z=bz;
+      if(a.brushRack==='tray'){s.box([.16,.018,.26],[x+.05,.009,z],wood);for(const dz of[-.12,0,.12])s.box([.16,.06,.012],[x+.05,.03,z+dz],darkWood);}
+      else if(a.brushRack==='rail'){s.box([.1,.045,.24],[x,bh*.55,z],wood);for(const dz of[-.08,.08])s.rod([bx+bw/2,bh*.3,z+dz],[x+.04,bh*.55,z+dz],.006,tinMetal);}
+      else{s.box([.065,.17,.23],[x,.15,z],leatherStrap);for(const dz of[-.1,.1])s.rod([x,.225,z+dz],[bx+bw/2,bh,z+dz],.007,leatherStrap);}
+      for(let i=0;i<3;i++){const y=a.brushRack==='tray'?.025:a.brushRack==='rail'?bh*.55+.025:.23;const h=a.brushRack==='tray'?.045:.11;s.box([.035,h,.05],[x+(a.brushRack==='tray'?.05:0),y+h/2,z-.08+i*.08],wood);s.box([.034,.025,.048],[x+(a.brushRack==='tray'?.05:0),y+h+.0125,z-.08+i*.08],s.material('#4b4032'));}
+    }
+    if(a.waterPot==='tin'){s.lathe([[0,0],[.065,0],[.075,.14]],tinMetal,[.77,0,.43]);s.ring(.074,.005,[.77,.14,.43],tinMetal).rotation.x=Math.PI/2;}
+    else if(a.waterPot==='bottle'){s.cylinder(.045,.045,.18,[.77,.09,.43],s.material('#4d8195'),14);s.cylinder(.018,.04,.04,[.77,.2,.43],s.material('#4d8195'),12);s.cylinder(.021,.021,.024,[.77,.232,.43],s.material('#e2ddd0'),10);}
+    else if(a.waterPot==='jug'){const clay=s.material('#ac7652');s.lathe([[.045,0],[.075,.025],[.085,.09],[.05,.15],[.033,.19]],clay,[.77,0,.43]);s.tube([[.83,.04,.43],[.9,.06,.43],[.9,.14,.43],[.82,.16,.43]],.012,clay);}
+    if(a.laceKit!=='none'){
+      const x=.75,z=-.15;s.box([.26,.012,.22],[x,.006,z],s.material('#b29d77'));
+      if(a.laceKit==='laces')for(const dx of[-.065,.065])for(let i=0;i<4;i++)s.ring(.035-i*.005,.003,[x+dx,.015,z],s.material('#282b28')).rotation.x=Math.PI/2;
+      else if(a.laceKit==='nails'){s.cylinder(.055,.055,.025,[x,.0245,z],tinMetal,16);for(let i=0;i<7;i++)s.rod([x-.04+i*.012,.04,z-.025],[x-.03+i*.01,.04,z+.03],.002,tinMetal);}
+      else{s.box([.07,.009,.09],[x-.065,.0165,z],s.material('#282b28'));s.rod([x+.045,.023,z-.07],[x+.045,.023,z+.07],.003,tinMetal);s.ball([.013,.011,.035],[x+.045,.023,z+.04],wood,10);}
     }
 
     return s.finish();

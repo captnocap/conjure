@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Mushroom postal sorting crossroads", "summary": "A giant mushroom shelters a miniature post office, open pigeonholes and descending letter chutes feeding receiving bins beside connected paths. Forest correspondence, parcels in transit, a patient sorting shift and news arriving from far away.", "scales": ["tabletop", "room"]});

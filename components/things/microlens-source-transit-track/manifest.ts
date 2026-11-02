@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Microlens source transit track", "summary": "A source disk crosses a lens alignment line with discrete position samples and corresponding split images. An explicitly diagrammatic thin-lens teaching model; curves and image multiplicity follow its stated mathematical mapping.", "scales": ["tabletop", "cosmic"]});

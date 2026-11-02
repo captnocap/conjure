@@ -57,6 +57,12 @@ export default defineThing({
       rose: 'A single red rose laid on the seat.',
       hat: 'A hat.',
     }),
+    weavePattern: choice('How is the chair cane woven?', { checks: 'Small diagonal checks.', stripes: 'Alternating broad horizontal stripes.', diamonds: 'A stepped diamond pattern.', basket: 'Alternating paired basket-weave blocks.' }),
+    chairBrace: choice('What strengthens the chair legs?', { ring: 'The original round stretcher.', cross: 'Two crossed low stretchers.', rails: 'Three straight side stretchers.', double: 'Two round stretchers at different heights.' }),
+    tableApron: choice('What is beneath the table rim?', { plain: 'A plain shallow underside.', fluted: 'A fluted brass apron.', scalloped: 'Small cast iron scallops.', turned: 'A stepped turned wooden apron.' }),
+    serviceTray: choice('What stands on the small service table beside the chairs?', { none: 'No service table.', napkins: 'A tray of folded napkins in a wire holder.', sugar: 'A lidded sugar bowl and a spoon.', water: 'Three upturned glasses on a metal tray.' }),
+    cafeBarrier: choice('What marks the edge of this terrace?', { none: 'No separate barrier.', rope: 'A rope between two low posts.', canvas: 'A cream canvas screen on iron posts.', planter: 'A narrow planted trough along the back.' }),
+    paving: choice('What pavement is under the table and chairs?', { bare: 'Bare street surface.', slabs: 'Broad pale stone slabs.', setts: 'Small grey granite setts.', mosaic: 'Cream and dark mosaic squares.' }),
   },
 
   build(a, context) {
@@ -66,7 +72,7 @@ export default defineThing({
     const weave = paint(64, (g, n) => {
       const cell = n / 8;
       for (let x = 0; x < 8; x++) for (let y = 0; y < 8; y++) {
-        g.fillStyle = ((x + y) % 4 < 2) ? w1 : w2; g.fillRect(x * cell, y * cell, cell, cell);
+        g.fillStyle = (a.weavePattern==='stripes'?y%4<2:a.weavePattern==='diamonds'?(Math.abs(x-3.5)+Math.abs(y-3.5))%4<2:a.weavePattern==='basket'?(Math.floor(x/2)+Math.floor(y/2))%2===0:(x+y)%4<2) ? w1 : w2; g.fillRect(x * cell, y * cell, cell, cell);
         g.fillStyle = 'rgba(0,0,0,0.18)'; g.fillRect(x * cell, y * cell, cell, 1.5); g.fillRect(x * cell, y * cell, 1.5, cell);
       }
     }, 3);
@@ -111,7 +117,10 @@ export default defineThing({
         c.rod([sx * 0.15, 0.45, 0.13], [sx * 0.18, 0, 0.17], 0.016, cane);
         c.tube([[sx * 0.2, 0, -0.2], [sx * 0.165, 0.45, -0.15], [sx * 0.17, 0.72, -0.2], [sx * 0.12, 0.87, -0.225], [0, 0.91, -0.235]], 0.016, cane);
       }
-      c.ring(0.16, 0.009, [0, 0.24, 0], cane).rotation.x = Math.PI / 2;
+      if(a.chairBrace==='ring'||a.chairBrace==='double')c.ring(.16,.009,[0,.24,0],cane).rotation.x=Math.PI/2;
+      if(a.chairBrace==='double')c.ring(.17,.009,[0,.13,0],cane).rotation.x=Math.PI/2;
+      if(a.chairBrace==='cross')for(const side of[-1,1])c.rod([-.17,.2,side*.16],[.17,.2,-side*.16],.011,cane);
+      if(a.chairBrace==='rails'){for(const side of[-1,1])c.rod([side*.17,.22,-.17],[side*.17,.22,.15],.011,cane);c.rod([-.17,.22,-.17],[.17,.22,-.17],.011,cane);}
       const back = c.mesh(new THREE.PlaneGeometry(0.29, 0.3), woven, [0, 0.7, -0.2]);
       back.rotation.x = -0.14;
       c.rod([-0.165, 0.54, -0.165], [0.165, 0.54, -0.165], 0.012, cane);
@@ -225,6 +234,40 @@ export default defineThing({
         c.cylinder(0.092, 0.092, 0.02, [0, 0.49, 0], c.material('#1a1a1a'), 20);
       }
     }
+
+    if(a.tableApron==='fluted')for(let i=0;i<28;i++){const t=i*Math.PI*2/28;s.rod([Math.sin(t)*.28,T-.08,Math.cos(t)*.28],[Math.sin(t)*.28,T-.03,Math.cos(t)*.28],.008,s.material('#b99b53',{metalness:.6}));}
+    else if(a.tableApron==='scalloped')for(let i=0;i<14;i++){const t=i*Math.PI*2/14;const ring=s.ring(.028,.006,[Math.sin(t)*.28,T-.05,Math.cos(t)*.28],iron,Math.PI);ring.rotation.y=t;ring.rotation.z=Math.PI;}
+    else if(a.tableApron==='turned')s.lathe([[.25,T-.085],[.28,T-.07],[.27,T-.055],[.3,T-.03]],s.material('#74533a'));
+    if(a.serviceTray!=='none') {
+      const x=-1.08,z=.82,h=.63,metal=s.material('#b7bec0',{metalness:.65,roughness:.35});
+      s.box([.4,.025,.3],[x,h-.0125,z],metal);for(const dx of[-.16,.16])for(const dz of[-.11,.11])s.rod([x+dx,0,z+dz],[x+dx,h-.025,z+dz],.012,iron);
+      if(a.serviceTray==='napkins'){s.box([.18,.075,.12],[x,h+.0375,z],s.material('#eee5d3'));for(const dx of[-.1,.1])s.rod([x+dx,h,z-.07],[x+dx,h+.12,z+.07],.005,metal);}
+      else if(a.serviceTray==='sugar'){s.lathe([[.04,0],[.055,.025],[.05,.075],[0,.085]],china,[x,h,z]);s.ball([.012,.012,.012],[x,h+.09,z],china,8);s.rod([x+.08,h+.006,z-.08],[x+.08,h+.006,z+.06],.004,metal);s.ball([.013,.004,.022],[x+.08,h+.006,z+.07],metal,8);}
+      else for(const dx of[-.12,0,.12]){s.lathe([[.03,0],[.025,.09],[0,.09]],s.material('#c3dadd',{metalness:.15,roughness:.18}),[x+dx,h,z]);}
+    }
+    if(a.cafeBarrier!=='none') {
+      if(a.cafeBarrier==='planter'){s.box([1.8,.28,.24],[0,.14,-1.04],s.material('#555f50'));s.box([1.74,.01,.18],[0,.283,-1.04],s.material('#544638'));for(let i=0;i<12;i++)s.ball([.1,.14,.085],[-.82+i*.15,.39,-1.04],s.material(i%2?'#65814f':'#3e6848'),10);}
+      else{for(const x of[-.9,.9]){s.cylinder(.08,.1,.035,[x,.0175,-1.04],iron,16);s.rod([x,.035,-1.04],[x,.76,-1.04],.022,iron);}
+        if(a.cafeBarrier==='rope')s.tube([[-.9,.7,-1.04],[-.45,.56,-1.04],[0,.51,-1.04],[.45,.56,-1.04],[.9,.7,-1.04]],.018,s.material('#b5a17e'));
+        else{s.box([1.8,.4,.012],[0,.5,-1.04],s.material('#d8c9a7'));for(const y of[.3,.7])s.rod([-.9,y,-1.04],[.9,y,-1.04],.01,iron);}
+      }
+    }
+    if(a.paving!=='bare') {
+      const nx=a.paving==='slabs'?6:a.paving==='setts'?20:24,nz=a.paving==='slabs'?4:16;
+      s.box([3,.036,2.5],[.1,-.024,0],s.material('#8a8982'));
+      const tiles=new Map<string,THREE.Vector3[]>();
+      for(let x=0;x<nx;x++)for(let z=0;z<nz;z++){
+        const colour=a.paving==='mosaic'?((x+z)%2?'#d7ceb7':'#545d59'):a.paving==='setts'?(x%3?'#8b908d':'#a6a9a0'):'#c4beb0';
+        const positions=tiles.get(colour)??[];positions.push(new THREE.Vector3(-1.4+(x+.5)*3/nx,-.003,-1.25+(z+.5)*2.5/nz));tiles.set(colour,positions);
+      }
+      const geometry=new THREE.BoxGeometry(3/nx-.004,.006,2.5/nz-.004),matrix=new THREE.Matrix4();
+      for(const[colour,positions]of tiles){
+        const paving=new THREE.InstancedMesh(geometry,s.material(colour),positions.length);
+        positions.forEach((position,index)=>paving.setMatrixAt(index,matrix.makeTranslation(position.x,position.y,position.z)));
+        paving.castShadow=paving.receiveShadow=true;s.root.add(paving);
+      }
+    }
+    for(const chair of[first,second])if(chair){chair.root.updateWorldMatrix(true,true);const floor=new THREE.Box3().setFromObject(chair.root,true).min.y;chair.root.position.y-=floor;chair.root.name='grounded-bistro-chair';}
 
     const sway = mix(0.4, 2.5, mood.energy);
     return s.finish({ update: (_dt, time) => { if (smoke) smoke.rotation.y = Math.sin(time * sway) * 0.02; } });

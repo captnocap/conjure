@@ -3,7 +3,7 @@ import { Conjuring, type Plan } from '../engine/director';
 import type { Ruling } from '../engine/settle';
 import { type BuildReport, FRAME_SIZE, Stage } from '../engine/stage';
 import { installLibrary, type Study } from './library';
-import { installGalleryLink, saveToGallery } from './gallery';
+import { installGalleryLink, saveToGallery, saveWindowToGallery } from './gallery';
 import { renderTree, setTreeWaiting } from './tree';
 import { installLayers } from './layers';
 import { composeSeries, printPlate, showSeries, type PlateImage } from './plates';
@@ -15,6 +15,14 @@ import { MAX_IDEA_CHARACTERS } from '../engine/decision-limits';
 import { announce } from '../engine/activity';
 import { installActivity } from './activity';
 import { installPrompt } from './prompt';
+import { wear } from './skin';
+import { installWordmark, type LetterPrint } from './wordmark';
+import { installInterlude } from './interlude';
+import { fileOf, installDock, type GalleryEntry } from './dock';
+import { eyebrowOf, renderEntryRows, renderTitle } from './facts';
+import { developWindow, filmOf, installWindowPrint, measureWindow, type WindowView } from './window';
+import { replayOf, type Replay, type SavedRecord } from './replay';
+import type { Capture } from '@conjure/kit';
 
 const $ = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
 const frame = $('.frame');
@@ -42,9 +50,48 @@ function labelOf(model: string): string {
   return provider && providerTitles.size > 1 ? `${short} · ${providerTitles.get(provider)}` : short;
 }
 const stage = new Stage($<HTMLCanvasElement>('#stage'));
+/** Plays in the frame between one picture and the next, instead of the bare scene being built. */
+const interlude = installInterlude(frame, () => syncStage());
+/** The last finished picture, sheets and all, for the next interlude to break up. */
+let lastPicture: HTMLCanvasElement | null = null;
 const layers = installLayers(() => showPrint(true));
 const activity = installActivity($('#activity'));
 installPrompt($<HTMLFormElement>('#ask'), ideaInput);
+/** On the blank page, the print of a hovered letter, worn as the page's backdrop. */
+const backdrop = Object.assign(document.createElement('div'), { id: 'backdrop' });
+backdrop.setAttribute('aria-hidden', 'true');
+// Two layers, so one letter's print crossfades into the next.
+const backdropLayers = [document.createElement('i'), document.createElement('i')];
+backdrop.append(...backdropLayers);
+document.body.prepend(backdrop);
+let backdropUrl = '';
+const blank = () => document.body.dataset.state === 'idle' && !document.body.classList.contains('history') && !current;
+function wearBackdrop(print: LetterPrint | null) {
+  if (print && blank()) {
+    if (print.url !== backdropUrl) {
+      backdropUrl = print.url;
+      const [shown, hidden] = backdropLayers[0].classList.contains('shown') ? backdropLayers : [backdropLayers[1], backdropLayers[0]];
+      hidden.style.backgroundImage = `url("${print.url}")`;
+      hidden.classList.add('shown');
+      shown.classList.remove('shown');
+    }
+    document.body.classList.add('backdropped');
+    wear(print.image, print.look);
+  } else if (document.body.classList.contains('backdropped')) {
+    document.body.classList.remove('backdropped');
+    if (blank()) wear(null);
+  }
+}
+const wordmark = installWordmark($('#wordmark'), { hover: wearBackdrop });
+const dock = installDock($('#dock'), showHistory);
+const facts = $('#facts');
+const historyFacts = $('#history-facts');
+const historyPrint = $<HTMLImageElement>('#history-print');
+/** The idea on the page now, so the column can return to it after a look through the gallery. */
+let current: { idea: string; eyebrow: string; look: string | null; picture: CanvasImageSource } | null = null;
+const windowPrint = installWindowPrint(frame);
+/** The current idea's window print, once developed. */
+let currentWindow: { url: string; view: WindowView; canvas: HTMLCanvasElement } | null = null;
 
 /** The page is blank but for the prompt until an idea is typed; then it thinks, builds, and is ready or has failed. */
 type State = 'idle' | 'thinking' | 'building' | 'ready' | 'failed';
@@ -85,6 +132,55 @@ function showPrint(on: boolean) {
   frame.classList.toggle('printed', on && printCanvas.dataset.ready === 'true');
   $('#show-print').setAttribute('aria-pressed', String(on));
   $('#show-scene').setAttribute('aria-pressed', String(!on));
+  syncStage();
+}
+
+/** The live stage draws only while it can be seen: not under a print, a gallery picture or the window print. */
+function syncStage() {
+  const body = document.body.classList;
+  stage.visible = !frame.classList.contains('printed') && !body.contains('history') && !body.contains('window-view') && !interlude.active;
+}
+
+/** The window print filling the whole window, the studio set aside; Escape or the button brings it back. */
+function windowView(on: boolean) {
+  document.body.classList.toggle('window-view', on && windowPrint.shown);
+  $('#window-exit').hidden = !document.body.classList.contains('window-view');
+  $('#show-window').setAttribute('aria-pressed', String(document.body.classList.contains('window-view')));
+  windowPrint.place();
+  syncStage();
+}
+
+function clearWindow() {
+  windowView(false);
+  windowPrint.clear();
+  if (currentWindow) URL.revokeObjectURL(currentWindow.url);
+  currentWindow = null;
+  $('#show-window').hidden = $('#save-window').hidden = true;
+}
+
+/** Develop the widened capture after the picture is ready, then lay it behind the page and keep it with the entry. */
+async function widen(plan: Plan, capture: Capture, view: WindowView, control: AbortController, saved: Promise<{ day: string; id: string } | null>) {
+  const started = performance.now();
+  Object.assign((window as unknown as { __conjure: object }).__conjure ?? {}, { window: view });
+  announce({ type: 'step', stage: 'window', title: 'Window', detail: `widening the scene to fill this ${Math.round(view.width)} × ${Math.round(view.height)} window` });
+  try {
+    // Let the finished page paint before the long develop.
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    const canvas = await developWindow(stage, plan, capture, view, control.signal);
+    if (control.signal.aborted) return;
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.92));
+    if (!blob || control.signal.aborted) return;
+    currentWindow = { url: URL.createObjectURL(blob), view, canvas };
+    if (!document.body.classList.contains('history')) windowPrint.show(currentWindow.url, view);
+    $('#show-window').hidden = $('#save-window').hidden = false;
+    announce({ type: 'step', stage: 'window', title: 'Window', detail: `${canvas.width} × ${canvas.height}, the frame its crop · ${seconds(performance.now() - started)}`, done: true });
+    const where = await saved;
+    if (where && !control.signal.aborted) await saveWindowToGallery(where, canvas, view);
+  } catch (error) {
+    if (control.signal.aborted) return;
+    console.warn('The window print failed:', error);
+    announce({ type: 'step', stage: 'window', title: 'Window', detail: 'the scene could not be widened this time', done: true });
+  }
 }
 
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string, className?: string) {
@@ -151,6 +247,8 @@ async function conjure(temperature: number) {
   const control = (running = new AbortController());
   againButton.disabled = firstButton.disabled = true;
   $<HTMLButtonElement>('#ask button').disabled = true;
+  // The picture on show breaks up and keeps moving while the next one is decided, built and printed.
+  if (lastPicture && document.body.classList.contains('scened')) interlude.start(lastPicture, `${conjuring.idea}\u0000${roll}\u0000${JSON.stringify(force)}`);
   $<HTMLButtonElement>('#browse').disabled = true;
   $<HTMLButtonElement>('#save-picture').disabled = true;
   lookSelect.disabled = true;
@@ -162,6 +260,9 @@ async function conjure(temperature: number) {
   $<HTMLButtonElement>('#save-series').hidden = true;
   loopBlob = null;
   void showLoop(null);
+  leaveHistory();
+  clearWindow();
+  wearBackdrop(null);
   announce({ type: 'begin', idea: conjuring.idea });
   setState('thinking');
   try {
@@ -174,10 +275,12 @@ async function conjure(temperature: number) {
     const decided = performance.now();
     say(`Decided in ${seconds(decided - started)}. Building ${plan.cast.length + 1} components…`);
     setState('building');
+    current = { idea: plan.idea, eyebrow: eyebrowOf(plan.look?.entry.id, plan.scale, plan.presentation.kind), look: plan.look?.entry.id ?? null, picture: $<HTMLCanvasElement>('#stage') };
+    renderTitle(facts, current.idea, current.eyebrow);
     if (!document.body.classList.contains('scened')) {
       document.body.classList.add('scened');
-      // The first picture of the visit: bring it into view as it is built.
-      requestAnimationFrame(() => $('.stage').scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      // The first picture of the visit: the page opens out around it.
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
     }
     announce({ type: 'step', stage: 'build', title: 'Build', detail: `${plan.world.entry.title} and ${plan.cast.length} thing${plan.cast.length === 1 ? '' : 's'}` });
     const reports = await stage.mount(plan);
@@ -195,20 +298,33 @@ async function conjure(temperature: number) {
     const layerCapture = stage.capture();
     const result = await stage.develop(control.signal, layerCapture);
     if (control.signal.aborted) return;
+    // The scene is still held at the printed moment. Once the page has finished opening out around the
+    // frame, take that moment again through a film as wide as the window, for the window print made after.
+    await Promise.race([Promise.all(document.getAnimations().filter((animation) => animation instanceof CSSTransition).map((animation) => animation.finished.catch(() => undefined))), new Promise((resolve) => setTimeout(resolve, 1500))]);
+    if (control.signal.aborted) return;
+    const view = measureWindow(frame);
+    const wideCapture = view ? stage.captureWide(filmOf(view)) : null;
     announce({ type: 'step', stage: 'print', title: 'Print', detail: result ? `${plan.look?.entry.title ?? 'printed'}${result.notes.length ? `: ${result.notes.join(', ')}` : ''} · ${seconds(performance.now() - printStarted)}` : 'the scene as it stands', done: true });
     if (result) {
       printCanvas.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(result.pixels), FRAME_SIZE, FRAME_SIZE), 0, 0);
       printCanvas.dataset.ready = 'true';
+      // The page takes the print's colours and its look's effects.
+      current.picture = printCanvas;
+      wear(printCanvas, current.look);
       layers.setPrint(printCanvas, layerCapture, plan.seed, pictureName(), plan.design?.layers ?? []);
       showPrint($('#show-print').getAttribute('aria-pressed') === 'true');
       renderSheet(plan, reports, result.notes);
       showTree(plan, reports, result.notes);
     }
+    if (!result) wear($<HTMLCanvasElement>('#stage'), null);
     const timing = `Decided in ${seconds(decided - started)}, built in ${seconds(built - decided)}${result ? `, printed in ${seconds(performance.now() - printStarted)}` : ''}.`;
     say(timing);
     (window as unknown as { __conjure: unknown }).__conjure = { plan, reports, notes: result?.notes ?? [] };
     let galleryPrint = result ? await layers.picture(printCanvas, control.signal) : null;
     if (control.signal.aborted) return;
+    // The new print comes together where the old one broke up; a plain scene is simply shown.
+    if (galleryPrint) void interlude.finish(galleryPrint);
+    else interlude.cancel();
     // The other plates of a series: the same settled decisions, each with its plate's mood or framing.
     const { plates, index: primary, kind } = plan.presentation;
     // A portrait: the hero alone, reframed tight and redrawn by the look, then joined with the scene.
@@ -231,6 +347,8 @@ async function conjure(temperature: number) {
         layers.setPrint(printCanvas, shot.capture, plan.seed, pictureName(), []);
         showPrint(true);
         galleryPrint = composite;
+        current.picture = composite;
+        wear(composite, current.look);
         const images: PlateImage[] = [{ title: `portrait, scene ${blend}`, canvas: composite }, { title: 'the scene', canvas: scenePrint }];
         if (blend === 'beside') images[0].title = 'portrait';
         series = composeSeries(images, plan.idea);
@@ -328,21 +446,33 @@ async function conjure(temperature: number) {
       ? `${studying ? 'Catalogue study' : 'Offline'}: free random variations. No model was asked.`
       : `${usage.model} · ${usage.requests} requests · ${usage.inputTokens.toLocaleString()} tokens · $${usage.costUsd.toFixed(5)} for this idea${
         extraUsage ? ` · ${kind === 'critics' ? `second critic ${extraUsage.model}` : `${kind} readings`}: ${extraUsage.requests} requests, $${extraUsage.costUsd.toFixed(5)}` : ''}`;
-    void saveToGallery({
+    const featured = galleryPrint?.toDataURL('image/jpeg', 0.85);
+    const saved = saveToGallery({
       plan, reports, notes: result?.notes ?? [], temperature, roll,
       source: studying ? 'study' : offline ? 'offline' : 'model',
       model: studying || offline ? null : (conjuring.options.model ?? plan.usage.model ?? null),
       force,
       scene: $<HTMLCanvasElement>('#stage'), print: galleryPrint, series, readings, loop: loopData,
     });
+    void saved.then(() => {
+      void dock.refresh();
+      if (featured) wordmark.feature(featured);
+    });
+    lastPicture = galleryPrint;
     activity.finish();
+    // The feed scrolled the column as rows arrived; the finished picture opens on its title.
+    $('.side').scrollTo({ top: 0, behavior: 'smooth' });
+    // In one column the feed ran down the page; bring the picture back into view.
+    if (matchMedia('(max-width: 860px)').matches) window.scrollTo({ top: 0, behavior: 'smooth' });
     setState('ready');
     document.title = 'conjure-ready';
     $('#scene-caption').textContent = `${plan.world.entry.title} · ${plan.scale} · ${reports.filter((report) => !report.error && report.id.startsWith('things/')).length} things`;
     $<HTMLButtonElement>('#save-picture').disabled = false;
+    if (wideCapture && view) void widen(plan, wideCapture, view, control, saved);
   } catch (error) {
     if (control.signal.aborted) return;
     console.error(error);
+    interlude.cancel();
     say(error instanceof Error ? error.message : String(error), true);
     activity.fail();
     setState('failed');
@@ -389,26 +519,134 @@ function showTree(plan: Plan, reports: BuildReport[], notes: string[]) {
   });
 }
 
-async function begin(idea: string, temperature = 0, study?: Study) {
+/** A picture from the gallery takes the picture's place, with its own decisions in the column. */
+function showHistory(entry: GalleryEntry) {
+  document.body.classList.add('history');
+  historyPrint.hidden = false;
+  historyPrint.alt = entry.idea;
+  historyPrint.onload = () => wear(historyPrint, entry.look?.id ?? null);
+  historyPrint.src = fileOf(entry, 'print');
+  frame.querySelector('#history-loop')?.remove();
+  if (entry.hasLoop) {
+    const video = Object.assign(document.createElement('video'), { id: 'history-loop', src: fileOf(entry, 'loop'), autoplay: true, loop: true, muted: true, playsInline: true });
+    // A loop saved before frames were stamped one by one may not play; the print stays under it.
+    video.addEventListener('error', () => video.remove());
+    frame.append(video);
+  }
+  renderTitle(facts, entry.idea, eyebrowOf(entry.look?.id, entry.scale, entry.presentation?.kind));
+  renderEntryRows(historyFacts, entry);
+  windowView(false);
+  if (entry.hasWindow && entry.window) windowPrint.show(fileOf(entry, 'window'), entry.window);
+  else windowPrint.clear();
+  syncStage();
+  const actions = element('div', undefined, 'history-actions');
+  const again = element('button', 'Conjure it again');
+  again.type = 'button';
+  again.addEventListener('click', () => {
+    ideaInput.value = entry.idea;
+    presetForce = entry.force && Object.keys(entry.force).length ? entry.force : null;
+    void begin(entry.idea);
+  });
+  actions.append(again);
+  // The same scene again, every answer pinned, with a window print the size of this window.
+  const wider = element('button', entry.hasWindow ? 'Widen to this window again' : 'Widen to this window');
+  wider.type = 'button';
+  wider.title = 'Build this picture again with every answer pinned, widened to fill this browser window';
+  wider.addEventListener('click', () => void widenEntry(entry));
+  actions.append(wider);
+  if (entry.hasWindow) {
+    const fill = element('button', 'Fill the window');
+    fill.type = 'button';
+    fill.addEventListener('click', () => windowView(true));
+    actions.append(fill);
+  }
+  if (current) {
+    const back = element('button', 'Back to yours');
+    back.type = 'button';
+    back.addEventListener('click', leaveHistory);
+    actions.append(back);
+  }
+  if (entry.hasSeries) {
+    const series = element('a', 'The whole series');
+    (series as HTMLAnchorElement).href = fileOf(entry, 'series');
+    (series as HTMLAnchorElement).target = '_blank';
+    actions.append(series);
+  }
+  historyFacts.append(actions);
+  historyFacts.hidden = false;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function leaveHistory() {
+  if (!document.body.classList.contains('history')) return;
+  document.body.classList.remove('history');
+  historyPrint.hidden = true;
+  historyPrint.onload = null;
+  historyPrint.removeAttribute('src');
+  frame.querySelector('#history-loop')?.remove();
+  historyFacts.hidden = true;
+  dock.release();
+  windowView(false);
+  if (currentWindow) windowPrint.show(currentWindow.url, currentWindow.view);
+  else windowPrint.clear();
+  if (current) {
+    renderTitle(facts, current.idea, current.eyebrow);
+    wear(current.picture, current.look);
+  } else wear(null);
+  syncStage();
+}
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape' || document.querySelector('dialog[open]')) return;
+  if (document.body.classList.contains('window-view')) windowView(false);
+  else leaveHistory();
+});
+
+async function widenEntry(entry: GalleryEntry) {
+  try {
+    const record = (await (await fetch(`/api/gallery/entry/${entry.day}/${encodeURIComponent(entry.id)}`)).json()) as SavedRecord;
+    const replay = replayOf(record);
+    ideaInput.value = replay.idea;
+    void begin(replay.idea, replay.temperature, undefined, replay);
+  } catch (error) {
+    say(`That picture could not be built again: ${error instanceof Error ? error.message : String(error)}`, true);
+  }
+}
+
+async function begin(idea: string, temperature = 0, study?: Study, replay?: Replay) {
   if (busy) return;
   // Traced pictures join the catalogue at runtime; an idea's casting snapshot must include them.
   if (!offline && !study) await traceLibrary.ready().catch(() => undefined);
   if (busy) return;
-  force = presetForce ?? {};
+  force = replay ? { ...replay.force } : presetForce ?? {};
   presetForce = null;
   document.title = 'Conjure';
-  roll = Number(query.get('roll') ?? 0);
+  roll = replay ? replay.roll : Number(query.get('roll') ?? 0);
   studying = !!study;
   conjuring = new Conjuring(idea, {
     offline: offline || studying, plain: offline || studying, model: modelSelect.value || undefined,
     ...(studying ? { look: 'looks/graphic-press' } : {}), ...study,
-    ...(lookSelect.value ? { look: lookSelect.value } : {}),
+    ...(lookSelect.value && !replay ? { look: lookSelect.value } : {}),
+    // A replay builds exactly the saved world and cast.
+    ...(replay ? { world: replay.world, cast: replay.cast } : {}),
   });
   if (studying) showPrint(false);
   void conjure(temperature);
 }
 
 installGalleryLink();
+// On the blank page the name is a toy: each click gives the next letter a new slice. Otherwise it is a way back to the prompt.
+$('#wordmark').addEventListener('click', (event) => {
+  if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+  event.preventDefault();
+  if (blank()) {
+    wordmark.step();
+    return;
+  }
+  leaveHistory();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  ideaInput.focus({ preventScroll: true });
+  ideaInput.select();
+});
 const traceLibrary = installTraces();
 installLibrary({
   useIdea(idea) { ideaInput.value = idea; ideaInput.focus(); },
@@ -432,6 +670,15 @@ againButton.addEventListener('click', () => {
 firstButton.addEventListener('click', () => void conjure(0));
 $('#show-print').addEventListener('click', () => showPrint(true));
 $('#show-scene').addEventListener('click', () => showPrint(false));
+$('#show-window').addEventListener('click', () => windowView(!document.body.classList.contains('window-view')));
+$('#window-exit').addEventListener('click', () => windowView(false));
+$('#save-window').addEventListener('click', () => {
+  if (!currentWindow) return;
+  const link = document.createElement('a');
+  link.download = `${pictureName()}-window-${currentWindow.canvas.width}x${currentWindow.canvas.height}.png`;
+  link.href = currentWindow.canvas.toDataURL('image/png');
+  link.click();
+});
 function pictureName() {
   return (conjuring?.idea ?? 'conjure').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 70) || 'conjure';
 }
@@ -475,6 +722,9 @@ if (!offline) {
     const { configured, models, defaultModel, providers } = (await response.json()) as { configured: boolean; models: string[]; defaultModel: string | null; providers?: { id: string; title: string }[] };
     for (const provider of providers ?? []) providerTitles.set(provider.id, provider.title);
     for (const model of models) modelSelect.append(new Option(labelOf(model), model, model === defaultModel, model === defaultModel));
+    // ?model=<provider>:<model> picks one of the offered models, for laps and probes across models.
+    const asked = query.get('model');
+    if (asked && models.includes(asked)) modelSelect.value = asked;
     if (!configured) {
       say('No decision provider is configured. Add an API key (TYPESAFE_API_KEY, OPENROUTER_API_KEY, NANO_GPT_API_KEY or CONJURE_API_KEY) to the .env file and restart the server.', true);
       setState('failed');

@@ -196,7 +196,7 @@ export function cleanFields(f, sameContourSurface = sameDrawSurface) {
       const t = (k + 0.5) / steps,
         x = a[0] + (b[0] - a[0]) * t,
         y = a[1] + (b[1] - a[1]) * t,
-        z = a[2] + (b[2] - a[2]) * t;
+        z = f.interpolateDepth ? f.interpolateDepth(a[2], b[2], t) : a[2] + (b[2] - a[2]) * t;
       if (
         x < 0 ||
         y < 0 ||

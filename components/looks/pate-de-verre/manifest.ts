@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({ kind: 'look', title: 'Pâte de verre', medium: 'craft', scales: ['cosmic', 'planetary', 'landscape', 'street', 'room', 'tabletop', 'macro'], summary: 'A picture formed from small fused glass grains, with sugary translucent surfaces, tiny bubbles and softly glowing colours. Cast-glass plaques, luminous keepsakes, quiet jewel tones and a scene held inside a granular sheet.' });

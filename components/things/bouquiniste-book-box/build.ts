@@ -62,6 +62,14 @@ export default defineThing({
       sage: 'Sun-bleached to a pale sage.',
       bottle: 'A glossy fresh bottle green.',
     }),
+    hinge: choice('What hinges carry the lids?', { straps: 'Three narrow exposed hinge straps.', piano: 'A continuous piano hinge.', broad: 'Two broad iron hinge plates.', brass: 'Four short bright brass hinges.' }),
+    boxCorners: choice('What reinforces the box corners?', { plain: 'Plain welded corners.', strips: 'Narrow iron angle strips.', rivets: 'Rows of rivets on reinforcing plates.', brass: 'Bright brass corner guards.' }),
+    lidRibs: choice('How is the outer lid stiffened?', { flat: 'A flat sheet.', two: 'Two lengthwise raised ribs.', four: 'Four narrow transverse ribs.', diagonal: 'Crossed diagonal strengthening strips.' }),
+    footBrackets: choice('How is each box secured to the parapet?', { plain: 'The original short support bars.', clamps: 'Two iron straps clamping the coping.', scroll: 'Curved iron brackets on the quay face.', triangle: 'Two triangular braces below the overhang.' }),
+    sortingShelf: choice('What sorting ledge is attached to the front?', { none: 'No extra ledge.', narrow: 'A shallow green shelf.', slatted: 'A narrow slatted wooden shelf.', divided: 'A metal shelf with three sorting spaces.' }),
+    parcelKit: choice('What packing kit waits at the parapet end?', { none: 'No packing kit.', paper: 'A roll of brown paper in a cradle.', twine: 'A ball of twine with scissors.', satchel: 'A leather satchel with two buckled straps.' }),
+    boxNumber: choice('How is the box numbered?', { none: 'No number plate.', enamel: 'A white enamel number plaque.', stencil: 'A pale rectangular stencilled plate.', brass: 'A little brass oval number plate.' }),
+    quayPaving: choice('What lies at the foot of the parapet?', { bare: 'Bare quay.', flags: 'Two rows of long stone flags.', setts: 'A band of small granite setts.', drain: 'Stone paving crossed by a narrow iron drain.' }),
   },
 
   build(a, context) {
@@ -110,6 +118,29 @@ export default defineThing({
       for (const side of [-1, 1]) lid.add(s.box([0.03, 0.07, D + 0.04], [side * (W / 2 + 0.005), 0, D / 2], paintwork));
       lid.add(s.box([W + 0.04, 0.07, 0.03], [0, 0, D + 0.01], paintwork));
 
+      const hingeMat=a.hinge==='brass'?s.material('#b99749',{metalness:.6}):steel;
+      const hn=a.hinge==='piano'?1:a.hinge==='broad'?2:a.hinge==='brass'?4:3;
+      for(let i=0;i<hn;i++){const x=hn===1?0:-.78+i*1.56/(hn-1),w=a.hinge==='piano'?1.95:a.hinge==='broad'?.16:.08;add(s.box([w,.035,.09],[x,BH,-D/2],hingeMat));}
+      if(a.boxCorners!=='plain')for(const side of[-1,1])for(const face of[-1,1]){const mat=a.boxCorners==='brass'?s.material('#b7954d',{metalness:.6}):steel;add(s.box([.065,BH,.008],[side*(W/2-.0325),BH/2,face*(D/2+.004)],mat));if(a.boxCorners==='rivets')for(let j=0;j<4;j++)add(s.ball([.007,.007,.005],[side*(W/2-.0325),.04+j*.07,face*(D/2+.01)],steel,6));}
+      if(a.lidRibs==='two')for(const z of[.19,.58])lid.add(s.box([W,.02,.025],[0,.055,z],steel));
+      else if(a.lidRibs==='four')for(const x of[-.75,-.25,.25,.75])lid.add(s.box([.025,.02,D],[x,.055,D/2],steel));
+      else if(a.lidRibs==='diagonal')lid.add(s.rod([-.9,.055,.05],[.9,.055,D-.05],.012,steel));
+      if(a.lidRibs==='diagonal')lid.add(s.rod([-.9,.055,D-.05],[.9,.055,.05],.012,steel));
+      if(a.footBrackets!=='plain')for(const x of[-.7,.7]){
+        if(a.footBrackets==='clamps'){add(s.box([.055,.25,.02],[x,-.125,.3],steel));add(s.box([.055,.025,.65],[x,-.0125,0],steel));}
+        else if(a.footBrackets==='triangle')add(s.rod([x,-.27,.24],[x,-.01,.4],.015,steel));
+        else add(s.tube([[x,-.01,.4],[x,-.07,.42],[x,-.16,.38],[x,-.22,.24]],.018,steel));
+      }
+      if(a.sortingShelf!=='none'){
+        const mat=a.sortingShelf==='slatted'?s.material('#a58a5a'):paintwork;
+        if(a.sortingShelf==='slatted')for(let i=0;i<4;i++)add(s.box([W-.18,.025,.045],[0,-.11,D/2+.025+i*.05],mat));else add(s.box([W-.18,.025,.2],[0,-.11,D/2+.1],mat));
+        for(const x of[-.7,.7])add(s.rod([x,-.26,.24],[x,-.12,D/2+.17],.012,steel));
+        if(a.sortingShelf==='divided')for(const x of[-.3,.3])add(s.box([.012,.08,.2],[x,-.0575,D/2+.1],steel));
+      }
+      if(a.boxNumber!=='none'){
+        const mat=a.boxNumber==='brass'?s.material('#ba9b51',{metalness:.6}):s.material(a.boxNumber==='enamel'?'#e5e6d8':'#adb999');
+        if(a.boxNumber==='brass')add(s.ball([.08,.05,.007],[.76,.16,D/2+.01],mat,16));else add(s.box([.13,.085,.01],[.76,.16,D/2+.01],mat));add(s.label(main?'27':'28',.1,.06,[.76,.16,D/2+.017],'#253a2e',a.boxNumber==='brass'?'#ba9b51':a.boxNumber==='enamel'?'#e5e6d8':'#adb999'));
+      }
       const isOpen = state === 'open' || state === 'opening';
       if (isOpen) {
         // Stays holding the lid.
@@ -251,17 +282,37 @@ export default defineThing({
       for (const dz of [-0.035, 0.035]) s.cylinder(0, 0.022, 0.04, [lx - 0.16, P + 0.14, 0.07 + dz], fur, 4);
       s.tube([[lx + 0.12, P + 0.04, -0.04], [lx + 0.16, P + 0.03, 0.08], [lx + 0.05, P + 0.03, 0.15], [lx - 0.06, P + 0.03, 0.14]], 0.018, fur);
     } else if (a.left === 'stool') {
+      const stoolStart=s.root.children.length;
       const wood = s.material('#8a6a42'), sx = total / 2 - 0.3, sz = 0.85;
       for (const side of [-1, 1]) { s.rod([sx - 0.17, 0, sz + side * 0.15], [sx + 0.17, 0.44, sz + side * 0.15], 0.014, wood); s.rod([sx + 0.17, 0, sz + side * 0.15], [sx - 0.17, 0.44, sz + side * 0.15], 0.014, wood); }
       s.box([0.38, 0.02, 0.34], [sx, 0.45, sz], s.material('#3f5f7a', { roughness: 1 }));
       s.cylinder(0.04, 0.04, 0.24, [sx - 0.05, 0.58, sz], s.material('#b2332a', { metalness: 0.3, roughness: 0.4 }), 12);
       s.cylinder(0.042, 0.042, 0.05, [sx - 0.05, 0.72, sz], s.material('#d8d8d4', { metalness: 0.6 }), 12);
+      const stool=new THREE.Group();stool.name='grounded-bookseller-stool';stool.add(...s.root.children.slice(stoolStart));s.root.add(stool);stool.updateWorldMatrix(true,true);stool.position.y-=new THREE.Box3().setFromObject(stool,true).min.y;
     } else if (a.left === 'umbrella') {
       const cloth = s.material(pick(['#18181c', '#8a1f2a', '#1f3f6a']), { roughness: 0.7 });
       s.rod([lx, 0.12, 0.34], [lx, 0.98, 0.31], 0.035, cloth, 0.014);
       s.rod([lx, 0.98, 0.31], [lx, 1.08, 0.31], 0.008, s.material('#3a2a1a'));
       s.ring(0.04, 0.01, [lx, 1.08, 0.27], s.material('#6a4424'), Math.PI).rotation.y = Math.PI / 2;
       s.cylinder(0.12, 0.14, 0.004, [lx + 0.03, 0.003, 0.4], new THREE.MeshStandardMaterial({ color: '#7f97a3', roughness: 0.05, metalness: 0.4 }), 14).castShadow = false;
+    }
+
+    const end=total/2+.01;
+    if(a.parcelKit==='paper'){s.box([.24,.025,.19],[end,.0125,.65],steel);s.cylinder(.065,.065,.22,[end,.09,.65],s.material('#c5a57a'),18).rotation.z=Math.PI/2;for(const dx of[-.12,.12])s.box([.015,.17,.18],[end+dx,.085,.65],steel);}
+    else if(a.parcelKit==='twine'){s.box([.24,.025,.19],[end,.0125,.65],s.material('#8c704d'));s.ball([.065,.06,.065],[end-.035,.085,.65],s.material('#cdb88d'),16);for(const dx of[-.015,.015])s.ring(.014,.003,[end+.07+dx,.029,.65],steel).rotation.x=Math.PI/2;s.rod([end+.07,.029,.65],[end+.07,.029,.73],.003,steel);}
+    else if(a.parcelKit==='satchel'){const leather=s.material('#815b39');s.box([.27,.23,.1],[end,.115,.65],leather);for(const dx of[-.08,.08]){s.box([.025,.21,.01],[end+dx,.12,.705],s.material('#c1a16a'));s.box([.034,.03,.014],[end+dx,.1,.71],steel);}s.tube([[end-.06,.22,.65],[end-.04,.29,.65],[end+.04,.29,.65],[end+.06,.22,.65]],.008,leather);}
+    if(a.quayPaving!=='bare'){
+      const nx=a.quayPaving==='setts'?Math.ceil(total/.16):Math.ceil(total/.55),nz=a.quayPaving==='setts'?7:3;
+      s.box([total+.5,.034,1.4],[0,-.023,.45],s.material('#88877e'));
+      const matrix=new THREE.Matrix4(),paving=new THREE.InstancedMesh(new THREE.BoxGeometry((total+.5)/nx-.005,.006,1.4/nz-.005),s.material(a.quayPaving==='setts'?'#a2a39b':'#c9c2b0'),nx*nz);
+      for(let x=0;x<nx;x++)for(let z=0;z<nz;z++)paving.setMatrixAt(x*nz+z,matrix.makeTranslation(-(total+.5)/2+(x+.5)*(total+.5)/nx,-.003,-.25+(z+.5)*1.4/nz));
+      paving.castShadow=paving.receiveShadow=true;s.root.add(paving);
+      if(a.quayPaving==='drain'){
+        s.box([total+.4,.006,.12],[0,.003,.95],steel);
+        const count=Math.floor(total/.1),grates=new THREE.InstancedMesh(new THREE.BoxGeometry(.024,.002,.1),s.material('#292f2d'),count);
+        for(let i=0;i<count;i++)grates.setMatrixAt(i,matrix.makeTranslation(-total/2+i*.1,.007,.95));
+        grates.castShadow=grates.receiveShadow=true;s.root.add(grates);
+      }
     }
 
     return s.finish();

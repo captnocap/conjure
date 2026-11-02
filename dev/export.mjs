@@ -1,5 +1,5 @@
 // Export the actual auto-discovered catalogue and its decision questions for other models.
-// npm run export -- <destination> [--all]  (--all also writes 71,680 JSONL scene briefs)
+// npm run export -- <destination> [--all]  (--all also writes 143,360 JSONL scene briefs)
 import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';

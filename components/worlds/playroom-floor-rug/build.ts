@@ -56,6 +56,42 @@ export default defineWorld({
       dark: 'Dark varnished old boards.',
       painted: 'Boards painted pale grey-white.',
     }),
+    rugEdge: choice('How is the edge of the play rug finished?', {
+      fringe: 'Fine cream fringe along the two short ends.',
+      tassels: 'Spaced thick tassel bundles at the ends.',
+      binding: 'A broad cloth binding encloses all four edges.',
+      scallops: 'A soft scalloped border runs around the rug.',
+    }),
+    weave: choice('What surface does the play rug have?', {
+      flat: 'Smooth tightly woven cloth, with a clear printed map.',
+      ribbed: 'Parallel woven ribs run under the map.',
+      tufted: 'Short rounded tufts soften the printed lines.',
+      basket: 'A visible alternating basket weave crosses the map.',
+    }),
+    border: choice('What runs around the printed map border?', {
+      stitches: 'A cream border with a line of large running stitches.',
+      alphabet: 'The alphabet runs around the edge as a second game.',
+      counting: 'Numbered measuring marks turn the edge into a ruler.',
+      checks: 'A bold border of alternating coloured squares.',
+    }),
+    skirting: choice('How is the lower wall finished?', {
+      plain: 'A simple square painted skirting board.',
+      beaded: 'Three small rounded beads crown the skirting.',
+      panels: 'Low framed wood panels rise above the skirting.',
+      stripes: 'Two contrasting painted rails run above the skirting.',
+    }),
+    bedFrame: choice('How is the foot of the bed built?', {
+      panel: 'A solid wooden panel closes the bed foot.',
+      slats: 'Five narrow upright slats leave open gaps.',
+      spindles: 'Turned round spindles support a wooden top rail.',
+      arches: 'Three open arches are cut into the bed foot.',
+    }),
+    keepsake: choice('What hangs low on the wall beside the bed?', {
+      drawing: 'A framed crayon drawing of a house and sun.',
+      alphabet: 'A small alphabet sampler with coloured letters.',
+      clock: 'A round learning clock with large numbers and coloured hands.',
+      pennants: 'A short string of four triangular cloth pennants.',
+    }),
   },
 
   build(a, context) {
@@ -286,7 +322,15 @@ export default defineWorld({
         for (const [x, y, r] of [[120, 620, 20], [900, 640, 22], [520, 540, 16], [420, 550, 18], [960, 400, 14]]) tree(g, x, y, r);
       }
       g.strokeStyle = '#7a2a26'; g.lineWidth = 22; g.strokeRect(0, 0, W, H);
-      g.strokeStyle = '#f0dfae'; g.lineWidth = 3; g.strokeRect(15, 15, W - 30, H - 30);
+      g.strokeStyle = '#f0dfae'; g.lineWidth = 3;
+      if (a.border === 'stitches') { g.setLineDash([10, 7]); g.strokeRect(15, 15, W - 30, H - 30); g.setLineDash([]); }
+      else if (a.border === 'checks') { for(let x=20;x<W-20;x+=22) for(const y of [5,H-22]) {g.fillStyle=(Math.floor(x/22)%2)?'#efcd79':'#6d3b6a';g.fillRect(x,y,20,17);} for(let y=25;y<H-25;y+=22)for(const x of [4,W-22]){g.fillStyle=(Math.floor(y/22)%2)?'#efcd79':'#6d3b6a';g.fillRect(x,y,17,20);} }
+      else {g.font='bold 17px sans-serif';g.fillStyle='#fff2cb';g.textAlign='center';g.textBaseline='middle';for(let i=0;i<26;i++){const x=32+i*(W-64)/25;for(const y of [14,H-14])g.fillText(a.border==='alphabet'?'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[i]:String(i+1),x,y);if(a.border==='counting'){g.fillRect(x,25,2,9);g.fillRect(x,H-34,2,9);}}}
+      if(a.weave!=='flat') {
+        g.save();g.globalAlpha=a.weave==='tufted'?.17:.13;
+        for(let y=25;y<H-25;y+=a.weave==='ribbed'?5:9)for(let x=25;x<W-25;x+=a.weave==='ribbed'?24:9){g.fillStyle='#fff8df';if(a.weave==='tufted'){g.beginPath();g.ellipse(x,y,3.5,2.5,0,0,Math.PI*2);g.fill();g.fillStyle='#32291e';g.fillRect(x-3,y+3,6,1);}else if(a.weave==='basket'){const upright=(Math.floor(x/9)+Math.floor(y/9))%2===0;g.fillRect(x,y,upright?3:7,upright?7:3);}else g.fillRect(x,y,24,1);}
+        g.restore();
+      }
       // Sun-fade, dust and the grey of years.
       g.fillStyle = `rgba(190,184,170,${fade * 0.5})`;
       g.fillRect(0, 0, W, H);
@@ -295,7 +339,14 @@ export default defineWorld({
     const pile = std('#7a2a26', { roughness: 1 });
     const rug = box([RUG.w, RUG.top, RUG.d], [RUG.x, RUG.top / 2, RUG.z], [pile, pile, new THREE.MeshStandardMaterial({ map: rugMap, roughness: 1 }), pile, pile, pile]);
     const tassel = std('#efe2bd', { roughness: 1 });
-    for (const end of [-1, 1]) for (let i = 0; i < 30; i++) box([0.045, 0.004, 0.012], [RUG.x + end * (RUG.w / 2 + 0.02), 0.003, RUG.z - RUG.d / 2 + 0.03 + i * (RUG.d - 0.06) / 29], tassel).rotation.y = jit(0.25);
+    if(a.rugEdge==='fringe'||a.rugEdge==='tassels') {
+      const n=a.rugEdge==='fringe'?30:12;
+      for (const end of [-1, 1]) for (let i = 0; i < n; i++) {const z=RUG.z-RUG.d/2+.03+i*(RUG.d-.06)/(n-1);box([a.rugEdge==='fringe'?.045:.065,.004,a.rugEdge==='fringe'?.012:.025],[RUG.x+end*(RUG.w/2+.02),.003,z],tassel).rotation.y=jit(.25);if(a.rugEdge==='tassels')box([.012,.009,.026],[RUG.x+end*(RUG.w/2+.007),.005,z],pile);}
+    } else if(a.rugEdge==='binding') {
+      for(const end of [-1,1]){box([RUG.w+.018,.007,.035],[0,.012,RUG.z+end*(RUG.d/2-.008)],tassel);box([.035,.007,RUG.d],[end*(RUG.w/2-.008),.012,RUG.z],tassel);}
+    } else {
+      for(const end of [-1,1]){for(let i=0;i<22;i++){const m=put(new THREE.Mesh(new THREE.CylinderGeometry(.031,.031,.007,12),tassel),[-RUG.w/2+.04+i*(RUG.w-.08)/21,.005,RUG.z+end*(RUG.d/2-.007)]);void m;}for(let i=0;i<18;i++)put(new THREE.Mesh(new THREE.CylinderGeometry(.031,.031,.007,12),tassel),[end*(RUG.w/2-.007),.005,RUG.z-RUG.d/2+.04+i*(RUG.d-.08)/17]);}
+    }
     void rug;
 
     // ---- Wall and skirting ------------------------------------------------------------------------
@@ -346,6 +397,22 @@ export default defineWorld({
     const gloss = std('#f1eee4', { roughness: 0.5 });
     box([6, 0.13, 0.024], [0, 0.065, -0.988], gloss);
     box([6, 0.014, 0.034], [0, 0.137, -0.983], gloss);
+    if(a.skirting==='beaded') for(const y of [.145,.161,.177]) {const bead=put(new THREE.Mesh(new THREE.CylinderGeometry(.007,.007,6,10),gloss),[0,y,-.976]);bead.rotation.z=Math.PI/2;}
+    if(a.skirting==='panels') {box([6,.018,.025],[0,.39,-.982],gloss);for(let x=-2.8;x<3;x+=.35)box([.018,.25,.022],[x,.265,-.983],gloss);}
+    if(a.skirting==='stripes')for(const y of [.23,.28])box([6,.016,.022],[0,y,-.983],std(y<.25?'#719794':'#b68558'));
+    const wallPiece=put(new THREE.Group(),[.1,.6,-.97]);
+    if(a.keepsake==='clock') {
+      const faceMap=paint(256,256,g=>{g.fillStyle='#fff3cf';g.fillRect(0,0,256,256);g.fillStyle='#364c63';g.font='bold 25px sans-serif';g.textAlign='center';g.textBaseline='middle';for(let n=1;n<=12;n++){const t=n/12*Math.PI*2-Math.PI/2;g.fillText(String(n),128+Math.cos(t)*97,128+Math.sin(t)*97);}for(const [angle,len,col]of [[-.8,55,'#bf513e'],[1.2,80,'#477fa1']] as const){g.strokeStyle=col;g.lineWidth=8;g.beginPath();g.moveTo(128,128);g.lineTo(128+Math.cos(angle)*len,128+Math.sin(angle)*len);g.stroke();}});
+      const rim=put(new THREE.Mesh(new THREE.CylinderGeometry(.17,.17,.025,48),std('#568a9d')),[0,0,0],wallPiece);rim.rotation.x=Math.PI/2;
+      put(new THREE.Mesh(new THREE.CircleGeometry(.153,48),new THREE.MeshStandardMaterial({map:faceMap,roughness:1})),[0,0,.014],wallPiece);
+    } else if(a.keepsake==='pennants') {
+      box([.49,.006,.006],[0,.085,.015],gloss,wallPiece);
+      for(let i=0;i<4;i++){const sh=new THREE.Shape();sh.moveTo(-.05,.08);sh.lineTo(.05,.08);sh.lineTo(0,-.075);sh.closePath();put(new THREE.Mesh(new THREE.ShapeGeometry(sh),std(['#cc655a','#e4bd5c','#659da8','#819a63'][i],{side:THREE.DoubleSide})),[-.18+i*.12,0,.018],wallPiece);}
+    } else {
+      box([.44,.3,.025],[0,0,0],std('#92633e'),wallPiece);
+      const memory=paint(384,256,g=>{g.fillStyle='#fff3dc';g.fillRect(0,0,384,256);if(a.keepsake==='alphabet'){g.font='bold 40px serif';g.textAlign='center';for(let i=0;i<26;i++){g.fillStyle=['#ae4e40','#386b90','#4a865a'][i%3];g.fillText('ABCDEFGHIJKLMNOPQRSTUVWXYZ'[i],34+(i%7)*52,48+Math.floor(i/7)*59);}}else{g.lineWidth=7;g.strokeStyle='#4b8547';g.beginPath();g.moveTo(18,212);g.lineTo(365,211);g.stroke();g.strokeStyle='#356f9b';g.strokeRect(120,105,139,106);g.strokeStyle='#be5d45';g.beginPath();g.moveTo(99,107);g.lineTo(190,39);g.lineTo(277,107);g.stroke();g.strokeStyle='#b38442';g.strokeRect(174,149,38,62);g.strokeStyle='#e0b739';g.beginPath();g.arc(53,53,25,0,Math.PI*2);g.stroke();for(let i=0;i<12;i++){const t=i*Math.PI/6;g.beginPath();g.moveTo(53+Math.cos(t)*32,53+Math.sin(t)*32);g.lineTo(53+Math.cos(t)*43,53+Math.sin(t)*43);g.stroke();}}});
+      put(new THREE.Mesh(new THREE.PlaneGeometry(.405,.267),new THREE.MeshStandardMaterial({map:memory,roughness:1})),[0,0,.014],wallPiece);
+    }
     box([0.086, 0.086, 0.008], [0.62, 0.31, -0.996], gloss);
     const glowing = mood.daylight > 0.7 || mood.daylight < 0.22;
     const lamp = new THREE.MeshStandardMaterial({ color: glowing ? '#ffd27a' : '#f3ead2', emissive: '#ffb347', emissiveIntensity: glowing ? 1.6 : 0.05, roughness: 0.6 });
@@ -363,7 +430,15 @@ export default defineWorld({
       void leg;
     }
     box([bedLength, 0.1, 0.035], [bedX, bedTop - 0.02, bedFront - 0.03], timber);
-    box([0.04, 0.36, depth], [bedFoot - 0.035, bedTop + 0.14, bedFront - depth / 2], timber);
+    if(a.bedFrame==='panel')box([0.04,0.36,depth],[bedFoot-.035,bedTop+.14,bedFront-depth/2],timber);
+    else {
+      box([.04,.035,depth],[bedFoot-.035,bedTop-.025,bedFront-depth/2],timber);
+      if(a.bedFrame==='arches') {
+        const sh=new THREE.Shape();sh.moveTo(-depth/2,0);sh.lineTo(depth/2,0);sh.lineTo(depth/2,.36);sh.lineTo(-depth/2,.36);sh.closePath();
+        for(let i=0;i<3;i++){const z=-depth/2+.09+i*.18,hole=new THREE.Path();hole.moveTo(z-.059,.025);hole.lineTo(z-.059,.225);hole.absarc(z,.225,.059,Math.PI,0,true);hole.lineTo(z+.059,.025);hole.closePath();sh.holes.push(hole);}
+        const panel=put(new THREE.Mesh(new THREE.ExtrudeGeometry(sh,{depth:.04,bevelEnabled:false,curveSegments:12}),timber),[bedFoot-.055,bedTop-.04,bedFront-depth/2]);panel.rotation.y=Math.PI/2;
+      } else for(let i=0;i<5;i++){const z=bedFront-.045-i*(depth-.09)/4;if(a.bedFrame==='slats')box([.03,.32,.035],[bedFoot-.035,bedTop+.14,z],timber);else {const sp=put(new THREE.Mesh(new THREE.LatheGeometry([[.011,0],[.011,.04],[.018,.065],[.009,.11],[.009,.22],[.018,.26],[.011,.29],[.011,.32]].map(([r,y])=>new THREE.Vector2(r,y)),12),timber),[bedFoot-.035,bedTop-.02,z]);void sp;}}
+    }
     box([0.05, 0.03, depth + 0.04], [bedFoot - 0.035, bedTop + 0.33, bedFront - depth / 2], timber);
     const ticking = paint(256, 64, (g) => { g.fillStyle = '#ece6d6'; g.fillRect(0, 0, 256, 64); g.fillStyle = '#7f95b3'; for (let x = 0; x < 256; x += 16) g.fillRect(x, 0, 5, 64); g.fillStyle = `rgba(150,130,90,${0.1 + fade * 0.3})`; for (let i = 0; i < 8; i++) g.fillRect(random() * 256, random() * 64, 30 + random() * 40, 10 + random() * 20); }, [4, 1]);
     box([bedLength - 0.06, 0.15, depth - 0.02], [bedX - 0.03, bedTop + 0.1, bedFront - depth / 2 - 0.01], new THREE.MeshStandardMaterial({ map: ticking, roughness: 1 }));

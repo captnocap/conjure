@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Mycorrhizal hyphopodium entry section", "summary": "A swollen fungal attachment follows the root surface, with a narrow penetration path through a real epidermal opening. A magnified teaching section for hidden processes, careful observation and scientific discovery.", "scales": ["macro", "tabletop"]});

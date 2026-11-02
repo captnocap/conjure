@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Precision torsion balance chamber", "summary": "A permanent fiber-suspended balance and visible attractor pair remain inside a supported open chamber frame; preserve every mechanical load path. A permanent suspended matched-mass balance, carrier pedestals and rigid chamber frame identify this precision-force teaching setting; optical paths and air-free clearances are schematic and enlarged for inspection.", "scales": ["tabletop", "tabletop"]});

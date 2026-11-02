@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Whale fall bone lipid seep transect", "summary": "A fixed partially buried vertebral run and fallen rib arches remain on a sediment bed with attached microbial mats and an exposed bone-sediment study section. Open cortical bodies and a real sediment face reveal selected contacts. This partial habitat retains attached schematic communities independently of cast samples, with no quantitative chemical map.", "scales": ["landscape", "macro", "tabletop"]});

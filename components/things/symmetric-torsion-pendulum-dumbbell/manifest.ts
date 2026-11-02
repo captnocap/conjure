@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Symmetric torsion pendulum dumbbell", "summary": "Two matched masses join a real lightweight beam with a central suspension attachment and optional sectioned masses. A suspended matched-mass torsion pendulum teaching assembly; the frame, continuous fiber and central attachment support every rotated beam and optional conducting paddle.", "scales": ["macro", "tabletop"]});

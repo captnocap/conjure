@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Oblique bow shock crossing sheet", "summary": "A finite oblique shock sheet crosses an upstream reference bundle and changes its direction through a labeled sectional model. A labeled finite oblique front changes reference-flow direction by reducing the normal component while retaining its tangential component. Compression values illustrate geometry; this is not a calculated shock-state solution.", "scales": ["cosmic", "tabletop"]});

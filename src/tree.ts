@@ -7,6 +7,8 @@ import { PRESENTATION_NAMES } from '../engine/presentation';
 import { ACCENT_NAMES } from '../engine/accent';
 import { OTHERWORLD_NAMES, RIFTS } from '../engine/otherworld';
 import { VACUI_FILLS, VACUI_NAMES } from '../engine/vacui';
+import { PALETTE_NAMES } from '../engine/palette';
+import { MATERIALIZE_NAMES } from '../engine/materialize';
 import { MOTION_NAMES } from '../engine/motion';
 import { HOUSE_NAMES } from '../engine/art-direction';
 
@@ -187,15 +189,19 @@ export function renderTree(plan: Plan, reports: BuildReport[], lookNotes: string
   const accent = direction.filter((ruling) => ACCENT_NAMES.includes(ruling.name));
   const otherworld = direction.filter((ruling) => OTHERWORLD_NAMES.includes(ruling.name));
   const vacui = direction.filter((ruling) => VACUI_NAMES.includes(ruling.name));
+  const palette = direction.filter((ruling) => PALETTE_NAMES.includes(ruling.name));
+  const materialize = direction.filter((ruling) => MATERIALIZE_NAMES.includes(ruling.name));
   const motion = direction.filter((ruling) => MOTION_NAMES.includes(ruling.name));
   const house = direction.filter((ruling) => HOUSE_NAMES.includes(ruling.name));
-  const mood = direction.filter((ruling) => !['world', 'look', 'medium', 'styleSpecified', ...FRAMING_NAMES, ...PRESENTATION_NAMES, ...ACCENT_NAMES, ...OTHERWORLD_NAMES, ...VACUI_NAMES, ...MOTION_NAMES, ...HOUSE_NAMES].includes(ruling.name));
+  const mood = direction.filter((ruling) => !['world', 'look', 'medium', 'styleSpecified', ...FRAMING_NAMES, ...PRESENTATION_NAMES, ...ACCENT_NAMES, ...OTHERWORLD_NAMES, ...VACUI_NAMES, ...PALETTE_NAMES, ...MATERIALIZE_NAMES, ...MOTION_NAMES, ...HOUSE_NAMES].includes(ruling.name));
   const worldRuling = direction.find((ruling) => ruling.name === 'world');
   const lookRuling = direction.find((ruling) => ruling.name === 'look');
   const root = element('ul');
 
   if (house.length) root.append(branch('house', plan.direction?.entry.title ?? 'Direction', plan.direction ? `the direction the whole picture follows${plan.direction.finishes.length ? `, with ${plan.direction.finishes.join(' and ')}` : ''}` : 'no direction', house.map(decision), false));
   root.append(branch('direction', 'Mood', 'the mood every component reads', mood.map(decision), false));
+  if (palette.length) root.append(branch('palette', 'Palette', plan.palette ? `the print\u2019s inks: ${plan.palette.ink} on ${plan.palette.ground}, with ${plan.palette.second}` : 'the print\u2019s inks', palette.map(decision), false));
+  if (materialize.length) root.append(branch('materialize', 'Surfaces', plan.materialize ? `how far materials show through the medium: ${Math.round(plan.materialize.weight * 100)}%` : 'the medium flattens every surface', materialize.map(decision), false));
   if (framing.length) root.append(branch('framing', 'Framing', 'how the camera sees it', framing.map(decision), false));
   if (presentation.length) {
     const { kind, plates, index } = plan.presentation;

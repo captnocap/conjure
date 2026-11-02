@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Giant umbrella rain harbour", "summary": "A huge open umbrella roofs a miniature harbour, with connected ribs, raised piers, rain gutters and a central mooring basin. Shelter in bad weather, ordinary belongings turned into a small port, waiting boats and neighbours who make do.", "scales": ["room", "street", "tabletop"]});

@@ -5,6 +5,6 @@ export default defineManifest({
   medium: 'mixed',
   title: 'Atelier print',
   summary:
-    'Redraws the finished frame by hand-made processes layered like a print: risograph, woodcut, frottage, embroidery, cyanotype, ink, luminous contours and dozens more, mixed in order over the render.',
+    'Redraws the scene through 84 Atelier processes layered like a print: risograph, woodcut, frottage, embroidery, ink, luminous contours, surface hatching, sliced ribs, cutaways, interior lattices and optical exposures, mixed in order over the render.',
   scales: [],
 });

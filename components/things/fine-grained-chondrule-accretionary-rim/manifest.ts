@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Fine grained chondrule accretionary rim", "summary": "A porous fine-grained mantle wraps an exposed chondrule sector, showing thickness and attachment across its actual radial section. A schematic fine-grained mantle attached to an exposed chondrule core, with actual rim pore voids; accretionary rims and meteorite fabrics.", "scales": ["macro", "tabletop"]});

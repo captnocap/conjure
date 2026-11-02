@@ -1,6 +1,6 @@
 import type { Question, QuestionSet } from '@conjure/kit';
 import { announce } from './activity';
-import { BATCH_CHARACTERS, MAX_BRIEF_CHARACTERS, MAX_IDEA_CHARACTERS, MAX_NOUL_ASK_CHARACTERS, MAX_QUESTIONS_PER_REQUEST, WIDEST_CHOICE } from './decision-limits';
+import { MAX_BRIEF_CHARACTERS, MAX_IDEA_CHARACTERS, MAX_NOUL_ASK_CHARACTERS, limitsFor, type RequestLimits } from './decision-limits';
 
 /** What the decision model said about one question, before anything is picked. */
 export type Verdict =
@@ -33,10 +33,10 @@ const weightOf = (question: Question) => JSON.stringify(question).length + 25;
  * Yes/no probabilities are independent, so they compare across batches. That lets a
  * catalogue of any width be ranked across a chain of bounded requests.
  */
-function widen(questions: QuestionSet, capacity: number): QuestionSet {
+function widen(questions: QuestionSet, capacity: number, widest: number): QuestionSet {
   const asked: Record<string, Question> = {};
   for (const [name, question] of Object.entries(questions)) {
-    if (question.type !== 'choice' || Object.keys(question.options).length <= WIDEST_CHOICE && weightOf(question) <= capacity) {
+    if (question.type !== 'choice' || Object.keys(question.options).length <= widest && weightOf(question) <= capacity) {
       asked[name] = question;
       continue;
     }
@@ -72,13 +72,13 @@ function narrow(questions: QuestionSet, asked: Record<string, Verdict>): Record<
   return verdicts;
 }
 
-function batches(questions: QuestionSet, capacity: number): [string, Question][][] {
+function batches(questions: QuestionSet, capacity: number, most: number): [string, Question][][] {
   const groups: [string, Question][][] = [[]];
   let size = 0;
   for (const entry of Object.entries(questions)) {
     const weight = weightOf(entry[1]);
     if (weight > capacity) throw new Error(`Decision question "${entry[0]}" is too large for one request.`);
-    if ((size + weight > capacity || groups.at(-1)!.length >= MAX_QUESTIONS_PER_REQUEST) && groups.at(-1)!.length) {
+    if ((size + weight > capacity || groups.at(-1)!.length >= most) && groups.at(-1)!.length) {
       groups.push([]);
       size = 0;
     }
@@ -131,11 +131,12 @@ export async function consult(
   if (!brief || brief.length > MAX_BRIEF_CHARACTERS)
     throw new Error(`The decision brief is ${brief.length} characters; it must contain 1–${MAX_BRIEF_CHARACTERS}.`);
   const contextSize = JSON.stringify({ idea, brief, model: options.model, questions: [] }).length;
-  const capacity = BATCH_CHARACTERS - contextSize;
+  const limits: RequestLimits = limitsFor(options.model);
+  const capacity = limits.characters - contextSize;
   if (capacity <= 0) throw new Error('The decision context is too large for one request.');
   // Prepare the whole chain before sending anything: an impossible later question
   // must not spend money on earlier batches before its validation error is found.
-  const chain = batches(widen(questions, capacity), capacity);
+  const chain = batches(widen(questions, capacity, limits.widestChoice), capacity, limits.questions);
   const about = options.about ?? '';
   try {
     for (const [at, batch] of chain.entries()) {

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Elastomeric microfluidic membrane valve", "summary": "A deformable membrane separates a control channel from a flow channel, with actual open, partial and closed contacts. An enlarged crossed-channel elastomer valve teaching section based on the original multilayer design; actual membrane contact closes rounded roofs, while a rectangular comparison retains corner gaps.", "scales": ["macro", "tabletop"]});

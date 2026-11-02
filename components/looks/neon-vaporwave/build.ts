@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type Palette as PicturePalette, type PaletteRole, choice, clamp01, defineLook, mix, rekey, score, seeded } from '@conjure/kit';
 
 // Synthwave neon, built from the capture rather than filtered from the colour:
 //   geometry -> the camera is recovered from depth and normals, so the ground grid lies on the ground
@@ -212,15 +212,45 @@ const hash2 = (x: number, y: number, salt: number) => {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 };
 
+const toBytes = (value: string) => {
+  const n = parseInt(value.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255] as const;
+};
+const toHex = (c: readonly [number, number, number]) => `#${c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
+/** One family of a palette re-keyed on its own, so each family's most vivid member anchors its role. */
+function keyFamily(colours: readonly string[], palette: PicturePalette, roles: readonly PaletteRole[]): string[] {
+  const keyed = rekey(Object.fromEntries(colours.map((c, k) => [k, toBytes(c)])), palette, Object.fromEntries(roles.map((role, k) => [k, role])));
+  return colours.map((_, k) => toHex(keyed[k]));
+}
+/**
+ * The neon set re-keyed to the picture's palette, keeping each option's tonal design: the dark zenith,
+ * floor and shade take the ground; the grid (which also lights the room), the sun's crown, the lead
+ * tubes and the chrome's upper ramp carry the ink; the horizon glow, the sun's base, the other tubes and
+ * the chrome's foot answer in the second colour. Pastel daylight keeps its paleness and takes the same roles.
+ */
+function keyPalette(P: Palette, palette: PicturePalette | undefined, key: string): Palette {
+  if (!palette) return P;
+  const [s0, s1, s2, s3] = keyFamily(P.sky, palette, ['ground', 'ground', 'second', 'second']);
+  const [sun0, sun1] = keyFamily(P.sun, palette, ['ink', 'second']);
+  const [floor, grid, shade] = keyFamily([P.floor, P.grid, P.shade], palette, ['ground', 'ink', 'ground']);
+  const [t0, t1, t2, t3] = keyFamily(P.tubes, palette, ['ink', 'second', 'ink', 'second']);
+  const [r0, r1, r2] = keyFamily(P.ramp, palette, ['ink', 'ink', 'second']);
+  const [p0, p1, p2, p3, pastelFloor, pastelShadow] = keyFamily([...P.pastelSky, P.pastelFloor, P.pastelShadow], palette, ['ground', 'ground', 'second', 'second', 'ground', 'second']);
+  return {
+    label: `${key}, in the picture\u2019s palette`, sky: [s0, s1, s2, s3], sun: [sun0, sun1], floor, grid, tubes: [t0, t1, t2, t3],
+    ramp: [r0, r1, r2], shade, pastelSky: [p0, p1, p2, p3], pastelFloor, pastelShadow,
+  };
+}
+
 export default defineLook({
   questions: {
-    palette: choice('Which neon palette lights the frame?', {
-      sunset: 'Sunset: coral, hot magenta and gold tubes under a plum-to-coral sky; a beach boulevard at the end of the day.',
-      arcade: 'Arcade: electric cyan, bubblegum pink and lemon yellow on near-black navy; an attract screen in a dark arcade.',
-      nightdrive: 'Night drive: teal and amber on a deep teal night with an orange city glow on the horizon; a highway after midnight.',
-      redline: 'Redline: crimson, orange and yellow on black under a burning red horizon; outrun, speed and menace.',
-      miami: 'Miami: flamingo pink and aqua under a blue-to-pink dusk; deco hotels, palms and cocktails.',
-      vapor: 'Vapor: magenta, cyan and lavender over a violet sky; the classic mall-soft vaporwave glow.',
+    palette: choice('What character has the neon that lights the frame? Its colours come from the picture\u2019s palette.', {
+      sunset: 'Sunset: warm, glowing tubes under a sky that runs from deep dusk to a bright horizon; a beach boulevard at the end of the day.',
+      arcade: 'Arcade: electric, candy-bright tubes on a near-black night; an attract screen in a dark arcade.',
+      nightdrive: 'Night drive: two calm tube colours on a deep night with a city glow low on the horizon; a highway after midnight.',
+      redline: 'Redline: hot, aggressive tubes on black under a burning horizon; outrun, speed and menace.',
+      miami: 'Miami: soft, sweet tubes under a gentle two-colour dusk; deco hotels, palms and cocktails.',
+      vapor: 'Vapor: dreamy, fluorescent tubes over a dusky sky; the classic mall-soft vaporwave glow.',
     }),
     fill: choice('Are things filled, or only drawn in light?', {
       outline: 'Only outlined: every object is a dark shape traced by glowing tubes, like a neon sign switched on at night.',
@@ -283,7 +313,8 @@ export default defineLook({
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
     };
     const scratch = new Float32Array(N);
-    const P = PALETTES[a.palette] ?? PALETTES.sunset;
+    const designed = PALETTES[a.palette] ?? PALETTES.sunset;
+    const P = keyPalette(designed, context.palette, a.palette);
     const pastel = a.fill === 'pastel';
     const damage = clamp01(a.vhs * 0.85 + mood.wear * 0.2 - 0.04);
     const notes: string[] = [`${P.label} palette`];
@@ -314,7 +345,7 @@ export default defineLook({
     const shade = hex(P.shade);
     const pastelShadow = hex(P.pastelShadow);
     const tubeOffset = Math.floor(rnd() * 4);
-    const singleTube = P.tubes[0] === P.grid ? tubeColours[1] : tubeColours[0];
+    const singleTube = designed.tubes[0] === designed.grid ? tubeColours[1] : tubeColours[0];
 
     // ------------------------------------------------------------------ decode the capture
     const ident = new Uint8Array(count);

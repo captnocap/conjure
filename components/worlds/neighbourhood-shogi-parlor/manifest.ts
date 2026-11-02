@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind: 'world', title: "Neighbourhood shogi parlor", summary: "A small neighbourhood shogi room keeps permanent nine-by-nine boards, captured-piece stands and paired cushions ready for play. Sliding lattice partitions, a teaching board and a modest tea shelf frame quiet study, friendly club games and a careful late-game pause.", scales: ["room", "street", "tabletop"]});

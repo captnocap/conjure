@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Whale rib cortical trabecular section", "summary": "A curved cetacean rib segment has a genuine cortical shell, exposed internal scaffold and an attached sediment-bearing end. A curved cortical shell surrounds a connected schematic cancellous interior, with genuinely removed longitudinal sectors and retained fracture ends. Cross-section proportions are generalized cetacean teaching geometry rather than a reconstructed individual rib.", "scales": ["macro", "tabletop"]});

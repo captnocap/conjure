@@ -1,4 +1,4 @@
-import { choice, defineLook, score } from '@conjure/kit';
+import { type Palette, type PaletteRole, choice, defineLook, fromOklch, oklch, rekeyOne, score } from '@conjure/kit';
 
 /**
  * Pixel diorama: the frame is resampled onto a coarse grid (one identity per cell, so sprites
@@ -25,6 +25,27 @@ const PALETTES: Record<string, { tonal?: boolean; limit?: number; hex: string }>
   fantasy: { hex: '000000 1d2b53 7e2553 008751 ab5236 5f574f c2c3c7 fff1e8 ff004d ffa300 ffec27 00e436 29adff 83769c ff77a8 ffccaa' },
   pastel: { hex: '2d2a3e 5b5378 8a7fa8 c9b8d8 fbeee6 ffd6c9 f7a8b8 e87a90 a8e0d0 6fb7b0 ffe6a0 a9c9f0' },
 };
+
+/**
+ * The free palettes (not a machine's) under the picture's palette, colour by colour: the warm colours
+ * become shades of its ink, the cool ones shades of its second, the deep shadow colours shades of its
+ * ground; black, the greys and the near-whites stay. Each colour lands squarely on its role's hue and
+ * keeps its own lightness, so the palette's ladder of shades (which the matcher and dither rely on)
+ * survives. The machine palettes are the hardware and are never re-keyed.
+ */
+const FREE_ROLES: Record<string, (PaletteRole | undefined)[]> = {
+  fantasy: [undefined, 'ground', 'ink', 'second', 'ink', undefined, undefined, undefined, 'ink', 'ink', 'ink', 'second', 'second', 'second', 'ink', 'ink'],
+  pastel: ['ground', 'ground', 'second', 'second', undefined, 'ink', 'ink', 'ink', 'second', 'second', 'ink', 'second'],
+};
+function keyFree(rgbs: number[][], palette: Palette, roles: (PaletteRole | undefined)[]): number[][] {
+  return rgbs.map((c, k) => {
+    const role = roles[k];
+    if (!role) return c;
+    const colour = [c[0], c[1], c[2]] as const;
+    const [, chroma, hue] = oklch(rekeyOne(colour, palette, role));
+    return fromOklch(oklch(colour)[0], chroma, hue);
+  });
+}
 
 const GRIDS = [72, 90, 120, 144, 180, 240];
 
@@ -84,8 +105,8 @@ export default defineLook({
       nes: 'A dozen flat console colours picked from a living-room 8-bit machine: bright primaries, sky blues, brick oranges.',
       pc16: 'The sixteen fixed colours of an old PC adventure: harsh, saturated, heavily dithered.',
       c64: 'Sixteen dusty home-computer colours: muted browns, lavender, slate blue, a loading-screen melancholy.',
-      fantasy: 'A punchy modern sixteen-colour indie palette: navy shadows, hot pink, peach, clean greens.',
-      pastel: 'Soft candy pastels with plum shadows: a late pastel handheld, gentle, cute and dreamy.',
+      fantasy: 'A punchy modern sixteen-colour indie palette in the picture\u2019s own colours: deep shadows, hot accents, clean highlights.',
+      pastel: 'Soft candy pastels in the picture\u2019s own colours, with deep tinted shadows: a late pastel handheld, gentle, cute and dreamy.',
     }),
     resolution: score('How coarse is the pixel grid?', [
       'Tiny: huge blocks, almost an icon',
@@ -208,6 +229,7 @@ export default defineLook({
     // 2. The palette, and the part of it this picture is allowed to use.
     const spec = PALETTES[a.palette];
     let rgbs = spec.hex.split(' ').map((h) => [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)));
+    if (context.palette && FREE_ROLES[a.palette]) rgbs = keyFree(rgbs, context.palette, FREE_ROLES[a.palette]);
     let labs = rgbs.map(([r, g, b]) => toLab(r, g, b));
     const tonal = !!spec.tonal;
 

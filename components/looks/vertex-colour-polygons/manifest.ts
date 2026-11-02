@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Vertex colour polygons',summary:'Broad polygonal colour cells, sampled surface lighting, simple value steps and crisp silhouettes. Early low-polygon game imagery, faceted illustrations and colourful geometric scene studies.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'game'});

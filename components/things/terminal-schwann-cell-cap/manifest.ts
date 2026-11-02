@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Terminal schwann cell cap", "summary": "A branching thin support-cell canopy hugs a terminal cluster with a visible attached nucleus bulge. A magnified neuromuscular teaching specimen: the meeting of nerve and muscle, movement, signal release and cellular organization.", "scales": ["macro", "tabletop"]});

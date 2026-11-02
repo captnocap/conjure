@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Wind blown cloud ablation tail model", "summary": "A dense closed cloud core has an attached stripped tail and exposed front interface, rather than a generic glowing cosmic sphere. A dense closed core retains attached stripped streamers and optional leading interface sections. This supported ablation morphology is a labeled schematic; tail branches and surface scallops are not inferred numerical gas dynamics.", "scales": ["cosmic", "tabletop"]});

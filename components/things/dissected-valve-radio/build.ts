@@ -50,6 +50,30 @@ function cabinetShape(style: keyof typeof CABINETS, w: number, h: number) {
 
 export default defineThing({
   questions: {
+    knobStyle: choice('What kind of control knobs did the set use?', {
+      skirt: 'Broad tapered bakelite skirts with brass centres.', round: 'Round cream buttons with dark centre dots.',
+      fluted: 'Narrow fluted black knobs.', pointer: 'Long pointed knobs that show the setting by their shape.',
+    }),
+    drive: choice('What is visible of the tuning mechanism?', {
+      cord: 'A taut cord running around two small pulleys.', gear: 'Meshing metal wheels beside the tuning vanes.',
+      belt: 'A broad dark belt around the drive wheels.', bare: 'Bare shafts with the drive removed.',
+    }),
+    capacitors: choice('What is the state of the replacement capacitors?', {
+      old: 'The original tall sleeved can remains in place.', fresh: 'A bright new can and a row of fresh replacement components.',
+      mixed: 'A new can beside the old waxed parts removed from the set.', missing: 'An empty mounting clamp and loose connecting leads.',
+    }),
+    aerial: choice('What aerial has been fitted or removed?', {
+      none: 'No aerial hardware is laid out.', loop: 'A square wound loop on a small stand behind the cabinet.',
+      ferrite: 'A ferrite rod with a copper coil laid beside the cabinet.', wire: 'A coil of long aerial wire with two ceramic insulators.',
+    }),
+    powerLead: choice('How is the mains lead left?', {
+      cloth: 'A brown cloth lead coiled with its old round plug.', rubber: 'A dark rubber lead and a rectangular plug.',
+      twisted: 'Two twisted conductors ending at a round plug.', cut: 'A short clipped cable with two exposed copper ends.',
+    }),
+    serviceBase: choice('What supports the whole dismantled set?', {
+      bare: 'The parts stand directly on the work surface.', cork: 'A large cork service pad.',
+      rubber: 'A ribbed rubber pad with a raised edge.', board: 'A pale plywood service board with carrying cut-outs.',
+    }),
     cabinet: choice('What era and shape is the wooden cabinet?', {
       cathedral: 'An early-1930s cathedral set: a tall pointed gothic arch with a round cloth grille.',
       tombstone: 'A mid-1930s tombstone: an upright slab with stepped art-deco shoulders.',
@@ -197,6 +221,15 @@ export default defineThing({
     const heater = new THREE.MeshStandardMaterial({ color: '#ffb060', emissive: '#ff6a10', emissiveIntensity: 2.6 * warm });
     const heaterGas = new THREE.MeshStandardMaterial({ color: '#b9a0ff', emissive: '#7040ff', emissiveIntensity: 2.6 });
     const silver = s.material('#d9dcdc', { metalness: 0.9, roughness: 0.15 });
+    const knob = (art:Sculpture,x:number,y:number,z:number,flat=false) => {
+      const k=new Sculpture(context),mat=a.knobStyle==='round'?s.material('#e5dac0',{roughness:.35}):bakelite;
+      if(a.knobStyle==='pointer') {k.cylinder(.013,.016,.014,[0,0,0],mat,16).rotation.x=Math.PI/2;k.box([.011,.04,.014],[0,.008,0],mat);}
+      else {k.cylinder(a.knobStyle==='skirt'?.017:.016,a.knobStyle==='skirt'?.022:.016,.016,[0,0,0],mat,18).rotation.x=Math.PI/2;
+        if(a.knobStyle==='fluted')for(let i=0;i<12;i++){const t=i*Math.PI/6;k.rod([Math.cos(t)*.016,Math.sin(t)*.016,-.007],[Math.cos(t)*.016,Math.sin(t)*.016,.007],.0018,dark);}}
+      k.cylinder(.006,.006,.002,[0,0,.009],a.knobStyle==='round'?dark:brass,10).rotation.x=Math.PI/2;
+      if(flat)k.root.rotation.x=-Math.PI/2;
+      k.root.position.set(x,y,z);art.root.add(k.root);
+    };
     const lit: THREE.MeshStandardMaterial[] = [glassLit, heater, glassGas, heaterGas];
 
     const valve = (kind: number, state: 'on' | 'off' | 'gas') => {
@@ -236,7 +269,11 @@ export default defineThing({
     // IF cans and the smoothing capacitor.
     c.box([0.03, 0.06, 0.03], [-CW / 2 + 0.03, CH + 0.03, 0.035], alu);
     c.box([0.03, 0.06, 0.03], [-CW / 2 + 0.075, CH + 0.03, 0.04], alu);
-    c.cylinder(0.016, 0.016, 0.075, [CW / 2 - 0.11, CH + 0.0375, -0.045], s.material('#2f5a8a', { roughness: 0.4 }), 14);
+    const capX=CW/2-.11,capZ=-.045;
+    if(a.capacitors==='missing') {
+      c.ring(.018,.002,[capX,CH+.006,capZ],steel).rotation.x=Math.PI/2;
+      for(const d of [-1,1])c.tube([[capX+d*.007,CH+.004,capZ],[capX+d*.015,CH+.025,capZ+.01],[capX+d*.025,CH+.018,capZ+.02]],.0018,s.material(d<0?'#ba4434':'#333d45'));
+    } else c.cylinder(.016,.016,.075,[capX,CH+.0375,capZ],a.capacitors==='old'?s.material('#2f5a8a',{roughness:.4}):silver,14);
     // Tuning capacitor: a gang of half-moon vanes behind the dial.
     const vane = new THREE.CylinderGeometry(0.024, 0.024, 0.0012, 16, 1, false, 0, Math.PI);
     for (let i = 0; i < 9; i++) {
@@ -244,6 +281,12 @@ export default defineThing({
       m.rotation.set(Math.PI / 2, 0, i % 2 ? 0.5 : -1.2);
     }
     c.box([0.06, 0.012, 0.062], [0, CH + 0.006, -0.006], steel);
+    // Pulley centres and a supported belt sit beside the tuning gang.
+    const pulleyY=CH+.012,px1=.045,px2=.095,pz=.025;
+    for(const x of [px1,px2]){c.rod([x,CH,pz],[x,pulleyY+.003,pz],.003,steel);const r=a.drive==='gear'?.022:.012;c.cylinder(r,r,.004,[x,pulleyY,pz],a.drive==='bare'?dark:brass,16);}
+    if(a.drive==='cord'||a.drive==='belt') {
+      const points:P[]=[];for(let i=0;i<=12;i++){const t=-Math.PI/2+i*Math.PI/12;points.push([px2+Math.cos(t)*.013,pulleyY,pz+Math.sin(t)*.013]);}for(let i=0;i<=12;i++){const t=Math.PI/2+i*Math.PI/12;points.push([px1+Math.cos(t)*.013,pulleyY,pz+Math.sin(t)*.013]);}points.push(points[0]);c.tube(points,a.drive==='belt'?.0025:.001,paper);
+    } else if(a.drive==='gear')for(const x of [px1,px2])for(let i=0;i<12;i++){const t=i*Math.PI/6;c.box([.006,.004,.006],[x+Math.cos(t)*.023,pulleyY,pz+Math.sin(t)*.023],brass).rotation.y=t;}
     // The dial glass stands at the front edge, lit from behind when the set is live.
     const pos = { longwave: 0.07, home: 0.34, static: 0.53, shortwave: 0.92, slumped: 0.6 }[a.station];
     const dialTexture = paint(384, 192, (ctx) => {
@@ -276,8 +319,7 @@ export default defineThing({
       const kx = (i - 1) * CW * 0.34;
       c.rod([kx, CH * 0.5, CD / 2], [kx, CH * 0.5, CD / 2 + 0.04], 0.003, silver);
       if (stage < 2) {
-        c.cylinder(0.017, 0.02, 0.016, [kx, CH * 0.5, CD / 2 + 0.04], bakelite, 18).rotation.x = Math.PI / 2;
-        c.cylinder(0.008, 0.008, 0.018, [kx, CH * 0.5, CD / 2 + 0.041], brass, 10).rotation.x = Math.PI / 2;
+        knob(c,kx,CH*.5,CD/2+.04);
       } else knobs.push([0, 0, 0]);
     }
     // Underside wiring spilling out of the end.
@@ -327,8 +369,7 @@ export default defineThing({
     s.scatter(new THREE.CylinderGeometry(0.0045, 0.002, 0.007, 8), brass, screwSpots);
     knobs.forEach((_k, i) => {
       const kx = a.saucer ? sx - 0.09 - i * 0.045 : 0.2 + random() * 0.18, kz = a.saucer ? sz + 0.13 + (random() - 0.5) * 0.02 : 0.24 + random() * 0.08;
-      s.cylinder(0.017, 0.02, 0.016, [kx, 0.008, kz], bakelite, 18);
-      s.cylinder(0.008, 0.008, 0.018, [kx, 0.009, kz], brass, 10);
+      knob(s,kx,.009,kz,true);
     });
     pulled.forEach((v, i) => {
       v.scale.setScalar(1.35); v.rotation.set(0, 0, Math.PI / 2);
@@ -343,6 +384,45 @@ export default defineThing({
     driver.root.position.set(0.3, 0, 0.0);
     driver.root.rotation.y = 0.5 + random() * 1.5;
     s.root.add(driver.root);
+
+    if(a.capacitors==='fresh'||a.capacitors==='mixed')for(let i=0;i<3;i++) {
+      const x=-.22+i*.045,z=.38,old=a.capacitors==='mixed';
+      s.rod([x-.019,.006,z],[x+.019,.006,z],.001,steel);
+      s.cylinder(.006,.006,.024,[x,.006,z],s.material(old?'#ac8a42':'#3e77ae',{roughness:old?.8:.3}),10).rotation.z=Math.PI/2;
+    }
+    if(a.aerial==='loop') {
+      const coil=s.material('#a26739',{metalness:.45,roughness:.5}),az=-.32,ax=-.12;
+      s.box([.16,.012,.09],[ax,.006,az],woodDark);s.rod([ax,.012,az],[ax,.2,az],.008,woodDark);
+      for(let i=0;i<5;i++){const r=.055+i*.003; s.tube([[ax-r,.16-r,az],[ax-r,.16+r,az],[ax+r,.16+r,az],[ax+r,.16-r,az],[ax-r,.16-r,az]],.0012,coil);}
+    } else if(a.aerial==='ferrite') {
+      s.rod([-.36,.009,-.15],[-.36,.009,.035],.008,dark);
+      const coil=s.material('#a26739',{metalness:.5,roughness:.4});for(let i=0;i<12;i++)s.ring(.009,.0012,[-.36,.009,-.07+i*.003],coil);
+    } else if(a.aerial==='wire') {
+      const wire=s.material('#6e6744',{roughness:.8});for(let i=0;i<4;i++)s.ring(.037+i*.002,.0015,[-.35,.002+i*.002,-.09],wire).rotation.x=Math.PI/2;
+      for(const z of [-.15,-.03]){s.cylinder(.008,.008,.025,[-.35,.008,z],paper,10).rotation.z=Math.PI/2;}
+    }
+    const lead=s.material(a.powerLead==='cloth'?'#876d4c':'#333638',{roughness:a.powerLead==='cloth'?.95:.6}),lz=-.26;
+    const leadPath:P[]=[[.18,.03,-.04],[.29,.008,-.11],[.32,.004,lz],[.22,.004,lz-.05],[.17,.004,lz],[.25,.004,lz+.025],[.39,.004,lz+.005]];
+    if(a.powerLead==='cut') {
+      s.tube(leadPath.slice(0,3),.003,lead);
+      for(const d of [-1,1])s.rod([.32,.004,lz],[.335,.004,lz+d*.01],.001,s.material('#b77344',{metalness:.65}));
+    } else {
+      s.tube(leadPath,.003,lead);
+      if(a.powerLead==='twisted'){const path=new THREE.CatmullRomCurve3(leadPath.map(p=>new THREE.Vector3(...p)));const turns:P[]=[];for(let i=0;i<=90;i++){const p=path.getPoint(i/90);turns.push([p.x+Math.cos(i*1.4)*.004,p.y+.004+Math.sin(i*1.4)*.003,p.z]);}s.tube(turns,.0013,paper);}
+      const plugX=.402,plugZ=lz+.005;if(a.powerLead==='rubber')s.box([.029,.014,.033],[plugX,.007,plugZ],dark);else s.cylinder(.017,.017,.014,[plugX,.007,plugZ],bakelite,16);
+      for(const d of [-1,1])s.rod([plugX+.014,.006,plugZ+d*.008],[plugX+.028,.006,plugZ+d*.008],.002,brass);
+    }
+    if(a.serviceBase!=='bare') {
+      const h=a.serviceBase==='board'?.016:.006;
+      for(const child of s.root.children)child.position.y+=h;
+      const mat=s.material(a.serviceBase==='cork'?'#a48257':a.serviceBase==='rubber'?'#4d625d':'#d4bd89',{roughness:.85});
+      if(a.serviceBase==='board') {
+        const board=new THREE.Shape();board.moveTo(-.445,-.435);board.lineTo(.445,-.435);board.lineTo(.445,.435);board.lineTo(-.445,.435);board.closePath();
+        for(const x of [-.405,.405]){const hole=new THREE.Path();hole.moveTo(x-.0125,-.0575);hole.lineTo(x-.0125,.0575);hole.lineTo(x+.0125,.0575);hole.lineTo(x+.0125,-.0575);hole.closePath();board.holes.push(hole);}
+        s.mesh(new THREE.ExtrudeGeometry(board,{depth:h,bevelEnabled:false}),mat,[.015,0,.02]).rotation.x=-Math.PI/2;
+      } else s.box([.89,h,.87],[.015,h/2,.02],mat);
+      if(a.serviceBase==='rubber'){for(let i=0;i<15;i++)s.box([.86,.0015,.003],[.015,h+.0007,-.39+i*.058],mat);for(const x of [-.425,.455])s.box([.012,.012,.87],[x,.009,.02],mat);}
+    }
 
     const energy = mood.energy, phase = random() * 10;
     return s.finish({

@@ -12,6 +12,13 @@ const FLOOR = -0.76, TABLE = 0.78;
 
 export default defineWorld({
   questions: {
+    railCover: choice('What covers the padded rail?', { leather: 'Dark brown leather, slightly glossy.', red: 'Ox-blood red vinyl.', woven: 'Coarse tan woven upholstery.', rubber: 'Matte black rubber.' }),
+    bettingLine: choice('What betting line is marked on the cloth?', { single: 'One thin circular betting line.', double: 'Two concentric betting lines.', broken: 'A dashed circular line.', diamond: 'A broad diamond-shaped betting boundary.' }),
+    houseMark: choice('What house mark occupies the centre of the table?', { none: 'Plain cloth without a house mark.', suits: 'Four small card suits in a cross.', star: 'A large eight-pointed rosette.', initials: 'The intertwined initials of a private card room.' }),
+    piping: choice('How is the inner edge of the rail finished?', { plain: 'No contrasting piping.', cream: 'A cream cord along the inside edge.', brass: 'A narrow polished brass strip.', stitched: 'Regular pale stitches around the inside edge.' }),
+    studs: choice('What fastens the outside of the padded rail?', { brass: 'Closely spaced brass upholstery studs.', steel: 'Large silver studs in pairs.', wood: 'Small dark wooden plugs.', hidden: 'Concealed fasteners and a clean edge.' }),
+    apron: choice('How is the wooden table apron decorated?', { plain: 'A plain dark wooden apron.', fluted: 'Vertical flutes carved around the apron.', panels: 'Inset rectangular panels around the apron.', scalloped: 'A repeating scalloped lower edge.' }),
+    base: choice('What supports the card table?', { pedestal: 'One turned central pedestal with four splayed feet.', legs: 'Four solid square legs with joining rails.', trestle: 'Two trestles joined by a low crossbar.', drum: 'A broad faceted drum base on a circular plinth.' }),
     aftermath: choice('How did the game end?', {
       hurry: 'In a hurry: chairs shoved out at all angles, everyone gone at once.',
       raid: 'Raided: chairs overturned, the lamp still swinging.',
@@ -135,7 +142,18 @@ export default defineWorld({
     const pool = tx.createRadialGradient(512, 512, 40, 512, 512, 512);
     pool.addColorStop(0, 'rgba(255,236,170,0.34)'); pool.addColorStop(0.55, 'rgba(255,236,170,0.08)'); pool.addColorStop(1, 'rgba(0,0,0,0.3)');
     tx.fillStyle = pool; tx.fillRect(0, 0, 1024, 1024);
-    if (a.felt !== 'bare') { tx.strokeStyle = 'rgba(245,240,215,0.5)'; tx.lineWidth = 5; tx.beginPath(); tx.arc(512, 512, 372, 0, 6.28); tx.stroke(); }
+    tx.strokeStyle = 'rgba(245,240,215,0.65)'; tx.lineWidth = 5;
+    if (a.bettingLine === 'broken') tx.setLineDash([27,19]);
+    tx.beginPath();
+    if (a.bettingLine === 'diamond') { tx.moveTo(512,120); tx.lineTo(904,512); tx.lineTo(512,904); tx.lineTo(120,512); tx.closePath(); }
+    else tx.arc(512,512,372,0,Math.PI*2);
+    tx.stroke(); tx.setLineDash([]);
+    if (a.bettingLine === 'double') { tx.beginPath(); tx.arc(512,512,350,0,Math.PI*2); tx.stroke(); }
+    tx.save(); tx.translate(512,512); tx.fillStyle = 'rgba(236,216,166,.7)';
+    if (a.houseMark === 'suits') { tx.font='96px serif'; tx.textAlign='center'; tx.textBaseline='middle'; [['♠',0,-67],['♥',67,0],['♣',0,67],['♦',-67,0]].forEach(([glyph,x,y]) => tx.fillText(String(glyph),Number(x),Number(y))); }
+    if (a.houseMark === 'star') { tx.beginPath(); for(let i=0;i<16;i++){const t=i*Math.PI/8,r=i%2?48:115;tx.lineTo(Math.cos(t)*r,Math.sin(t)*r);}tx.closePath();tx.fill();tx.fillStyle=tint;tx.beginPath();tx.arc(0,0,30,0,Math.PI*2);tx.fill(); }
+    if (a.houseMark === 'initials') { tx.font='italic 150px serif'; tx.textAlign='center'; tx.textBaseline='middle'; tx.fillText('AC',0,0); }
+    tx.restore();
     const ringsAt: [number, number][] = [];
     const stains = Math.round(mood.wear * 9) + (a.left === 'drinks' ? 4 : 0);
     for (let i = 0; i < stains; i++) {
@@ -149,15 +167,27 @@ export default defineWorld({
     felt.rotation.x = -Math.PI / 2; felt.receiveShadow = true;
     root.add(felt);
     s.cylinder(TABLE, TABLE - 0.02, 0.07, [0, -0.037, 0], wood, 64);
-    const rail = s.ring(TABLE - 0.04, 0.042, [0, 0.004, 0], s.material(a.felt === 'bare' ? '#4a3020' : '#2a1c16', { roughness: 0.45 }));
+    const railMaterial = s.material({leather:'#392218',red:'#732a2e',woven:'#b09b71',rubber:'#181b1d'}[a.railCover], { roughness: a.railCover === 'woven' ? .95 : a.railCover === 'rubber' ? .8 : .4 });
+    if (a.railCover === 'woven') { const c=document.createElement('canvas');c.width=c.height=64;const p=c.getContext('2d')!;p.fillStyle='#b09b71';p.fillRect(0,0,64,64);p.strokeStyle='#6e6046';p.lineWidth=2;for(let i=0;i<64;i+=8){p.beginPath();p.moveTo(i,0);p.lineTo(i,64);p.moveTo(0,i);p.lineTo(64,i);p.stroke();}const m=new THREE.CanvasTexture(c);m.colorSpace=THREE.SRGBColorSpace;m.wrapS=m.wrapT=THREE.RepeatWrapping;m.repeat.set(35,2);railMaterial.map=m; }
+    const rail = s.ring(TABLE - 0.04, 0.042, [0, 0.004, 0], railMaterial);
     rail.rotation.x = Math.PI / 2; rail.scale.set(1, 1, 0.55);
-    for (let i = 0; i < 28; i++) { const t = i / 28 * 6.28; s.ball([0.007, 0.007, 0.007], [Math.cos(t) * (TABLE - 0.002), -0.012, Math.sin(t) * (TABLE - 0.002)], s.material('#b9944a', { metalness: 0.8, roughness: 0.35 }), 6); }
+    if(a.piping!=='plain') {
+      const trim=s.material(a.piping==='brass'?'#c3a15b':'#e5d5ad',{metalness:a.piping==='brass'?.8:0,roughness:.5});
+      if(a.piping==='stitched') for(let i=0;i<96;i++){const t=i/96*Math.PI*2;const m=s.box([.011,.0018,.003],[Math.cos(t)*.715,.020,Math.sin(t)*.715],trim);m.rotation.y=-t;}
+      else s.ring(.711,.0028,[0,.020,0],trim).rotation.x=Math.PI/2;
+    }
+    if(a.studs!=='hidden') { const n=a.studs==='steel'?16:28;const material=s.material(a.studs==='brass'?'#b9944a':a.studs==='steel'?'#c4c8ca':'#36271d',{metalness:a.studs==='wood'?0:.8,roughness:.4});for(let i=0;i<n;i++)for(let j=0;j<(a.studs==='steel'?2:1);j++){const t=i/n*Math.PI*2+j*.025;s.ball([.007,.007,.007],[Math.cos(t)*(TABLE-.002),-.012,Math.sin(t)*(TABLE-.002)],material,6);} }
     s.cylinder(TABLE - 0.14, TABLE - 0.14, 0.09, [0, -0.115, 0], darkWood, 40);
+    if(a.apron!=='plain') { const n=a.apron==='fluted'?40:16;for(let i=0;i<n;i++){const t=i/n*Math.PI*2,x=Math.cos(t)*.638,z=Math.sin(t)*.638;if(a.apron==='fluted')s.rod([x,-.155,z],[x,-.075,z],.009,wood);else if(a.apron==='panels'){const m=s.box([.105,.062,.012],[x,-.115,z],wood);m.rotation.y=Math.PI/2-t;}else s.ball([.07,.035,.018],[x,-.154,z],darkWood,10).rotation.y=Math.PI/2-t;} }
+    if(a.base==='pedestal') {
     s.lathe([[0.2, 0], [0.24, 0.02], [0.1, 0.06], [0.07, 0.3], [0.1, 0.5], [0.09, 0.6]], darkWood, [0, FLOOR, 0]);
     for (let i = 0; i < 4; i++) {
       const t = i / 4 * 6.28 + 0.6;
       s.rod([Math.cos(t) * 0.1, FLOOR + 0.12, Math.sin(t) * 0.1], [Math.cos(t) * 0.5, FLOOR + 0.03, Math.sin(t) * 0.5], 0.04, darkWood, 0.03);
     }
+    } else if(a.base==='legs') { for(const x of [-.4,.4])for(const z of [-.4,.4])s.box([.07,.6,.07],[x,FLOOR+.3,z],darkWood);for(const x of [-.4,.4])s.box([.045,.05,.8],[x,FLOOR+.15,0],wood);for(const z of [-.4,.4])s.box([.8,.05,.045],[0,FLOOR+.15,z],wood); }
+    else if(a.base==='trestle') {for(const x of [-.38,.38]){s.box([.095,.6,.12],[x,FLOOR+.3,0],darkWood);s.box([.14,.06,.95],[x,FLOOR+.03,0],darkWood);s.box([.12,.055,.95],[x,-.1875,0],darkWood);}s.box([.76,.09,.07],[0,FLOOR+.2,0],wood);}
+    else {s.cylinder(.27,.38,.56,[0,FLOOR+.32,0],darkWood,12);s.cylinder(.46,.46,.04,[0,FLOOR+.02,0],wood,48);}
 
     // Chairs.
     const steel = s.material('#7f858a', { metalness: 0.6, roughness: 0.45 });
@@ -194,6 +224,7 @@ export default defineWorld({
       }
       if (fallen === 'back') { body.rotation.x = -Math.PI / 2; body.position.y = 0.22; }
       if (fallen === 'side') { body.rotation.z = Math.PI / 2; body.position.y = 0.22; }
+      group.updateMatrixWorld(true);body.position.y += FLOOR-new THREE.Box3().setFromObject(body,true).min.y;
     };
     const count = Math.round(mix(4, 6, mood.density));
     const start = random() * 6.28;
@@ -267,6 +298,16 @@ export default defineWorld({
 
     // What was left on the felt.
     const S = 2.1;
+    const restingCards: {x:number;z:number;w:number;d:number;t:number;top:number}[]=[];
+    const settleCard=(x:number,z:number,w:number,d:number,t:number,h:number)=>{
+      const candidate={x,z,w:w/2,d:d/2,t,top:0};let bottom=0;
+      for(const other of restingCards){
+        const axes=[[Math.cos(t),-Math.sin(t)],[Math.sin(t),Math.cos(t)],[Math.cos(other.t),-Math.sin(other.t)],[Math.sin(other.t),Math.cos(other.t)]];
+        const reach=(r:typeof candidate,ax:number,az:number)=>r.w*Math.abs(Math.cos(r.t)*ax-Math.sin(r.t)*az)+r.d*Math.abs(Math.sin(r.t)*ax+Math.cos(r.t)*az);
+        if(axes.every(([ax,az])=>Math.abs((x-other.x)*ax+(z-other.z)*az)<reach(candidate,ax,az)+reach(other,ax,az)))bottom=Math.max(bottom,other.top);
+      }
+      candidate.top=bottom+h;restingCards.push(candidate);return bottom+h/2;
+    };
     if (a.left === 'cards') {
       const cc = document.createElement('canvas'); cc.width = 64; cc.height = 90;
       const cx = cc.getContext('2d')!;
@@ -280,8 +321,9 @@ export default defineWorld({
         const m = new THREE.Matrix4(), q = new THREE.Quaternion();
         for (let i = 0; i < mesh.count; i++) {
           const t = random() * 6.28, d = mix(0.12, 0.62, Math.sqrt(random()));
-          q.setFromEuler(new THREE.Euler(0, random() * 6.28, 0));
-          mesh.setMatrixAt(i, m.compose(new THREE.Vector3(Math.cos(t) * d, 0.002 + i * 0.0013, Math.sin(t) * d), q, new THREE.Vector3(1, 1, 1)));
+          const yaw=random()*Math.PI*2,x=Math.cos(t)*d,z=Math.sin(t)*d;
+          q.setFromEuler(new THREE.Euler(0,yaw,0));
+          mesh.setMatrixAt(i, m.compose(new THREE.Vector3(x,settleCard(x,z,.063*S,.088*S,yaw,.0012),z), q, new THREE.Vector3(1, 1, 1)));
         }
         mesh.castShadow = mesh.receiveShadow = true;
         root.add(mesh);
@@ -291,12 +333,19 @@ export default defineWorld({
       const notes = new THREE.InstancedMesh(new THREE.BoxGeometry(0.156 * 1.4, 0.0012, 0.066 * 1.4), s.material('#86a07a', { roughness: 0.9 }), n);
       const chips = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.0195 * S, 0.0195 * S, 0.0034 * S, 18), new THREE.MeshStandardMaterial({ roughness: 0.7 }), n * 2);
       const m = new THREE.Matrix4(), q = new THREE.Quaternion(), tones = ['#b32a2a', '#ece6d6', '#27468f', '#1d1d20', '#2f7a48'];
-      for (let i = 0; i < n * 2; i++) {
+      for (let i = 0; i < n; i++) {
         const t = random() * 6.28, d = mix(0.15, 0.62, Math.sqrt(random()));
-        q.setFromEuler(new THREE.Euler(0, random() * 6.28, 0));
-        if (i < n) notes.setMatrixAt(i, m.compose(new THREE.Vector3(Math.cos(t) * d, 0.002 + i * 0.0013, Math.sin(t) * d), q, new THREE.Vector3(1, 1, 1)));
+        const yaw=random()*Math.PI*2,x=Math.cos(t)*d,z=Math.sin(t)*d;
+        q.setFromEuler(new THREE.Euler(0,yaw,0));
+        notes.setMatrixAt(i, m.compose(new THREE.Vector3(x,settleCard(x,z,.156*1.4,.066*1.4,yaw,.0012),z), q, new THREE.Vector3(1, 1, 1)));
+      }
+      const settledChips:{x:number;z:number;top:number}[]=[];
+      for(let i=0;i<n*2;i++){
         const t2 = random() * 6.28, d2 = mix(0.15, 0.64, Math.sqrt(random()));
-        chips.setMatrixAt(i, m.makeTranslation(Math.cos(t2) * d2, 0.03 + 0.0034 * S / 2, Math.sin(t2) * d2));
+        const x=Math.cos(t2)*d2,z=Math.sin(t2)*d2,r=.0195*S,h=.0034*S;let bottom=0;
+        for(const card of restingCards){const dx=x-card.x,dz=z-card.z,lx=dx*Math.cos(card.t)-dz*Math.sin(card.t),lz=dx*Math.sin(card.t)+dz*Math.cos(card.t);if(Math.hypot(Math.max(0,Math.abs(lx)-card.w),Math.max(0,Math.abs(lz)-card.d))<r)bottom=Math.max(bottom,card.top);}
+        for(const chip of settledChips)if(Math.hypot(x-chip.x,z-chip.z)<r*2)bottom=Math.max(bottom,chip.top);
+        chips.setMatrixAt(i, m.makeTranslation(x,bottom+h/2,z));settledChips.push({x,z,top:bottom+h});
         chips.setColorAt(i, new THREE.Color(tones[Math.floor(random() * tones.length)]));
       }
       notes.castShadow = notes.receiveShadow = chips.castShadow = true;
@@ -313,9 +362,9 @@ export default defineWorld({
           s.label('RYE', 0.07, 0.06, [x, 0.1, z + 0.046], '#2a1a10', '#e6dcc0');
         } else {
           const tipped = a.aftermath === 'raid' && random() < 0.6;
-          const g = s.cylinder(0.04, 0.034, 0.09, [x, tipped ? 0.04 : 0.045, z], glassMaterial, 14);
-          if (tipped) { g.rotation.z = Math.PI / 2; g.rotation.y = random() * 3; s.cylinder(0.09, 0.09, 0.002, [x * 0.86, 0.002, z * 0.86], amber, 20).scale.set(1, 1, 0.6); }
-          else s.cylinder(0.034, 0.032, 0.03 * mix(0.3, 1.6, random()), [x, 0.026, z], amber, 14);
+          const g = s.lathe([[0,0],[.034,0],[.04,.09],[.037,.09],[.031,.007],[0,.007]],glassMaterial,[x,0,z]);
+          if (tipped) { g.rotation.z = Math.PI / 2; g.rotation.y = random() * 3;g.updateMatrixWorld(true);g.position.y-=new THREE.Box3().setFromObject(g,true).min.y;s.cylinder(0.09, 0.09, 0.002, [x * 0.86, 0.001, z * 0.86], amber, 20).scale.set(1, 1, 0.6); }
+          else {const h=.03*mix(.3,1.6,random());s.cylinder(.031+h/.09*.006,.031,h,[x,.007+h/2,z],amber,20);}
         }
       });
     }

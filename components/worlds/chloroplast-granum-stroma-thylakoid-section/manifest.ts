@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Chloroplast granum stroma thylakoid section", "summary": "A sectioned chloroplast retains its double envelope, a connected granum stack and intergranal stroma lamellae in every cast. Shared lumens and simplified peripheral connectors join the permanent grana and lamellae. Sections and gaps are enlarged for teaching; the envelope, stroma and starch remain distinct from the internal photosynthetic membrane network.", "scales": ["macro", "tabletop"]});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Microfluidic flow focusing nozzle", "summary": "Opposed side inlets focus a central stream through a constriction with real connected walls and three-dimensional necking states. An enlarged cut teaching chip with real connected channels; colored fluid volumes illustrate a possible state and are not an executed flow simulation.", "scales": ["macro", "tabletop"]});

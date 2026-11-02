@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Sculpture, choice, defineThing, mix, score } from '@conjure/kit';
+import { Sculpture, choice, defineThing, figure, mix, score } from '@conjure/kit';
 
 type P = [number, number, number];
 const DECALS = { fear: 'NO FEAR', god: 'GOD DEY', speed: 'SPEED', boss: 'BIG BOSS', one: 'ONLY 1' } as const;
@@ -23,6 +23,36 @@ function lettering(text: string, w: number, h: number, ink: string, paper: strin
 
 export default defineThing({
   questions: {
+    wheelStyle: choice('What fills the wheel rims?', {
+      spokes: 'Eight fine wire spokes.', dense: 'Sixteen close wire spokes.',
+      cast: 'Five broad cast spokes.', discs: 'Solid hub discs with small exposed rim gaps.',
+    }),
+    tyreProfile: score('How broad are the tyre shoulders?', ['Slim road tyres', 'Ordinary commuter tyres', 'Thick rounded tyres']),
+    engineGuard: choice('What protects the engine below the tank?', {
+      none: 'No extra guard.', loop: 'A broad curved crash bar.', plate: 'A small metal bash plate beneath the engine.', cage: 'Two side rails with diagonal braces.',
+    }),
+    seatCover: choice('What texture is stitched into the seat cover?', {
+      smooth: 'Smooth vinyl.', ribs: 'Close transverse sewn ribs.', diamonds: 'A diamond pattern of short seams.', padded: 'A narrow extra pad strapped onto the rider’s seat.',
+    }),
+    pannierFrame: choice('What hangs beside the rear wheel?', {
+      none: 'No extra carrying frame.', rails: 'Two tubular side frames.',
+      baskets: 'Open wire baskets on both side frames.', plates: 'Flat protective side plates on the frames.',
+    }),
+    frontCarrier: choice('What carrier is fitted above the headlamp?', {
+      none: 'No front carrier.', tray: 'A small shallow metal tray.',
+      wicker: 'A small woven front basket.', box: 'A shallow lidded delivery box.',
+    }),
+    headlampGuard: choice('What covers the headlamp lens?', {
+      none: 'The bare lens.', cross: 'A thin cross guard.', ring: 'A raised circular guard.', bars: 'Three fine horizontal bars.',
+    }),
+    rearToolbox: choice('What repair kit is fixed behind the seat?', {
+      none: 'No extra repair container.', tube: 'A short cylindrical tool tube under the rack.',
+      box: 'A narrow metal tool box.', pouch: 'A small rolled canvas tool pouch.',
+    }),
+    roadBase: choice('What lies beneath the parked or fallen bike?', {
+      bare: 'The ordinary road.', slab: 'A shallow concrete parking slab.',
+      planks: 'A low platform of joined timber planks.', gravel: 'A compact rectangle of fine gravel.',
+    }),
     load: choice('What is it carrying on the pillion?', {
       none: 'Nothing: the padded seat is free for the next fare.',
       helmet: "A spare passenger helmet sitting on the seat, never worn.",
@@ -67,20 +97,19 @@ export default defineThing({
     const engine = s.material('#6f7477', { metalness: 0.6, roughness: 0.5 });
     const pick = <T,>(list: readonly T[]) => list[Math.floor(random() * list.length)];
 
+    const tyreTube=mix(.042,.068,a.tyreProfile),wheelY=.245+tyreTube;
     const wheel = (x: number) => {
-      s.ring(0.245, 0.058, [x, 0.3, 0], rubber);
-      s.ring(0.19, 0.014, [x, 0.3, 0], chrome);
-      const hub = s.cylinder(0.05, 0.05, 0.13, [x, 0.3, 0], engine, 10);
+      s.ring(.245,tyreTube,[x,wheelY,0],rubber);
+      s.ring(0.19, 0.014, [x,wheelY, 0], chrome);
+      const hub = s.cylinder(0.05, 0.05, 0.13, [x,wheelY, 0], engine, 10);
       hub.rotation.x = Math.PI / 2;
-      for (let i = 0; i < 8; i++) {
-        const t = (i / 8) * Math.PI * 2;
-        s.rod([x, 0.3, 0.03 * (i % 2 ? 1 : -1)], [x + Math.cos(t) * 0.19, 0.3 + Math.sin(t) * 0.19, 0], 0.005, chrome);
-      }
+      if(a.wheelStyle==='discs')for(const z of[-.035,.035]){const disk=s.cylinder(.17,.17,.014,[x,wheelY,z],engine,18);disk.rotation.x=Math.PI/2;}
+      else{const count=a.wheelStyle==='dense'?16:a.wheelStyle==='cast'?5:8;for(let i=0;i<count;i++){const t=i*Math.PI*2/count;s.rod([x,wheelY,.03*(i%2?1:-1)],[x+Math.cos(t)*.19,wheelY+Math.sin(t)*.19,0],a.wheelStyle==='cast'?.018:.005,chrome);}}
     };
     wheel(0.66);
     wheel(-0.62);
     // Fork, bars, lamp, mirrors.
-    for (const z of [-0.075, 0.075]) s.rod([0.66, 0.3, z], [0.4, 0.98, z], 0.022, chrome);
+    for (const z of [-0.075, 0.075]) s.rod([.66,wheelY,z], [0.4, 0.98, z], 0.022, chrome);
     s.box([0.07, 0.07, 0.2], [0.42, 0.93, 0], black);
     s.rod([0.38, 1.02, -0.34], [0.38, 1.02, 0.34], 0.014, chrome);
     for (const z of [-1, 1]) {
@@ -93,9 +122,22 @@ export default defineThing({
     s.ball([0.09, 0.1, 0.1], [0.5, 0.88, 0], black, 14);
     const lamp = s.cylinder(0.085, 0.085, 0.03, [0.585, 0.88, 0], s.material('#f4edc8', { emissive: '#ffe9a0', emissiveIntensity: lit ? 1.1 : 0.05 }), 14);
     lamp.rotation.z = Math.PI / 2;
-    const guard = s.ring(0.33, 0.028, [0.66, 0.3, 0], paint, Math.PI * 0.62);
+    const guard = s.ring(wheelY+.05,.028,[.66,wheelY,0], paint, Math.PI * 0.62);
     guard.rotation.z = 0.55;
     guard.scale.z = 2.6;
+    if(a.headlampGuard!=='none'){
+      const x=.61,y=.88;
+      if(a.headlampGuard==='ring'){const ring=s.ring(.095,.008,[x,y,0],chrome);ring.rotation.y=Math.PI/2;for(const z of[-.07,.07])s.rod([.56,y,z],[x,y,z],.006,chrome);}
+      else if(a.headlampGuard==='cross'){s.rod([x,y-.075,0],[x,y+.075,0],.006,chrome);s.rod([x,y,-.075],[x,y,.075],.006,chrome);}
+      else for(const dy of[-.045,0,.045])s.rod([x,y+dy,-.073],[x,y+dy,.073],.005,chrome);
+    }
+    if(a.frontCarrier!=='none'){
+      const x=.59,y=1.25,mat=a.frontCarrier==='wicker'?s.material('#a98c58'):chrome;
+      for(const z of[-.13,.13])s.rod([.4,1.02,z],[x,y,z],.012,chrome);
+      s.box([.3,.018,.36],[x,y,0],mat);
+      if(a.frontCarrier==='box')s.box([.3,.15,.36],[x,y+.084,0],paint);
+      else{const h=a.frontCarrier==='wicker'?.18:.055;for(const dx of[-.145,.145])s.box([.012,h,.36],[x+dx,y+.009+h/2,0],mat);for(const z of[-.175,.175])s.box([.3,h,.012],[x,y+.009+h/2,z],mat);if(a.frontCarrier==='wicker')for(let i=0;i<7;i++)for(const z of[-.182,.182])s.rod([x-.13+i*.043,y+.015,z],[x-.13+i*.043,y+.18,z],.005,black);}
+    }
     // Front shield with its sticker.
     const shieldText = a.decal === 'plain' ? null : DECALS[a.decal];
     const shield = s.box([0.02, 0.2, 0.3], [0.52, 1.08, 0], s.material('#e9c21c'));
@@ -125,11 +167,14 @@ export default defineThing({
       const cover = s.cylinder(0.1, 0.1, 0.03, [0.0, 0.4, z * 0.13], chrome, 14);
       cover.rotation.x = Math.PI / 2;
       s.rod([-0.12, 0.3, z * 0.13], [-0.12, 0.3, z * 0.26], 0.014, black);
-      s.rod([-0.62, 0.3, z * 0.09], [-0.1, 0.34, z * 0.09], 0.018, black);
+      s.rod([-.62,wheelY,z*.09], [-0.1, 0.34, z * 0.09], 0.018, black);
       s.rod([-0.6, 0.32, z * 0.11], [-0.72, 0.74, z * 0.11], 0.02, chrome);
       // Side panels.
       s.box([0.28, 0.16, 0.012], [-0.3, 0.62, z * 0.12], paint);
     }
+    if(a.engineGuard==='loop')for(const z of[-1,1])s.tube([[.25,.55,z*.12],[.29,.27,z*.26],[-.25,.25,z*.28],[-.28,.52,z*.12]],.018,chrome);
+    else if(a.engineGuard==='plate'){s.box([.5,.025,.4],[.02,.255,0],engine);for(const z of[-.15,.15])s.rod([.2,.34,z],[.2,.27,z],.012,black);}
+    else if(a.engineGuard==='cage')for(const z of[-.24,.24]){for(const y of[.3,.55])s.rod([-.25,y,z],[.28,y,z],.012,chrome);for(const x of[-.25,.28])s.rod([x,.3,z],[x,.55,Math.sign(z)*.13],.012,chrome);s.rod([-.25,.3,z],[.28,.55,z],.01,chrome);}
     // Exhaust along the right side.
     s.tube([[0.12, 0.5, 0.1], [0.2, 0.32, 0.15], [-0.1, 0.24, 0.17], [-0.4, 0.27, 0.17]], 0.018, chrome);
     s.rod([-0.38, 0.27, 0.17], [-0.95, 0.36, 0.17], 0.04, chrome, 0.05);
@@ -138,15 +183,30 @@ export default defineThing({
     s.ball([0.27, 0.06, 0.14], [-0.2, 0.83, 0], s.material(coverColour, { roughness: 0.9 }), 14);
     s.ball([0.3, 0.085, 0.16], [-0.6, 0.87, 0], s.material(coverColour, { roughness: 0.9 }), 14);
     if (a.dressed > 0.25) for (let i = 0; i < 5; i++) s.box([0.012, 0.02, 0.3], [-0.38 - i * 0.11, 0.905 - Math.abs(i - 2) * 0.018, 0], s.material('#e8dcc0'));
+    if(a.seatCover!=='smooth'){
+      if(a.seatCover==='padded'){s.box([.36,.035,.23],[-.2,.9,0],s.material('#84735c'));for(const x of[-.31,-.09])s.box([.025,.04,.24],[x,.9,0],black);}
+      else for(let i=0;i<5;i++){const x=-.38+i*.09,y=.83+.06*Math.sqrt(Math.max(0,1-((x+.2)/.27)**2));if(a.seatCover==='ribs')s.rod([x,y,-.105],[x,y,.105],.004,s.material('#bbac91'));else for(const sign of[-1,1])s.rod([x-.035,y,-.08],[x+.035,y,sign*.08],.003,s.material('#bbac91'));}
+    }
+    if(a.pannierFrame!=='none')for(const side of[-1,1]){
+      const z=side*.27;s.tube([[-.9,.38,z],[-.4,.38,z],[-.4,.7,z],[-.9,.7,z]],.012,chrome,true);for(const x of[-.85,-.45])s.rod([x,.7,z],[x,.75,side*.12],.012,chrome);
+      if(a.pannierFrame==='plates')s.box([.45,.27,.015],[-.65,.54,z],paint);
+      else if(a.pannierFrame==='baskets'){for(const x of[-.89,-.41]){s.rod([x,.39,z],[x,.39,z+side*.2],.01,chrome);s.rod([x,.39,z+side*.2],[x,.7,z+side*.2],.01,chrome);}for(const y of[.4,.5,.6,.7])s.rod([-.9,y,z+side*.2],[-.4,y,z+side*.2],.008,chrome);for(let i=0;i<6;i++)s.rod([-.86+i*.085,.39,z],[-.86+i*.085,.39,z+side*.2],.007,chrome);}
+    }
     // Rack, tail, plate.
     for (const z of [-0.12, 0.12]) s.rod([-0.85, 0.82, z], [-1.14, 0.84, z], 0.012, chrome);
     s.rod([-1.14, 0.84, -0.12], [-1.14, 0.84, 0.12], 0.012, chrome);
     s.rod([-1.0, 0.83, -0.12], [-1.0, 0.83, 0.12], 0.012, chrome);
-    const rearGuard = s.ring(0.33, 0.028, [-0.62, 0.3, 0], paint, Math.PI * 0.55);
+    const rearGuard = s.ring(wheelY+.05,.028,[-.62,wheelY,0], paint, Math.PI * 0.55);
     rearGuard.rotation.z = Math.PI * 0.42;
     rearGuard.scale.z = 2.6;
     s.box([0.05, 0.07, 0.12], [-1.0, 0.7, 0], s.material('#b3261e', { emissive: '#b3261e', emissiveIntensity: lit ? 0.9 : 0.15 }));
     s.box([0.012, 0.11, 0.2], [-1.03, 0.58, 0], s.material('#e9e5d6'));
+    if(a.rearToolbox!=='none'){
+      const x=-1.02,y=.7;
+      if(a.rearToolbox==='tube'){const tube=s.cylinder(.07,.07,.26,[x,y,0],engine,14);tube.rotation.x=Math.PI/2;}
+      else s.box([.22,.13,.29],[x,y,0],a.rearToolbox==='box'?engine:s.material('#97835f'));
+      for(const z of[-.09,.09])s.rod([x,.83,z],[x,y+.06,z],.012,black);
+    }
     // Stand.
     const centre = a.doing === 'idling' || (a.doing === 'waiting' && random() > 0.5);
     if (centre) for (const z of [-1, 1]) s.rod([-0.18, 0.28, z * 0.06], [-0.26, 0.0, z * 0.17], 0.014, black);
@@ -258,23 +318,15 @@ export default defineThing({
     const cargo = new THREE.Group();
     for (const part of s.root.children.slice(beforeLoad)) cargo.add(part);
 
-    // The rider, astride with one foot down.
-    if (a.doing === 'astride') {
-      const shirt = s.material(pick(['#c8402e', '#2f6fb0', '#e8e2d0', '#2c8a56', '#e0a020', '#30383f']));
-      const trousers = s.material(pick(['#30383f', '#4a4030', '#27405a']));
-      const flesh = s.material(pick(['#5a3a28', '#6b4630', '#4a2f20']));
-      s.rod([-0.2, 0.9, 0], [-0.12, 1.42, 0], 0.15, shirt, 0.13);
-      s.ball([0.1, 0.115, 0.1], [-0.08, 1.62, 0], flesh, 12);
-      helmet([-0.08, 1.64, 0], pick(['#e8e2d0', '#c42a22', '#e9c21c']), 0).rotation.set(0, Math.PI / 2, 0);
-      for (const z of [-1, 1]) {
-        s.rod([-0.1, 1.36, z * 0.17], [0.12, 1.12, z * 0.25], 0.04, flesh);
-        s.rod([0.12, 1.12, z * 0.25], [0.38, 1.03, z * 0.3], 0.035, flesh);
-      }
-      s.rod([-0.2, 0.9, 0.12], [0.08, 0.72, 0.2], 0.065, trousers);
-      s.rod([0.08, 0.72, 0.2], [-0.1, 0.32, 0.24], 0.05, trousers);
-      s.rod([-0.2, 0.9, -0.12], [0.02, 0.68, -0.24], 0.065, trousers);
-      s.rod([0.02, 0.68, -0.24], [0.0, 0.02, -0.4], 0.05, trousers);
-      s.box([0.22, 0.04, 0.09], [0.04, 0.02, -0.4], black);
+    // One grounded support leg and a supported bent leg, with both hands on the bars.
+    if(a.doing==='astride'){
+      const f=figure(s,{height:1,pose:'sitting',style:'doll',hair:'cap',top:pick(['#c8402e','#2f6fb0','#e8e2d0','#2c8a56']),bottom:'#30383f',skin:pick(['#5a3a28','#6b4630','#4a2f20']),shoes:'#252a2c',face:'dots'});
+      f.joints.spine.rotation.x=.45;f.joints.hips.right.rotation.set(0,0,.12);f.joints.knees.right.rotation.x=.04;f.settle();
+      const hip0=new THREE.Vector3();f.root.updateMatrixWorld(true);f.pelvis.getWorldPosition(hip0);const riderScale=(a.seatCover==='padded'?.9175:.89)/(hip0.y-.045);f.root.scale.setScalar(riderScale);f.root.rotation.y=Math.PI/2;s.root.add(f.root);f.root.updateMatrixWorld(true);
+      const hip=new THREE.Vector3();f.pelvis.getWorldPosition(hip);f.root.position.x+=-.2-hip.x;f.root.position.z-=hip.z;f.root.updateMatrixWorld(true);
+      const left=new THREE.Vector3(.38,1.02,-.3),right=new THREE.Vector3(.38,1.02,.3);const gaps=[f.reach('left',left,{space:s.root}),f.reach('right',right,{space:s.root})];if(Math.max(...gaps)>1e-5)throw new Error('Okada rider bar reach');
+      const footBox=new THREE.Box3().setFromObject(f.joints.ankles.left,true),foot=footBox.getCenter(new THREE.Vector3());foot.y=footBox.min.y;s.rod([-.12,.3,foot.z],[foot.x,foot.y-.008,foot.z],.014,chrome);s.rod([foot.x-.06,foot.y-.008,foot.z],[foot.x+.06,foot.y-.008,foot.z],.008,black);
+      f.root.userData.supportRole='rider';s.root.userData.poseAudit={gaps,riderScale,footFloor:new THREE.Box3().setFromObject(f.root,true).min.y};
     }
 
     // Everything above is the machine; lean or drop it as one.
@@ -284,13 +336,14 @@ export default defineThing({
     if (a.doing === 'fallen') {
       bike.rotation.x = 1.08;
       bike.rotation.y = (random() - 0.5) * 0.4;
-      bike.position.y = 0.09;
+      bike.position.y=.09;bike.updateMatrixWorld(true);bike.position.y-=new THREE.Box3().setFromObject(bike,true).min.y;
       // The load and the helmet came off and lie where they landed.
       s.root.add(cargo);
       if (a.load === 'crates' || a.load === 'kegs') { cargo.rotation.x = 1.45; cargo.position.set(-0.1, 0.2, 0.5); }
       else if (a.load === 'mattress') { cargo.position.set(-0.2, -0.95, 1.9); cargo.rotation.y = 0.5; }
       else { cargo.position.set(0.1, -0.86, 1.25); cargo.rotation.y = random() * 2; }
-      helmet([1.0 + random() * 0.3, 0.085, -0.75 - random() * 0.3], pick(['#e8e2d0', '#c42a22', '#e9c21c']), 0.4);
+      if(cargo.children.length){cargo.updateMatrixWorld(true);cargo.position.y-=new THREE.Box3().setFromObject(cargo,true).min.y;}
+      const fallenHelmet=helmet([1.0 + random() * 0.3, 0.085, -0.75 - random() * 0.3], pick(['#e8e2d0','#c42a22','#e9c21c']),.4);fallenHelmet.updateMatrixWorld(true);fallenHelmet.position.y-=new THREE.Box3().setFromObject(fallenHelmet,true).min.y;
       // What came off it: a scrape, a mirror, a slipper.
       const scrape = s.box([1.1, 0.004, 0.1], [0.5, 0.004, 0.25], s.material('#4a4a48'));
       scrape.rotation.y = -0.2;
@@ -300,10 +353,11 @@ export default defineThing({
       oil.scale.z = 0.6;
     } else {
       bike.add(cargo);
-      if (!centre) bike.rotation.x = -0.17;
+      if (!centre&&a.doing!=='astride') bike.rotation.x=-.17;
       else bike.position.y = 0.012;
     }
 
+    bike.updateMatrixWorld(true);bike.position.y-=new THREE.Box3().setFromObject(bike,true).min.y;
     const puffs: THREE.Mesh[] = [];
     if (a.doing === 'idling') for (let i = 0; i < 4; i++) {
       const size = 0.06 + i * 0.035;
@@ -311,10 +365,17 @@ export default defineThing({
       puff.castShadow = false;
       puffs.push(puff);
     }
+    let platformHeight=0;
+    if(a.roadBase!=='bare'){
+      s.root.updateMatrixWorld(true);const b=new THREE.Box3().setFromObject(s.root,true),c=b.getCenter(new THREE.Vector3()),w=b.max.x-b.min.x+.16,d=b.max.z-b.min.z+.16;platformHeight=a.roadBase==='planks'?.045:.025;
+      for(const node of s.root.children)node.position.y+=platformHeight;
+      const mat=s.material(a.roadBase==='planks'?'#8a7254':a.roadBase==='gravel'?'#a19a83':'#aaa99b');
+      if(a.roadBase==='planks')for(let i=0;i<10;i++)s.box([w,.045,d/10-.003],[c.x,.0225,b.min.z-.08+d*(i+.5)/10],mat);
+      else{s.box([w,.025,d],[c.x,.0125,c.z],mat);if(a.roadBase==='gravel'){const points=[];for(let i=0;i<160;i++)points.push({at:[b.min.x-.08+random()*w,.028,b.min.z-.08+random()*d] as P,size:.009+random()*.01});s.scatter(new THREE.DodecahedronGeometry(1,0),mat,points);}}
+    }
     const shake = a.doing === 'idling' ? mix(0.002, 0.008, mood.energy) : 0;
     const base = bike.position.y;
     return s.finish({
-      footprint: 1.0,
       update: (_dt, time) => {
         bike.position.y = base + Math.sin(time * 46) * shake;
         puffs.forEach((puff, index) => {

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Diatom frustule valve girdle seating rim", "summary": "An upper valve margin seats over finite girdle-band rims with genuine mating clearance and an optional opened section. A magnified mantle and girdle junction with real nested interfaces. The lifted option uses explicit display supports, separating a teaching assembly view from the intact seated frustule.", "scales": ["macro", "tabletop"]});

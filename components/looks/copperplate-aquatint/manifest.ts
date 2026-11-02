@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Copperplate aquatint',summary:'A tonal intaglio impression built from resin-grain pits, successive stopped-out light passages and softly wiped plate tone. Smoky rooms, atmospheric landscapes and richly graded studio prints.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'print'});

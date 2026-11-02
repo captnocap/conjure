@@ -2,12 +2,14 @@ import { generateSvg, rasterizeSvg } from './svg';
 import type { Plan } from '../engine/director';
 import { FRAME_SIZE, type Stage } from '../engine/stage';
 import { cameraAt } from '../engine/motion';
+import { canEncode, encodeWebm } from './webm';
 
 /**
  * A moving print. The live scene is captured a dozen times over two seconds while its things
  * breathe, sway and turn and the camera moves along the plan's closed path; each capture is then
  * developed by the look, its finishing passes animated by the frame's phase, and laid under the
- * vector sheets; finally the frames are recorded at a steady rate as a short looping WebM.
+ * vector sheets; finally the frames are encoded with their own timestamps as a short looping WebM
+ * (WebCodecs; MediaRecorder only where WebCodecs is missing).
  * Capturing first and developing afterwards keeps the motion smooth whatever the look costs.
  */
 export const LOOP_FRAMES = 12;
@@ -21,7 +23,7 @@ function withPrint(svg: string, png: string) {
 }
 
 /** Can this browser record a canvas? Headless and older browsers may not. */
-export const canRecord = () => typeof MediaRecorder !== 'undefined' && typeof HTMLCanvasElement.prototype.captureStream === 'function';
+export const canRecord = () => canEncode() || typeof MediaRecorder !== 'undefined' && typeof HTMLCanvasElement.prototype.captureStream === 'function';
 
 /** Does a loop of this plan move? The camera, the finishes or the things on stage must. */
 export const loopMoves = (stage: Stage, plan: Plan) => (plan.camera ?? 'still') !== 'still' || !!plan.vacui || !!plan.otherworld || stage.animated() > 0;
@@ -29,8 +31,6 @@ export const loopMoves = (stage: Stage, plan: Plan) => (plan.camera ?? 'still') 
 /** Record the mounted plan as a loop. Resolves to a WebM blob, or null when nothing moves or recording is unsupported. */
 export async function recordLoop(stage: Stage, plan: Plan, signal: AbortSignal, onFrame?: (index: number, stage: 'capturing' | 'developing' | 'recording') => void): Promise<Blob | null> {
   if (!canRecord() || !loopMoves(stage, plan)) return null;
-  const mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'].find((candidate) => MediaRecorder.isTypeSupported(candidate));
-  if (!mime) return null;
   // A freshly mounted scene holds still for printing; a loop needs it moving.
   stage.play();
 
@@ -64,7 +64,13 @@ export async function recordLoop(stage: Stage, plan: Plan, signal: AbortSignal, 
     frames.push(scratchContext.getImageData(0, 0, FRAME_SIZE, FRAME_SIZE));
   }
 
-  // 3. Record the finished frames at a steady rate, so the file plays as a two-second loop.
+  // 3. Encode the finished frames, each stamped at its place in the two-second loop.
+  onFrame?.(LOOP_FRAMES - 1, 'recording');
+  const encoded = await encodeWebm(frames, LOOP_FPS, signal);
+  if (encoded) return encoded;
+  // Without WebCodecs, record them in real time; some browsers keep only about a frame a second this way.
+  const mime = typeof MediaRecorder === 'undefined' ? undefined : ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'].find((candidate) => MediaRecorder.isTypeSupported(candidate));
+  if (!mime) return null;
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = FRAME_SIZE;
   const context = canvas.getContext('2d')!;

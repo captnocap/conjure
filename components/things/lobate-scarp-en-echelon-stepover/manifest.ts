@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Lobate scarp en echelon stepover", "summary": "Two arcuate scarp segments overlap through a true topographic step-over zone and retained intervening terrain. Overlapping asymmetric topographic ramps retain their intervening relay terrain and taper continuously into the plains. This geometric segment model illustrates mapping relationships, not a measured fault interaction history.", "scales": ["planetary", "landscape", "tabletop"]});

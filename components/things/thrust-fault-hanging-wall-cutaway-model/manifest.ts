@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Thrust fault hanging wall cutaway model", "summary": "A labeled shallow thrust model juxtaposes two closed rock volumes across an inclined fault and exposes shortened surface strata. A labeled geometric thrust model translates a layered hanging-wall volume up an inclined fault against a retained footwall. Dip, slip and fold controls are teaching values, not a reconstruction of a measured Mercury fault.", "scales": ["planetary", "tabletop"]});

@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({ kind: 'look', title: 'Hammered copper relief', medium: 'craft', scales: ['cosmic', 'planetary', 'landscape', 'street', 'room', 'tabletop', 'macro'], summary: 'A chased and hammered metal picture with raised silhouettes, small overlapping hammer facets, dark recessed grounds and burnished edges. Repoussé panels, workshop heirlooms, weathered plaques and forms shaped patiently from a single sheet.' });

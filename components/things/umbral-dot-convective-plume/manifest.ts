@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Umbral dot convective plume", "summary": "A compact bright-cell relief sits above a narrow cut upflow plume within a dark umbral surface reference. An explicit inferred-convection teaching model of an umbral dot, based on radiative-MHD plume morphology; the subsurface shape is schematic, not directly imaged anatomy.", "scales": ["planetary", "macro"]});

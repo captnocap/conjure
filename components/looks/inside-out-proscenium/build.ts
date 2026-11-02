@@ -9,7 +9,7 @@ export default defineLook({questions:{
  story:choice('What performance is happening?',{abandoned:'The curtains stand open to a play whose audience has gone.',rehearsal:'Fine rigging and exposed stage marks reveal the repetition.',closing:'A heavy curtain has begun descending over the smaller inner stages.',torn:'Torn openings in the curtain reveal yet another performance.'}),
  nesting:score('How many performances are nested?', ['Two small stages','Four stages within stages','Six stages disappearing into the fly tower']),
  curtain:choice('What is the curtain made of?',{pleats:'Heavy ruled cloth with deep vertical pleats.',strips:'Thin rag strips separate like teeth at the opening.',gauze:'A pale translucent veil printed with the repeated scene.'}),
- pigment:choice('What material colours the theatre?',{bone:'Faded bone canvas and brown black velvet.',rust:'Iron red theatrical cloth and tobacco scenery.',ink:'Cold ink blue velvet and chalk grey flats.',acid:'Old chartreuse curtains and olive shadows.'})
+ pigment:choice('What material colours the theatre?',{bone:'Faded pale canvas against soft dark velvet.',rust:'Deep toned theatrical cloth with a hot accent.',ink:'Cold, quiet velvet and chalky even flats.',acid:'Sour, sickly old curtains with vivid shadows.'})
 },async apply(c,a,context,signal){
  const t=prepare(c,context,signal,a.pigment),{g,p,source,boxes}=t,r=context.random,m=context.mood;
  // The original capture is reframed as the large live stage: the entire composition now sits inside the fabrication.

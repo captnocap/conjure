@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Dendritic alloy solidification front", "summary": "A cutaway advancing solidification front separates connected branched metal dendrites from a shallow interstitial phase, with visible thermal-gradient direction. A permanent cubic-growth dendrite field and seed substrate anchor the materials-science setting through every cast.", "scales": ["macro", "tabletop"]});

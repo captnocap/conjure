@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Letterpress deboss',summary:'A relief-printed image pressed into heavy paper: cotton indentation, a raking-light edge, solid ink shapes and occasional roller pinholes. Tactile invitations, small art cards and carefully impressed printed keepsakes.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'print'});

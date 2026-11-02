@@ -1,4 +1,4 @@
-import { choice, defineLook, score, seeded } from '@conjure/kit';
+import { type PaletteRole, type Palette as Inks, choice, defineLook, fromOklch, oklch, rekey, score, seeded } from '@conjure/kit';
 import {
   type RGB,
   boxBlur,
@@ -44,6 +44,30 @@ const NIGHT = P('#0e1838', '#22386c', '#4c5f92', '#d6e2ff', '#5a6aa8', '#9aacd8'
 const DUSK = P('#46457a', '#a57d9f', '#ffb784', '#ffa868', '#8a7cb8', '#ffbf96', '#7a6c98', '#c99aa6');
 const TINTS = { summer: SUMMER, golden: GOLDEN, rose: ROSE, rain: RAIN, winter: WINTER } as const;
 
+/**
+ * Under the idea's palette a chosen tint keeps its tonal design (deep zenith, pale horizon, near-white
+ * light, mid shadow) and takes the palette's colours: the sky gradient its ink, the light and the lit
+ * cloud its second colour, shadow, shaded cloud and air its ground. The hour's own light stays.
+ */
+const TINT_ROLES: Record<keyof Palette, PaletteRole> = {
+  zenith: 'ink', mid: 'ink', horizon: 'ink', sun: 'second', cloudLit: 'second', shade: 'ground', cloudShade: 'ground', haze: 'ground',
+};
+const SKY_DEPTH = 0.7;
+const keyed = (pal: Palette, inks: Inks | undefined): Palette => {
+  if (!inks) return pal;
+  const bytes = mapPalette(pal, (c) => [c[0] * 255, c[1] * 255, c[2] * 255]);
+  const out = rekey(bytes as Record<keyof Palette, RGB>, inks, TINT_ROLES);
+  return mapPalette(pal, (_, key) => {
+    let c = out[key];
+    if (TINT_ROLES[key] === 'ink') {
+      // The sky keeps most of its own depth: a pale ink would otherwise lift the whole gradient to haze.
+      const [L, C, h] = oklch(c);
+      c = fromOklch(L + (oklch(bytes[key])[0] - L) * SKY_DEPTH, C, h);
+    }
+    return [c[0] / 255, c[1] / 255, c[2] / 255];
+  });
+};
+
 const mixPalette = (a: Palette, b: Palette, t: number): Palette => {
   const out = {} as Palette;
   for (const key of Object.keys(a) as (keyof Palette)[]) out[key] = mixRGB(a[key], b[key], t);
@@ -72,13 +96,13 @@ export default defineLook({
       evening:
         'Evening city: a soft violet dusk that glows warm rather than neon, a distant skyline of lit windows, lens flare from the low sun, lamps blooming and amber light along every edge. The walk home, the end of a school day, missing someone, the city switching on its lights.',
     }),
-    tint: choice('Which colours does the light paint the frame in?', {
+    tint: choice('What kind of light paints the frame? Its colours come from the picture\u2019s palette, except the hour\u2019s own.', {
       hour: "The scene's own hour: cerulean at noon, rose at dawn, amber toward dusk, following where the sun sits.",
-      summer: 'High summer: hard cerulean, cream-white cloud, a white-gold sun and greens shadowed with blue. Heat, cicadas, a long holiday.',
-      golden: 'Golden hour: honey and apricot light, plum shadows, a sky fading from gold up to pale aqua.',
-      rose: 'Magic-hour rose: peach-pink light, lilac shadow, a sky of salmon and soft periwinkle.',
-      rain: 'Just after rain: rinsed clean air, a cool teal sky, glistening white light and grey cloud breaking apart.',
-      winter: 'A clear winter day: silvery pale blue, white light, slate-blue shadows, everything crisp and quiet.',
+      summer: 'High summer: a hard, deep, saturated sky, bright white cloud, a blazing sun and crisp cool shadow. Heat, cicadas, a long holiday.',
+      golden: 'Golden hour: rich low warm light, deep contrasting shadows, a sky fading from glowing horizon to pale zenith.',
+      rose: 'Magic hour: soft tender light, gentle pastel shadow, a sky of two delicate tints melting together.',
+      rain: 'Just after rain: rinsed clean air, a cool clear sky, glistening white light and grey cloud breaking apart.',
+      winter: 'A clear winter day: silvery and pale, white light, muted slate shadows, everything crisp and quiet.',
     }),
     clouds: choice('What is painted in the sky?', {
       clear: 'An unbroken clear sky: only the deep gradient and a single thin contrail ruled across it.',
@@ -235,8 +259,8 @@ export default defineLook({
         ? mood.daylight < 0.5
           ? mixPalette(DAWN, SUMMER, smooth(0, 1, mood.daylight * 2))
           : mixPalette(SUMMER, GOLDEN, smooth(0, 1, (mood.daylight - 0.5) * 2))
-        : TINTS[answers.tint];
-    if (tradition === 'evening') pal = mixPalette(pal, DUSK, 0.74);
+        : keyed(TINTS[answers.tint], context.palette);
+    if (tradition === 'evening') pal = mixPalette(pal, answers.tint === 'hour' ? DUSK : keyed(DUSK, context.palette), 0.74);
     // A world that brought a dark sky of its own is painted as night: deep blue, moonlit cloud, its stars kept.
     let night = 0;
     {

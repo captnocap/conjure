@@ -41,6 +41,13 @@ export default defineThing({
       red: 'Fire red.',
       grey: 'Scuffed bare grey steel.',
     }),
+    binding: choice('How are the bamboo baskets bound?', { plain: 'Plain dark bamboo hoops.', red: 'Red cord hoops around both rims.', cross: 'Two crossed cane stitches on each side.', brass: 'Small brass repair clips around the rims.' }),
+    lidHandle: choice('What handle is on each basket lid?', { none: 'The lid is gripped by its rim.', loop: 'An upright bamboo loop.', peg: 'A short turned wooden knob.', wrapped: 'A red cloth grip over a raised crossbar.' }),
+    boilerDrain: choice('How is the boiler drained?', { plug: 'A small capped drain.', tap: 'A brass tap over a catch cup.', hose: 'A rubber hose running into a bucket.', trough: 'A little open metal drip trough.' }),
+    waterGauge: choice('How is the boiler water level checked?', { bare: 'A plain boiler front.', glass: 'A vertical sight glass with a blue water column.', dial: 'A round pressure dial.', both: 'A sight glass beside a pressure dial.' }),
+    servingShelf: choice('What serving ledge is fitted to the boiler front?', { none: 'No ledge.', narrow: 'A narrow steel ledge on brackets.', broad: 'A broad slatted bamboo ledge.', divided: 'A steel ledge divided into three tray spaces.' }),
+    utensilRack: choice('What hangs from the boiler side?', { none: 'No extra utensils.', tongs: 'A pair of long bamboo tongs.', ladle: 'A deep steel ladle.', brushes: 'Two bundled bamboo cleaning brushes.' }),
+    paving: choice('What is immediately under the steaming station?', { bare: 'Bare ground.', tile: 'Cream square kitchen tiles.', brick: 'Red brick paving.', grating: 'A dark drainage grate in a concrete surround.' }),
   },
 
   build(a, context) {
@@ -88,6 +95,7 @@ export default defineThing({
     const dark = s.material('#2c2f31', { roughness: 0.7 });
     const paper = s.material('#f6f1e2', { roughness: 0.95 });
 
+    const redBinding=s.material('#b72f2a'),clipMat=s.material('#b78c40',{metalness:.65,roughness:.4});
     const bodyGeometry = new THREE.CylinderGeometry(R, R, BH - 0.004, 28, 1, true);
     const rimGeometry = new THREE.CylinderGeometry(R + 0.008, R + 0.008, 0.02, 28);
     const lidGeometry = new THREE.LatheGeometry([[0.001, 0.058], [0.1, 0.052], [0.19, 0.03], [R + 0.004, 0], [R + 0.01, 0], [R + 0.01, -0.028], [R + 0.002, -0.028]].map(([x, y]) => new THREE.Vector2(x, y)), 28);
@@ -104,6 +112,9 @@ export default defineThing({
       part(g, rimGeometry, rim, [0, 0.011, 0]);
       part(g, rimGeometry, rim, [0, BH - 0.011, 0]).scale.set(1, 0.8, 1);
       if (floor) part(g, new THREE.CylinderGeometry(R - 0.008, R - 0.008, 0.008, 24), paper, [0, 0.03, 0]);
+      if(a.binding==='red')for(const y of[.012,BH-.012])part(g,new THREE.TorusGeometry(R+.012,.005,6,28),redBinding,[0,y,0]).rotation.x=Math.PI/2;
+      else if(a.binding==='cross')for(let i=0;i<4;i++)for(const turn of[-.7,.7]) {const m=part(g,new THREE.BoxGeometry(.045,.005,.005),rim,[Math.cos(i*Math.PI/2)*(R+.006),BH/2,Math.sin(i*Math.PI/2)*(R+.006)]);m.rotation.set(0,-i*Math.PI/2-Math.PI/2,turn);}
+      else if(a.binding==='brass')for(let i=0;i<4;i++){const t=i*Math.PI/2;part(g,new THREE.BoxGeometry(.018,BH,.009),clipMat,[Math.sin(t)*(R+.01),BH/2,Math.cos(t)*(R+.01)]).rotation.y=t;}
       parent.add(g);
       return g;
     };
@@ -111,6 +122,9 @@ export default defineThing({
       const g = new THREE.Group();
       part(g, lidGeometry, woven, [0, 0.03, 0]);
       part(g, new THREE.TorusGeometry(R + 0.008, 0.008, 6, 28), rim, [0, 0.03, 0]).rotation.x = Math.PI / 2;
+      if(a.lidHandle==='loop')part(g,new THREE.TorusGeometry(.04,.007,6,16,Math.PI),rim,[0,.087,0]);
+      else if(a.lidHandle==='peg')part(g,new THREE.CylinderGeometry(.018,.025,.035,12),rim,[0,.105,0]);
+      else if(a.lidHandle==='wrapped') {for(const x of[-.04,.04])part(g,new THREE.BoxGeometry(.012,.035,.012),rim,[x,.105,0]);part(g,new THREE.BoxGeometry(.1,.02,.025),redBinding,[0,.127,0]);}
       parent.add(g);
       return g;
     };
@@ -303,6 +317,61 @@ export default defineThing({
           steamSources.push([tipX, tipY, sz + 0.34]);
         }
       }
+    }
+
+    const brass = s.material('#b78c40', {metalness:.65, roughness:.4});
+    const redCord = s.material('#b72f2a');
+    const drainX=.42, drainY=top+.075, drainZ=boilerD/2+.025;
+    s.cylinder(.022,.022,.04,[drainX,drainY,drainZ],brass,12).rotation.x=Math.PI/2;
+    if(a.boilerDrain==='tap') {
+      s.tube([[drainX,drainY,drainZ],[drainX,drainY,drainZ+.08],[drainX,drainY-.06,drainZ+.08]],.012,brass);
+      s.rod([drainX-.035,drainY+.025,drainZ+.03],[drainX+.035,drainY+.025,drainZ+.03],.008,brass);
+      s.lathe([[.03,0],[.035,.003],[.05,.08]],steel,[drainX,0,drainZ+.08]);
+    } else if(a.boilerDrain==='hose') {
+      s.tube([[drainX,drainY,drainZ],[drainX+.18,drainY-.1,drainZ+.07],[.76,.22,.5],[.76,.06,.5]],.013,dark);
+      s.lathe([[0,0],[.09,0],[.12,.2]],steel,[.76,0,.5]);
+      s.ring(.115,.007,[.76,.2,.5],steel).rotation.x=Math.PI/2;
+    } else if(a.boilerDrain==='trough') {
+      s.box([.22,.012,.15],[drainX,drainY-.055,drainZ+.07],steel);
+      for(const side of[-1,1]) s.box([.012,.05,.15],[drainX+side*.105,drainY-.03,drainZ+.07],steel);
+      s.rod([drainX,top+.02,drainZ],[drainX,drainY-.06,drainZ+.12],.008,steel);
+    }
+    if(a.waterGauge==='glass'||a.waterGauge==='both') {
+      s.box([.065,.15,.025],[-.42,top+.1,drainZ],dark);
+      s.cylinder(.012,.012,.13,[-.42,top+.1,drainZ+.025],s.material('#8eb9c3'),12);
+      for(const y of[top+.02,top+.18])s.box([.06,.018,.04],[-.42,y,drainZ+.015],brass);
+    }
+    if(a.waterGauge==='dial'||a.waterGauge==='both') {
+      s.cylinder(.052,.052,.03,[-.22,top+.105,drainZ+.01],steel,20).rotation.x=Math.PI/2;
+      s.cylinder(.044,.044,.008,[-.22,top+.105,drainZ+.03],paper,20).rotation.x=Math.PI/2;
+      s.rod([-.22,top+.105,drainZ+.037],[-.245,top+.13,drainZ+.037],.003,dark);
+    }
+    if(a.servingShelf!=='none') {
+      const sy=top-.18, depth=a.servingShelf==='narrow'?.11:.21;
+      if(a.servingShelf==='broad')for(let i=0;i<7;i++)s.box([.105,.025,depth],[-.36+i*.12,sy,.3+depth/2],wall);
+      else s.box([.84,.025,depth],[0,sy,.3+depth/2],steel);
+      for(const x of[-.32,.32])s.rod([x,sy-.14,.29],[x,sy-.012,.3+depth-.02],.009,steel);
+      if(a.servingShelf==='divided')for(const x of[-.14,.14])s.box([.015,.055,depth],[x,sy+.04,.3+depth/2],steel);
+    }
+    if(a.utensilRack!=='none') {
+      const ux=-boilerW/2-.07;
+      s.rod([ux,top+.14,-.18],[ux,top+.14,.1],.009,steel);
+      s.rod([ux,top+.14,-.1],[-boilerW/2,top+.14,-.1],.009,steel);
+      if(a.utensilRack==='tongs') for(const dz of[-.015,.015])s.rod([ux,top+.14,-.05],[ux-.025,top-.16,-.05+dz],.008,wall);
+      else if(a.utensilRack==='ladle') {
+        s.rod([ux,top+.14,-.05],[ux,top-.13,-.05],.007,steel);
+        s.ball([.045,.022,.045],[ux,top-.15,-.05],steel,12);
+      } else for(const z of[-.12,.04]) {
+        s.rod([ux,top+.14,z],[ux,top-.05,z],.01,wall);
+        for(let k=0;k<7;k++)s.rod([ux,top-.03,z],[ux+(k-3)*.007,top-.18,z+.01],.004,wall);
+      }
+    }
+    if(a.paving!=='bare') {
+      const floor=s.material(a.paving==='brick'?'#9c6a53':'#aaa99e');
+      s.box([2.65,.04,1.3],[0,-.027,.1],floor);
+      if(a.paving==='tile')for(let x=0;x<10;x++)for(let z=0;z<5;z++)s.box([.261,.005,.256],[-1.1925+x*.265,-.0025,-.42+z*.26],paper);
+      else if(a.paving==='brick')for(let x=0;x<8;x++)for(let z=0;z<6;z++)s.box([.316,.005,.2],[-1.12+x*.32,-.0025,-.425+z*.21],s.material((x+z)%3?'#b78265':'#a9755a'));
+      else for(let i=0;i<20;i++)s.box([.11,.006,1.1],[-1.1875+i*.125,-.003,.1],dark);
     }
 
     // Steam: more when the morning is cold and the kitchen is busy.

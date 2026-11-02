@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Sea ice brine sampling sackhole", "summary": "A blind sampling bore in an ice core has a visible bottom and connected sampling tube with supported surface hardware. A blind partial-core hole collects brine while retaining an ice floor, shown as a schematic sampling cut; polar field methods and brine chemistry.", "scales": ["macro", "tabletop"]});

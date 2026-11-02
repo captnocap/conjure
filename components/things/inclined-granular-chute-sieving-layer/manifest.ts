@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Inclined granular chute sieving layer", "summary": "A supported chute carries an actual layered grain bed with fine particles in lower gaps and a separated upper coarse layer. A supported inclined flume exposes distinct fine-rich lower and coarse-rich upper bed regions. Surface grains rest on retained bulk and fine grains occupy the lower section; this labeled snapshot illustrates kinetic sieving without simulating individual trajectories.", "scales": ["macro", "tabletop"]});

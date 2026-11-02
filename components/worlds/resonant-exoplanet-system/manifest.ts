@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind:'world',title:'Resonant exoplanet system',summary:'A spatial atlas of a distant planetary system, with stellar foci, orbital reference planes, dust lanes and measured paths arranged in open space. Celestial choreography, scientific wonder, companion worlds and the quiet geometry of repeated meetings.',scales:['cosmic','planetary','tabletop']});

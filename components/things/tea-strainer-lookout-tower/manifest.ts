@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Tea strainer lookout tower", "summary": "A wire tea strainer raised on braced legs becomes a miniature lookout, with a walkable rim platform, a real open mesh basket and a ladder. Watching for a kettle tide, a leaf-sail ferry or neighbours returning through the garden.", "scales": ["tabletop", "room"]});

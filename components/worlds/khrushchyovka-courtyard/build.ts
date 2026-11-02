@@ -59,6 +59,48 @@ export default defineWorld({
       rink: 'A boarded hockey box with a goal, the ice swept.',
       bins: 'Dented rubbish bins and a thrown-out New Year tree with tinsel still on it.',
     }),
+    roofGuard: choice('What guards the flat roof edges?', {
+      none: 'Only the low parapets.',
+      rail: 'A single thin steel safety rail follows the roof edge.',
+      pickets: 'A two-rail guard with upright pickets.',
+      panels: 'Short solid parapet extensions alternate with open rails.',
+    }),
+    stepHandrail: choice('What handrails have been fitted at the entrances?', {
+      none: 'The low entrance steps have no rail.',
+      pipe: 'One simple pipe rail beside each stoop.',
+      paired: 'Matching handrails stand on both sides.',
+      lattice: 'Paired rails contain a diagonal reinforcing bar.',
+    }),
+    roofDrain: choice('How are the downpipes finished near the ground?', {
+      straight: 'Plain straight pipes end beside the wall.',
+      shoes: 'Bent drain shoes direct the runoff away from the foundations.',
+      hoppers: 'Box-shaped hoppers collect runoff below the roof.',
+      barrels: 'Small rain barrels stand under the pipe outlets.',
+    }),
+    yardBench: choice('What seating stands along the quiet side of the yard?', {
+      none: 'No shared bench.',
+      plank: 'One long backless plank bench on concrete feet.',
+      backed: 'A green slatted bench with a high back.',
+      table: 'Two benches flank a small outdoor chess table.',
+    }),
+    noticeBoard: choice('What sort of shared noticeboard is beside the path?', {
+      none: 'No noticeboard.',
+      glass: 'A glazed notice cabinet stands on two square posts.',
+      roofed: 'An open timber board has a tiny pitched roof.',
+      kiosk: 'A three-sided notice pillar carries overlapping paper sheets.',
+    }),
+    yardEntrance: choice('How is the road entrance marked?', {
+      open: 'The road is open across the front of the yard.',
+      bollards: 'Two striped bollards mark a broad entry gap.',
+      boom: 'A raised counterweighted boom stands at one end of the road.',
+      posts: 'Low pipe posts protect the two corners of the footpath.',
+    }),
+    roadDetail: choice('What is marked across the narrow access road?', {
+      plain: 'Plain dark road surface.',
+      crossing: 'A small zebra crossing links the footpath to the yard.',
+      parking: 'Short faded bay markers line the road edge.',
+      hump: 'A low striped speed hump crosses the vehicle entrance.',
+    }),
   },
 
   build(a, context) {
@@ -171,6 +213,19 @@ export default defineWorld({
       b.mesh(new THREE.PlaneGeometry(length, h), new THREE.MeshStandardMaterial({ map, emissiveMap: emissive, emissive: warm, emissiveIntensity: mix(0.55, 1.25, dim), roughness: 0.95 }), [0, h / 2, 0]);
       b.box([length + 0.3, 0.1, depth + 0.3], [0, h + 0.05, -depth / 2], b.material('#4b4a47', { roughness: 1 }));
       if (snowy || a.ground === 'ice') b.box([length + 0.2, 0.12, depth + 0.2], [0, h + 0.15, -depth / 2], snowMat);
+      if (a.roofGuard !== 'none') {
+        const metal = b.material('#575d59', { metalness: 0.4 });
+        for (const z of [-0.08, -depth + 0.08]) {
+          b.rod([-length / 2 + 0.12, h + 0.57, z], [length / 2 - 0.12, h + 0.57, z], 0.018, metal);
+          if (a.roofGuard !== 'rail') b.rod([-length / 2 + 0.12, h + 0.33, z], [length / 2 - 0.12, h + 0.33, z], 0.014, metal);
+          const count = Math.ceil(length / 1.6);
+          for (let i = 0; i <= count; i++) {
+            const x = -length / 2 + 0.12 + i / count * (length - 0.24);
+            b.rod([x, h + 0.05, z], [x, h + 0.57, z], 0.018, metal);
+            if (a.roofGuard === 'panels' && i < count && i % 2 === 0) b.box([(length - 0.24) / count - 0.05, 0.38, 0.05], [x + (length - 0.24) / count / 2, h + 0.38, z], concrete);
+          }
+        }
+      }
       if (far) return { b, h };
       // Balconies, canopies, stoops, doors, drainpipes.
       const balconies: { at: P3; size: number; color: string }[] = [], glazing: { at: P3; size: number; color: string }[] = [], hung: { at: P3; size: number; color: string }[] = [];
@@ -192,8 +247,26 @@ export default defineWorld({
           b.ball([0.06, 0.06, 0.06], [x + 0.2, PLINTH + 0.85, 0.5], new THREE.MeshStandardMaterial({ color: '#fff3cf', emissive: warm, emissiveIntensity: mix(0.3, 1.8, dim) }), 8);
           if (snowy) b.box([bay * 1.2, 0.07, 0.9], [x, PLINTH + 1.03, 0.47], snowMat);
           b.box([bay * 0.9, 0.3, 0.3], [x + bay * 1.15, 0.22, 0.5], b.material('#6f5a40', { roughness: 1 }));
+          if (a.stepHandrail !== 'none') for (const side of a.stepHandrail === 'pipe' ? [1] : [-1, 1]) {
+            const rx = x + side * bay * 0.49, rail = b.material('#4e655b', { metalness: 0.4 });
+            for (const z of [0.2, 0.72]) b.rod([rx, 0.16, z], [rx, 0.9, z], 0.022, rail);
+            b.rod([rx, 0.9, 0.2], [rx, 0.9, 0.72], 0.022, rail);
+            if (a.stepHandrail === 'lattice') b.rod([rx, 0.25, 0.2], [rx, 0.82, 0.72], 0.012, rail);
+          }
         }
-        if (i % 5 === 0 && i > 0) b.rod([x - bay / 2, 0.1, 0.06], [x - bay / 2, h, 0.06], 0.04, b.material('#6f7577', { metalness: 0.5 }));
+        if (i % 5 === 0 && i > 0) {
+          const px = x - bay / 2, pipe = b.material('#6f7577', { metalness: 0.5 });
+          b.rod([px, a.roofDrain === 'barrels' ? 0.7 : 0.1, 0.06], [px, h, 0.06], 0.04, pipe);
+          if (a.roofDrain === 'shoes') b.tube([[px, 0.25, 0.06], [px, 0.12, 0.12], [px, 0.09, 0.4]], 0.045, pipe);
+          else if (a.roofDrain === 'hoppers') {
+            b.box([0.22, 0.2, 0.15], [px, h - 0.13, 0.075], pipe);
+            b.box([0.18, 0.012, 0.12], [px, h - 0.024, 0.075], b.material('#303736'));
+          } else if (a.roofDrain === 'barrels') {
+            b.cylinder(0.23, 0.21, 0.62, [px, 0.31, 0.27], b.material('#4f6f66'), 12);
+            b.tube([[px, 0.75, 0.06], [px, 0.71, 0.27], [px, 0.62, 0.27]], 0.04, pipe);
+            b.cylinder(0.21, 0.21, 0.015, [px, 0.61, 0.27], b.material('#53636a'), 12);
+          }
+        }
       }
       b.scatter(new THREE.BoxGeometry(bay * 0.92, 0.5, 0.42), new THREE.MeshStandardMaterial({ roughness: 0.9 }), balconies);
       if (glazing.length) b.scatter(new THREE.BoxGeometry(bay * 0.9, 0.44, 0.38), new THREE.MeshStandardMaterial({ roughness: 0.3, metalness: 0.2, emissive: '#3a2c10', emissiveIntensity: dim }), glazing);
@@ -236,6 +309,47 @@ export default defineWorld({
       tower.b.root.position.set(4.5, 0, BACK - 2.4);
       s.root.add(tower.b.root);
     }
+    if (a.yardBench !== 'none') {
+      const bx = -6.05, bz = 4.65, wood = s.material('#5d7960'), metal = s.material('#737871');
+      const bench = (z: number) => {
+        for (const x of [-0.65, 0.65]) s.box([0.16, 0.43, 0.4], [bx + x, 0.215, z], concrete);
+        for (let i = 0; i < 3; i++) s.box([1.65, 0.04, 0.12], [bx, 0.45, z - 0.13 + i * 0.13], wood);
+        if (a.yardBench === 'backed') {
+          for (const x of [-0.65, 0.65]) s.rod([bx + x, 0.4, z - 0.2], [bx + x, 0.97, z - 0.23], 0.023, metal);
+          for (let i = 0; i < 3; i++) s.box([1.65, 0.11, 0.035], [bx, 0.62 + i * 0.14, z - 0.22], wood);
+        }
+      };
+      bench(bz);
+      if (a.yardBench === 'table') {
+        bench(bz + 1.15);s.box([0.18, 0.72, 0.4], [bx, 0.36, bz + 0.58], concrete);
+        s.box([1.45, 0.05, 0.66], [bx, 0.745, bz + 0.58], wood);
+        for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) s.box([0.055, 0.001, 0.055], [bx - 0.1925 + col * 0.055, 0.7705, bz + 0.3875 + row * 0.055], s.material((row + col) % 2 ? '#353b32' : '#c2b78c'));
+      }
+    }
+    if (a.noticeBoard !== 'none') {
+      const x = -6.7, z = 0.4, wood = s.material('#8b7857'), frame = s.material('#4c6761');
+      if (a.noticeBoard === 'kiosk') {
+        s.cylinder(0.25, 0.28, 0.13, [x, 0.065, z], concrete, 3);
+        s.cylinder(0.07, 0.07, 1.8, [x, 0.9, z], frame, 8);
+        const column = s.cylinder(0.4, 0.4, 0.95, [x, 1.18, z], wood, 3);column.rotation.y=Math.PI/6;
+        for(let i=0;i<3;i++){const t=i*Math.PI*2/3,px=x+Math.sin(t)*0.205,pz=z+Math.cos(t)*0.205;const paper=s.box([0.31,0.6,0.008],[px,1.2,pz],s.material('#ddd6b8'));paper.rotation.y=t;}
+      } else {
+        for(const dx of[-0.48,0.48])s.box([0.07,1.95,0.07],[x+dx,0.975,z],frame);
+        s.box([1.08,0.8,0.07],[x,1.45,z],wood);
+        for(let i=0;i<4;i++)s.box([0.2,0.3+(i%2)*0.12,0.006],[x-0.36+i*0.24,1.44,z+0.039],s.material(i%2?'#d8d5bd':'#e5decb'));
+        if(a.noticeBoard==='glass')s.box([1.0,0.73,0.01],[x,1.45,z+0.05],new THREE.MeshStandardMaterial({color:'#b2c2bd',transparent:true,opacity:0.18,depthWrite:false}));
+        else for(const side of[-1,1]){const roof=s.box([0.66,0.035,0.38],[x+side*0.3,1.99,z],wood);roof.rotation.z=-side*0.18;}
+      }
+    }
+    const entryPaint=s.material('#d5c88e'),entryMetal=s.material('#5a665c',{metalness:0.4});
+    if(a.yardEntrance==='bollards')for(const x of[-8.9,8.9]){s.cylinder(0.12,0.15,0.8,[x,0.4,6.95],entryMetal,8);s.cylinder(0.123,0.123,0.17,[x,0.59,6.95],entryPaint,8);}
+    else if(a.yardEntrance==='posts')for(const x of[-1,3.9])for(const z of[6.43,7.27])s.cylinder(0.07,0.07,0.55,[x,0.275,z],entryMetal,8);
+    else if(a.yardEntrance==='boom'){
+      const x=-8.6,z=6.95;s.box([0.3,0.9,0.35],[x,0.45,z],entryMetal);s.rod([x,0.84,z],[x+1.0,3.3,z],0.055,entryPaint);s.box([0.32,0.35,0.2],[x-0.13,0.57,z],entryMetal);
+    }
+    if(a.roadDetail==='crossing')for(let i=0;i<6;i++)s.box([0.2,0.008,0.72],[0.72+i*0.32,0.004,7.02],entryPaint);
+    else if(a.roadDetail==='parking')for(let i=0;i<8;i++)s.box([0.065,0.008,0.7],[-7.7+i*2.15,0.004,7.03],entryPaint);
+    else if(a.roadDetail==='hump')for(let i=0;i<8;i++){const hump=s.cylinder(0.09,0.09,0.105,[-7.8,0,6.64+i*0.105],i%2?entryPaint:entryMetal,10);hump.rotation.x=Math.PI/2;}
 
     // ---- Trees: every branch is one instance of a tapered cylinder.
     const segments: { from: THREE.Vector3; to: THREE.Vector3; r: number; color: string }[] = [];

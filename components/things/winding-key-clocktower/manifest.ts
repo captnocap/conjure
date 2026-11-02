@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Winding-key clocktower", "summary": "An upright music-box winding key becomes a miniature clocktower, with a pierced bow, working-looking clock face and exposed toothed base. A village that lives on borrowed winding, a public clock above a tiny square and a tune slowly running down.", "scales": ["tabletop", "room"]});

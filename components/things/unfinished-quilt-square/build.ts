@@ -160,6 +160,36 @@ export default defineThing({
       stack: 'Lying on top of a pile of blocks already finished.',
       hoop: 'Stretched on muslin in a round wooden embroidery hoop.',
     }),
+    stitching: choice('How are the pieced seams stitched?', {
+      hidden: 'Tiny concealed stitches leave the seams quiet.',
+      running: 'Visible cream running stitches follow each patch edge.',
+      cross: 'Contrasting cross stitches decorate the joins.',
+      basting: 'Long temporary basting stitches still hold the pieces.',
+    }),
+    batting: choice('What lies under the pieced top?', {
+      none: 'Only the thin backing fabric.',
+      thin: 'A thin layer of cotton batting shows at the edges.',
+      thick: 'A thick white batting pad gives the block a padded edge.',
+      layered: 'Two separate batting layers remain visible before trimming.',
+    }),
+    binding: choice('What border has been started around the block?', {
+      none: 'No border yet.',
+      one: 'One long strip is sewn down one side.',
+      corners: 'Four contrasting corner patches wait at the edges.',
+      all: 'A narrow binding surrounds all four edges.',
+    }),
+    record: choice('What record of the project lies nearby?', {
+      none: 'No paper record.',
+      diagram: 'A squared diagram of the block with some cells coloured in.',
+      tally: 'A handwritten tally card counting finished blocks.',
+      dedication: 'A cloth dedication label is ready to be sewn onto the back.',
+    }),
+    tool: choice('What quilting tool is beside the work?', {
+      none: 'No additional tool.',
+      cutter: 'A circular rotary cutter with a shaped handle.',
+      ruler: 'A clear acrylic quilting ruler with a black grid.',
+      roller: 'A small wooden seam roller.',
+    }),
     left: choice('How was the work left?', {
       parked: 'Needle parked neatly in a corner with the thread wound round it, to be picked up tomorrow.',
       glasses: 'A pair of reading glasses folded on top of it, and nobody came back.',
@@ -246,6 +276,16 @@ export default defineThing({
       top = count * 0.0042 + 0.001;
     }
 
+    const battingMeshes: THREE.Mesh[] = [];
+    if (a.batting !== 'none') {
+      const layers = a.batting === 'layered' ? 2 : 1;
+      const h = a.batting === 'thin' ? 0.002 : 0.006;
+      for (let k = 0; k < layers; k++) {
+        battingMeshes.push(s.box([S + 0.018 + k * 0.008, h, S + 0.018 + k * 0.008], [0, top + h / 2 + k * (h + 0.0005), 0], s.material(k === 1 ? '#e8dfc9' : '#f3f0e5', { roughness: 1 })));
+      }
+      top += layers * (h + 0.0005);
+    }
+
     // Sewn patches, and the ones still waiting.
     const patches = layout(a.pattern, random);
     const sewn = Math.max(2, Math.min(patches.length, Math.round(patches.length * mix(0.18, 1, a.complete))));
@@ -255,6 +295,7 @@ export default defineThing({
     block.position.y = top;
     block.rotation.y = a.mount === 'hoop' ? random() * 0.5 - 0.25 : (random() - 0.5) * 0.16;
     s.root.add(block);
+    for (const pad of battingMeshes) { pad.position.y -= top; block.add(pad); }
     patches.slice(0, sewn).forEach((patch, index) => {
       const c = centroid(patch.points);
       const geometry = new THREE.ShapeGeometry(toShape(patch.points, c, 0.965));
@@ -272,6 +313,36 @@ export default defineThing({
         block.add(shade);
       }
     });
+    if (a.stitching !== 'hidden') {
+      const matrices: THREE.Matrix4[] = [], turn = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0);
+      for (const patch of patches.slice(0, sewn)) {
+        const c = centroid(patch.points);
+        for (let j = 0; j < patch.points.length; j++) {
+          const p = patch.points[j], q = patch.points[(j + 1) % patch.points.length];
+          const length = Math.hypot(q[0] - p[0], q[1] - p[1]) * S;
+          const n = Math.max(1, Math.floor(length / (a.stitching === 'basting' ? 0.02 : 0.008)));
+          const angle = -Math.atan2(q[1] - p[1], q[0] - p[0]);
+          for (let k = 0; k < n; k++) {
+            const t = (k + 0.5) / n;
+            const x = (p[0] + (q[0] - p[0]) * t) * 0.965 + c[0] * 0.035;
+            const z = (p[1] + (q[1] - p[1]) * t) * 0.965 + c[1] * 0.035;
+            for (const cross of a.stitching === 'cross' ? [-0.7, 0.7] : [0]) matrices.push(new THREE.Matrix4().compose(new THREE.Vector3((x - 0.5) * S, 0.0018, (z - 0.5) * S), turn.clone().setFromAxisAngle(up, angle + cross), new THREE.Vector3(a.stitching === 'basting' ? 0.012 : 0.005, 0.0005, 0.0007)));
+          }
+        }
+      }
+      const stitches = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), s.material(a.stitching === 'cross' ? '#8b3345' : '#f3e9ce'), matrices.length);
+      matrices.forEach((m, i) => stitches.setMatrixAt(i, m)); stitches.castShadow = true; block.add(stitches);
+    }
+    if (a.binding !== 'none') {
+      const border = materials[materials.length - 1];
+      const addBand = (w: number, d: number, x: number, z: number) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.0015, d), border); m.position.set(x, 0.0015, z); m.castShadow = true; block.add(m); };
+      if (a.binding === 'corners') for (const x of [-1, 1]) for (const z of [-1, 1]) addBand(0.026, 0.026, x * S / 2, z * S / 2);
+      else {
+        addBand(0.016, S + 0.016, -S / 2, 0);
+        if (a.binding === 'all') { addBand(0.016, S + 0.016, S / 2, 0); for (const side of [-1, 1]) addBand(S, 0.016, 0, side * S / 2); }
+      }
+    }
+
     const waiting = patches.slice(sewn, sewn + 9 + Math.floor(mood.density * 4));
     waiting.forEach((patch, index) => {
       const c = centroid(patch.points);
@@ -352,6 +423,38 @@ export default defineThing({
       glasses.rotation.y = (random() - 0.5) * 1.2;
       glasses.scale.setScalar(a.mount === 'hoop' ? 0.9 : 1.05);
       s.root.add(glasses);
+    }
+
+    if (a.record !== 'none') {
+      const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 192;
+      const c = canvas.getContext('2d')!; c.fillStyle = '#efe3c8'; c.fillRect(0, 0, 256, 192); c.fillStyle = '#514536'; c.font = 'bold 24px serif';
+      c.fillText(a.record === 'diagram' ? 'BLOCK PLAN' : a.record === 'tally' ? 'FINISHED BLOCKS' : 'MADE WITH CARE', 10, 30);
+      if (a.record === 'diagram') for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) { c.fillStyle = (x + y) % 3 === 0 ? '#936972' : '#e5d8b7'; c.fillRect(40 + x * 34, 48 + y * 31, 30, 27); }
+      else if (a.record === 'tally') { c.strokeStyle = '#514536'; c.lineWidth = 3; for (let k = 0; k < 18; k++) { const x = 20 + k % 6 * 34, y = 60 + Math.floor(k / 6) * 42; c.beginPath(); c.moveTo(x, y); c.lineTo(x, y + 22); if (k % 5 === 4) { c.moveTo(x - 30, y + 23); c.lineTo(x + 5, y - 2); } c.stroke(); } }
+      else { c.font = 'italic 20px serif'; c.fillText('For the next generation', 15, 95, 226); c.fillText('One piece at a time', 24, 142, 215); }
+      const map = new THREE.CanvasTexture(canvas); map.colorSpace = THREE.SRGBColorSpace;
+      const paper = s.material('#e6d8b9'), face = s.material('#ffffff', { map });
+      const card = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.001, 0.075), [paper, paper, face, paper, paper, paper]); card.position.set(-0.26, 0.0005, -0.1); card.rotation.y = -0.2; card.castShadow = true; s.root.add(card);
+    }
+    if (a.tool !== 'none') {
+      const x = -0.25, z = 0.045;
+      const handle = s.material('#9b7650');
+      if (a.tool === 'cutter') {
+        s.cylinder(0.022, 0.022, 0.002, [x, 0.003, z - 0.025], steel, 32);
+        s.box([0.02, 0.008, 0.075], [x, 0.006, z + 0.024], s.material('#cbb048'));
+        s.cylinder(0.004, 0.004, 0.004, [x, 0.006, z - 0.025], handle, 12);
+      } else if (a.tool === 'ruler') {
+        const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 512;
+        const c = canvas.getContext('2d')!; c.fillStyle = 'rgba(220,234,221,0.35)'; c.fillRect(0, 0, 128, 512); c.strokeStyle = '#39494b'; c.lineWidth = 2;
+        for (let i = 0; i < 17; i++) { c.beginPath(); c.moveTo(0, i * 32); c.lineTo(128, i * 32); c.stroke(); }
+        for (let i = 0; i < 5; i++) { c.beginPath(); c.moveTo(i * 32, 0); c.lineTo(i * 32, 512); c.stroke(); }
+        const map = new THREE.CanvasTexture(canvas); map.colorSpace = THREE.SRGBColorSpace;
+        s.box([0.045, 0.002, 0.18], [x, 0.001, z], s.material('#ffffff', { map, transparent: true, opacity: 0.7, depthWrite: false }));
+      } else {
+        s.rod([x, 0.005, z + 0.04], [x, 0.005, z - 0.005], 0.005, handle);
+        s.rod([x, 0.005, z - 0.005], [x, 0.012, z - 0.02], 0.002, steel);
+        s.cylinder(0.012, 0.012, 0.03, [x, 0.012, z - 0.02], handle, 20).rotation.z = Math.PI / 2;
+      }
     }
 
     return s.finish();

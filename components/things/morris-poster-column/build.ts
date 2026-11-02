@@ -169,6 +169,12 @@ export default defineThing({
       dog: 'A small dog sitting and looking up at the posters.',
       pigeons: 'Two pigeons pecking about.',
     }),
+    baseDetail: choice('What cast detail appears on the plinth?', { plain: 'A plain stepped plinth.', flutes: 'A ring of narrow flutes.', panels: 'Eight recessed-looking framed panels.', studs: 'Two rows of large cast studs.' }),
+    drumBands: choice('What holds the edges of the poster drum?', { plain: 'Only the original bottom ring.', brass: 'Narrow brass bands at both ends.', doubled: 'Double black rings at both ends.', beaded: 'A beaded ring under the posters.' }),
+    capBrackets: choice('What supports the cap overhang?', { none: 'No exposed brackets.', curved: 'Six small curved brackets.', angled: 'Six triangular iron stays.', scroll: 'Six ornamental scroll brackets.' }),
+    bandPattern: choice('How is the band beneath the cap divided?', { clear: 'A continuous luminous band.', panes: 'Twelve narrow divided panes.', grille: 'A fine grille across the band.', arches: 'Six arched iron divisions.' }),
+    municipalBadge: choice('What mark is on the base?', { none: 'No badge.', oval: 'A plain oval municipal badge.', numbered: 'An enamel maintenance number.', rosette: 'A cast floral rosette.' }),
+    paving: choice('What pavement surrounds the column?', { bare: 'Bare pavement.', slabs: 'Large square flagstones.', radial: 'A radial ring of wedge-shaped stones.', mosaic: 'A circular cream and grey mosaic border.' }),
   },
 
   build(a, context) {
@@ -331,7 +337,7 @@ export default defineThing({
       for (let i = 0; i < 7 + Math.round(mood.density * 6); i++) {
         const t = random() * Math.PI * 2, d = 0.9 + random() * 0.6;
         const scrap = s.box([0.12 + random() * 0.25, 0.012, 0.08 + random() * 0.2], [Math.sin(t) * d, 0.01 + random() * 0.03, Math.cos(t) * d], s.material(random() < 0.5 ? '#e9e2cf' : faces[Math.floor(random() * faces.length)]));
-        scrap.rotation.set((random() - 0.5) * 0.5, random() * 3, (random() - 0.5) * 0.5);
+        scrap.rotation.set((random() - 0.5) * 0.5, random() * 3, (random() - 0.5) * 0.5);scrap.updateMatrixWorld(true);scrap.position.y-=new THREE.Box3().setFromObject(scrap,true).min.y;
       }
     } else if (a.foot === 'dog') {
       const fur = s.material(a.main === 'lost-dog' || a.beside === 'lost-dog' ? '#8a5a2c' : '#d9d2c4', { roughness: 0.95 });
@@ -353,8 +359,36 @@ export default defineThing({
         bird.add(s.ball([0.04, 0.045, 0.04], [0, 0.17 - i * 0.06, 0.1], s.material('#4f6a66'), 10));
         bird.add(s.box([0.012, 0.012, 0.035], [0, 0.165 - i * 0.07, 0.15], s.material('#d9a441')));
         bird.add(s.box([0.07, 0.012, 0.1], [0, 0.1, -0.14], s.material('#5a626c')));
+        for(const side of[-1,1]){bird.add(s.rod([side*.025,.06,.01],[side*.025,.006,.025],.005,s.material('#b87258')));bird.add(s.rod([side*.025-.014,.005,.04],[side*.025+.014,.005,.04],.004,s.material('#b87258')));}
         bird.position.set(px, 0, pz); bird.rotation.y = turn;
         s.root.add(bird);
+      }
+    }
+
+    if(a.baseDetail==='flutes')for(let i=0;i<24;i++){const t=i*Math.PI/12;s.rod([Math.sin(t)*.705,.18,Math.cos(t)*.705],[Math.sin(t)*.705,.35,Math.cos(t)*.705],.012,gold);}
+    else if(a.baseDetail==='panels')for(let i=0;i<8;i++){const t=i*Math.PI/4;const panel=s.box([.2,.16,.018],[Math.sin(t)*.707,.27,Math.cos(t)*.707],gold);panel.rotation.y=t;}
+    else if(a.baseDetail==='studs')for(let i=0;i<20;i++)for(const y of[.21,.33]){const t=i*Math.PI/10;s.ball([.018,.018,.018],[Math.sin(t)*.705,y,Math.cos(t)*.705],gold,6);}
+    if(a.drumBands==='brass')for(const y of[Y0+.035,Y1-.025])s.ring(R+.012,.012,[0,y,0],gold).rotation.x=Math.PI/2;
+    else if(a.drumBands==='doubled')for(const y of[Y0+.04,Y0+.08,Y1-.025,Y1-.065])s.ring(R+.015,.014,[0,y,0],iron).rotation.x=Math.PI/2;
+    else if(a.drumBands==='beaded')for(let i=0;i<36;i++){const t=i*Math.PI/18;s.ball([.021,.021,.021],[Math.sin(t)*.645,Y0+.025,Math.cos(t)*.645],gold,6);}
+    if(a.capBrackets!=='none')for(let i=0;i<6;i++){
+      const t=i*Math.PI/3,at=(r:number,y:number):[number,number,number]=>[Math.sin(t)*r,y,Math.cos(t)*r];
+      if(a.capBrackets==='angled')s.rod(at(R+.015,Y1+.05),at(R+.14,top+.04),.018,iron);
+      else if(a.capBrackets==='curved')s.tube([at(R+.015,Y1+.02),at(R+.13,Y1+.1),at(R+.14,top+.04)],.018,iron);
+      else{s.tube([at(R+.015,Y1+.02),at(R+.17,Y1+.08),at(R+.16,Y1+.16),at(R+.08,Y1+.17),at(R+.1,Y1+.09)],.012,iron);s.rod(at(R+.16,Y1+.16),at(R+.14,top+.04),.012,iron);}
+    }
+    if(a.bandPattern!=='clear'){
+      const n=a.bandPattern==='grille'?36:a.bandPattern==='panes'?12:6;
+      for(let i=0;i<n;i++){const t=i*Math.PI*2/n;if(a.bandPattern==='arches'){const arc=s.ring(.1,.01,[Math.sin(t)*.659,Y1+.07,Math.cos(t)*.659],iron,Math.PI);arc.rotation.y=t;}else s.rod([Math.sin(t)*.66,Y1,Math.cos(t)*.66],[Math.sin(t)*.66,Y1+.2,Math.cos(t)*.66],a.bandPattern==='grille'?.007:.012,iron);}
+    }
+    if(a.municipalBadge==='oval')s.ball([.11,.065,.012],[0,.28,.72],gold,16);
+    else if(a.municipalBadge==='numbered')s.label('PARIS  27',.22,.1,[0,.28,.722],'#e6e4da','#264f42');
+    else if(a.municipalBadge==='rosette')for(let i=0;i<7;i++){const t=i*Math.PI*2/7;s.ball([.025,.025,.014],[Math.sin(t)*.06,.28+Math.cos(t)*.06,.72],gold,8);}
+    if(a.paving!=='bare'){
+      const stone=s.material('#b9b5aa');s.cylinder(1.9,1.9,.034,[0,-.023,0],stone,48);
+      if(a.paving==='slabs')for(let x=0;x<6;x++)for(let z=0;z<6;z++){const px=-1.5+x*.6,pz=-1.5+z*.6;if(Math.hypot(px,pz)<1.6)s.box([.594,.006,.594],[px,-.003,pz],s.material((x+z)%2?'#c4c0b3':'#b3b2a9'));}
+      else for(let i=0;i<(a.paving==='radial'?20:48);i++){
+        const n=a.paving==='radial'?20:48,theta=i*Math.PI*2/n,g=new THREE.RingGeometry(a.paving==='radial'?.82:1.25,1.88,1,1,theta+.003,Math.PI*2/n-.006);g.rotateX(-Math.PI/2);s.mesh(g,s.material(a.paving==='mosaic'?(i%2?'#dcd1b6':'#626b65'):(i%3?'#c6c0b2':'#a8aba2')),[0,0,0]);
       }
     }
 

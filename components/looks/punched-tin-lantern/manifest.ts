@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Punched tin lantern panel',summary:'A picture formed from small pierced holes and embossed contours in a brushed metal sheet, with bevelled lips, glowing liners and riveted borders. Handmade lanterns, tinsmith workshops and candlelight caught in a thousand tiny openings.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'craft'});

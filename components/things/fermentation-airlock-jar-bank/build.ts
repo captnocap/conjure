@@ -1,0 +1,25 @@
+import * as THREE from 'three';
+import { Sculpture, choice, score, noul, defineThing, figure } from '@conjure/kit';
+const questions = {
+  form: choice("What jars make up the batch?", {"three": "Three matching broad jars.", "two": "Two large family jars.", "five": "Five small trial jars.", "mixed": "Three jars of different heights.", "bail": "Two clamp-top jars with fitted airlocks."}),
+  state: choice("What stage are the jars at?", {"active": "Airlocks hold a visible bubble.", "quiet": "A quiet batch rests beneath the locks.", "packing": "One jar is open with a spare lid beside it.", "tasting": "A small tasting cup sits in front.", "empty": "Clean empty jars wait for the next batch."}),
+  detail: choice("What vegetables fill the jars?", {"cabbage": "Pale shredded cabbage.", "beet": "Deep red beet slices.", "carrot": "Orange carrot batons.", "cucumber": "Green cucumber spears.", "mixed": "A different vegetable in each jar."}),
+  support: choice("What supports the jars?", {"board": "A long wooden counter board.", "tray": "A shallow metal spill tray.", "cloth": "A folded cotton towel.", "rack": "A low slatted draining rack.", "bare": "The jars sit directly on the counter."}),
+  extra: choice("What lies beside the batch?", {"salt": "A small salt dish.", "spoon": "A long tasting spoon.", "funnel": "A broad jar funnel.", "book": "A closed preserving notebook.", "none": "Only the jars."}),
+  mark: choice("How are the batches labelled?", {"day": "Monday, Tuesday and Wednesday tags.", "number": "Large numbered batch labels.", "veg": "Vegetable-name labels.", "bands": "Coloured tape bands around the necks.", "plain": "Unlabelled glass."}),
+  extent: score("How broad are the jars?", ["Small trial jars", "Household preserving jars", "Broad family jars"]),
+  load: score("How high is the vegetable fill?", ["A small test portion", "Half-filled jars", "Full preserving jars"]),
+  closed: noul("Is a folded clean cloth on a small board behind the jars?"),
+};
+export default defineThing({
+  questions,
+  build(a, context) {
+    const s = new Sculpture(context), { random, mood } = context;
+    const f = Object.keys(questions.form.options).indexOf(a.form), t = Object.keys(questions.state.options).indexOf(a.state), d = Object.keys(questions.detail.options).indexOf(a.detail), u = Object.keys(questions.support.options).indexOf(a.support), e = Object.keys(questions.extra.options).indexOf(a.extra), m = Object.keys(questions.mark.options).indexOf(a.mark);
+    const wood = s.material('#a47c4e'), pale = s.material('#e0d2ac'), metal = s.material('#8f9995', { metalness: 0.7, roughness: 0.35 }), dark = s.material('#3d443c'), green = s.material('#667e50');
+    const colors = ['#a64d39', '#497e70', '#d4af55', '#59778c', '#b47b8c'];
+
+    const n=f===1||f===4?2:f===2?5:3,r=.06+a.extent*.025,span=n*r*2.7,base=u===4?0:u===3?.045:.015,glass=s.material('#bed0b9',{transparent:true,opacity:.24,depthWrite:false});if(u!==4){s.box([span+.06,base,.24],[0,base/2,0],u===1?metal:u===2?pale:wood);if(u===3)for(let i=0;i<6;i++)s.box([span+.06,.008,.018],[0,base+.004,-.1+i*.04],wood);}for(let i=0;i<n;i++){const x=(i-(n-1)/2)*r*2.7,h=.2+(f===3?i*.045:0),kind=d===4?i%4:d;s.lathe([[r*.8,0],[r,.025],[r,h],[r*.85,h+.02],[r*.85,h+.05]],glass,[x,base,0]);if(t!==4){const fy=.035+a.load*(h-.045),color=s.material(['#b8bd83','#a36364','#c29b5e','#7e9c6c'][kind]);s.cylinder(r*.85,r*.85,fy,[x,base+fy/2,0],color,22);for(let j=0;j<7;j++){const xx=x+(random()-.5)*r,zz=(random()-.5)*r;s.rod([xx,base+.02,zz],[xx,base+fy,zz],kind===2?.009:.014,color);}}const opened=t===2&&i===0,lx=opened?span*.7:x,ly=opened?.012:base+h+.057;s.cylinder(r*.9,r*.9,.014,[lx,ly,0],metal,22);if(!opened){const lockMat=s.material('#d2dbc7',{transparent:true,opacity:.5,depthWrite:false});s.tube([[x,ly,0],[x,ly+.04,0],[x+.025,ly+.055,0],[x-.025,ly+.09,0],[x,ly+.12,0]],.008,lockMat);if(t===0)s.ball([.009,.009,.009],[x,ly+.075,0],pale,12);s.cylinder(.018,.018,.008,[x,ly+.125,0],pale,14);}if(f===4)for(const z of [-r,r])s.tube([[x-r*.9,base+h*.75,z],[x-r*.9,base+h+.065,z],[x+r*.9,base+h+.065,z],[x+r*.9,base+h*.75,z]],.003,metal);if(m<3)s.label(m===0?['MON','TUE','WED','THU','FRI'][i]:m===1?'BATCH '+(i+1):['CABBAGE','BEET','CARROT','CUCUMBER'][kind],r*1.65,.045,[x,base+h*.5,r+.002]);if(m===3)s.ring(r*.87,.007,[x,base+h+.025,0],s.material(colors[i%5])).rotation.x=Math.PI/2;}
+    if(t===3)s.lathe([[.025,0],[.04,.05],[.035,.05],[.02,.01]],pale,[0,0,.22]);if(a.closed){s.box([span+.04,base+.034,.19],[0,(base+.034)/2,-.19],wood);s.drape({size:[span*.85,.19],at:[0,.08+base,-.19],over:[{box:[span+.04,.018,.19],at:[0,.025+base,-.19]}],floor:base+.015,detail:12},pale);}const x=-span*.7;if(e===0)s.lathe([[.035,0],[.055,.035],[.05,.035],[.03,.008]],pale,[x,0,0]);if(e===1){s.rod([x,.009,-.08],[x,.009,.12],.005,wood);s.ball([.025,.006,.04],[x,.009,-.09],wood,12);}if(e===2){s.mesh(new THREE.ConeGeometry(.065,.08,24,1,true),metal,[x,.07,0]).rotation.z=Math.PI;s.rod([x,.01,0],[x,.04,0],.013,metal);}if(e===3)s.box([.14,.025,.19],[x,.013,0],green);return s.finish();
+  },
+});

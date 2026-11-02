@@ -1,9 +1,29 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type PaletteRole, type RGB, choice, clamp01, defineLook, mix, rekeyOne, score, seeded } from '@conjure/kit';
 
 // The frame is treated as a video signal and then as light from a picture tube:
 //   camera  -> what the lens and pickup saw (colour, plain lighting, normals, depth, identity)
 //   signal  -> luma and chroma on scan lines, band-limited, noisy, torn, captioned
 //   tube    -> beam, phosphor mask, convergence, bloom, curved glass and the room's reflection
+
+/**
+ * Single-colour phosphors as linear-light gun weights (the brightest channel at 1). Under the
+ * picture's palette the green tube glows in its ink, the amber tube in its second colour and the
+ * black-and-white tube takes a faint tint of the ink; the colour tubes come from the scene.
+ */
+const PHOSPHORS: Record<string, { tint: readonly [number, number, number]; role: PaletteRole }> = {
+  white: { tint: [0.8, 0.9, 1], role: 'ink' },
+  green: { tint: [0.16, 1, 0.3], role: 'ink' },
+  amber: { tint: [1, 0.62, 0.1], role: 'second' },
+};
+function phosphorTint(name: string, palette: Parameters<typeof rekeyOne>[1]): readonly [number, number, number] {
+  const { tint, role } = PHOSPHORS[name];
+  if (!palette) return tint;
+  const encode = (v: number) => 255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
+  const decode = (c: number) => { const v = c / 255; return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; };
+  const keyed = rekeyOne(tint.map(encode) as unknown as RGB, palette, role).map(decode);
+  const peak = Math.max(...keyed, 1e-3);
+  return [keyed[0] / peak, keyed[1] / peak, keyed[2] / peak];
+}
 
 // Classic 5x7 character generator, one byte per column, bit 0 at the top.
 const FONT: Record<string, readonly number[]> = {
@@ -71,13 +91,13 @@ export default defineLook({
       camcorder:
         'A handheld camcorder tape: blown-out highlights that streak vertically, auto-exposure, soft focus behind the subject.',
     }),
-    phosphor: choice('What colour does the tube glow?', {
+    phosphor: choice('How does the tube glow? A single-colour tube glows in the picture\u2019s palette.', {
       colour: 'Full colour from red, green and blue phosphors, as a living-room set.',
       faded: 'An old colour tube with a weak red gun: greenish, washed and tired.',
       hot: 'Colour turned up too far: saturated, reds smearing, almost sickly.',
-      white: 'A black-and-white tube: cool blue-white glow, no colour at all.',
-      green: 'Green phosphor: a monitor in a lab, a radar room, a night shift.',
-      amber: 'Amber phosphor: warm orange-gold on black, an old office terminal.',
+      white: 'A black-and-white tube: a pale, faintly tinted glow, no colour at all.',
+      green: 'A single-colour phosphor, sharp and electric on black: a lab monitor, a radar room, a night shift.',
+      amber: 'A single-colour phosphor, mellow and soft on black: an old office terminal.',
     }),
     mask: choice('If it is a colour tube, how are the phosphors laid out up close?', {
       grille: 'Fine unbroken vertical stripes of red, green and blue: a crisp studio monitor.',
@@ -642,7 +662,7 @@ export default defineLook({
 
     // ------------------------------------------------------------------- tube
     const mono = a.phosphor === 'white' || a.phosphor === 'green' || a.phosphor === 'amber';
-    const tint = a.phosphor === 'green' ? [0.16, 1, 0.3] : a.phosphor === 'amber' ? [1, 0.62, 0.1] : [0.8, 0.9, 1];
+    const tint = phosphorTint(mono ? a.phosphor : 'white', context.palette);
     // The white point drifts with the mood: cold sets are blue, warm sets are yellowed.
     const whiteR = mix(0.93, 1.05, mood.warmth), whiteB = mix(1.1, 0.88, mood.warmth);
     const gunR = a.phosphor === 'faded' ? 0.7 : a.phosphor === 'hot' ? 1.12 : 1;

@@ -43,6 +43,48 @@ export default defineWorld({
       mural: 'A hand-painted flag mural.',
     }),
     rain: noul('Has a tropical shower just passed, leaving the road wet and puddled?'),
+    arcadeShade: choice('What shades the ground-floor arches?', {
+      open: 'The stone arches stand open to the street.',
+      canvas: 'Short striped canvas awnings project above the arches.',
+      slats: 'Timber slatted shades sit below the balconies.',
+      rolled: 'Canvas blinds are rolled beneath narrow iron brackets.',
+    }),
+    roofEdge: choice('What finishes the surviving parapet sections?', {
+      plain: 'Plain flat coping stones.',
+      urns: 'Small stone urns stand along the coping.',
+      spheres: 'Round finials sit on squat stone bases.',
+      rail: 'Short sections of iron railing stand above the coping.',
+    }),
+    rainpipes: choice('How is rainwater carried down the facade?', {
+      none: 'The facade has no added downpipes.',
+      straight: 'Straight pipes end above the pavement.',
+      shoes: 'Downpipes end in outward-pointing drain shoes.',
+      barrels: 'Two downpipes feed short water barrels.',
+    }),
+    streetSeating: choice('What seating is fixed beside the outermost pier?', {
+      none: 'There is no fixed street seat.',
+      bench: 'A narrow slatted bench rests on metal legs.',
+      stone: 'A solid stone bench sits at the pavement edge.',
+      stools: 'Two squat stools stand beside a little stone table.',
+    }),
+    kerbProtection: choice('What protects the short outer kerb?', {
+      open: 'The kerb is unobstructed.',
+      bollards: 'Three short cast-iron bollards follow the kerb.',
+      chains: 'Low chains join three bollards.',
+      stones: 'Three broad stone wheel guards mark the edge.',
+    }),
+    wallUtility: choice('What utility fitting is attached to the corner pier?', {
+      meter: 'A small electric meter with exposed conduit.',
+      boxes: 'Two stacked metal service boxes.',
+      tap: 'A brass tap over a shallow wall basin.',
+      bells: 'A small row of doorbell buttons on a wooden board.',
+    }),
+    roadMarking: choice('What marks the open foreground road?', {
+      plain: 'Only the old crossing and road repairs.',
+      centre: 'A short broken centre line crosses the foreground.',
+      stop: 'A broad faded stopping line and two short lane guides.',
+      taxi: 'A narrow taxi bay is outlined along the foreground edge.',
+    }),
   },
 
   build(a, context) {
@@ -124,6 +166,15 @@ export default defineWorld({
     g.fillStyle = grime; g.fillRect(0, gz(0.6), gx(1.1), 0.7 * M);
     const grime2 = g.createLinearGradient(gx(1.1), 0, gx(1.8), 0); grime2.addColorStop(0, 'rgba(40,36,30,0.5)'); grime2.addColorStop(1, 'rgba(40,36,30,0)');
     g.fillStyle = grime2; g.fillRect(gx(1.1), 0, 0.7 * M, gz(0.6));
+    g.fillStyle=`rgba(240,230,195,${mix(.65,.25,mood.wear)})`;
+    if(a.roadMarking==='centre')for(let i=0;i<6;i++)g.fillRect(gx(-6.5+i*2.1),gz(5.85),1.05*M,.1*M);
+    else if(a.roadMarking==='stop'){
+      g.fillRect(gx(-1.9),gz(4.8),.23*M,1.4*M);for(const z of[4.8,6.1])g.fillRect(gx(-1.9),gz(z),2.0*M,.1*M);
+    }else if(a.roadMarking==='taxi'){
+      for(const z of[4.95,6.1])g.fillRect(gx(-7),gz(z),4.6*M,.09*M);
+      for(const x of[-7,-2.4])g.fillRect(gx(x),gz(4.95),.09*M,1.24*M);
+      g.font='bold 30px sans-serif';g.fillText('TAXI',gx(-5.35),gz(5.72));
+    }
     if (a.life === 'game') {
       g.strokeStyle = 'rgba(250,246,232,0.85)'; g.lineWidth = 4; g.lineJoin = 'round';
       const bx = gx(4.2), bz = gz(-3.2), d = 2.3 * M;
@@ -311,6 +362,16 @@ export default defineWorld({
         if ((ruin || decay > 0.75) && random() < (ruin ? 0.45 : 0.2)) { if (random() < 0.6) fbox(f, [sw * 0.6, 0.2 + random() * 0.2, 0.22], (i + 0.4) * sw, TOP + 0.22, -0.13, trim); continue; }
         fbox(f, [sw - 0.03, 0.55, 0.24], (i + 0.5) * sw, TOP + 0.4, -0.13, s.material(new THREE.Color(wallHexes[index * 2 + Math.min(f.bays - 1, Math.floor((i + 0.5) * sw / (f.length / f.bays)))]).multiplyScalar(0.96), { roughness: 0.95 }));
         fbox(f, [sw + 0.02, 0.08, 0.3], (i + 0.5) * sw, TOP + 0.7, -0.13, trim);
+        const u=(i+.5)*sw,capY=TOP+.74;
+        if(a.roofEdge==='urns'){
+          s.cylinder(.11,.14,.08,f.at(u,capY+.04,-.13),trim,10);
+          s.lathe([[0,0],[.07,0],[.06,.08],[.13,.18],[.09,.25],[.11,.27],[0,.27]],trim,f.at(u,capY+.08,-.13));
+        }else if(a.roofEdge==='spheres'){
+          fbox(f,[.25,.1,.25],u,capY+.05,-.13,trim);s.ball([.14,.14,.14],f.at(u,capY+.24,-.13),trim,12);
+        }else if(a.roofEdge==='rail'){
+          for(const du of[-sw*.36,-sw*.12,sw*.12,sw*.36])s.rod(f.at(u+du,capY,-.13),f.at(u+du,capY+.38,-.13),.012,iron);
+          s.rod(f.at(u-sw*.4,capY+.38,-.13),f.at(u+sw*.4,capY+.38,-.13),.017,iron);
+        }
       }
       const bw = f.length / f.bays;
       for (let b = 0; b < f.bays; b++) {
@@ -328,7 +389,7 @@ export default defineWorld({
         // Balcony life: pots, sometimes a towel.
         const pots = Math.round(mood.density * 4 * random() + 0.3);
         for (let i = 0; i < pots; i++) {
-          const at = f.at(u + mix(-0.85, 0.85, random()), G + 0.26, depth - 0.2), size = mix(0.1, 0.16, random());
+          const potU=u+mix(-.85,.85,random()),size=mix(.1,.16,random()),at=f.at(potU,G+.12+size*.85,depth-.2);
           s.cylinder(size, size * 0.8, size * 1.7, at, s.material(pick(['#b3352b', '#c9a548', '#3f6fae', '#b5673f'])), 10);
           for (let k = 0; k < 3; k++) s.ball([size * 1.2, size * 1.3, size * 1.2], [at[0] + (random() - 0.5) * size * 1.6, at[1] + size * 1.5 + random() * size * 1.6, at[2] + (random() - 0.5) * size * 1.6], s.material(pick(['#3f8a3f', '#4f9a4a', '#2f7a4a']), { roughness: 0.9 }), 7);
         }
@@ -337,6 +398,27 @@ export default defineWorld({
     });
     const barMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.009, 0.009, 0.92, 5), iron, bars.length);
     bars.forEach((m, i) => barMesh.setMatrixAt(i, m)); barMesh.castShadow = true; root.add(barMesh);
+    if(a.arcadeShade!=='open')for(const f of[A,B])for(let bay=0;bay<f.bays;bay++){
+      const bw=f.length/f.bays,u=(bay+.5)*bw,w=bw-.82,y=3.55,d=.94;
+      for(const side of[-1,1]){s.rod(f.at(u+side*w/2,y,.03),f.at(u+side*w/2,y-.2,d),.02,iron);s.rod(f.at(u+side*w/2,y-.65,.03),f.at(u+side*w/2,y-.2,d),.02,iron);}
+      s.rod(f.at(u-w/2,y-.2,d),f.at(u+w/2,y-.2,d),.02,iron);
+      if(a.arcadeShade==='canvas')for(let i=0;i<8;i++){
+        const shade=fbox(f,[w/8,.012,Math.hypot(d,.2)],u-w/2+(i+.5)*w/8,y-.1,d/2,s.material(i%2?'#e6dbc1':shutterHexes[bay],{side:THREE.DoubleSide}));shade.rotateX(Math.atan2(.2,d));
+        fbox(f,[w/8,.16,.012],u-w/2+(i+.5)*w/8,y-.28,d,s.material(i%2?'#e6dbc1':shutterHexes[bay]));
+      }else if(a.arcadeShade==='slats')for(let i=0;i<12;i++)s.rod(f.at(u-w/2+(i+.5)*w/12,y,.02),f.at(u-w/2+(i+.5)*w/12,y-.2,d),.035,roofing);
+      else s.rod(f.at(u-w/2,y-.04,.13),f.at(u+w/2,y-.04,.13),.09,s.material('#bcaa86'));
+    }
+    if(a.rainpipes!=='none')for(const f of[A,B]){
+      const u=.24,out=.36,bottom=CURB+(a.rainpipes==='barrels'?.72:.12);
+      s.rod(f.at(u,bottom,out),f.at(u,TOP+.58,out),.045,iron);
+      for(const y of[1.1,3.2,5.4,7.4])s.rod(f.at(u,y,0),f.at(u,y,out+.02),.016,iron);
+      if(a.rainpipes==='shoes')s.tube([f.at(u,bottom+.12,out),f.at(u,bottom,out+.05),f.at(u,CURB+.07,out+.35)],.045,iron);
+      else if(a.rainpipes==='barrels'){
+        s.cylinder(.25,.24,.66,f.at(u,CURB+.33,out+.12),s.material('#6b897b'),16);
+        for(const y of[CURB+.1,CURB+.54])s.ring(.248,.014,f.at(u,y,out+.12),iron).rotation.x=Math.PI/2;
+        s.tube([f.at(u,bottom+.15,out),f.at(u,bottom+.08,out+.12),f.at(u,CURB+.61,out+.12)],.045,iron);
+      }
+    }
 
     // Roof life.
     if (!ruin) {
@@ -500,6 +582,42 @@ export default defineWorld({
     const litter: { at: P; size: number; color: string }[] = [];
     for (let i = 0; i < mood.density * 40 + mood.wear * 30; i++) { const along = random() < 0.5; litter.push({ at: along ? [mix(BX0, PX1, random()), 0.02, PZ1 + 0.1 + random() * 0.5] : [PX1 + 0.1 + random() * 0.5, 0.02, mix(BZ0, PZ1, random())], size: 0.03 + random() * 0.06, color: pick(['#cbbfa8', '#a8553a', '#e9e4d4', '#8a8478', '#6a8a4a']) }); }
     if (litter.length) s.scatter(new THREE.BoxGeometry(1.4, 0.5, 1), new THREE.MeshStandardMaterial({ roughness: 1 }), litter);
+    // Permanent street furniture stays outside all six cast footprints.
+    const seatX=-6.55,seatZ=-.05;
+    if(a.streetSeating==='bench'){
+      for(const x of[seatX-.5,seatX+.5])for(const z of[seatZ-.17,seatZ+.17])s.box([.055,.43,.055],[x,CURB+.215,z],iron);
+      for(let i=0;i<4;i++)s.box([1.35,.045,.09],[seatX,CURB+.4525,seatZ-.15+i*.1],timber);
+      for(const x of[seatX-.5,seatX+.5])s.rod([x,CURB+.4,seatZ-.17],[x,CURB+.9,seatZ-.25],.02,iron);
+      for(const y of[.68,.84])s.box([1.35,.1,.03],[seatX,CURB+y,seatZ-.23],timber);
+    }else if(a.streetSeating==='stone'){
+      for(const x of[seatX-.43,seatX+.43])s.box([.2,.36,.37],[x,CURB+.18,seatZ],kerbStone);
+      s.box([1.35,.1,.42],[seatX,CURB+.41,seatZ],trim);
+    }else if(a.streetSeating==='stools'){
+      for(const x of[seatX-.47,seatX+.47])s.cylinder(.18,.23,.39,[x,CURB+.195,seatZ],kerbStone,12);
+      s.cylinder(.1,.16,.55,[seatX,CURB+.275,seatZ-.48],kerbStone,12);s.cylinder(.3,.3,.05,[seatX,CURB+.575,seatZ-.48],trim,20);
+    }
+    if(a.kerbProtection!=='open'){
+      for(const x of[-7.2,-6.65,-6.1]){
+        if(a.kerbProtection==='stones')s.box([.32,.3,.3],[x,CURB+.15,.42],kerbStone);
+        else{s.cylinder(.055,.08,.68,[x,CURB+.34,.42],iron,12);s.ball([.075,.075,.075],[x,CURB+.69,.42],iron,10);}
+      }
+      if(a.kerbProtection==='chains')for(const x of[-7.2,-6.65])s.tube([[x,CURB+.57,.42],[x+.275,CURB+.43,.42],[x+.55,CURB+.57,.42]],.014,iron);
+    }
+    const utilityU=A.length-.25,utilityY=1.55;
+    if(a.wallUtility==='meter'){
+      fbox(A,[.24,.34,.12],utilityU,utilityY,.1,iron);s.cylinder(.075,.075,.025,A.at(utilityU,utilityY+.04,.18),s.material('#c4d3cf'),16).rotation.x=Math.PI/2;
+      s.rod(A.at(utilityU,utilityY+.17,.12),A.at(utilityU,2.7,.12),.012,iron);
+    }else if(a.wallUtility==='boxes')for(const y of[1.22,1.75]){
+      fbox(A,[.3,.42,.16],utilityU,y,.12,iron);fbox(A,[.22,.025,.012],utilityU,y+.1,.207,trim);
+    }else if(a.wallUtility==='tap'){
+      s.rod(A.at(utilityU,1.25,.04),A.at(utilityU,1.25,.26),.022,s.material('#b7a058',{metalness:.7}));
+      s.rod(A.at(utilityU-.06,1.31,.17),A.at(utilityU+.06,1.31,.17),.012,iron);
+      s.lathe([[0,0],[.16,0],[.2,.12],[.17,.12],[.14,.025],[0,.025]],trim,A.at(utilityU,.99,.24));
+      s.rod(A.at(utilityU,.99,.24),A.at(utilityU,CURB,.24),.023,iron);
+    }else{
+      fbox(A,[.22,.4,.04],utilityU,utilityY,.04,timber);
+      for(let i=0;i<3;i++){fbox(A,[.15,.06,.01],utilityU,utilityY-.13+i*.13,.067,trim);s.ball([.018,.018,.013],A.at(utilityU+.04,utilityY-.13+i*.13,.08),iron,8);}
+    }
 
     // Where the cast stands: hero out in the low sun at the crossing, the rest along the kerbs.
     const slots: readonly (readonly [number, number, number, number, number])[] = [

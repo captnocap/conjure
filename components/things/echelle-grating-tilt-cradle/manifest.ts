@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Echelle grating tilt cradle", "summary": "A coarse ruled grating is held by an adjustable two-axis cradle with real pivots, bearing seats and visible service clearances. Coarse real ruling sits in a two-axis cradle with connected pivots and a screw-supported rear adjustment. Sections expose the backing and bearing clearances; the mechanism is a structural teaching model, not an optical calibration.", "scales": ["macro", "tabletop"]});

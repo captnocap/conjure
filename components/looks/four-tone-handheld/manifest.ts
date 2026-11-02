@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Four tone handheld',summary:'Four-tone reflective LCD artwork with deliberate pocket-display pixels, ordered dither, a physical pixel grid and mild response ghosting. Monochrome handheld games, compact retro scenes and nostalgic electronic images.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'game'});

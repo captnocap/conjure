@@ -1,6 +1,8 @@
 import express, { Router } from 'express';
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { access, mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises';
+import { dirname, join, resolve } from 'node:path';
 import { z } from 'zod';
 
 /**
@@ -10,10 +12,17 @@ import { z } from 'zod';
  *   POST /api/gallery        save one generation (sent by the page after each print)
  *   GET  /api/gallery        newest first, ?offset=&limit=
  *   GET  /api/gallery/entry/<day>/<id>   one generation with its full decision tree
+ *   POST /api/gallery/entry/<day>/<id>/window   attach its window print (the scene widened to the browser window)
  *   GET  /gallery            a page to browse them
  *   GET  /gallery/files/…    the saved images
+ *   GET  /gallery/thumbs/<day>/<id>.jpg   a small copy of the print for the strip, made on first ask
+ * A generation whose picture is byte for byte one already kept is not saved again: the page is
+ * answered with the entry that has it.
  */
 const ROOT = resolve(process.env.CONJURE_GALLERY_PATH ?? '.data/gallery');
+/** Thumbnails sit beside the gallery, not in it, so they can be thrown away and made again. */
+const THUMBS = resolve(process.env.CONJURE_THUMBS_PATH ?? join(dirname(ROOT), 'gallery-thumbs'));
+const THUMB_SIZE = 312;
 const JPEG = 'data:image/jpeg;base64,';
 const WEBM = 'data:video/webm;base64,';
 const picture = z.string().startsWith(JPEG).max(3_000_000);
@@ -31,6 +40,29 @@ const saveSchema = z.object({
 const pad = (value: number, width = 2) => String(value).padStart(width, '0');
 let sequence = 0;
 
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const ID = /^[a-z0-9-]+$/;
+const digest = (bytes: Buffer) => createHash('sha256').update(bytes).digest('hex');
+
+/** The picture of every kept entry by its hash: the print, or the scene when there is no print. Read once, then kept up to date. */
+let pictures: Promise<Map<string, { day: string; id: string }>> | null = null;
+const knownPictures = () => pictures ??= (async () => {
+  const known = new Map<string, { day: string; id: string }>();
+  const days = (await readdir(ROOT).catch(() => [] as string[])).filter((name) => DAY.test(name)).sort();
+  for (const day of days) {
+    const names = (await readdir(join(ROOT, day))).filter((name) => name.endsWith('.json')).sort();
+    for (const name of names) {
+      const id = name.slice(0, -'.json'.length);
+      const bytes = await readFile(join(ROOT, day, `${id}.print.jpg`)).catch(() => readFile(join(ROOT, day, `${id}.scene.jpg`)).catch(() => null));
+      if (bytes && !known.has(digest(bytes))) known.set(digest(bytes), { day, id });
+    }
+  }
+  return known;
+})().catch((error) => {
+  pictures = null;
+  throw error;
+});
+
 export const gallery = Router();
 
 gallery.post('/api/gallery', express.json({ limit: '32mb' }), async (request, response) => {
@@ -45,11 +77,19 @@ gallery.post('/api/gallery', express.json({ limit: '32mb' }), async (request, re
   }
   try {
     const { idea, print, scene, series, loop, record } = parsed.data;
+    const hash = digest(Buffer.from((print ?? scene).slice(JPEG.length), 'base64'));
+    const known = await knownPictures();
+    const kept = known.get(hash);
+    if (kept) {
+      response.json({ ...kept, duplicate: true });
+      return;
+    }
     const now = new Date();
     const day = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
     const slug = idea.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48) || 'idea';
     const id = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}-${pad(now.getMilliseconds(), 3)}${pad(sequence++ % 100)}-${slug}`;
     const folder = join(ROOT, day);
+    known.set(hash, { day, id });
     await mkdir(folder, { recursive: true });
     await writeFile(join(folder, `${id}.scene.jpg`), Buffer.from(scene.slice(JPEG.length), 'base64'));
     if (print) await writeFile(join(folder, `${id}.print.jpg`), Buffer.from(print.slice(JPEG.length), 'base64'));
@@ -59,6 +99,7 @@ gallery.post('/api/gallery', express.json({ limit: '32mb' }), async (request, re
     await writeFile(join(folder, `${id}.json`), JSON.stringify({ id, day, savedAt: now.toISOString(), idea, hasPrint: print !== null, hasSeries: !!series, hasLoop: !!loop, ...record }));
     response.json({ id, day });
   } catch (error) {
+    pictures = null;
     console.error('Gallery save failed:', error instanceof Error ? error.message : error);
     response.status(500).json({ error: 'The generation could not be saved.' });
   }
@@ -95,7 +136,7 @@ gallery.get('/api/gallery', async (request, response) => {
 
 gallery.get('/api/gallery/entry/:day/:id', async (request, response) => {
   const { day, id } = request.params;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !/^[a-z0-9-]+$/.test(id)) {
+  if (!DAY.test(day) || !ID.test(id)) {
     response.status(400).json({ error: 'Not a gallery entry.' });
     return;
   }
@@ -106,7 +147,91 @@ gallery.get('/api/gallery/entry/:day/:id', async (request, response) => {
   }
 });
 
+const windowSchema = z.object({
+  image: z.string().startsWith(JPEG).max(8_000_000),
+  view: z.object({
+    width: z.number().positive().max(10_000),
+    height: z.number().positive().max(10_000),
+    frame: z.object({ x: z.number(), y: z.number(), size: z.number().positive() }),
+  }),
+});
+
+/** The window print is made after the entry is saved, so it is attached to the entry afterwards. */
+gallery.post('/api/gallery/entry/:day/:id/window', express.json({ limit: '12mb' }), async (request, response) => {
+  if (request.headers.origin && (!URL.canParse(request.headers.origin) || new URL(request.headers.origin).host !== request.headers.host)) {
+    response.status(403).json({ error: 'Requests must come from this application.' });
+    return;
+  }
+  const { day, id } = request.params;
+  const parsed = windowSchema.safeParse(request.body);
+  if (!DAY.test(day) || !ID.test(id) || !parsed.success) {
+    response.status(400).json({ error: 'Not a window print for a gallery entry.' });
+    return;
+  }
+  try {
+    const recordPath = join(ROOT, day, `${id}.json`);
+    const record = JSON.parse(await readFile(recordPath, 'utf8'));
+    await writeFile(join(ROOT, day, `${id}.window.jpg`), Buffer.from(parsed.data.image.slice(JPEG.length), 'base64'));
+    await writeFile(recordPath, JSON.stringify({ ...record, hasWindow: true, window: parsed.data.view }));
+    response.json({ id, day });
+  } catch {
+    response.status(404).json({ error: 'That generation is not in the gallery.' });
+  }
+});
+
 gallery.use('/gallery/files', express.static(ROOT, { index: false, maxAge: '1y', immutable: true }));
+
+/** ffmpeg makes the thumbnails; without it the strip is sent the full print. */
+let ffmpeg = true;
+const making = new Map<string, Promise<boolean>>();
+let running = 0;
+const waiting: (() => void)[] = [];
+const shrink = (from: string, to: string) => new Promise<boolean>((done) => {
+  const child = spawn('ffmpeg', ['-v', 'error', '-y', '-i', from, '-vf', `scale=${THUMB_SIZE}:${THUMB_SIZE}:force_original_aspect_ratio=increase:flags=lanczos,crop=${THUMB_SIZE}:${THUMB_SIZE}`, '-q:v', '4', '-f', 'mjpeg', to], { stdio: 'ignore' });
+  child.on('error', () => { ffmpeg = false; done(false); });
+  child.on('exit', (code) => done(code === 0));
+});
+const thumbnail = (day: string, id: string, to: string) => {
+  let made = making.get(to);
+  if (!made) {
+    made = (async () => {
+      if (running >= 4) await new Promise<void>((go) => waiting.push(go));
+      running++;
+      try {
+        const from = await access(join(ROOT, day, `${id}.print.jpg`)).then(() => `${id}.print.jpg`, () => `${id}.scene.jpg`);
+        await mkdir(dirname(to), { recursive: true });
+        const part = `${to}.${process.pid}.part`;
+        if (!(await shrink(join(ROOT, day, from), part))) return false;
+        await rename(part, to);
+        return true;
+      } finally {
+        running--;
+        waiting.shift()?.();
+      }
+    })().finally(() => making.delete(to));
+    making.set(to, made);
+  }
+  return made;
+};
+
+gallery.get('/gallery/thumbs/:day/:file', async (request, response) => {
+  const { day, file } = request.params;
+  const id = file.replace(/\.jpg$/, '');
+  if (!DAY.test(day) || !ID.test(id) || !file.endsWith('.jpg')) {
+    response.status(400).end();
+    return;
+  }
+  const to = join(THUMBS, day, `${id}.jpg`);
+  const ready = await access(to).then(() => true, () => false) || (ffmpeg && await thumbnail(day, id, to).catch(() => false));
+  if (ready) {
+    response.sendFile(to, { maxAge: '1y', immutable: true, dotfiles: 'allow' });
+    return;
+  }
+  const exists = (kind: string) => access(join(ROOT, day, `${id}.${kind}.jpg`)).then(() => true, () => false);
+  if (await exists('print')) response.redirect(302, `/gallery/files/${day}/${id}.print.jpg`);
+  else if (await exists('scene')) response.redirect(302, `/gallery/files/${day}/${id}.scene.jpg`);
+  else response.status(404).end();
+});
 
 gallery.get('/gallery', (_request, response) => response.type('html').send(PAGE));
 

@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type PaletteRole, choice, clamp01, defineLook, mix, paintIsMetal, rekey, score, seeded } from '@conjure/kit';
 
 /**
  * A pen plotter: a machine that drags a real pen over paper. It can only make strokes, so tone
@@ -15,25 +15,37 @@ const smooth = (edge0: number, edge1: number, value: number) => {
 
 const PAPERS = {
   white: { colour: '#f6f5f0', dark: false, grid: false, mottle: 0.02, name: 'white Bristol', description: 'Bright white Bristol board: the pen shows at its crispest.' },
-  cream: { colour: '#eee4cc', dark: false, grid: false, mottle: 0.07, name: 'cream cartridge paper', description: 'Warm cream cartridge paper, slightly mottled, a sketchbook feel.' },
-  grey: { colour: '#c6c6c0', dark: false, grid: false, mottle: 0.04, name: 'grey toned card', description: 'Mid-grey toned card, so the drawing sits quietly in a half-tone.' },
+  cream: { colour: '#eee4cc', dark: false, grid: false, mottle: 0.07, name: 'tinted cartridge paper', description: 'Softly tinted cartridge paper, slightly mottled, a sketchbook feel.' },
+  grey: { colour: '#c6c6c0', dark: false, grid: false, mottle: 0.04, name: 'mid-toned card', description: 'Mid-toned card, so the drawing sits quietly in a half-tone.' },
   kraft: { colour: '#c4a473', dark: false, grid: false, mottle: 0.09, name: 'kraft paper', description: 'Brown kraft paper, fibrous, like a drawing on a parcel.' },
   graph: { colour: '#f7f7f2', dark: false, grid: true, mottle: 0.02, name: 'graph paper', description: 'White paper with a faint printed pale-blue grid showing through.' },
-  black: { colour: '#15151a', dark: true, grid: false, mottle: 0.03, name: 'black card', description: 'Black card: the pens become gel and metallic inks, bright lines on dark.' },
-  navy: { colour: '#162039', dark: true, grid: false, mottle: 0.04, name: 'navy card', description: 'Deep navy card with pale lines, like a chart of the night.' },
+  black: { colour: '#15151a', dark: true, grid: false, mottle: 0.03, name: 'black card', description: 'Near-black card: the pens become gel and metallic inks, bright lines on dark.' },
+  navy: { colour: '#162039', dark: true, grid: false, mottle: 0.04, name: 'deep coloured card', description: 'Deep, richly coloured dark card with pale lines, like a chart of the night.' },
 } as const;
 
 /** Pens in order of boldness: the first is the main pen, the ones after it are lighter or accents. */
 const PENSETS = {
   fineliner: { name: 'a black fineliner', dark: ['#f1efe8'], light: ['#1b1b1d'], opacity: 2.6, description: 'One black technical fineliner (a white gel pen on dark card): the classic single-pen plot.' },
-  ballpoint: { name: 'a blue ballpoint', dark: ['#9cc0ff'], light: ['#243b8c'], opacity: 1.5, description: 'One blue ballpoint: slightly glossy, translucent, darker wherever lines cross.' },
-  sepia: { name: 'a sepia pen', dark: ['#e2bb63'], light: ['#5b3a21'], opacity: 2.2, description: 'One sepia-brown pen (a gold gel pen on dark card): warm, old-survey, parchment.' },
-  redline: { name: 'black and red pens', dark: ['#f1efe8', '#ff6470'], light: ['#1b1b1d', '#c83228'], opacity: 2.4, description: 'Black with a red second pen: black for the drawing, red for whatever the second pen is given.' },
-  blues: { name: 'navy and sky-blue pens', dark: ['#c4d8ff', '#4f84d8'], light: ['#1c2a5c', '#5e9fd6'], opacity: 2.2, description: 'Navy and sky blue, two pens: a cool two-tone drawing, a little like a cyanotype.' },
-  trio: { name: 'navy, teal and orange pens', dark: ['#ffd36a', '#5ef0e0', '#ff7fb3'], light: ['#1f2c5a', '#1f8b86', '#e2782c'], opacity: 2.3, description: 'Navy, teal and orange, three pens: the classic generative-print palette.' },
-  neon: { name: 'three fluorescent gel pens', dark: ['#ff4fb0', '#3fe0ff', '#c6ff3b'], light: ['#ec2f9c', '#17b5d4', '#79c414'], opacity: 2.3, description: 'Three fluorescent gel pens, magenta, cyan and lime: loud, synthetic, a festival poster.' },
+  ballpoint: { name: 'a ballpoint', dark: ['#9cc0ff'], light: ['#243b8c'], opacity: 1.5, description: 'One coloured ballpoint: slightly glossy, translucent, darker wherever lines cross.' },
+  sepia: { name: 'a soft archival pen', dark: ['#e2bb63'], light: ['#5b3a21'], opacity: 2.2, description: 'One soft, muted archival pen (a gel pen on dark card): old-survey, parchment.' },
+  redline: { name: 'black and accent pens', dark: ['#f1efe8', '#ff6470'], light: ['#1b1b1d', '#c83228'], opacity: 2.4, description: 'Black with a coloured second pen: black for the drawing, colour for whatever the second pen is given.' },
+  blues: { name: 'two pens of one colour', dark: ['#c4d8ff', '#4f84d8'], light: ['#1c2a5c', '#5e9fd6'], opacity: 2.2, description: 'A deep and a light pen of one colour: a calm two-tone drawing, a little like a cyanotype.' },
+  trio: { name: 'three pens', dark: ['#ffd36a', '#5ef0e0', '#ff7fb3'], light: ['#1f2c5a', '#1f8b86', '#e2782c'], opacity: 2.3, description: 'A deep key pen and two contrasting pens: the classic three-pen generative print.' },
+  neon: { name: 'three fluorescent gel pens', dark: ['#ff4fb0', '#3fe0ff', '#c6ff3b'], light: ['#ec2f9c', '#17b5d4', '#79c414'], opacity: 2.3, description: 'Three fluorescent gel pens: loud, synthetic, a festival poster.' },
   metallic: { name: 'silver and gold gel pens', dark: ['#d9dde4', '#e9c45e'], light: ['#585e69', '#8a6c1c'], opacity: 2.0, description: 'Silver and gold metallic gel pens: a quiet shimmer, at its best on dark card.' },
 } as const;
+
+/**
+ * Pens re-keyed to the picture's palette by index: the first pen carries the ink, the others answer in
+ * the second colour. The black fineliner and redline's black are black ink and stay; silver and gold
+ * stay metal unless the palette ink is itself a metal. White, kraft and graph paper stay; toned and dark
+ * papers take the ground.
+ */
+const PEN_ROLES: Record<string, Record<string, PaletteRole>> = {
+  fineliner: {}, ballpoint: { 0: 'ink' }, sepia: { 0: 'ink' }, redline: { 1: 'ink' }, blues: { 0: 'ink', 1: 'ink' },
+  trio: { 0: 'ink', 1: 'second', 2: 'second' }, neon: { 0: 'ink', 1: 'second', 2: 'second' }, metallic: {},
+};
+const GROUND_PAPERS = new Set(['cream', 'grey', 'black', 'navy']);
 
 const describe = <T extends Record<string, { description: string }>>(table: T) =>
   Object.fromEntries(Object.entries(table).map(([key, entry]) => [key, entry.description])) as Record<keyof T & string, string>;
@@ -44,7 +56,7 @@ const THRESHOLDS = [0.1, 0.32, 0.55, 0.78] as const;
 export default defineLook({
   questions: {
     paper: choice('What paper is loaded on the plotter bed?', describe(PAPERS)),
-    pens: choice('Which pens are loaded in the carousel?', describe(PENSETS)),
+    pens: choice('Which pens are loaded in the carousel? Coloured pens take the picture\u2019s palette.', describe(PENSETS)),
     assign: choice('If more than one pen is loaded, how are the pens shared out?', {
       tone: 'By tone: the boldest pen draws the outlines and deepest shadows, the lighter pens the open hatching.',
       layers: 'Outline and fill: one pen traces every outline, the others lay down all the hatching.',
@@ -97,7 +109,10 @@ export default defineLook({
     };
     const paper = PAPERS[a.paper];
     const set = PENSETS[a.pens];
-    const pens: RGB[] = (paper.dark ? set.dark : set.light).map(hex);
+    const roles = a.pens === 'metallic' && context.palette && paintIsMetal(context.palette.ink) ? { 1: 'ink' as const } : PEN_ROLES[a.pens] ?? {};
+    const loaded = (paper.dark ? set.dark : set.light).map(hex);
+    const keyed = rekey(Object.fromEntries(loaded.map((pen, k) => [k, pen])), context.palette, roles);
+    const pens: RGB[] = loaded.map((_, k) => keyed[k]);
     const n = pens.length;
     const opacity = set.opacity * (paper.dark ? 1.2 : 1);
 
@@ -669,7 +684,7 @@ export default defineLook({
 
     // ---- ink on paper ------------------------------------------------------------------------
     const pixels = new Uint8ClampedArray(total * 4);
-    const base = hex(paper.colour);
+    const base = GROUND_PAPERS.has(a.paper) ? rekey({ paper: hex(paper.colour) }, context.palette, { paper: 'ground' }).paper : hex(paper.colour);
     const tint = (mood.warmth - 0.5) * (paper.dark ? 4 : 10);
     const stain: RGB = [168, 138, 88];
     const gridColour: RGB = [128, 172, 222];

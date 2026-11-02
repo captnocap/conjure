@@ -64,6 +64,42 @@ export default defineThing({
       summer: 'Summer, dust, and marigolds in a tyre.',
       autumn: 'Autumn, yellow poplar leaves blown into the corner.',
     }),
+    stepRail: choice('What guards the outer edge of the steps?', {
+      open: 'The two steps have no rail.',
+      pipe: 'A plain pipe handrail follows the right edge.',
+      pickets: 'A painted handrail with closely spaced vertical pickets.',
+      panel: 'A low solid concrete cheek wall ends the stoop.',
+    }),
+    mailboxes: choice('What mailboxes are fixed beside the entrance?', {
+      none: 'The letterboxes are all inside.',
+      single: 'One deep exterior letterbox with a sloping lid.',
+      row: 'Three shallow boxes stacked vertically.',
+      cabinet: 'A six-door mail cabinet with small slots.',
+    }),
+    doorstepMat: choice('What is laid on the upper step?', {
+      rubber: 'A flat black rubber mat.',
+      coir: 'A thick brown coir mat within a dark border.',
+      slats: 'A wooden duckboard of narrow crosswise slats.',
+      grate: 'An open metal grate catches the snow from boots.',
+    }),
+    sillPlanting: choice('What grows outside the kitchen window?', {
+      none: 'The concrete sill is empty.',
+      trough: 'One long flower trough rests on the sill.',
+      pots: 'Two round terracotta pots stand in a fixed metal shelf.',
+      hanging: 'A hanging pot is suspended from a bracket beside the window.',
+    }),
+    windowGuard: choice('What ironwork is fitted outside the window?', {
+      none: 'The window is unguarded.',
+      bars: 'A simple rectangular guard with upright bars.',
+      diamonds: 'A guard crossed with an open diamond lattice.',
+      scrolls: 'A guard with paired circular scrolls between the uprights.',
+    }),
+    bootCleaner: choice('What is set out to clean footwear?', {
+      none: 'Nothing beside the lower step.',
+      blade: 'A steel scraper blade between two low posts.',
+      brush: 'A timber boot brush with three stiff brush faces.',
+      tray: 'A shallow ribbed tray for muddy overshoes.',
+    }),
   },
 
   build(a, context) {
@@ -113,12 +149,96 @@ export default defineThing({
     });
     for (const dx of [-0.31, 0.31]) s.mesh(new THREE.PlaneGeometry(0.54, 0.98), new THREE.MeshStandardMaterial({ map: curtain, emissive: paneLit ? warm : new THREE.Color('#000'), emissiveMap: curtain, emissiveIntensity: paneLit ? mix(0.4, 0.95, glow) : 0, roughness: 0.3 }), [wx + dx, wy, wz + 0.065]);
     s.box([1.42, 0.05, 0.16], [wx, wy - 0.6, wz + 0.07], concrete);
+    const ironwork = s.material('#394b48', { metalness: 0.45, roughness: 0.6 });
+    if (a.windowGuard !== 'none') {
+      const front = wz + 0.17, left = wx - 0.66, right = wx + 0.66, low = wy - 0.58, high = wy + 0.58;
+      for (const x of [left, right]) {
+        s.rod([x, low, front], [x, high, front], 0.015, ironwork);
+        for (const y of [low, high]) s.rod([x, y, wz], [x, y, front], 0.016, ironwork);
+      }
+      for (const y of [low, high]) s.rod([left, y, front], [right, y, front], 0.015, ironwork);
+      for (const x of [-0.44, -0.22, 0, 0.22, 0.44]) s.rod([wx + x, low, front], [wx + x, high, front], 0.009, ironwork);
+      if (a.windowGuard === 'diamonds') for (let i = 0; i < 3; i++) {
+        const x = left + 0.22 + i * 0.44;
+        s.tube([[x, low, front], [x + 0.22, wy, front], [x, high, front], [x - 0.22, wy, front], [x, low, front]], 0.009, ironwork);
+      }
+      if (a.windowGuard === 'scrolls') for (const x of [-0.33, 0.11]) for (const y of [-0.28, 0.28]) s.ring(0.11, 0.009, [wx + x, wy + y, front], ironwork);
+    }
+    if (a.sillPlanting !== 'none') {
+      const pot = s.material('#ac6246'), soil = s.material('#45382c');
+      const plant = (x: number, y: number, z: number, radius: number) => {
+        s.cylinder(radius, radius * 0.72, 0.17, [x, y + 0.085, z], pot, 12);
+        s.cylinder(radius * 0.9, radius * 0.9, 0.012, [x, y + 0.17, z], soil, 12);
+        for (let i = 0; i < 5; i++) {
+          const t = i * Math.PI * 2 / 5, px = x + Math.cos(t) * radius * 0.55, pz = z + Math.sin(t) * radius * 0.55, high = y + 0.27 + i % 2 * 0.06;
+          s.rod([px, y + 0.17, pz], [px, high, pz], 0.006, s.material('#3f6c39'));
+          s.ball([0.037, 0.026, 0.037], [px, high, pz], s.material(i % 2 ? '#e7b458' : '#c65b60'), 7);
+        }
+      };
+      const sillTop = wy - 0.575;
+      if (a.sillPlanting === 'trough') {
+        s.box([1.08, 0.14, 0.14], [wx, sillTop + 0.07, wz + 0.07], pot);
+        for (let i = 0; i < 7; i++) {
+          const x = wx - 0.43 + i * 0.145, top = sillTop + 0.22 + (i % 2) * 0.05;
+          s.rod([x, sillTop + 0.14, wz + 0.07], [x, top, wz + 0.07], 0.006, s.material('#47793c'));
+          s.ball([0.045, 0.035, 0.045], [x, top, wz + 0.07], s.material(i % 2 ? '#d785b0' : '#f0c371'), 7);
+        }
+      } else if (a.sillPlanting === 'pots') {
+        s.box([1.2, 0.025, 0.3], [wx, sillTop, wz + 0.17], ironwork);
+        for (const x of [wx - 0.48, wx + 0.48]) s.rod([x, sillTop - 0.26, wz], [x, sillTop - 0.015, wz + 0.27], 0.014, ironwork);
+        for (const x of [wx - 0.34, wx + 0.34]) plant(x, sillTop + 0.0125, wz + 0.17, 0.12);
+      } else {
+        const x = wx + 0.88, z = wz + 0.24, bottom = wy - 0.1;
+        s.rod([x, wy + 0.5, wz], [x, wy + 0.5, z], 0.016, ironwork);
+        s.rod([x, wy + 0.28, wz], [x, wy + 0.5, z], 0.012, ironwork);
+        for (const dx of [-0.1, 0.1]) s.rod([x, wy + 0.5, z], [x + dx, bottom + 0.15, z], 0.004, ironwork);
+        plant(x, bottom, z, 0.14);
+      }
+    }
 
     // Stoop, door frame and door.
     const dx = -0.95, doorW = 1.0, doorH = 2.05, stoopH = 0.3;
     s.box([2.1, stoopH, 1.25], [dx, stoopH / 2, wz + 0.625], concrete);
     s.box([2.4, stoopH / 2, 1.55], [dx, stoopH / 4, wz + 0.775], concrete);
-    s.box([1.9, 0.012, 0.5], [dx, stoopH + 0.006, wz + 0.9], s.material('#3b3a37', { roughness: 1 }));
+    if (a.doorstepMat === 'rubber' || a.doorstepMat === 'coir') {
+      s.box([1.9, 0.012, 0.5], [dx, stoopH + 0.006, wz + 0.9], s.material('#3b3a37', { roughness: 1 }));
+      if (a.doorstepMat === 'coir') s.box([1.8, 0.018, 0.4], [dx, stoopH + 0.021, wz + 0.9], s.material('#a18b54', { roughness: 1 }));
+    } else {
+      const slatted = a.doorstepMat === 'slats', mat = s.material(slatted ? '#897350' : '#62696a', { metalness: slatted ? 0 : 0.6 });
+      for (const x of [-0.86, 0.86]) s.box([0.045, 0.02, 0.5], [dx + x, stoopH + 0.01, wz + 0.9], mat);
+      for (let i = 0; i < (slatted ? 6 : 12); i++) s.box([1.8, 0.025, slatted ? 0.065 : 0.015], [dx, stoopH + 0.0325, wz + 0.67 + i * (slatted ? 0.085 : 0.042)], mat);
+    }
+    if (a.stepRail === 'panel') s.box([0.1, 0.65, 1.3], [dx + 1.12, 0.325, wz + 0.8], concrete);
+    else if (a.stepRail !== 'open') {
+      const x = dx + 1.12, backZ = wz + 0.35, frontZ = wz + 1.45;
+      for (const z of [backZ, frontZ]) s.rod([x, 0.15, z], [x, 0.9, z], 0.024, ironwork);
+      s.rod([x, 0.9, backZ], [x, 0.9, frontZ], 0.024, ironwork);
+      if (a.stepRail === 'pickets') for (let i = 1; i < 6; i++) s.rod([x, 0.15, backZ + i * (frontZ - backZ) / 6], [x, 0.9, backZ + i * (frontZ - backZ) / 6], 0.009, ironwork);
+    }
+    if (a.mailboxes !== 'none') {
+      const cols = a.mailboxes === 'cabinet' ? 2 : 1, rows = a.mailboxes === 'single' ? 1 : 3;
+      for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
+        const x = -2.21 + col * 0.16, y = 1.25 + row * 0.22;
+        s.box([0.15, a.mailboxes === 'single' ? 0.3 : 0.2, 0.09], [x, y, wz + 0.045], s.material('#587075', { metalness: 0.4 }));
+        s.box([0.1, 0.015, 0.008], [x, y + 0.055, wz + 0.094], s.material('#20292c'));
+        s.ball([0.012, 0.012, 0.005], [x + 0.045, y - 0.035, wz + 0.095], s.material('#c1bd9e', { metalness: 0.6 }), 6);
+      }
+    }
+    if (a.bootCleaner !== 'none') {
+      const x = 0.3, z = 0.85;
+      if (a.bootCleaner === 'blade') {
+        for (const offset of [-0.16, 0.16]) s.box([0.025, 0.19, 0.025], [x + offset, 0.095, z], ironwork);
+        s.box([0.32, 0.06, 0.018], [x, 0.16, z], ironwork);
+      } else if (a.bootCleaner === 'brush') {
+        s.box([0.35, 0.035, 0.25], [x, 0.0175, z], s.material('#a18861'));
+        for (let i = 0; i < 5; i++) for (let j = 0; j < 4; j++) s.box([0.045, 0.07, 0.035], [x - 0.12 + i * 0.06, 0.07, z - 0.075 + j * 0.05], s.material('#5f5541'));
+        for (const side of [-1, 1]) s.box([0.05, 0.14, 0.25], [x + side * 0.16, 0.09, z], s.material('#5f5541'));
+      } else {
+        s.box([0.45, 0.015, 0.32], [x, 0.0075, z], ironwork);
+        for (const side of [-1, 1]) s.box([0.02, 0.055, 0.32], [x + side * 0.215, 0.035, z], ironwork);
+        for (let i = 0; i < 7; i++) s.box([0.4, 0.012, 0.012], [x, 0.021, z - 0.13 + i * 0.043], ironwork);
+      }
+    }
     const doorColour = new THREE.Color({ oxide: '#84402e', green: '#2e5a41', blue: '#7fa6c4', grey: '#8a8f92', black: '#2a2b2e' }[a.door]).lerp(new THREE.Color('#77706a'), mood.wear * 0.25);
     const doorMat = s.material(doorColour, { metalness: 0.35, roughness: 0.55 });
     s.box([doorW + 0.5, doorH + 0.22, 0.1], [dx + 0.17, stoopH + (doorH + 0.22) / 2, wz + 0.05], doorMat);

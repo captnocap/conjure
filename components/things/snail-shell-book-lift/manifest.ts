@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Snail shell book lift", "summary": "A tiny vertical book hoist raises a tray between shell-library landings, with continuous ropes over grooved pulleys, guides and a counterweight. Slow deliveries, upper shelves, borrowed engineering and books too heavy for one reader.", "scales": ["tabletop", "room", "macro"]});

@@ -1,5 +1,22 @@
 import * as THREE from 'three';
-import { Sculpture, choice, defineThing, mix, score } from '@conjure/kit';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+import { Sculpture, choice, defineThing, figure, mix, score } from '@conjure/kit';
+
+
+// The posed people remain rigid within this component. Merge by material after
+// solving their contacts, retaining the kit's geometry while reducing draw calls.
+function compactFigure(root:THREE.Group){
+ root.updateMatrixWorld(true);const before=new THREE.Box3().setFromObject(root,true),inverse=root.matrixWorld.clone().invert();
+ const groups=new Map<THREE.Material,THREE.BufferGeometry[]>(),originals=new Set<THREE.BufferGeometry>();
+ root.traverse(node=>{const mesh=node as THREE.Mesh;if(!mesh.isMesh)return;if(Array.isArray(mesh.material))throw new Error('Unexpected figure material array');
+  const clone=mesh.geometry.clone();let g=clone.index?clone.toNonIndexed():clone;if(g!==clone)clone.dispose();
+  for(const name of Object.keys(g.attributes))if(name!=='position'&&name!=='normal')g.deleteAttribute(name);
+  g.applyMatrix4(inverse.clone().multiply(mesh.matrixWorld));const list=groups.get(mesh.material)??[];list.push(g);groups.set(mesh.material,list);originals.add(mesh.geometry);
+ });
+ root.clear();for(const[material,parts]of groups){const geometry=mergeGeometries(parts);if(!geometry)throw new Error('Figure mesh merge failed');const mesh=new THREE.Mesh(geometry,material);mesh.castShadow=mesh.receiveShadow=true;root.add(mesh);for(const part of parts)part.dispose();}
+ for(const geometry of originals)geometry.dispose();root.updateMatrixWorld(true);const after=new THREE.Box3().setFromObject(root,true);
+ if(before.min.distanceTo(after.min)>1e-5||before.max.distanceTo(after.max)>1e-5)throw new Error('Figure merge moved its support bounds');
+}
 
 const SLOGANS = {
   lazy: 'NO FOOD FOR LAZY MAN: blunt, hard-working, a little funny.',
@@ -59,6 +76,34 @@ function lettering(text: string, w: number, h: number, ink: string, paper: strin
 
 export default defineThing({
   questions: {
+    frontGuard: choice('What protects the front bumper?', {
+      plain: 'The ordinary black bumper.', rail: 'One broad tubular guard rail.',
+      cage: 'A grille guard with several vertical bars.', twin: 'Two short guards around the lamps.',
+    }),
+    stepType: choice('What projects below the open passenger door?', {
+      plain: 'A simple metal boarding step.', wide: 'A broad timber-covered step.',
+      double: 'A lower second step beneath the main one.', folding: 'A ribbed folding step held by diagonal stays.',
+    }),
+    wheelTrim: choice('What covers the wheel hubs?', {
+      bare: 'Plain dull metal hubs.', caps: 'Small polished hubcaps.',
+      painted: 'Yellow-painted centres with dark bolts.', rings: 'Bright trim rings around the hubs.',
+    }),
+    windowTrim: choice('What has been fitted around the side windows?', {
+      bare: 'The ordinary frames.', sliders: 'Slim sliding-glass divider frames.',
+      visors: 'Short rain visors above the windows.', bars: 'Two thin protective bars across each rear window.',
+    }),
+    rackStyle: choice('What kind of roof-rack enclosure carries the load?', {
+      low: 'The original low perimeter rails.', high: 'A higher rectangular cage.',
+      mesh: 'Low rails with close wire mesh sides.', hoops: 'Three rounded hoops spanning the rack.',
+    }),
+    rearAccess: choice('How is the roof rack reached?', {
+      none: 'No fixed climbing aid.', ladder: 'A narrow ladder fixed to the rear corner.',
+      rungs: 'Separate grab handles and foot rungs.', rope: 'A short rope ladder tied to the rear rack.',
+    }),
+    cabinExtra: choice('What extra fitting is visible inside?', {
+      none: 'Only the benches and driver’s wheel.', curtain: 'A short curtain behind the front seats.',
+      rail: 'An overhead passenger handrail.', fan: 'A small fixed dashboard fan.',
+    }),
     slogan: choice('What slogan is painted across the windscreen banner and the back?', SLOGANS),
     route: choice('Which destination is lettered on the side?', {
       oshodi: 'OSHODI, the great chaotic interchange.',
@@ -155,6 +200,16 @@ export default defineThing({
     for (const z of [-0.3, 0.35]) s.rod([2.19, 1.1, z], [2.0, 1.5, z + 0.3], 0.008, black);
     for (const z of [-0.7, 0.7]) s.box([0.02, 0.12, 0.2], [-2.225, 0.78, z], s.material('#b3261e', { emissive: '#b3261e', emissiveIntensity: 0.25 }));
 
+    if(a.frontGuard!=='plain'){
+      const x=2.36;for(const z of[-.65,.65])s.rod([2.24,.53,z],[x,.68,z],.023,steel);
+      if(a.frontGuard==='twin')for(const z of[-.62,.62]){const loop=s.ring(.18,.018,[x,.86,z],steel);loop.rotation.y=Math.PI/2;}
+      else{for(const y of[.65,.98])s.rod([x,y,-.75],[x,y,.75],.022,steel);for(const z of(a.frontGuard==='cage'?[-.7,-.35,0,.35,.7]:[-.7,.7]))s.rod([x,.65,z],[x,.98,z],.018,steel);}
+    }
+    if(a.windowTrim!=='bare')for(const z of[-.86,.86])for(const x of[-1.64,-.59]){
+      if(a.windowTrim==='sliders'){s.box([.025,.6,.018],[x,1.46,z],steel);for(const y of[1.17,1.76])s.box([.96,.018,.018],[x,y,z],steel);}
+      else if(a.windowTrim==='visors'){const visor=s.box([1.02,.025,.14],[x,1.79,z+Math.sign(z)*.05],steel);visor.rotation.x=Math.sign(z)*.22;}
+      else for(const y of[1.33,1.58])s.rod([x-.47,y,z],[x+.47,y,z],.009,steel);
+    }
     // Slogan: a visor banner over the windscreen and a board on the tail.
     const words = SLOGAN_TEXT[a.slogan];
     const inks = ['#b3261e', '#1b3f8f', '#14141a', '#1d6b3a'];
@@ -179,21 +234,25 @@ export default defineThing({
     add(doorGroup, s.box([0.12, 0.03, 0.03], [0.4, 0, 0.03], steel));
     doorGroup.position.set(-0.68 - random() * 0.15, 1.16, 0.9);
     s.root.add(doorGroup);
-    s.box([1.1, 0.05, 0.16], [0.45, 0.4, 0.9], black);
+    const stepDepth=a.stepType==='wide'?.46:.34;
+    s.box([1.1,.05,stepDepth],[.45,.4,.96],a.stepType==='wide'?s.material('#927451'):black);
+    if(a.stepType==='double'){s.box([1,.045,.26],[.45,.22,1.18],steel);for(const x of[.04,.86])s.rod([x,.375,1.01],[x,.2425,1.18],.016,black);}
+    if(a.stepType==='folding'){for(const x of[.02,.88])s.rod([x,.56,.83],[x,.375,1.09],.014,steel);for(let i=0;i<7;i++)s.box([.025,.009,.32],[.03+i*.14,.43,.96],steel);}
+
 
     // Benches and riders.
     const rows = [1.25, 0.3, -0.45, -1.15, -1.85];
     for (const x of rows) {
-      s.box([0.42, 0.1, x > 1 ? 1.5 : 1.15], [x, 0.82, x > 1 || x < -0.2 ? 0 : -0.22], seat);
+      s.box([0.42, 0.1, x > 1 ? 1.5 : 1.15], [x, .8756459516662562, x > 1 || x < -0.2 ? 0 : -0.22], seat);
       s.box([0.08, 0.5, x > 1 ? 1.5 : 1.15], [x - 0.2, 1.1, x > 1 || x < -0.2 ? 0 : -0.22], seat);
     }
     // Driver and wheel.
-    const wheel = s.ring(0.17, 0.018, [1.62, 1.18, -0.42], black);
+    const wheel = s.ring(0.17, 0.018, [1.62,1.32,-.42], black);
     wheel.rotation.set(0, Math.PI / 2, 0.5);
-    const rider = (x: number, z: number, lean = 0) => {
-      const shirt = s.material(pick(cloth));
-      s.box([0.26, 0.42, 0.34], [x + 0.03, 1.1, z], shirt);
-      s.ball([0.105, 0.12, 0.105], [x + 0.05, 1.45, z + lean], s.material(pick(skin)), 12);
+    const rider=(x:number,z:number,lean=0)=>{
+      const f=figure(s,{height:1.6,pose:'sitting',style:'doll',hair:pick(['short','bun','cap']),top:pick(cloth),bottom:'#35404a',skin:pick(skin),shoes:'#262a2b',face:'dots'});s.root.add(f.root);f.root.rotation.y=Math.PI/2;f.root.position.y=.48;f.root.updateMatrixWorld(true);const hip=new THREE.Vector3();f.pelvis.getWorldPosition(hip);f.root.position.x+=x-hip.x;f.root.position.z+=z-hip.z;f.joints.neck.rotation.z=lean;f.root.updateMatrixWorld(true);
+      if(x>1&&z<0){const left=new THREE.Vector3(1.62,1.4,-.29),right=new THREE.Vector3(1.62,1.4,-.55);const gaps=[f.reach('left',left,{space:s.root}),f.reach('right',right,{space:s.root})];if(Math.max(...gaps)>1e-5)throw new Error('Danfo steering reach');}
+      compactFigure(f.root);
     };
     if (a.doing !== 'broken' || a.passengers > 0.5) rider(1.25, -0.42);
     const seats: [number, number][] = [];
@@ -201,6 +260,13 @@ export default defineThing({
     const riders = Math.round(a.passengers * a.passengers * seats.length * (a.doing === 'broken' ? 0.3 : 1));
     seats.sort(() => random() - 0.5).slice(0, riders).forEach(([x, z]) => rider(x, z + (random() - 0.5) * 0.08, a.passengers > 0.8 && Math.abs(z) > 0.5 ? Math.sign(z) * 0.12 : 0));
 
+    if(a.cabinExtra==='curtain'){
+      s.rod([.84,1.84,-.76],[.84,1.84,.76],.012,steel);for(const z of[-.61,.61])for(let i=0;i<5;i++)s.box([.025,.48,.055],[.84,1.6,z+(i-2)*.06],s.material(i%2?'#9a7257':'#b39170'));
+    }else if(a.cabinExtra==='rail'){
+      s.rod([-1.9,1.79,0],[1.4,1.79,0],.018,steel);for(const x of[-1.7,-.4,1.2])s.rod([x,1.79,0],[x,1.92,0],.014,steel);
+    }else if(a.cabinExtra==='fan'){
+      s.rod([1.95,.98,.4],[1.85,1.23,.4],.015,black);const cage=s.ring(.13,.008,[1.85,1.31,.4],steel);cage.rotation.y=Math.PI/2;for(let i=0;i<3;i++){const t=i*Math.PI*2/3;s.rod([1.85,1.31,.4],[1.85,1.31+Math.cos(t)*.1,.4+Math.sin(t)*.1],.018,black);}
+    }
     // Wear: rust blooms, a cardboard window, primer patches.
     const blooms = Math.round(mood.wear * 9);
     for (let i = 0; i < blooms; i++) {
@@ -219,6 +285,23 @@ export default defineThing({
       for (let x = -2.05; x <= 1.46; x += 0.7) s.rod([x, 1.99, z], [x, 2.1, z], 0.012, steel);
     }
     for (const x of [-2.05, 1.45]) s.rod([x, 2.1, -0.78], [x, 2.1, 0.78], 0.015, steel);
+    if(a.rackStyle!=='low'){
+      const h=a.rackStyle==='high'?.45:.24;
+      if(a.rackStyle==='hoops')for(const x of[-1.8,-.3,1.2]){const hoop=s.ring(.78,.014,[x,2.1,0],steel,Math.PI);hoop.rotation.y=Math.PI/2;}
+      else{
+        for(const z of[-.78,.78]){s.rod([-2.05,2.1+h,z],[1.45,2.1+h,z],.014,steel);for(let x=-2.05;x<1.46;x+=a.rackStyle==='mesh'?.18:.7)s.rod([x,2.1,z],[x,2.1+h,z],.008,steel);}
+        for(const x of[-2.05,1.45])s.rod([x,2.1+h,-.78],[x,2.1+h,.78],.014,steel);
+        if(a.rackStyle==='mesh')for(const z of[-.78,.78])for(const y of[2.18,2.26])s.rod([-2.05,y,z],[1.45,y,z],.006,steel);
+      }
+    }
+    if(a.rearAccess!=='none'){
+      const x=-2.28,z=-.48,mat=a.rearAccess==='rope'?s.material('#b8a577'):steel;
+      for(const dz of[-.15,.15]){
+        if(a.rearAccess!=='rungs')s.rod([x,.6,z+dz],[x,2.1,z+dz],.012,mat);
+        for(const y of[.65,1.35,2.05])s.rod([-2.19,y,z+dz],[x,y,z+dz],.012,steel);
+      }
+      for(let y=.65;y<2.1;y+=.25)s.rod([x,y,z-.15],[x,y,z+.15],.014,mat);
+    }
     const sack = [s.material('#d9cfb4'), s.material('#b99b6c'), s.material('#e9e6dc'), s.material('#8a9a5c')];
     const crate = [s.material('#2f6fb0'), s.material('#c8402e'), s.material('#b98a4a'), s.material('#e3b520')];
     const load = Math.round(a.roof * 15);
@@ -261,54 +344,18 @@ export default defineThing({
     body.add(...s.root.children);
     s.root.add(body);
 
-    // The conductor.
-    let arm: THREE.Object3D | null = null;
-    if (a.conductor !== 'absent') {
-      const man = new THREE.Group();
-      const shirt = s.material(pick(cloth)), trousers = s.material(pick(['#30383f', '#4a4030', '#27405a'])), flesh = s.material(pick(skin));
-      const limb = (from: [number, number, number], to: [number, number, number], r: number, m: THREE.Material) => add(man, s.rod(from, to, r, m));
-      const notes = s.material('#5a9a5a');
-      if (a.conductor === 'hanging') {
-        limb([0, 0.02, 0], [0.05, 0.5, 0.12], 0.055, trousers);
-        limb([0.14, 0.02, 0], [0.1, 0.5, 0.14], 0.055, trousers);
-        limb([0.08, 0.5, 0.13], [0.12, 1.05, 0.34], 0.14, shirt);
-        add(man, s.ball([0.1, 0.115, 0.1], [0.14, 1.24, 0.42], flesh, 12));
-        limb([0.1, 1.0, 0.3], [-0.05, 1.5, 0.02], 0.04, flesh);
-        const swing = new THREE.Group();
-        swing.position.set(0.16, 1.0, 0.36);
-        const fore = s.rod([0, 0, 0], [0.3, 0.12, 0.55], 0.04, flesh);
-        swing.add(fore, s.box([0.03, 0.1, 0.06], [0.31, 0.14, 0.58], notes));
-        man.add(swing);
-        arm = swing;
-        man.position.set(0.5, 0.44, 0.86);
-        body.add(man);
-      } else if (a.conductor === 'calling') {
-        limb([-0.08, 0, 0], [-0.06, 0.8, 0], 0.06, trousers);
-        limb([0.1, 0, 0.05], [0.07, 0.8, 0], 0.06, trousers);
-        limb([0, 0.8, 0], [0, 1.4, 0], 0.15, shirt);
-        add(man, s.ball([0.1, 0.115, 0.1], [0, 1.6, 0.02], flesh, 12));
-        limb([-0.16, 1.35, 0], [-0.24, 0.9, 0.08], 0.04, flesh);
-        const swing = new THREE.Group();
-        swing.position.set(0.16, 1.36, 0);
-        swing.add(s.rod([0, 0, 0], [0.22, 0.55, 0.12], 0.04, flesh), s.box([0.03, 0.12, 0.07], [0.23, 0.6, 0.13], notes));
-        man.add(swing);
-        arm = swing;
-        man.position.set(1.25 + random() * 0.3, 0, 1.45 + random() * 0.2);
-        man.rotation.y = 0.5;
-        s.root.add(man);
-      } else {
-        limb([-0.1, 0.42, 0.1], [-0.1, 0.42, 0.5], 0.06, trousers);
-        limb([0.1, 0.42, 0.1], [0.1, 0.42, 0.5], 0.06, trousers);
-        limb([-0.1, 0.42, 0.5], [-0.1, 0, 0.55], 0.05, trousers);
-        limb([0.1, 0.42, 0.5], [0.1, 0, 0.55], 0.05, trousers);
-        limb([0, 0.4, 0.05], [0, 0.95, 0.16], 0.15, shirt);
-        add(man, s.ball([0.1, 0.115, 0.1], [0, 1.13, 0.26], flesh, 12));
-        limb([-0.15, 0.9, 0.16], [-0.05, 0.6, 0.42], 0.04, flesh);
-        limb([0.15, 0.9, 0.16], [0.05, 0.6, 0.42], 0.04, flesh);
-        add(man, s.box([0.14, 0.03, 0.08], [0, 0.58, 0.44], notes));
-        man.position.set(0.45, 0.08, 0.72);
-        body.add(man);
+    // Kit figures retain contact with the body-mounted step as it tilts.
+    if(a.conductor!=='absent'){
+      const seated=a.conductor==='sitting',calling=a.conductor==='calling',H=calling?1.65:1.35;
+      const f=figure(s,{height:H,pose:calling?'waving':seated?'sitting':'standing',style:'doll',hair:'cap',top:pick(cloth),bottom:pick(['#30383f','#4a4030','#27405a']),skin:pick(skin),shoes:'#262a2c',face:'dots'});
+      const notes=s.box([.08,.05,.014],[0,0,0],s.material('#5a9a5a'));f.hands.left.add(notes);
+      if(calling){s.root.add(f.root);f.root.position.set(1.4,0,1.65);f.root.rotation.y=.5;}
+      else{
+        body.add(f.root);f.root.position.set(seated?.45:.28,.425,seated?.7:.95);f.root.updateMatrixWorld(true);
+        if(seated){const hip=new THREE.Vector3();f.pelvis.getWorldPosition(hip);f.root.position.x+=.45-hip.x;f.root.position.z+=.7-hip.z;f.root.updateMatrixWorld(true);f.pelvis.getWorldPosition(hip);const seatY=hip.y-H*.045;body.add(s.box([.38,seatY-.48,.3],[.45,(seatY+.48)/2,.7],seat));const left=new THREE.Vector3(.51,hip.y+.12,.99),right=new THREE.Vector3(.39,hip.y+.12,.99);const gaps=[f.reach('left',left,{space:s.root}),f.reach('right',right,{space:s.root})];if(Math.max(...gaps)>1e-5)throw new Error('Danfo counting reach');}
+        else{const gap=f.reach('right',new THREE.Vector3(-.08,1.5,.85),{space:s.root});if(gap>1e-5)throw new Error('Danfo door-frame reach');f.joints.shoulders.left.rotation.x=-1.3;f.joints.elbows.left.rotation.x=-.5;}
       }
+      compactFigure(f.root);
     }
 
     // Wheels.
@@ -320,7 +367,11 @@ export default defineThing({
       const tyre = s.cylinder(0.31, 0.31, 0.2, [0, 0, 0], rubber, 20);
       const hub = s.cylinder(0.17, 0.17, 0.21, [0, 0, 0], mood.wear > 0.5 && index % 2 ? rust : steel, 12);
       tyre.rotation.x = hub.rotation.x = Math.PI / 2;
-      group.add(tyre, hub);
+      group.add(tyre,hub);
+      const sign=Math.sign(z);if(a.wheelTrim==='caps'){const cap=s.cylinder(.12,.12,.025,[0,0,sign*.115],steel,16);cap.rotation.x=Math.PI/2;group.add(cap);}
+      else if(a.wheelTrim==='painted'){const disk=s.cylinder(.16,.16,.018,[0,0,sign*.112],yellow,14);disk.rotation.x=Math.PI/2;group.add(disk);for(let i=0;i<5;i++){const t=i*Math.PI*2/5;group.add(s.ball([.012,.012,.008],[Math.cos(t)*.09,Math.sin(t)*.09,sign*.125],black,6));}}
+      else if(a.wheelTrim==='rings')group.add(s.ring(.18,.016,[0,0,sign*.112],steel));
+
       group.scale.y = squash;
       group.position.set(x, 0.31 * squash, z);
       s.root.add(group);
@@ -375,7 +426,6 @@ export default defineThing({
     return s.finish({
       update: (_dt, time) => {
         body.position.y = baseY + Math.sin(time * 38) * shake;
-        if (arm) arm.rotation.z = Math.sin(time * mix(2, 7, energy)) * 0.25;
         puffs.forEach((puff, index) => {
           const beat = (time * mix(0.3, 0.9, energy) + index * 0.37) % 1;
           puff.scale.setScalar(puff.userData.size ?? (puff.userData.size = puff.scale.x));

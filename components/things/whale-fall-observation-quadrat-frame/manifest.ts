@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Whale fall observation quadrat frame", "summary": "A physically grounded research quadrat has adjustable feet, a scale bar, specimen tags and an attached camera mast aimed at the sampling footprint. Adjustable feet meet the sediment under a rigid sampling frame. A braced mast supports a camera aimed into the enclosed footprint, with scale bars and attached tags; the apparatus observes a whale-fall sample rather than imitating an animal.", "scales": ["macro", "tabletop"]});

@@ -1,0 +1,284 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-30T13:39:41.256Z",
+  "description": "All 22 actual Atelier source factories retain byte-identical material-profile strings and tokens after conservative ShaderMaterial/RawShaderMaterial instance ordinals; equivalent native PBR slots still share a token.",
+  "baseline": {
+    "method": "Installed pre-fix comparison passed before guarded integration; repeatable baseline reconstructs that function by removing only the three validated ordinal additions.",
+    "removedFragments": [
+      "const customInstances=new Map;",
+      "if((source.isShaderMaterial||source.isRawShaderMaterial)&&!customInstances.has(original))customInstances.set(original,customInstances.size+1);",
+      "customInstance:customInstances.get(original),"
+    ],
+    "beforeFunctionSha256": "3d21173f9350afb276074f7f8157bbbd9dfbfa0430aade4c766ed2c65c933c22",
+    "afterFunctionSha256": "25d6f81f7c7bd19b0b9add7d6d135aaa5e43850f21037bcef4fc21cb6d96b4ab"
+  },
+  "sourceHashes": {
+    "engine/capture.ts": "61d03ddecf817d4886cbfb2dbd761d7ec7d01a140ab551659cb0941bb9ffa17d",
+    "tests/atelier-capture-passes.test.ts": "ca766f3fba42c9dbc90ba602c0e3c5de0430e7166e87a09602baab12f3c89bcd",
+    "engine/atelier-material-runtime/material-library.js": "4b7ec6e832fe67c77740f6db3ec0ac385a330749ad5115f5c2ff2a0d56e4c307",
+    "engine/atelier-material-runtime/conjure-adapter.js": "3e2c3493760dbdff102852bb10a822c10d1483678f5b86131146ce875a2ceb2c"
+  },
+  "factoryCount": 22,
+  "checks": {
+    "profileTablesEqual": true,
+    "tokensEqual": true,
+    "nativeFactoriesExcludedFromOrdinal": true
+  },
+  "factories": [
+    {
+      "id": "brushed-steel",
+      "recipeId": "atelier-brushed-steel",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 1,
+      "afterToken": 1,
+      "beforeProfileSha256": "cbc19f7e873ac7429cb277ef32693f32e26decb31eebc090200b258dcec4bf1c",
+      "afterProfileSha256": "cbc19f7e873ac7429cb277ef32693f32e26decb31eebc090200b258dcec4bf1c",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "chrome",
+      "recipeId": "atelier-chrome",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 2,
+      "afterToken": 2,
+      "beforeProfileSha256": "0544d805b606f81c6244f86bdb10eb069c50ebb0da0e7380ce3bc367e03bc7a1",
+      "afterProfileSha256": "0544d805b606f81c6244f86bdb10eb069c50ebb0da0e7380ce3bc367e03bc7a1",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "brass",
+      "recipeId": "atelier-brass",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 3,
+      "afterToken": 3,
+      "beforeProfileSha256": "2b4f8111857308960e06d05c69aef53788b140d4f9d1dcf2e1d35612ae22a8f3",
+      "afterProfileSha256": "2b4f8111857308960e06d05c69aef53788b140d4f9d1dcf2e1d35612ae22a8f3",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "copper",
+      "recipeId": "atelier-copper",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 4,
+      "afterToken": 4,
+      "beforeProfileSha256": "bb5c73bf2c9c3f3f2ee2c5ee002b891f3bdb4acfa02e0eabce046a12f6deefe7",
+      "afterProfileSha256": "bb5c73bf2c9c3f3f2ee2c5ee002b891f3bdb4acfa02e0eabce046a12f6deefe7",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "porcelain",
+      "recipeId": "atelier-porcelain",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 5,
+      "afterToken": 5,
+      "beforeProfileSha256": "cb9882cf303ab6b6e37cbcc25f9bea06a89db4ccf7f88fb2df8c4a64933c8514",
+      "afterProfileSha256": "cb9882cf303ab6b6e37cbcc25f9bea06a89db4ccf7f88fb2df8c4a64933c8514",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "marble",
+      "recipeId": "atelier-marble",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 6,
+      "afterToken": 6,
+      "beforeProfileSha256": "e37343706ebd08e3ad5e15b43d74c4467ef9d9508592a15e32b9c316440d61db",
+      "afterProfileSha256": "e37343706ebd08e3ad5e15b43d74c4467ef9d9508592a15e32b9c316440d61db",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "concrete",
+      "recipeId": "atelier-concrete",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 7,
+      "afterToken": 7,
+      "beforeProfileSha256": "00b89419ac90567f7fc78d2f80468da3f13ceae66fc03fe54f7a6bbd00fb4695",
+      "afterProfileSha256": "00b89419ac90567f7fc78d2f80468da3f13ceae66fc03fe54f7a6bbd00fb4695",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "stone",
+      "recipeId": "atelier-stone",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 8,
+      "afterToken": 8,
+      "beforeProfileSha256": "639de82c7255558c2c737b5067b906bfbf5bb48c00408c5b24fec3b4af83a5a7",
+      "afterProfileSha256": "639de82c7255558c2c737b5067b906bfbf5bb48c00408c5b24fec3b4af83a5a7",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "wood",
+      "recipeId": "atelier-wood",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 9,
+      "afterToken": 9,
+      "beforeProfileSha256": "cc2e8e554a579571a4c6cd211285769ee743f8b69b87c9984807012e70682dcb",
+      "afterProfileSha256": "cc2e8e554a579571a4c6cd211285769ee743f8b69b87c9984807012e70682dcb",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "frosted-glass",
+      "recipeId": "atelier-frosted-glass",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 10,
+      "afterToken": 10,
+      "beforeProfileSha256": "7610589e827227784639f6aa59f8b7b860d676c157d0da2d55179942ba133a89",
+      "afterProfileSha256": "7610589e827227784639f6aa59f8b7b860d676c157d0da2d55179942ba133a89",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "skin",
+      "recipeId": "atelier-skin",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 11,
+      "afterToken": 11,
+      "beforeProfileSha256": "7d16cc230da19ba2bbb05e9878a8c0cfa0dcdb518431faf34c0f945866c9afc1",
+      "afterProfileSha256": "7d16cc230da19ba2bbb05e9878a8c0cfa0dcdb518431faf34c0f945866c9afc1",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "adipose",
+      "recipeId": "atelier-adipose",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 12,
+      "afterToken": 12,
+      "beforeProfileSha256": "2243eb1ce447a7855563ba7f8992efa0f1a2e887a66626376747e1f3847f8de2",
+      "afterProfileSha256": "2243eb1ce447a7855563ba7f8992efa0f1a2e887a66626376747e1f3847f8de2",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "muscle",
+      "recipeId": "atelier-muscle",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 13,
+      "afterToken": 13,
+      "beforeProfileSha256": "324ba77868e3ee55fa6326b192884d8532313ae7d735a3ae8181743be0b1f4fd",
+      "afterProfileSha256": "324ba77868e3ee55fa6326b192884d8532313ae7d735a3ae8181743be0b1f4fd",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "cortical-bone",
+      "recipeId": "atelier-cortical-bone",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 14,
+      "afterToken": 14,
+      "beforeProfileSha256": "9b05190905718542992d9dbee0e2681a08e05afc63406f249874e43b2bf75222",
+      "afterProfileSha256": "9b05190905718542992d9dbee0e2681a08e05afc63406f249874e43b2bf75222",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "cancellous-bone",
+      "recipeId": "atelier-cancellous-bone",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 15,
+      "afterToken": 15,
+      "beforeProfileSha256": "92b5349d0945a2974cbb884b254942b0c884b3b70e52ff1b7984683216d4ae89",
+      "afterProfileSha256": "92b5349d0945a2974cbb884b254942b0c884b3b70e52ff1b7984683216d4ae89",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "velvet",
+      "recipeId": "atelier-velvet",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 16,
+      "afterToken": 16,
+      "beforeProfileSha256": "c648c13261712627ef8072a606a029a2019ca54bb7a170b8cb77baf50702b03b",
+      "afterProfileSha256": "c648c13261712627ef8072a606a029a2019ca54bb7a170b8cb77baf50702b03b",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "woven-linen",
+      "recipeId": "atelier-woven-linen",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 17,
+      "afterToken": 17,
+      "beforeProfileSha256": "b263602c9baf8c0822359a9a7dbdd024edaa6aa481cca08f3ed8b0a5a756dd4f",
+      "afterProfileSha256": "b263602c9baf8c0822359a9a7dbdd024edaa6aa481cca08f3ed8b0a5a756dd4f",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "diffraction-foil",
+      "recipeId": "atelier-diffraction-foil",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 18,
+      "afterToken": 18,
+      "beforeProfileSha256": "307e65fdf7f7526d291c9f8398fa04163034abe190b609581aa139c080db8388",
+      "afterProfileSha256": "307e65fdf7f7526d291c9f8398fa04163034abe190b609581aa139c080db8388",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "hammered-metal",
+      "recipeId": "atelier-hammered-metal",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 19,
+      "afterToken": 19,
+      "beforeProfileSha256": "57814d9e0b7cd969ece2b5094e1ecc16c0cba3877b280bbbda8b32fb0886ced6",
+      "afterProfileSha256": "57814d9e0b7cd969ece2b5094e1ecc16c0cba3877b280bbbda8b32fb0886ced6",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "interference-coat",
+      "recipeId": "atelier-interference-coat",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 20,
+      "afterToken": 20,
+      "beforeProfileSha256": "7c1b8f1d1e817bb37ad4b310199fda0f75bd5cbfdbc4d87e32cedaea4b91ee9b",
+      "afterProfileSha256": "7c1b8f1d1e817bb37ad4b310199fda0f75bd5cbfdbc4d87e32cedaea4b91ee9b",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "tiled-surface",
+      "recipeId": "atelier-tiled-surface",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 21,
+      "afterToken": 21,
+      "beforeProfileSha256": "ba03f37479a182c581574a743901eaa054e4fb0c9742c7447df0b2c561bd230a",
+      "afterProfileSha256": "ba03f37479a182c581574a743901eaa054e4fb0c9742c7447df0b2c561bd230a",
+      "profileEqual": true,
+      "tokenEqual": true
+    },
+    {
+      "id": "perlage-metal",
+      "recipeId": "atelier-perlage-metal",
+      "nativeType": "MeshPhysicalMaterial",
+      "beforeToken": 22,
+      "afterToken": 22,
+      "beforeProfileSha256": "7b4e6116b939eb6f5795d08dc910923d19d403717ef6cc215dc96c9abe0ebcdf",
+      "afterProfileSha256": "7b4e6116b939eb6f5795d08dc910923d19d403717ef6cc215dc96c9abe0ebcdf",
+      "profileEqual": true,
+      "tokenEqual": true
+    }
+  ],
+  "nativePbr": {
+    "profileTablesEqual": true,
+    "tokensEqual": true,
+    "beforeTokens": [
+      1,
+      1
+    ],
+    "afterTokens": [
+      1,
+      1
+    ]
+  },
+  "result": "passed"
+}

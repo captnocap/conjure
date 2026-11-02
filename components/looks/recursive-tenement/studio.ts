@@ -1,4 +1,4 @@
-import type { BuildContext, Capture } from '@conjure/kit';
+import { type BuildContext, type Capture, type PaletteRole, type RGB, fromOklch, oklch, rekey } from '@conjure/kit';
 export type Palette = {paper:string; ink:string; accent:string; soft:string};
 export const PALETTES: Record<string, Palette> = {
  bone:{paper:'#d7cfb3',ink:'#282b25',accent:'#936d46',soft:'#8f947d'},
@@ -6,11 +6,22 @@ export const PALETTES: Record<string, Palette> = {
  ink:{paper:'#bfc9c5',ink:'#202e34',accent:'#647f80',soft:'#81938e'},
  acid:{paper:'#c8cc9c',ink:'#30382b',accent:'#88963c',soft:'#8d9067'},
 };
+const ROLES:Record<string,PaletteRole>={paper:'ground',ink:'ink',soft:'ink',accent:'second'};
+const hexRGB=(v:string):RGB=>[parseInt(v.slice(1,3),16),parseInt(v.slice(3,5),16),parseInt(v.slice(5,7),16)];
+const hexOf=(c:RGB)=>'#'+c.map(v=>v.toString(16).padStart(2,'0')).join('');
+/** A line or mid tone keeps `keep` of its designed distance below the paper, so a pale palette ink cannot wash it into the stock. */
+const below=(c:RGB,paper:RGB,was:string,wasPaper:string,keep:number):RGB=>{const [L,C,h]=oklch(c),cap=oklch(paper)[0]-(oklch(hexRGB(wasPaper))[0]-oklch(hexRGB(was))[0])*keep;return L>cap?fromOklch(cap,C,h):c;};
+/** The pigments under the idea's palette: paper takes the ground, ink and soft the ink, the accent the second. As made without one. */
+export function settle(key:string,context:BuildContext):Palette{
+ const base=PALETTES[key]??PALETTES.bone;if(!context.palette)return base;
+ const c=rekey({paper:hexRGB(base.paper),ink:hexRGB(base.ink),accent:hexRGB(base.accent),soft:hexRGB(base.soft)},context.palette,ROLES);
+ return {paper:hexOf(c.paper),ink:hexOf(below(c.ink,c.paper,base.ink,base.paper,.85)),accent:hexOf(c.accent),soft:hexOf(below(c.soft,c.paper,base.soft,base.paper,.6))};
+}
 const rgb=(v:string)=>[1,3,5].map(i=>parseInt(v.slice(i,i+2),16));
 export function surface(n:number){const canvas=document.createElement('canvas');canvas.width=canvas.height=n;const g=canvas.getContext('2d')!;return {canvas,g};}
 export function hash(x:number,y:number,seed:number){let h=Math.imul(x|0,374761393)^Math.imul(y|0,668265263)^Math.imul(seed|0,1274126177);h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967296;}
 export function prepare(c:Capture,context:BuildContext,signal:AbortSignal,key:string){
- const n=c.size,p=PALETTES[key]??PALETTES.bone,paper=rgb(p.paper),ink=rgb(p.ink),out=new Uint8ClampedArray(c.color.length);
+ const n=c.size,p=settle(key,context),paper=rgb(p.paper),ink=rgb(p.ink),out=new Uint8ClampedArray(c.color.length);
  for(let y=0;y<n;y++){if((y&31)===0)signal.throwIfAborted();for(let x=0;x<n;x++){
   const i=(y*n+x)*4,id=c.identity[i],L=(c.color[i]*.3+c.color[i+1]*.59+c.color[i+2]*.11)/255;
   const lit=c.diffuse[i]/255,step=id>=3?4:7,grain=(hash(x,y,context.seed)-.5)*(2+context.mood.wear*6);

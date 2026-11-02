@@ -24,6 +24,12 @@ const MODES = ['OFF', 'DCV', 'ACV', 'OHM', 'mA'] as const;
 
 export default defineThing({
   questions: {
+    dial: choice('How is the scale printed?', { triple: 'Three coloured ranges.', single: 'One bold black voltage scale.', decibel: 'Voltage ranges with a red decibel scale.', mirror: 'Fine ranges above a silver anti-parallax strip.' }),
+    selector: choice('What shape is the selector grip?', { pointer: 'A long pointer bar.', round: 'A knurled round knob with an index line.', wing: 'A broad winged grip.', lever: 'A small lever projecting from the selector.' }),
+    tips: choice('What ends the test probes?', { needle: 'Fine bare needle tips.', guarded: 'Short metal tips behind insulating guards.', hook: 'Spring hooks for catching a component lead.', clips: 'Small toothed crocodile clips.' }),
+    jackets: choice('What covers the leads?', { rubber: 'Smooth black and red rubber.', cloth: 'Cream and green cloth braid.', silicone: 'Thick flexible blue and grey silicone.', old: 'Thin dark-red and brown aged rubber.' }),
+    calibration: choice('What calibration marking is on the meter?', { none: 'No sticker or seal.', current: 'A green CAL OK sticker.', overdue: 'A faded orange calibration-due sticker.', sealed: 'A dated cream sticker and a small wire seal on the adjuster.' }),
+    protection: choice('How is the case protected?', { bare: 'The original bare case.', boots: 'Rubber bumpers around its corners.', guards: 'Small metal corner guards.', rails: 'Two protective side rails with a bottom crossbar.' }),
     reading: choice('What is the needle doing?', {
       zero: 'Resting dead on zero at the left: nothing, no life in the circuit.',
       low: 'Barely lifted off the stop, a faint trickle.',
@@ -72,7 +78,9 @@ export default defineThing({
     const caseMat = s.material(caseColour, { roughness: a.colour === 'grey' ? 0.6 : 0.28, metalness: a.colour === 'grey' ? 0.5 : 0 });
     const dark = s.material('#161617', { roughness: 0.5 });
     const steel = s.material('#c5c9ca', { metalness: 0.85, roughness: 0.25 });
-    const red = s.material('#c8261e', { roughness: 0.4 }), black = s.material('#18181a', { roughness: 0.45 });
+    const jacketColours = { rubber: ['#18181a', '#c8261e'], cloth: ['#c9b789', '#446c4c'], silicone: ['#76848b', '#397dba'], old: ['#423227', '#823b36'] }[a.jackets];
+    const red = s.material(jacketColours[1], { roughness: a.jackets === 'cloth' ? 0.95 : 0.4 }), black = s.material(jacketColours[0], { roughness: a.jackets === 'cloth' ? 0.95 : 0.45 });
+    const cableRadius = a.jackets === 'silicone' ? 0.0028 : a.jackets === 'old' ? 0.0015 : 0.002;
     const mode = { off: 0, dcv: 1, acv: 2, ohm: 3, ma: 4 }[a.range];
     const winH = f.h * f.window, winW = f.w * 0.84, winY = f.h - winH / 2 - f.h * 0.06;
     const knobY = (f.h - winH) * 0.48, knobX = a.form === 'bench' ? -f.w * 0.18 : 0;
@@ -94,7 +102,10 @@ export default defineThing({
       ctx.fillRect(X(-winW / 2), Y(winY + winH / 2), winW * S, winH * S);
       const cx = X(0), cy = Y(winY - winH * 0.42), R = winH * S * 0.82;
       const arc = (rr: number, colour: string, width: number) => { ctx.strokeStyle = colour; ctx.lineWidth = width; ctx.beginPath(); ctx.arc(cx, cy, rr, Math.PI * 1.25, Math.PI * 1.75); ctx.stroke(); };
-      arc(R, '#1c1a18', 4); arc(R * 0.84, '#b3261e', 3); arc(R * 0.7, '#2f7a48', 3);
+      arc(R, '#1c1a18', 4);
+      if (a.dial !== 'single') { arc(R * 0.84, '#b3261e', 3); arc(R * 0.7, a.dial === 'decibel' ? '#aa3226' : '#2f7a48', 3); }
+      if (a.dial === 'mirror') { arc(R * 0.59, '#839eaa', R * 0.1); arc(R * 0.58, '#dae4e4', R * 0.045); }
+      if (a.dial === 'decibel') { ctx.fillStyle = '#aa3226'; ctx.font = `bold ${Math.round(R * 0.075)}px monospace`; ctx.fillText('−20  −10    0   +6 dB', cx - R * 0.45, cy - R * 0.55); }
       ctx.strokeStyle = '#1c1a18'; ctx.fillStyle = '#1c1a18'; ctx.font = `bold ${Math.round(R * 0.085)}px monospace`; ctx.textAlign = 'center';
       for (let i = 0; i <= 20; i++) {
         const t = Math.PI * (1.25 + 0.5 * i / 20), len = i % 5 ? 0.05 : 0.1;
@@ -108,7 +119,7 @@ export default defineThing({
       ctx.fillStyle = ink; ctx.font = `bold ${Math.round(PX * 0.045)}px monospace`;
       const kr = Math.min(f.w * 0.3, knobY * 0.8) * S;
       MODES.forEach((label, i) => { const t = Math.PI * (1 + i / 4); ctx.fillText(label, X(knobX) + Math.cos(t) * kr, Y(knobY) + Math.sin(t) * kr + 6); });
-      if (mood.wear > 0.4) { ctx.fillStyle = '#e9dfb6'; ctx.fillRect(X(f.w * 0.16), Y(f.h * 0.14), 70, 30); ctx.fillStyle = '#3a3020'; ctx.font = 'bold 15px monospace'; ctx.fillText('CAL 71', X(f.w * 0.16) + 35, Y(f.h * 0.14) + 20); }
+      if (a.calibration !== 'none') { ctx.fillStyle = a.calibration === 'current' ? '#8fb899' : a.calibration === 'overdue' ? '#dca16e' : '#e9dfb6'; ctx.fillRect(X(f.w * 0.16), Y(f.h * 0.14), 70, 30); ctx.fillStyle = '#3a3020'; ctx.font = 'bold 15px monospace'; ctx.fillText(a.calibration === 'current' ? 'CAL OK' : a.calibration === 'overdue' ? 'DUE 71' : 'CAL 71', X(f.w * 0.16) + 35, Y(f.h * 0.14) + 20); }
     });
     m.mesh(new THREE.PlaneGeometry(f.w - 0.012, f.h - 0.012), new THREE.MeshStandardMaterial({ map: face, roughness: 0.4 }), [0, f.h / 2, f.d + 0.0005]);
     // Window bezel.
@@ -130,12 +141,28 @@ export default defineThing({
     const knob = new THREE.Group();
     const kr = Math.min(f.w * 0.16, knobY * 0.42);
     const k1 = new THREE.Mesh(new THREE.CylinderGeometry(kr * 0.8, kr, 0.014, 20), dark); k1.rotation.x = Math.PI / 2; k1.position.z = 0.007;
-    const k2 = new THREE.Mesh(new THREE.BoxGeometry(kr * 0.36, kr * 2.3, 0.01), dark); k2.position.z = 0.018;
+    const k2 = new THREE.Mesh(a.selector === 'round' ? new THREE.CylinderGeometry(kr * 0.85, kr * 0.85, 0.012, 24) : new THREE.BoxGeometry(kr * (a.selector === 'wing' ? 0.72 : 0.36), kr * (a.selector === 'wing' ? 2.6 : a.selector === 'lever' ? 1.3 : 2.3), a.selector === 'lever' ? 0.026 : 0.01), dark); k2.position.z = 0.018;
+    if (a.selector === 'round') k2.rotation.x = Math.PI / 2;
     const k3 = new THREE.Mesh(new THREE.BoxGeometry(kr * 0.12, kr * 0.7, 0.002), new THREE.MeshStandardMaterial({ color: '#f1efe6' })); k3.position.set(0, kr * 0.78, 0.024);
     knob.add(k1, k2, k3); knob.traverse((o) => { o.castShadow = true; });
+    if (a.selector === 'round') for (let i = 0; i < 24; i++) { const t = i / 24 * Math.PI * 2, rib = new THREE.Mesh(new THREE.BoxGeometry(0.0015, 0.003, 0.012), caseMat); rib.position.set(Math.sin(t) * kr * 0.86, Math.cos(t) * kr * 0.86, 0.018); rib.rotation.z = -t; knob.add(rib); }
     knob.position.set(knobX, knobY, f.d);
     knob.rotation.z = Math.PI / 2 - mode * Math.PI / 4;
     m.root.add(knob);
+    if (a.calibration === 'sealed') {
+      m.tube([[knobX + kr * 0.7, knobY - kr * 0.7, f.d + 0.02], [knobX + kr * 1.4, knobY - kr, f.d + 0.017], [knobX + kr * 1.6, knobY - kr * 0.6, f.d + 0.006]], 0.0007, steel);
+      m.ball([0.004, 0.005, 0.002], [knobX + kr * 1.5, knobY - kr * 0.9, f.d + 0.014], s.material('#927d60'), 8);
+    }
+    if (a.protection === 'boots' || a.protection === 'guards') for (const side of [-1, 1]) for (const topSide of [false, true]) {
+      const mat = a.protection === 'boots' ? s.material('#444846', { roughness: 0.9 }) : steel;
+      const y = topSide ? f.h - 0.018 : 0.018;
+      m.box([0.018, 0.036, f.d + 0.01], [side * (hw - 0.006), y, f.d / 2], mat);
+      if (a.protection === 'guards') m.cylinder(0.0025, 0.0025, 0.0015, [side * (hw - 0.006), y, f.d + 0.006], dark, 8).rotation.x = Math.PI / 2;
+    }
+    if (a.protection === 'rails') {
+      for (const side of [-1, 1]) { m.rod([side * (hw + 0.008), 0.012, f.d / 2], [side * (hw + 0.008), f.h - 0.012, f.d / 2], 0.004, steel); for (const y of [0.016, f.h - 0.016]) m.rod([side * (hw - 0.003), y, f.d / 2], [side * (hw + 0.008), y, f.d / 2], 0.003, steel); }
+      m.rod([-hw - 0.008, 0.012, f.d / 2], [hw + 0.008, 0.012, f.d / 2], 0.004, steel);
+    }
     if (a.form === 'bench') {
       m.cylinder(0.012, 0.014, 0.012, [f.w * 0.22, knobY, f.d + 0.006], dark, 16).rotation.x = Math.PI / 2;
       m.box([0.012, 0.02, 0.012], [f.w * 0.38, knobY, f.d + 0.004], steel).rotation.x = 0.4;
@@ -198,7 +225,19 @@ export default defineThing({
       if (coiled) { tip = new THREE.Vector3(f.w / 2 + 0.05 + i * 0.016, 0.006, 0.08); dir = new THREE.Vector3(0.1, 0, -1); }
       const tail = tip.clone().addScaledVector(dir, -0.125); tail.y = 0.007;
       const neck = tip.clone().lerp(tail, 0.26);
-      s.rod(tip.toArray() as P, neck.toArray() as P, 0.0004, steel, 0.0016);
+      s.rod(tip.toArray() as P, neck.toArray() as P, a.tips === 'needle' ? 0.0004 : 0.0009, steel, 0.0016);
+      if (a.tips === 'guarded') s.rod(tip.clone().lerp(neck, 0.22).toArray() as P, neck.toArray() as P, 0.003, mats[i]);
+      if (a.tips === 'hook') {
+        const sideways = new THREE.Vector3(-dir.z, 0, dir.x), points: P[] = [];
+        for (let k = 0; k <= 12; k++) { const t = k / 12 * Math.PI * 1.5; points.push(tip.clone().addScaledVector(dir, Math.sin(t) * 0.003).addScaledVector(sideways, (1 - Math.cos(t)) * 0.003).toArray() as P); }
+        s.tube(points, 0.0008, steel);
+      }
+      if (a.tips === 'clips') {
+        const clip = new THREE.Group(); clip.position.copy(tip.clone().lerp(neck, 0.35)); clip.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), neck.clone().sub(tip).normalize());
+        for (const side of [-1, 1]) { const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.007, 0.022, 0.002), steel); jaw.position.z = side * 0.002; jaw.rotation.x = side * 0.08; clip.add(jaw); }
+        for (let k = 0; k < 5; k++) for (const side of [-1, 1]) { const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.0015, 0.0015), steel); tooth.position.set(0, -0.008 + k * 0.0035, side * 0.0012); clip.add(tooth); }
+        s.root.add(clip);
+      }
       s.rod(neck.toArray() as P, tail.toArray() as P, 0.0045, mats[i], 0.0055);
       const guard = s.cylinder(0.0085, 0.0085, 0.003, tip.clone().lerp(tail, 0.36).toArray() as P, mats[i], 12);
       guard.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tail.clone().sub(tip).normalize());
@@ -207,11 +246,11 @@ export default defineThing({
         const pts: P[] = [tail.toArray() as P, far.toArray() as P];
         const cx = f.w / 2 + 0.085, cz2 = -0.02 + i * 0.006;
         for (let n = 0; n <= 20; n++) { const t = n / 20 * Math.PI * 4 + 1.6; pts.push([cx + Math.cos(t) * (0.034 + i * 0.005), 0.004 + n * 0.0004 + i * 0.003, cz2 + Math.sin(t) * 0.04]); }
-        s.tube(pts, 0.002, mats[i]);
+        s.tube(pts, cableRadius, mats[i]);
       } else {
         const j = jackAt[i];
         const sweep = side * (0.03 + random() * 0.03 + f.w * 0.3);
-        s.tube([tail.toArray() as P, far.toArray() as P, [far.x * 0.5 + sweep, 0.004, (far.z + frontZ) / 2 + 0.02], [j.x + side * 0.03, 0.004, frontZ + 0.05 + random() * 0.02], [j.x, Math.max(0.006, j.y * 0.5), j.z + 0.03], j.toArray() as P], 0.002, mats[i]);
+        s.tube([tail.toArray() as P, far.toArray() as P, [far.x * 0.5 + sweep, 0.004, (far.z + frontZ) / 2 + 0.02], [j.x + side * 0.03, 0.004, frontZ + 0.05 + random() * 0.02], [j.x, Math.max(0.006, j.y * 0.5), j.z + 0.03], j.toArray() as P], cableRadius, mats[i]);
         const plug = s.cylinder(0.005, 0.005, 0.016, j.toArray() as P, mats[i], 10);
         plug.rotation.x = Math.PI / 2 - f.lean;
       }

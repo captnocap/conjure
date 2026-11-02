@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Centric diatom valve costae radial rim", "summary": "Radial silica ribs meet an annular valve rim around open areola spaces instead of painted radial rules. A comparative centric valve framework with actual ribs, perforations and retained margins. The open framework is a teaching removal of sieve material, not a claim that every intact valve has these openings.", "scales": ["macro", "tabletop"]});

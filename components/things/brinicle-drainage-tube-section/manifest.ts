@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Brinicle drainage tube section", "summary": "A hollow ice tube hangs from a connected drainage outlet, with an actual lumen and retained downward freezing front. A schematic hollow ice tube surrounding a descending brine path, attached to a real outlet; polar freezing and under-ice drainage.", "scales": ["macro", "tabletop"]});

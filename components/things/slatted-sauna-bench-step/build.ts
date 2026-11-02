@@ -1,0 +1,24 @@
+import * as THREE from 'three';
+import { Sculpture, choice, score, noul, defineThing, figure } from '@conjure/kit';
+const questions = {
+  form: choice("What bench arrangement is used?", {"single": "A straight single-level bench.", "step": "A bench with a broad lower step.", "corner": "An L shaped corner seat.", "double": "Two equal benches side by side.", "recline": "A long reclining bench with a raised headrest."}),
+  state: choice("How is the bench prepared?", {"bare": "Clean dry slats wait for bathers.", "towel": "A folded towel marks one seat.", "spread": "A towel is spread across the slats.", "drying": "Two towels dry over the backrest.", "pail": "A small pail rests at one end."}),
+  detail: choice("What timber is used?", {"birch": "Pale birch boards.", "cedar": "Warm cedar slats.", "aspen": "Almost cream aspen timber.", "aged": "Grey heat-aged wood.", "dark": "Dark oiled wood."}),
+  support: choice("How are the legs braced?", {"apron": "Low timber aprons.", "cross": "Diagonal side braces.", "sled": "Two continuous sled feet.", "blocks": "Solid square timber blocks.", "plain": "Four simple square legs."}),
+  extra: choice("What is beside the bench?", {"sandals": "A pair of wooden bathing sandals.", "bucket": "A small rinse bucket.", "brush": "A wooden scrubbing brush.", "mat": "A narrow rush mat.", "none": "A clear floor."}),
+  mark: choice("What detail finishes the backrest?", {"rails": "Two horizontal back rails.", "slats": "Four vertical back slats.", "curve": "A gently bowed top rail.", "low": "A single low rail.", "none": "An open backless bench."}),
+  extent: score("How long is the bench?", ["A single seat", "Two comfortable seats", "A long family bench"]),
+  load: score("How high is the bench?", ["A low cooling bench", "A standard sauna seat", "A high warm bench"]),
+  closed: noul("Is a small slatted foot rest pulled forward?"),
+};
+export default defineThing({
+  questions,
+  build(a, context) {
+    const s = new Sculpture(context), { random, mood } = context;
+    const f = Object.keys(questions.form.options).indexOf(a.form), t = Object.keys(questions.state.options).indexOf(a.state), d = Object.keys(questions.detail.options).indexOf(a.detail), u = Object.keys(questions.support.options).indexOf(a.support), e = Object.keys(questions.extra.options).indexOf(a.extra), m = Object.keys(questions.mark.options).indexOf(a.mark);
+    const wood = s.material('#a47c4e'), pale = s.material('#e0d2ac'), metal = s.material('#8f9995', { metalness: 0.7, roughness: 0.35 }), dark = s.material('#3d443c'), green = s.material('#667e50');
+    const colors = ['#a64d39', '#497e70', '#d4af55', '#59778c', '#b47b8c'];
+
+    const W=.8+a.extent*1.2,H=.35+a.load*.25,D=.52,mat=s.material(['#c9b98e','#b68e67','#d6ccb0','#a6a68e','#7b6a51'][d]);const bench=(x:number,z:number,w:number,h:number,dep:number)=>{for(let i=0;i<5;i++)s.box([w,.035,dep*.18],[x,h,z+(i-2)*dep*.2],mat);for(const dx of [-w*.42,w*.42])for(const dz of [-dep*.35,dep*.35])s.box([u===3?.13:.045,h,.045],[x+dx,h/2,z+dz],mat);for(const dx of [-w*.42,w*.42])s.box([.05,.045,dep],[x+dx,h-.032,z],mat);if(u===0)for(const dz of [-dep*.35,dep*.35])s.box([w,.09,.025],[x,h-.08,z+dz],mat);if(u===1)for(const dx of [-w*.42,w*.42])s.rod([x+dx,.07,z-dep*.35],[x+dx,h-.03,z+dep*.35],.016,mat);if(u===2)for(const dx of [-w*.42,w*.42])s.box([.08,.04,dep+.1],[x+dx,.02,z],mat);};bench(0,0,W,H,D);if(f===1)bench(0,.45,W*.9,H*.5,.3);if(f===2)bench(W/2+.2,-.25,.4,H,1.05);if(f===3)bench(W+.08,0,W,H,D);if(m!==4){for(const x of [-W*.43,W*.43])s.rod([x,H,-D*.4],[x,H+.42,-D*.4],.022,mat);if(m===1){for(let i=0;i<5;i++)s.box([.06,.38,.03],[(i-2)*W*.19,H+.22,-D*.4],mat);s.rod([-W*.45,H+.4,-D*.4],[W*.45,H+.4,-D*.4],.018,mat);}else if(m===2)s.tube([[-W*.45,H+.3,-D*.4],[0,H+.42,-D*.4],[W*.45,H+.3,-D*.4]],.025,mat);else for(const y of (m===3?[H+.17]:[H+.15,H+.35]))s.box([W,.08,.035],[0,y,-D*.4],mat);}if(f===4){s.box([.25,.06,.42],[-W*.35,H+.05,0],mat).rotation.z=.15;}if(t===1)s.box([.3,.035,.38],[W*.25,H+.035,0],pale);if(t===2)s.drape({size:[W*.55,.7],at:[0,H+.08,.05],over:[{box:[W,.035,D],at:[0,H,0]}],floor:.02,detail:14},pale);if(t===3&&m!==4){s.rod([-W*.43,H+.35,-D*.4],[W*.43,H+.35,-D*.4],.018,mat);}if(t===3&&m!==4)for(const x of [-W*.23,W*.23])s.drape({size:[.25,.65],at:[x,H+.45,-D*.4],over:[{box:[W,.08,.035],at:[0,H+.35,-D*.4]}],floor:H+.03,detail:12},pale);if(t===4)s.lathe([[.08,0],[.11,.18],[.1,.18],[.07,.01]],wood,[W*.3,H+.018,0]);const x=-W*.65;if(e===0)for(const z of [-.08,.08]){s.ball([.12,.025,.055],[x,.025,z],wood,14);s.tube([[x-.03,.03,z-.04],[x-.03,.07,z],[x-.03,.03,z+.04]],.012,pale);}if(e===1)s.lathe([[.1,0],[.14,.2],[.13,.2],[.09,.012]],wood,[x,0,0]);if(e===2){s.box([.16,.025,.07],[x,.04,0],wood);s.box([.16,.03,.07],[x,.015,0],pale);}if(e===3)s.box([W*.8,.012,.45],[0,.006,.72],wood);if(a.closed)bench(0,.85,.55,.16,.25);return s.finish();
+  },
+});

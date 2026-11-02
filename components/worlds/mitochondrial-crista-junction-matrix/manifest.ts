@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Mitochondrial crista junction matrix", "summary": "A permanently sectioned double-membrane mitochondrion retains connected crista junctions, matrix and several internal folds independently of cast specimens. A permanent double-envelope teaching section retains connected crista lumens and real junction apertures regardless of casts. Matrix volumes and molecular-scale thicknesses are schematic; removed surfaces are explicit model cuts.", "scales": ["macro", "tabletop"]});

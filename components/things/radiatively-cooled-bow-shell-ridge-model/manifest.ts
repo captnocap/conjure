@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Radiatively cooled bow shell ridge model", "summary": "A thin swept shell has genuine varying thickness, a curved apex and resolved corrugated ridges in a labeled cooling-shell model. A labeled finite shell resolves a curved swept layer and its corrugation geometry. Cooling and instability are conceptual here: the ridge controls are shape studies, not predicted wavelengths or numerical simulation output.", "scales": ["cosmic", "tabletop"]});

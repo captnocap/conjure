@@ -54,12 +54,49 @@ export default defineThing({
       number: 'A yard number, like ДВОР 7.',
     }),
     snow: score('How much snow sits on the rungs?', ['None, bare steel', 'A dusting', 'A ridge on every rung', 'Thick caps and a drift at the base']),
+    ribs: choice('How many vertical ribs shape the climbing cage?', {
+      six: 'Six widely separated ribs leave broad climbing openings.',
+      eight: 'Eight ribs form the familiar octagonal rocket.',
+      ten: 'Ten closely spaced ribs make a denser cage.',
+      twelve: 'Twelve fine ribs outline a nearly round rocket.',
+    }),
+    tubeWeight: score('How substantial are its welded pipes?', ['Fine light tubing', 'Ordinary playground pipe', 'Thick heavy municipal steel']),
+    finPanels: choice('How are the triangular fins filled?', {
+      solid: 'Solid sheet-metal triangles.',
+      open: 'Only the triangular pipe frames remain.',
+      slats: 'Three diagonal steel strips fill each fin.',
+      mesh: 'A fine open lattice fills each fin frame.',
+    }),
+    entry: choice('What marks the low entrance into the rocket?', {
+      bare: 'The gap in the lowest hoops is unadorned.',
+      hoop: 'An arched handhold outlines the entrance.',
+      step: 'A low tread gives small children a first step.',
+      ladder: 'A short three-rung ladder climbs into the cage.',
+    }),
+    innerDeck: choice('What platform is inside the lower rocket?', {
+      none: 'The interior is open all the way to the sand.',
+      timber: 'A small timber standing deck is carried by crossbars.',
+      grate: 'An open steel grate spans the lower cage.',
+      plate: 'A round metal platform with a narrow raised rim.',
+    }),
+    portholes: choice('What pretend windows are attached to the cage?', {
+      none: 'No pretend windows.',
+      pair: 'Two circular rings form open portholes.',
+      four: 'Four open rings face different sides of the yard.',
+      lenses: 'Two pale translucent discs sit inside bolted porthole rings.',
+    }),
+    groundFinish: choice('What surface lies immediately under the rocket?', {
+      sand: 'A worn circle of pale sand.',
+      rubber: 'A square grid of thick rubber playground tiles.',
+      paving: 'A ring of wedge-shaped concrete pavers.',
+      grass: 'A low grassy border surrounds the trampled centre.',
+    }),
   },
 
   build(a, context) {
     const s = new Sculpture(context);
     const { mood, random } = context;
-    const R = 0.028;
+    const R = mix(0.019, 0.04, a.tubeWeight);
     const dull = new THREE.Color('#7b7068');
     const colours = SCHEMES[a.scheme].map((hex) => new THREE.Color(hex).lerp(dull, mood.wear * 0.3 + (1 - mood.cheer) * 0.12));
     const band = colours.map((c) => s.material(c, { metalness: 0.2, roughness: 0.5 }));
@@ -77,7 +114,7 @@ export default defineThing({
     const levels = profile.length;
     const topY = profile[levels - 1][0];
     const noseH = a.build === 'stout' ? 0.6 : 0.8;
-    const ribs = 8;
+    const ribs = { six: 6, eight: 8, ten: 10, twelve: 12 }[a.ribs];
     const kinkY = profile[Math.floor(levels * 0.62)][0] + 0.02;
     const kinkAngle = a.state === 'bent' ? mix(0.25, 0.45, random()) * (random() < 0.5 ? -1 : 1) : 0;
     const kink = new THREE.Matrix4().makeRotationZ(kinkAngle);
@@ -141,8 +178,64 @@ export default defineThing({
       s.rod(dir(r0, finTop), dir(r1 + finOut, -0.03), R, m);
       s.rod(dir(r1 + finOut, 0.12), dir(r1, 0.3), R, m);
       const shape = new THREE.Shape([new THREE.Vector2(r0 + 0.02, finTop - 0.12), new THREE.Vector2(r1 + finOut - 0.08, 0.16), new THREE.Vector2(r1 + 0.02, 0.34)]);
-      const sheet = s.mesh(new THREE.ShapeGeometry(shape), new THREE.MeshStandardMaterial({ color: (m as THREE.MeshStandardMaterial).color, roughness: 0.8, side: THREE.DoubleSide }));
-      sheet.rotation.y = angle - Math.PI / 2;
+      if (a.finPanels === 'solid') {
+        const sheet = s.mesh(new THREE.ShapeGeometry(shape), new THREE.MeshStandardMaterial({ color: (m as THREE.MeshStandardMaterial).color, roughness: 0.8, side: THREE.DoubleSide }));
+        sheet.rotation.y = angle - Math.PI / 2;
+      } else if (a.finPanels !== 'open') {
+        const count = a.finPanels === 'mesh' ? 7 : 3;
+        for (let j = 1; j <= count; j++) {
+          const f = j / (count + 1), outer = r1 + finOut;
+          const p = dir(mix(r0, outer, f), mix(finTop, 0.12, f));
+          const q = dir(mix(r1, outer, f), mix(0.3, 0.12, f));
+          s.rod(p, q, a.finPanels === 'mesh' ? 0.007 : 0.017, m);
+        }
+        if (a.finPanels === 'mesh') for (let j = 1; j < 5; j++) {
+          const f = j / 5;
+          s.rod(dir(mix(r1, r0, f), mix(0.3, finTop, f)), dir(mix(r1 + finOut, r0, f), mix(0.12, finTop, f)), 0.007, m);
+        }
+      }
+    }
+    if (a.entry !== 'bare') {
+      const depth = profile[0][1], width = Math.sin(Math.PI / ribs) * depth * 1.9;
+      if (a.entry === 'hoop') s.tube([[-width, 0.1, depth], [-width, 0.75, depth], [0, 1.02, depth], [width, 0.75, depth], [width, 0.1, depth]], R, band[1]);
+      else {
+        const steps = a.entry === 'step' ? 1 : 3;
+        for (let i = 0; i < steps; i++) {
+          const y = 0.16 + i * 0.21, z = depth + 0.35 - i * 0.12;
+          if (a.entry === 'step') s.box([width * 1.7, 0.16, 0.3], [0, 0.08, z], band[1]);
+          else s.rod([-width, y, z], [width, y, z], R * 0.8, band[1]);
+        }
+        if (steps > 1) for (const side of [-1, 1]) s.rod([side * width, 0, depth + 0.45], [side * width, 0.85, depth - 0.04], R, band[0]);
+      }
+    }
+    if (a.innerDeck !== 'none') {
+      const y = profile[2][0], radius = profile[2][1] * Math.cos(Math.PI / ribs), deck = a.innerDeck === 'timber' ? s.material('#9c8052') : band[1];
+      for (let i = 0; i < ribs / 2; i++) { const p = at(2, i), q = at(2, i + ribs / 2); s.rod(p, q, R, band[0]); }
+      if (a.innerDeck === 'plate') {
+        s.cylinder(radius, radius, 0.025, [0, y + R + 0.0125, 0], deck, ribs);
+        const rim = s.ring(radius, 0.012, [0, y + R + 0.04, 0], deck); rim.rotation.x = Math.PI / 2;
+      } else {
+        const count = a.innerDeck === 'timber' ? 8 : 13;
+        for (let i = 0; i < count; i++) {
+          const z = -radius * 0.87 + i / (count - 1) * radius * 1.74, halfWidth = Math.sqrt(radius * radius - z * z);
+          s.box([halfWidth * 2, 0.025, a.innerDeck === 'timber' ? radius * 0.18 : 0.022], [0, y + R + 0.0125, z], deck);
+        }
+        if (a.innerDeck === 'grate') for (let i = 0; i < 7; i++) { const x = -radius * 0.8 + i * radius * 1.6 / 6, halfDepth = Math.sqrt(radius * radius - x * x); s.box([0.022, 0.018, halfDepth * 2], [x, y + R + 0.034, 0], deck); }
+      }
+    }
+    if (a.portholes !== 'none') {
+      const count = a.portholes === 'four' ? 4 : 2, level = 3, y = (profile[level][0] + profile[level + 1][0]) / 2, radius = (profile[level][1] + profile[level + 1][1]) / 2;
+      for (let i = 0; i < count; i++) {
+        const angle = (i + 0.25) * Math.PI * 2 / count, normal = new THREE.Vector3(Math.sin(angle), 0, Math.cos(angle));
+        const ring = s.ring(0.19, 0.025, [normal.x * radius, y, normal.z * radius], band[1]); ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+        for (const offset of [-0.17, 0.17]) {
+          const start = new THREE.Vector3(normal.x * radius, y + offset, normal.z * radius);
+          const rib = ((Math.round(angle / (Math.PI * 2) * ribs - 0.5) % ribs) + ribs) % ribs;
+          const anchor = at(offset < 0 ? level : level + 1, rib);
+          s.rod(start.toArray() as P3, anchor, 0.012, band[0]);
+        }
+        if (a.portholes === 'lenses') { const pane = s.mesh(new THREE.CircleGeometry(0.17, 20), new THREE.MeshStandardMaterial({color:'#a9ced5',transparent:true,opacity:0.4,depthWrite:false,side:THREE.DoubleSide}), ring.position.toArray() as P3); pane.quaternion.copy(ring.quaternion); }
+      }
     }
 
     // Name plate bolted across the front ribs.
@@ -224,13 +317,27 @@ export default defineThing({
       for (const z of [-0.26, 0.26]) s.rod([r1 * 0.5, h + 0.45, z], [x, h + 0.45, z], R * 0.8, pick(0));
     }
 
+    const climbingFrame=new THREE.Group();climbingFrame.name='rocket-frame';climbingFrame.add(...s.root.children);s.root.add(climbingFrame);
     // Ground: worn sand under the rocket, or a drift.
     const earth = new THREE.Color('#a48f6a').lerp(new THREE.Color('#e6eaed'), Math.min(1, a.snow * 1.3));
     s.cylinder(1.6, 1.7, 0.05, [0, -0.02, 0], new THREE.MeshStandardMaterial({ color: earth, roughness: 1 }), 36);
+    if (a.groundFinish === 'rubber') {
+      for (let x = -2; x <= 2; x++) for (let z = -2; z <= 2; z++) s.box([0.58, 0.035, 0.58], [x * 0.6, 0.0225, z * 0.6], s.material((x + z) % 2 ? '#8b6556' : '#596c61'));
+    } else if (a.groundFinish === 'paving') {
+      for (let i = 0; i < 16; i++) {
+        const shape = new THREE.Shape();
+        const corners = [[1.25, i / 16 * Math.PI * 2 + 0.01], [1.65, i / 16 * Math.PI * 2 + 0.01], [1.65, (i + 1) / 16 * Math.PI * 2 - 0.01], [1.25, (i + 1) / 16 * Math.PI * 2 - 0.01]];
+        corners.forEach(([r, angle], index) => { if (index === 0) shape.moveTo(Math.cos(angle) * r, Math.sin(angle) * r); else shape.lineTo(Math.cos(angle) * r, Math.sin(angle) * r); });
+        const stone = s.mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.035, bevelEnabled: false }), s.material(i % 3 ? '#b1ab99' : '#9b9e94')); stone.rotation.x = -Math.PI / 2; stone.position.y = 0.005;
+      }
+    } else if (a.groundFinish === 'grass') {
+      const clumps = Array.from({length:64},(_,i)=>{const t=i/64*Math.PI*2;return{at:[Math.cos(t)*1.48,0.04,Math.sin(t)*1.48]as P3,size:0.065+random()*0.025};});
+      const blade = new THREE.ConeGeometry(0.35,1,4);s.scatter(blade,s.material('#687b4a'),clumps);
+    }
     if (a.snow > 0.7) for (let i = 0; i < 5; i++) { const t = random() * 6.28; s.ball([0.5 + random() * 0.4, 0.12 + random() * 0.1, 0.4 + random() * 0.3], [Math.cos(t) * 1.2, 0.0, Math.sin(t) * 1.2], snowMat, 10); }
     else { const marks: { at: P3; size: number }[] = []; for (let i = 0; i < 16; i++) { const t = random() * 6.28, d = random() * 1.45; marks.push({ at: [Math.cos(t) * d, 0.005, Math.sin(t) * d], size: 0.1 + random() * 0.15 }); } const g = new THREE.SphereGeometry(1, 7, 5); g.scale(1, 0.1, 0.7); s.scatter(g, new THREE.MeshStandardMaterial({ color: earth.clone().multiplyScalar(0.8), roughness: 1 }), marks); }
 
-    if (a.state === 'leaning') { s.root.rotation.z = mix(0.07, 0.14, random()) * (random() < 0.5 ? -1 : 1); s.root.rotation.x = (random() - 0.5) * 0.08; }
+    if(a.state==='leaning'){climbingFrame.rotation.z=mix(.07,.14,random())*(random()<.5?-1:1);climbingFrame.rotation.x=(random()-.5)*.08;climbingFrame.updateMatrixWorld(true);climbingFrame.position.y+=(a.groundFinish==='rubber'?.04:.005)-new THREE.Box3().setFromObject(climbingFrame,true).min.y;}
     const holder = new Sculpture(context);
     holder.root.add(s.root);
     const speed = mix(0.4, 3.5, mood.energy), swing = mix(0.03, 0.3, mood.energy), phase = random() * 6;

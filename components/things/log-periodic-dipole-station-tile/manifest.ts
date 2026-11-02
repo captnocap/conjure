@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Log periodic dipole station tile", "summary": "A grounded low station tile holds graded crossed dipoles on a central spine with cable routing and support sockets. Remote radio astronomy, precise timing, quiet signals and field maintenance in desert arrays.", "scales": ["landscape", "tabletop", "room"]});

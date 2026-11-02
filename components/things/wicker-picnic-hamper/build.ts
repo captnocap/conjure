@@ -13,6 +13,12 @@ function canvasTexture(size: number, paint: (ctx: CanvasRenderingContext2D) => v
 
 export default defineThing({
   questions: {
+    weave: choice('How is the wicker woven?', { fine: 'Fine close rows.', broad: 'Broad flat willow strips.', twill: 'Diagonal stepped twill.', open: 'Looser thick rods with dark gaps.' }),
+    hardware: choice('What metal are the fittings?', { brass: 'Warm polished brass.', nickel: 'Bright nickel.', copper: 'Reddish copper.', iron: 'Blackened iron.' }),
+    feet: choice('What supports the hamper base?', { skids: 'Two low wooden skids.', blocks: 'Four square wood feet.', pads: 'Four round leather pads.', rails: 'Two raised wicker rails.' }),
+    identity: choice('What identifies its owner?', { initials: 'An oval brass initials plate.', luggage: 'A cream luggage tag tied to the rim.', address: 'A rectangular address card in a leather frame.', ribbon: 'A red ribbon rosette on the front.' }),
+    repair: choice('What reinforcement is visible?', { corners: 'Leather caps on the lower corners.', bands: 'Two dark reinforcing bands around the body.', patch: 'A woven repair patch on the front.', stitches: 'A row of pale repair stitches at a side seam.' }),
+    rim: choice('How is the top rim finished?', { round: 'A plain rounded rod.', rope: 'A thick rope-wrapped rim.', double: 'Two narrow rounded rods.', scalloped: 'Small woven loops along the edge.' }),
     lid: choice('Is the hamper open?', {
       shut: 'Shut and buckled, still packed, nobody has started.',
       ajar: 'Unbuckled and propped half open, someone has been rummaging.',
@@ -62,12 +68,13 @@ export default defineThing({
     const willow = new THREE.Color({ honey: '#c9953f', brown: '#6b4424', white: '#ece6d6', grey: '#9b958a' }[a.willow]).lerp(new THREE.Color('#8b8275'), mood.wear * 0.25);
     const weaveCanvas = canvasTexture(128, (ctx) => {
       ctx.fillStyle = `#${willow.clone().multiplyScalar(0.45).getHexString()}`; ctx.fillRect(0, 0, 128, 128);
-      for (let row = 0; row < 8; row++) for (let col = -1; col < 4; col++) {
-        const x = col * 32 + (row % 2) * 16, y = row * 16;
-        const g = ctx.createLinearGradient(0, y, 0, y + 16);
+      const rows = a.weave === 'fine' ? 12 : a.weave === 'broad' ? 5 : 8, step=128/rows;
+      for (let row = 0; row < rows; row++) for (let col = -2; col < 5; col++) {
+        const x = col * 32 + (a.weave === 'twill' ? row%4*8 : row%2*16), y = row * step;
+        const g = ctx.createLinearGradient(0, y, 0, y + step);
         const tone = willow.clone().offsetHSL(0, 0, (random() - 0.5) * 0.08);
         g.addColorStop(0, `#${tone.clone().multiplyScalar(0.7).getHexString()}`); g.addColorStop(0.4, `#${tone.clone().offsetHSL(0, 0, 0.08).getHexString()}`); g.addColorStop(1, `#${tone.clone().multiplyScalar(0.6).getHexString()}`);
-        ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x + 16, y + 8, 17.5, 7, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x + 16, y + step/2, a.weave === 'open' ? 15 : 17.5, step*(a.weave === 'open' ? .32 : .44), 0, 0, 7); ctx.fill();
       }
     });
     const wicker = (u: number, v: number) => {
@@ -78,7 +85,7 @@ export default defineThing({
     };
     const border = new THREE.MeshStandardMaterial({ color: willow.clone().multiplyScalar(0.72), roughness: 0.7 });
     const leather = s.material(mood.wear > 0.6 ? '#5a3a22' : '#8a5a2e', { roughness: 0.6 });
-    const brass = s.material('#c9a14a', { metalness: 0.85, roughness: 0.3 });
+    const brass = s.material({brass:'#c9a14a',nickel:'#bfc5c7',copper:'#b66b4e',iron:'#363a38'}[a.hardware], { metalness: 0.85, roughness: a.hardware==='iron'?0.55:0.3 });
     const liningTone = { red: '#cf3a36', blue: '#3b62a8', floral: '#f1e6cf', green: '#1f4a36', linen: '#d9cdb0' }[a.lining];
     const liningMap = canvasTexture(128, (ctx) => {
       ctx.fillStyle = a.lining === 'red' || a.lining === 'blue' ? '#f6f2e6' : liningTone; ctx.fillRect(0, 0, 128, 128);
@@ -107,7 +114,9 @@ export default defineThing({
         for (const end of [-1, 1]) add(new THREE.Mesh(new THREE.SphereGeometry(radius * 1.15, 10, 8), border), parent).position.set(side * width / 2, y, zCentre + end * depth / 2);
       }
     };
-    braid(body, W - wall, D - wall, Hb, 0);
+    braid(body, W - wall, D - wall, Hb, 0, a.rim === 'rope' ? 0.016 : a.rim === 'double' ? 0.007 : 0.011);
+    if(a.rim==='double') braid(body,W-wall,D-wall,Hb-0.013,0,0.006);
+    if(a.rim==='rope' || a.rim==='scalloped') for(const side of [-1,1]) for(let x=-W/2+0.018;x<W/2-0.01;x+=a.rim==='rope'?0.018:0.027) { const loop=add(new THREE.Mesh(new THREE.TorusGeometry(a.rim==='rope'?0.017:0.012,0.0025,4,9,a.rim==='rope'?Math.PI*2:Math.PI),border),body);loop.position.set(x,Hb,side*(D-wall)/2);loop.rotation.y=Math.PI/2; }
     braid(body, W - wall, D - wall, 0.012, 0, 0.009);
     const inW = W - wall * 2 - 0.004, inD = D - wall * 2 - 0.004;
     add(new THREE.Mesh(new THREE.PlaneGeometry(inW, Hb - 0.02), lining(inW, Hb)), body).position.set(0, Hb / 2 + 0.004, -inD / 2);
@@ -117,6 +126,16 @@ export default defineThing({
     const bed = empty ? 0.016 : Hb * 0.6;
     add(new THREE.Mesh(new THREE.BoxGeometry(inW, 0.006, inD), lining(inW, inD)), body).position.y = bed - 0.003;
     s.root.add(body);
+
+    // Ownership marks and repairs sit on the actual basket walls.
+    const labelMap=canvasTexture(256,ctx=>{ctx.fillStyle=a.identity==='initials'?'#c9a14a':'#eee5cb';ctx.fillRect(0,0,256,256);ctx.fillStyle='#493c2b';ctx.textAlign='center';ctx.font=a.identity==='initials'?'bold 98px serif':'28px serif';ctx.fillText(a.identity==='initials'?'J.M.':'PICNIC CLUB',128,a.identity==='initials'?162:105);if(a.identity!=='initials'){ctx.font='20px serif';ctx.fillText('MEADOW LANE',128,155);}});
+    const face=new THREE.MeshStandardMaterial({map:labelMap,roughness:0.7});
+    if(a.identity==='ribbon') { for(let i=0;i<8;i++){const petal=add(new THREE.Mesh(new THREE.SphereGeometry(1,8,5),s.material('#b94040')),body);petal.scale.set(.018,.009,.003);petal.rotation.z=i*Math.PI/4;petal.position.set(Math.cos(i*Math.PI/4)*.015,Hb*.73+Math.sin(i*Math.PI/4)*.015,D/2+.008);}add(new THREE.Mesh(new THREE.SphereGeometry(.011,10,6),brass),body).position.set(0,Hb*.73,D/2+.01); }
+    else { const mark=add(new THREE.Mesh(a.identity==='initials'?new THREE.CircleGeometry(.033,24):new THREE.PlaneGeometry(.085,.052),face),body);mark.position.set(0,Hb*.75,D/2+.009);if(a.identity==='initials') mark.scale.x=1.3; if(a.identity==='address') for(const y of [-.029,.029]) add(new THREE.Mesh(new THREE.BoxGeometry(.095,.006,.004),leather),body).position.set(0,Hb*.75+y,D/2+.011); if(a.identity==='luggage'){const string=add(new THREE.Mesh(new THREE.TorusGeometry(.023,.0015,4,16),s.material('#dbcaa0')),body);string.position.set(0,Hb-.014,D/2+.007);string.scale.x=.45;} }
+    if(a.repair==='corners') for(const side of [-1,1]) {add(new THREE.Mesh(new THREE.BoxGeometry(.055,.055,.003),leather),body).position.set(side*(W/2-.0275),.0275,D/2+.002);add(new THREE.Mesh(new THREE.BoxGeometry(.003,.055,.05),leather),body).position.set(side*(W/2+.002),.0275,D/2-.025);}
+    if(a.repair==='bands') for(const y of [Hb*.23,Hb*.65]) for(const side of [-1,1]) {add(new THREE.Mesh(new THREE.BoxGeometry(W+.004,.012,.003),leather),body).position.set(0,y,side*(D/2+.002));add(new THREE.Mesh(new THREE.BoxGeometry(.003,.012,D),leather),body).position.set(side*(W/2+.002),y,0);}
+    if(a.repair==='patch') {add(new THREE.Mesh(new THREE.BoxGeometry(.07,.06,.004),wicker(.07,.06)),body).position.set(W*.34,Hb*.43,D/2+.003);for(let i=0;i<6;i++)add(new THREE.Mesh(new THREE.BoxGeometry(.073,.002,.003),border),body).position.set(W*.34,Hb*.43-.025+i*.01,D/2+.007);}
+    if(a.repair==='stitches') for(let i=0;i<10;i++) {const stitch=add(new THREE.Mesh(new THREE.BoxGeometry(.023,.003,.003),s.material('#e4d2a5')),body);stitch.position.set(-W*.43,.025+i*(Hb-.05)/10,D/2+.005);stitch.rotation.z=i%2?.45:-.45;}
 
     // Lid: woven outside, lined inside with plates and cutlery strapped in.
     const lid = new THREE.Group();
@@ -233,7 +252,7 @@ export default defineThing({
       const peel = s.material('#f0cf3a', { roughness: 0.5 });
       for (let i = 0; i < 3; i++) { const banana = add(new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.015, 6, 14, 1.7), peel), inside); banana.rotation.set(-Math.PI / 2 + 0.25 * i, 0, 0.6); banana.position.set(inW * 0.26, 0.02 + i * 0.012, -inD * 0.1 - i * 0.02); }
       const enamel = s.material('#f1eee4', { roughness: 0.3 });
-      for (let i = 0; i < 2; i++) { const mug = add(new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.033, 0.07, 18), enamel), inside); mug.position.set(inW * 0.3 - i * 0.02, 0.035 + i * 0.05, inD * 0.26); const rim = add(new THREE.Mesh(new THREE.TorusGeometry(0.036, 0.003, 5, 20), s.material('#25407c')), inside); rim.rotation.x = Math.PI / 2; rim.position.set(inW * 0.3 - i * 0.02, 0.07 + i * 0.05, inD * 0.26); }
+      for (let i = 0; i < 2; i++) { const mug = add(new THREE.Mesh(new THREE.LatheGeometry([[0,0],[.033,0],[.036,.07],[.032,.07],[.029,.005],[0,.005]].map(([x,y])=>new THREE.Vector2(x,y)),18), enamel), inside); mug.position.set(inW * 0.3 - i * 0.02, i * 0.05, inD * 0.26); const rim = add(new THREE.Mesh(new THREE.TorusGeometry(0.036, 0.003, 5, 20), s.material('#25407c')), inside); rim.rotation.x = Math.PI / 2; rim.position.set(inW * 0.3 - i * 0.02, 0.07 + i * 0.05, inD * 0.26); }
     } else if (a.packed === 'tea') {
       const pot = new THREE.Group();
       const glaze = s.material(mood.cheer > 0.5 ? '#e8c9d0' : '#7a5a3a', { roughness: 0.25 });
@@ -246,7 +265,7 @@ export default defineThing({
       inside.add(pot);
       for (let i = 0; i < 2; i++) {
         add(new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.03, 0.008, 18), china), inside).position.set(inW * 0.12 + i * 0.1, 0.004, inD * 0.2 - i * 0.02);
-        add(new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.022, 0.04, 18), china), inside).position.set(inW * 0.12 + i * 0.1, 0.028, inD * 0.2 - i * 0.02);
+        add(new THREE.Mesh(new THREE.LatheGeometry([[0,0],[.022,0],[.034,.04],[.03,.04],[.018,.004],[0,.004]].map(([x,y])=>new THREE.Vector2(x,y)),18), china), inside).position.set(inW * 0.12 + i * 0.1, 0.008, inD * 0.2 - i * 0.02);
         const band = add(new THREE.Mesh(new THREE.TorusGeometry(0.034, 0.0025, 5, 20), plateRim), inside); band.rotation.x = Math.PI / 2; band.position.set(inW * 0.12 + i * 0.1, 0.048, inD * 0.2 - i * 0.02);
       }
       add(new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.06, 24), s.material('#b3262c', { metalness: 0.5, roughness: 0.35 })), inside).position.set(inW * 0.22, 0.03, -inD * 0.18);
@@ -308,6 +327,15 @@ export default defineThing({
         s.mesh(new THREE.LatheGeometry([[0, 0.066], [0.004, 0.066], [0.029, 0.09], [0.032, 0.11], [0, 0.11]].map(([px, py]) => new THREE.Vector2(px, py)), 18), s.material('#7d1730', { roughness: 0.1 }), [x, 0, z]);
       }
     }
+    // Raise the basket assembly onto its selected supports; loose pieces remain grounded.
+    const lift={skids:.012,blocks:.023,pads:.007,rails:.018}[a.feet];
+    body.position.y+=lift;inside.position.y+=lift;
+    if(a.lid==='off') {lid.updateMatrixWorld(true);lid.position.y-=new THREE.Box3().setFromObject(lid,true).min.y;} else lid.position.y+=lift;
+    const support=s.material(a.feet==='pads'?'#64462d':'#967144');
+    if(a.feet==='blocks'||a.feet==='pads') for(const x of [-W*.38,W*.38]) for(const z of [-D*.34,D*.34]) { const foot=add(new THREE.Mesh(a.feet==='pads'?new THREE.CylinderGeometry(.022,.022,lift,12):new THREE.BoxGeometry(.036,lift,.036),support));foot.position.set(x,lift/2,z); }
+    else for(const x of [-W*.34,W*.34]) {const foot=add(new THREE.Mesh(new THREE.BoxGeometry(.028,lift,D*.9),a.feet==='rails'?border:support));foot.position.set(x,lift/2,0);}
+    // A blanket on the closed lid follows the newly raised basket.
+    if(a.beside==='blanket'&&a.lid==='shut') for(const node of s.root.children) if(node!==body&&node!==lid&&node!==inside&&node.position.y>Hb) node.position.y+=lift;
     return s.finish();
   },
 });

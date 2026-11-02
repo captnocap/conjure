@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Columnar sea ice crystal fabric", "summary": "Prismatic ice grains meet at explicit boundaries in a slab cut; brine inclusions follow credible grain-boundary paths. A magnified schematic of columnar sea ice with genuine lamellar gaps and retained brine; crystal fabric, anisotropy and polar microstructure.", "scales": ["macro", "tabletop"]});

@@ -1,0 +1,50 @@
+import * as THREE from 'three';
+import {choice,defineThing,defineWorld,diorama,mix,score,Sculpture} from '@conjure/kit';
+type P=readonly[number,number,number];
+function leaf(s:Sculpture,at:P,length:number,width:number,mat:THREE.Material,rise=.12){return s.surface((u,v,p)=>{p.set((u-.5)*length,Math.sin(Math.PI*u)*rise-Math.abs(v-.5)*.04,Math.sin(Math.PI*u)*(v-.5)*width);},mat,{segments:[20,8],at});}
+function book(s:Sculpture,x:number,y:number,z:number,w:number,h:number,d:number,cover:THREE.Material,pages:THREE.Material,flat=false){const group=new THREE.Group(),first=s.root.children.length;s.box([w*.8,h*.93,d*.92],[x,y+h/2,z],pages);for(const sign of[-1,1])s.box([w*.12,h,d],[x+sign*w*.44,y+h/2,z],cover);s.box([w,h,.025],[x,y+h/2,z+d*.47],cover);for(const node of s.root.children.slice(first))group.add(node);s.root.add(group);if(flat){const pivot=new THREE.Group();pivot.position.set(x,y,z);group.position.set(-x,-y,-z);pivot.add(group);s.root.add(pivot);pivot.rotation.z=Math.PI/2;pivot.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(pivot,true),centre=bounds.getCenter(new THREE.Vector3());pivot.position.x+=x-centre.x;pivot.position.z+=z-centre.z;pivot.position.y+=y-bounds.min.y;return pivot;}return group;}
+function shell(s:Sculpture,at:P,r:number,h:number,depth:number,material:THREE.Material,inner:THREE.Material){const group=new THREE.Group(),first=s.root.children.length;for(const inset of[0,.075])s.surface((u,v,p)=>{const a=u*Math.PI,b=v*Math.PI;p.set(Math.cos(a)*Math.sin(b)*(r-inset),h+Math.cos(b)*(h-inset),-Math.sin(a)*Math.sin(b)*(depth-inset));},inset?inner:material,{segments:[48,24],at});const rim=s.ring(r,.045,[at[0],at[1]+h,at[2]],material);rim.scale.y=h/r;for(const node of s.root.children.slice(first))group.add(node);s.root.add(group);return group;}
+function ground(node:THREE.Object3D,top:number){node.updateMatrixWorld(true);node.position.y+=top-new THREE.Box3().setFromObject(node,true).min.y;}
+
+export default defineThing({questions:{
+pose:choice("How is the librarian positioned?",{"reading": "Stretched toward the reading stand.", "resting": "Body gathered under the shell.", "looking": "Head raised toward an arriving visitor.", "turning": "Head turned slightly to one side."}),
+shell:choice("What shape is the shell?",{"round": "A round broad spiral shell.", "tall": "A tall high-whorled shell.", "low": "A low flattened shell.", "ridged": "A round shell with pronounced growth ribs."}),
+colour:choice("What is the shell pattern?",{"banded": "Warm shell with dark spiral bands.", "pale": "Pale cream shell with a quiet rim.", "moss": "Olive shell with a few moss cushions.", "copper": "Reddish shell with lighter growth rings."}),
+stand:choice("What holds the reading material?",{"lectern": "A sloping wooden lectern on one post.", "stump": "A low broad stump.", "crate": "A small open-front library crate.", "leaf": "A leaf-shaped reading shelf on two stems."}),
+book:choice("What is the librarian consulting?",{"open": "An open book.", "closed": "A closed ledger with an index card.", "scroll": "An unrolled scroll between two small rollers.", "tags": "A row of small catalogue cards."}),
+glasses:choice("What helps the librarian read?",{"round": "Round spectacles beneath the eye tips.", "square": "Tiny square-framed spectacles.", "lens": "A single magnifying lens on the lectern.", "none": "No reading aid."}),
+collar:choice("What is worn near the shell opening?",{"scarf": "A short cloth scarf.", "badge": "A small hanging library badge.", "beads": "A simple string of little beads.", "plain": "No adornment."}),
+bag:choice("What carries the returned slips?",{"side": "A flat satchel beside the shell.", "pair": "Two small paired saddlebags.", "basket": "A tiny wicker basket behind the shell.", "none": "No bag."}),
+trail:choice("What lies behind the librarian?",{"slips": "Three returned-book slips.", "path": "A short glossy winding trail.", "leaves": "Two fallen leaves.", "clear": "A clear floor."}),
+base:choice("What supports the reading station?",{"board": "A broad wooden library floorboard.", "moss": "A low moss-covered stone pad.", "tile": "A pale ceramic reading tile.", "bare": "The snail and stand rest directly on the ground."}),
+scale:score('How large is this librarian?', ['A tiny junior librarian','A small resident snail','A broad seasoned librarian','A large old shell keeper'])
+},build(a,context){
+
+ const s=new Sculpture(context),size=mix(.85,1.2,a.scale),base=a.base==='bare'?0:.055,wood=s.material('#856544'),dark=s.material('#554b38'),bodyMat=s.material('#a4ae82',{roughness:.75}),shellMat=s.material(a.colour==='pale'?'#d8caab':a.colour==='moss'?'#8b956d':a.colour==='copper'?'#b58162':'#b29b73'),stripe=s.material(a.colour==='pale'?'#b9ad91':'#6e5b3e'),green=s.material('#708653',{side:THREE.DoubleSide}),paper=s.material('#e1d7ba'),cover=s.material('#718174'),metal=s.material('#7d8778',{metalness:.5});
+ if(a.base!=='bare')s.box([1.2,.055,2.55],[0,.0275,-.05],a.base==='board'?wood:a.base==='tile'?paper:green);
+ const first=s.root.children.length,animal=new THREE.Group(),headZ=a.pose==='resting'?.25:.53,headY=a.pose==='looking'?.39:.24,headX=a.pose==='turning'?.15:0;
+ s.ball([.25,.065,a.pose==='resting'?.47:.66],[0,.065,-.1],bodyMat,24);s.ball([.2,.19,.42],[0,.22,-.16],bodyMat,22);s.tube([[0,.16,.08],[headX*.6,headY*.8,headZ*.65],[headX,headY,headZ]],.115,bodyMat);s.ball([.12,.12,.14],[headX,headY,headZ],bodyMat,18);
+ const rx=.27,ry=a.shell==='tall'?.52:a.shell==='low'?.3:.4,rz=a.shell==='low'?.48:.41,cy=.3+ry*.62,cz=-.2;s.ball([rx,ry,rz],[0,cy,cz],shellMat,32);
+ for(const sign of[-1,1]){const points:P[]=[];for(let i=0;i<=80;i++){const t=i/80*Math.PI*4,rr=.12+.82*i/80;points.push([sign*(rx*Math.sqrt(Math.max(0,1-rr*rr))+.006),cy+Math.sin(t)*ry*rr,cz+Math.cos(t)*rz*rr]);}s.tube(points,a.shell==='ridged'?.022:.013,stripe);}
+ if(a.colour==='moss')for(let i=0;i<8;i++){const t=i*Math.PI/4;s.ball([.045,.025,.04],[Math.sin(t)*.15,cy+ry*.87,cz+Math.cos(t)*.13],green,8);}
+ const eyes:Array<[number,number,number]>=[];for(const sign of[-1,1]){const at:[number,number,number]=[headX+sign*.1,headY+(a.pose==='looking'?.25:.18),headZ+.1];s.rod([headX+sign*.06,headY+.06,headZ+.04],at,.012,bodyMat,.009);s.ball([.018,.02,.018],at,dark,10);eyes.push(at);s.rod([headX+sign*.06,headY-.01,headZ+.1],[headX+sign*.1,headY-.015,headZ+.19],.007,bodyMat);}
+ if(a.glasses==='round'||a.glasses==='square'){for(const eye of eyes){const frame=s.ring(.034,.004,[eye[0],eye[1]-.014,eye[2]+.016],metal);if(a.glasses==='square'){frame.geometry.dispose();frame.geometry=new THREE.TorusGeometry(.033,.004,4,4);frame.rotation.z=Math.PI/4;}}s.rod([eyes[0][0]+.033,eyes[0][1]-.014,eyes[0][2]+.016],[eyes[1][0]-.033,eyes[1][1]-.014,eyes[1][2]+.016],.003,metal);}
+ if(a.collar==='scarf'){s.tube([[-.19,.24,.12],[0,.19,.23],[.19,.24,.12]],.025,cover);s.box([.055,.16,.018],[.15,.16,.2],cover).rotation.z=-.3;}if(a.collar==='badge'){s.rod([-.14,.27,.13],[.14,.27,.13],.005,wood);s.label('LIB',.11,.075,[0,.22,.255],'#463c2c','#d6c59c');}if(a.collar==='beads')for(let i=0;i<8;i++){const t=i/7*Math.PI;s.ball([.015,.015,.015],[Math.cos(t)*.19,.24-Math.sin(t)*.035,.15+Math.sin(t)*.08],paper,8);}
+ if(a.bag==='side'||a.bag==='pair')for(const sign of a.bag==='pair'?[-1,1]:[1]){s.box([.08,.18,.26],[sign*.28,.23,cz],cover);s.tube([[sign*.29,.31,cz-.1],[0,cy+ry+.01,cz],[sign*.29,.31,cz+.1]],.009,wood);s.box([.012,.055,.06],[sign*.326,.25,cz+.02],metal);}if(a.bag==='basket'){s.lathe([[0,0],[.1,0],[.12,.15],[.105,.15],[.085,.018],[0,.018]],wood,[0,.07,-.7]);s.tube([[-.1,.2,-.7],[0,.32,-.7],[.1,.2,-.7]],.01,wood);s.rod([0,.3,-.5],[0,.28,-.7],.008,wood);}
+ for(const part of s.root.children.slice(first))animal.add(part);s.root.add(animal);animal.scale.setScalar(size);ground(animal,base);
+ const standZ=.85,standH=.38*size;if(a.stand==='stump')s.cylinder(.22,.26,standH,[0,base+standH/2,standZ],wood,12);else if(a.stand==='crate'){for(const x of[-.23,.23])s.box([.035,standH,.36],[x,base+standH/2,standZ],wood);s.box([.49,.035,.36],[0,base+.0175,standZ],wood);s.box([.49,.035,.36],[0,base+standH,standZ],wood);}else if(a.stand==='lectern'){s.box([.43,.04,.32],[0,base+.02,standZ],wood);s.box([.07,standH,.07],[0,base+standH/2,standZ],wood);}else for(const x of[-.16,.16])s.tube([[x,base+.015,standZ],[x*.9,base+standH*.7,standZ],[x,base+standH,standZ]],.02,green);
+ const top=base+standH+.03,firstDesk=s.root.children.length;
+ if(a.stand==='leaf')leaf(s,[0,-.045,0],.61,.51,green,.04);
+ s.box([.5,.03,.37],[0,0,0],wood);
+ const paperY=.015;
+ if(a.book==='open'){for(const sign of[-1,1])s.box([.2,.01,.29],[sign*.1,paperY+.013,0],paper).rotation.z=sign*.08;}
+ else if(a.book==='closed'){book(s,0,paperY,0,.045,.27,.23,cover,paper,true);s.box([.08,.005,.1],[.18,paperY+.0025,.08],paper);}
+ else if(a.book==='scroll'){s.box([.34,.006,.28],[0,paperY+.003,0],paper);for(const x of[-.18,.18]){const roll=s.cylinder(.024,.024,.3,[x,paperY+.024,0],paper,12);roll.rotation.x=Math.PI/2;}}
+ else for(let i=0;i<3;i++)s.box([.11,.004,.18],[(i-1)*.12,paperY+.002,0],paper);
+ if(a.glasses==='lens'){s.ring(.07,.008,[.16,paperY+.09,0],metal).rotation.x=-.6;s.rod([.16,paperY,0],[.16,paperY+.09,0],.008,metal);}
+ const desktop=new THREE.Group();for(const node of s.root.children.slice(firstDesk))desktop.add(node);s.root.add(desktop);desktop.position.set(0,top,standZ);desktop.rotation.x=a.stand==='leaf'?0:-.15;desktop.updateMatrixWorld(true);
+ for(const x of[-.15,.15]){const target=desktop.localToWorld(new THREE.Vector3(x,-.015,0));s.root.worldToLocal(target);s.rod([0,base+standH-.045,standZ],target.toArray() as [number,number,number],.018,wood);}
+ if(a.trail==='slips')for(let i=0;i<3;i++)s.box([.12,.004,.15],[(i%2-.5)*.18,base+.003,-.8-i*.13],paper).rotation.y=i*.4;else if(a.trail==='path')s.tube([[0,base+.008,-.4],[.04,base+.008,-.7],[-.08,base+.008,-1],[0,base+.008,-1.22]],.018,s.material('#adbd9d',{roughness:.15}));else if(a.trail==='leaves')for(let i=0;i<2;i++){const l=leaf(s,[(i-.5)*.4,base+.025,-.82],.29,.15,green,.02);l.rotation.y=i*.7;ground(l,base);}
+ return s.finish();
+
+}});

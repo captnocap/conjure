@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Alluvial fan avulsion model", "summary": "A steep feeder canyon opens onto a low radial depositional fan, with true incised distributaries and small cast benches on inactive lobes. A persistent incised fan and source gorge retain the setting through every cast. Surface geometry distinguishes active channels, abandoned courses and accumulated sediment.", "scales": ["landscape", "tabletop"]});

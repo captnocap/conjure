@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Cochlear spiral organ section", "summary": "A visibly coiled, cutaway cochlear canal; open section lips expose separate fluid spaces and an attached sensory ribbon, with cast shelves kept clear. A fixed coiled canal, separate membranes and central nerve remain around clear specimen positions. Hearing and hidden architecture.", "scales": ["macro", "tabletop"]});

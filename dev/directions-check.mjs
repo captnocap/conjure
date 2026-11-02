@@ -31,6 +31,10 @@ try {
     const json = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
     if (path === '/api/status') return json({ configured: true, models: [model], defaultModel: model });
     if (path === '/api/traces' && request.method() === 'GET') return json([]);
+    // The gallery dock lists saved pictures as the page opens; the check has none.
+    if (path === '/api/gallery' && request.method() === 'GET') return json({ total: 0, entries: [] });
+    // The window print is attached to the saved entry afterwards; the check keeps nothing.
+    if (path.startsWith('/api/gallery/entry/') && path.endsWith('/window') && request.method() === 'POST') return json({ ok: true });
     if (path === '/api/gallery' && request.method() === 'POST') { gallery.push(request.postDataJSON()); return json({ id: 'directions-qa', day: '2026-01-01' }); }
     if (path !== '/api/decide' || request.method() !== 'POST') { unexpectedApi.push(`${request.method()} ${path}`); return json({ error: 'Unexpected API request in direction check' }, 500); }
     const body = request.postDataJSON(), phase = phaseOf(body.brief);

@@ -52,6 +52,48 @@ export default defineThing({
       book: 'On a closed picture book, for a level start.',
       wagon: 'On a little wooden pull-along wagon with a string, which is asking for trouble.',
     }),
+    corners: choice('How are the block corners shaped?', {
+      crisp: 'Nearly square sawn corners.',
+      rounded: 'Lightly rounded traditional block edges.',
+      soft: 'Very soft pillowed corners for small hands.',
+      bevel: 'Broad straight chamfers frame each face.',
+    }),
+    typeface: choice('What sort of lettering is on the blocks?', {
+      serif: 'Traditional bold serif letters.',
+      simple: 'Clear plain sans-serif letters.',
+      hand: 'Loose hand-painted italic letters.',
+      outline: 'Large hollow outlined letters.',
+    }),
+    emblems: choice('What small marks accompany the letters?', {
+      none: 'The letters stand alone.',
+      stars: 'A tiny star appears in each lower corner.',
+      dots: 'Small counting dots run below each letter.',
+      arrows: 'Little directional arrows flank the letters.',
+    }),
+    layers: choice('How many blocks make each level of the tower?', {
+      single: 'One block per level.',
+      pairs: 'Two matching blocks stand side by side on each level.',
+      crossed: 'Pairs alternate their direction on each level.',
+      triple: 'Three matching blocks make broad levels.',
+    }),
+    grain: choice('Where bare wood is visible, which way does its grain run?', {
+      horizontal: 'Fine horizontal wood grain.',
+      vertical: 'Long upright grain lines.',
+      diagonal: 'Diagonal grain crosses the letter faces.',
+      end: 'Small end-grain rings remain around the letters.',
+    }),
+    spareLayout: choice('How are the spare pieces being kept?', {
+      scattered: 'Spare blocks are scattered behind the tower.',
+      row: 'The spare pieces are laid in a careful row.',
+      tray: 'An open wooden sorting tray holds the extras.',
+      stack: 'The spare letter blocks make a second small stack.',
+    }),
+    aid: choice('What has the builder left beside the tower?', {
+      ruler: 'A little marked wooden ruler.',
+      plan: 'A paper plan shows a simple block tower.',
+      beads: 'A short row of counting beads on a wooden stand.',
+      card: 'A small card names the building project.',
+    }),
   },
 
   build(a, context) {
@@ -80,7 +122,7 @@ export default defineThing({
       else fromTop.push(i < word.length ? word[i] : alphabet[Math.floor(random() * 26)]);
     }
 
-    const cube = new RoundedBoxGeometry(S, S, S, 2, S * 0.07);
+    const cube = new RoundedBoxGeometry(S, S, S, a.corners === 'bevel' ? 1 : 3, S * ({ crisp: .012, rounded: .07, soft: .19, bevel: .14 }[a.corners]));
     const paintOffset = Math.floor(random() * paints.length);
     const face = (letter: string, index: number) => {
       const paint = paints[(index + paintOffset) % paints.length];
@@ -91,6 +133,7 @@ export default defineThing({
       g.fillStyle = solid ? paint : palette.wood;
       g.fillRect(0, 0, 128, 128);
       if (!solid) {
+        g.save();g.translate(64,64);g.rotate(a.grain==='vertical'?Math.PI/2:a.grain==='diagonal'?Math.PI/4:0);g.translate(-64,-64);
         g.strokeStyle = 'rgba(120,80,40,0.16)';
         g.lineWidth = 1.5;
         for (let i = 0; i < 12; i++) {
@@ -100,6 +143,8 @@ export default defineThing({
           g.bezierCurveTo(40, y + jit(8), 90, y + jit(8), 128, y + jit(5));
           g.stroke();
         }
+        if(a.grain==='end')for(let i=0;i<9;i++){g.beginPath();g.ellipse(44,70,8+i*9,6+i*7,.2,0,Math.PI*2);g.stroke();}
+        g.restore();
       }
       const ink = solid ? '#fbf3dc' : paint;
       g.strokeStyle = ink;
@@ -108,9 +153,12 @@ export default defineThing({
       g.fillStyle = ink;
       g.textAlign = 'center';
       g.textBaseline = 'middle';
-      g.font = 'bold 82px Georgia, serif';
+      g.font = a.typeface==='simple'?'bold 82px sans-serif':a.typeface==='hand'?'italic bold 78px Georgia, serif':'bold 82px Georgia, serif';
       if (solid) { g.lineWidth = 5; g.lineJoin = 'round'; g.strokeStyle = 'rgba(40,30,30,0.42)'; g.strokeText(letter, 64, 70); }
-      g.fillText(letter, 64, 70);
+      if(a.typeface==='outline'){g.strokeStyle=ink;g.lineWidth=3;g.strokeText(letter,64,70);}else g.fillText(letter, 64, 70);
+      if(a.emblems==='dots')for(let i=0;i<3+index%4;i++){g.beginPath();g.arc(37+i*10,108,2.4,0,Math.PI*2);g.fill();}
+      if(a.emblems==='stars')for(const x of [24,104]){g.beginPath();for(let i=0;i<10;i++){const t=-Math.PI/2+i/10*Math.PI*2,r=i%2?2.5:6;g.lineTo(x+Math.cos(t)*r,104+Math.sin(t)*r);}g.closePath();g.fill();}
+      if(a.emblems==='arrows')for(const x of [23,105]){g.beginPath();g.moveTo(x,52);g.lineTo(x,75);g.lineTo(x-4,69);g.moveTo(x,75);g.lineTo(x+4,69);g.stroke();}
       // Chipped paint and grime follow the mood's wear.
       const chips = Math.round(mood.wear * 34);
       for (let i = 0; i < chips; i++) {
@@ -185,7 +233,7 @@ export default defineThing({
 
     // What it stands on.
     let baseY = 0;
-    let baseHalf = S * 0.5;
+    let baseHalf = S * (a.layers==='triple'?1.6:a.layers==='single'?.5:1.1);
     if (a.base === 'book') {
       const cover = plain(['#2e5d8a', '#a23b33', '#3b7a52', '#d9a23a'][Math.floor(random() * 4)]);
       const turn = jit(0.4);
@@ -224,7 +272,14 @@ export default defineThing({
     stack.position.y = baseY;
     s.root.add(stack);
     const sloppy = mix(0.03, 0.75, a.stacking);
-    const pieces: { node: THREE.Object3D; lying: number }[] = fromTop.slice().reverse().map((letter, index) => ({ node: letterBlock(letter, index), lying: S / 2 }));
+    const pieces: { node: THREE.Object3D; lying: number }[] = fromTop.slice().reverse().map((letter, index) => {
+      if(a.layers==='single')return{node:letterBlock(letter,index),lying:S/2};
+      const row=new THREE.Group(),n=a.layers==='triple'?3:2;
+      for(let i=0;i<n;i++){const block=letterBlock(letter,index);block.position.x=(i-(n-1)/2)*S*1.02;row.add(block);}
+      if(a.layers==='crossed'&&index%2===1)row.rotation.y=Math.PI/2;
+      // Preserve each level's crosswise arrangement when the whole level is posed.
+      return{node:new THREE.Group().add(row),lying:S/2};
+    });
     if (a.topper !== 'none') {
       const top = toppers[a.topper]();
       shadowed(top.node);
@@ -265,14 +320,14 @@ export default defineThing({
       pieces.forEach((piece, index) => {
         if (index < kept) return upright(piece.node, index, 0, 0);
         const j = index - kept;
-        let x = 0, z = 0, gap = S * 1.45;
+        let x = 0, z = 0; const footprint = S * (a.layers==='triple'?1.65:a.layers==='single'?.75:1.2), gap = footprint*2;
         for (let attempt = 0; attempt < 60; attempt++) {
-          const distance = baseHalf + S * (0.9 + j * 0.62 + random() * 0.9);
+          const distance = baseHalf + footprint + S * (0.4 + j * 0.9 + random() * 0.9 + attempt * .38);
           const angle = heading + jit(0.75);
           x = Math.cos(angle) * distance;
           z = Math.sin(angle) * distance * 0.9 + S * 0.3;
           if (placed.every(([px, pz]) => Math.hypot(px - x, pz - z) > gap)) break;
-          gap *= 0.985;
+
         }
         placed.push([x, z]);
         const isTopper = a.topper !== 'none' && index === pieces.length - 1;
@@ -281,11 +336,19 @@ export default defineThing({
         if (isTopper) piece.node.rotation.set(0, random() * Math.PI * 2, Math.PI / 2);
         else piece.node.rotation.set(Math.floor(random() * 4) * Math.PI / 2, random() * Math.PI * 2, Math.floor(random() * 4) * Math.PI / 2, 'YXZ');
         stack.add(piece.node);
+        stack.updateMatrixWorld(true);
+        const bounds=new THREE.Box3().setFromObject(piece.node,true);
+        piece.node.position.y-=bounds.min.y;
       });
     }
 
     // Spare blocks left around the site: more of them in a denser scene.
     const spares = Math.floor(mix(0, 6.5, mood.density) + random() * 0.8);
+    const trayX=-.24,trayZ=.18;
+    if(a.spareLayout==='tray'){
+      const wood=s.material('#b59260');s.box([.22,.006,.15],[trayX,.003,trayZ],wood);
+      for(const side of [-1,1]){s.box([.22,.018,.004],[trayX,.015,trayZ+side*.073],wood);s.box([.004,.018,.15],[trayX+side*.108,.015,trayZ],wood);}
+    }
     const sites: [number, number][] = [];
     for (let i = 0; i < spares; i++) {
       let x = 0, z = 0;
@@ -297,21 +360,40 @@ export default defineThing({
         if (sites.every(([px, pz]) => Math.hypot(px - x, pz - z) > S * 1.5)) break;
       }
       sites.push([x, z]);
-      const kind = random();
+      let supportY=0;
+      if(a.spareLayout==='row'){x=-.2-i*S*1.35;z=.17;}
+      if(a.spareLayout==='tray'){x=trayX+(i%3-1)*.065;z=trayZ+(Math.floor(i/3)-.5)*.065;supportY=.006;}
+      if(a.spareLayout==='stack'){x=-.18;z=.18;supportY=i*S;}
+      const kind = a.spareLayout==='stack'?.2:random();
       if (kind < 0.5) {
         const block = letterBlock(alphabet[Math.floor(random() * 26)], i + 2);
-        block.position.set(x, S / 2, z);
+        block.position.set(x, S / 2+supportY, z);
         block.rotation.y = random() * Math.PI;
         s.root.add(block);
       } else if (kind < 0.78) {
-        const log = s.cylinder(S * 0.36, S * 0.36, S * 1.3, [x, S * 0.36, z], plain(palette.paints[i % palette.paints.length]), 18);
+        const log = s.cylinder(S * 0.36, S * 0.36, S * 1.3, [x, S * 0.36+supportY, z], plain(palette.paints[i % palette.paints.length]), 18);
         log.rotation.set(Math.PI / 2, 0, random() * Math.PI);
       } else {
         const roof = toppers.roof().node;
-        roof.position.set(x, S / 2, z);
+        roof.position.set(x, S / 2+supportY, z);
         roof.rotation.y = random() * Math.PI;
         s.root.add(shadowed(roof));
       }
+    }
+
+    const aidX=-.22,aidZ=-.18,ink=s.material('#68513a'),paper=s.material('#e9dfc1');
+    if(a.aid==='ruler'){
+      s.box([.14,.003,.022],[aidX,.0015,aidZ],s.material('#d0ad75'));
+      for(let i=0;i<15;i++)s.box([.0007,.0004,i%5===0?.014:.007],[aidX-.065+i*.0093,.0033,aidZ],ink);
+    }else if(a.aid==='beads'){
+      s.box([.11,.007,.027],[aidX,.0035,aidZ],s.material('#b28c56'));
+      for(const side of [-1,1])s.cylinder(.003,.003,.035,[aidX+side*.047,.0245,aidZ],ink,10);
+      const rail=s.cylinder(.002,.002,.094,[aidX,.04,aidZ],ink,10);rail.rotation.z=Math.PI/2;
+      for(let i=0;i<7;i++)s.ball([.0055,.0055,.0055],[aidX-.035+i*.011,.04,aidZ],plain(palette.paints[i%palette.paints.length]),12);
+    }else{
+      s.box([.11,.001,.067],[aidX,.0005,aidZ],paper);
+      if(a.aid==='plan')for(let i=0;i<4;i++){const outline=s.label(String(i+1),.014,.014,[aidX,.0012,aidZ+.022-i*.014],'#66513b','#d6c097');outline.rotation.x=-Math.PI/2;}
+      else{const label=s.label('MY TOWER',.09,.034,[aidX,.0012,aidZ],'#6a513d','#e9dfc1');label.rotation.x=-Math.PI/2;}
     }
 
     const sway = state === 'leaning' ? 1 : state === 'standing' ? 0.3 : 0;

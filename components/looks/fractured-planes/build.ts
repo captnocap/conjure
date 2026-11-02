@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type Palette as PicturePalette, type PaletteRole, type RGB as Paint, choice, clamp01, defineLook, mix, rekey, score, seeded } from '@conjure/kit';
 
 type RGB = [number, number, number];
 const hex = (value: string): RGB => [
@@ -136,6 +136,30 @@ const PALETTES = {
     true,
   ),
 } as const satisfies Record<string, Palette>;
+
+/**
+ * Under the picture's palette a painter's box keeps its design and turns to the picture's colours:
+ * the mids (the body of the painting) take the ink as a set, keeping their spread; the shadow,
+ * paper and wall take the ground's tint, as does the dream sky; the futurist echoes and the dream's
+ * plain, cliffs and sea answer in the second colour. The scene's own colours stay the scene's.
+ */
+function paletteIn(key: keyof typeof PALETTES, picture: PicturePalette | undefined): Palette {
+  const P: Palette = PALETTES[key];
+  if (!picture || P.follow) return P;
+  const to = (c: RGB): Paint => [Math.round(c[0] * 255), Math.round(c[1] * 255), Math.round(c[2] * 255)];
+  const from = (c: Paint): RGB => [c[0] / 255, c[1] / 255, c[2] / 255];
+  const set = (colours: RGB[], role: PaletteRole) => {
+    const keyed = rekey(Object.fromEntries(colours.map((c, i) => [i, to(c)])), picture, Object.fromEntries(colours.map((_, i) => [i, role])));
+    return colours.map((_, i) => from(keyed[i]));
+  };
+  const [deep, cream, wall] = set([P.deep, P.cream, P.wall], 'ground');
+  const [sky0, sky1, sky2] = set(P.sky, 'ground');
+  const [far, near, lit, shade, sea] = set([...P.land, ...P.rock, P.sea], 'second');
+  return {
+    deep, cream, wall, mids: set(P.mids, 'ink'), echo: set(P.echo, 'second'),
+    sky: [sky0, sky1, sky2], land: [far, near], rock: [lit, shade], sea, follow: false,
+  };
+}
 
 // ------------------------------------------------------------------------------------ noise
 
@@ -299,13 +323,13 @@ const TRADITIONS = {
 export default defineLook({
   questions: {
     tradition: choice('Which modern tradition breaks the picture?', TRADITIONS),
-    palette: choice('Which colours are on the palette?', {
-      umber: 'Braque in 1911: tobacco and umber browns, ochre and dull greys, with deep brown shadows. Cafés, pipes, newspapers, guitars.',
-      pewter: 'Picasso in 1910: pewter and silver greys, slate blue and a little brown. Cool, cerebral, wintry portraits.',
-      olive: 'Juan Gris: slate blue, olive green, black and straw, with one brick red. Crisp, tabletop, modern.',
-      desert: 'Dalí: ochre sand, gold rock, deep Prussian sky fading to pale lemon at the horizon. Dreams, heat, stillness.',
-      prismatic: 'Severini and Balla: vermilion, cobalt, lemon and emerald against near-black. Electric light, dance halls, speed.',
-      bistre: 'One brown: a bistre study in browns from cream to near black, like an old drawing.',
+    palette: choice('What character has the painter\u2019s palette? Its colours come from the picture\u2019s palette.', {
+      umber: 'Braque in 1911: a close, muted family of earthy tones and dull neutrals, with deep shadows. Cafés, pipes, newspapers, guitars.',
+      pewter: 'Picasso in 1910: cool silvery near-greys with a little warmth in them. Cool, cerebral, wintry portraits.',
+      olive: 'Juan Gris: crisp mid-strength colours, black and a pale straw light, with one hot note. Crisp, tabletop, modern.',
+      desert: 'Dalí: hot sunlit earth and rock under a deep sky fading to a pale horizon. Dreams, heat, stillness.',
+      prismatic: 'Severini and Balla: a full spectrum of saturated colours against near-black. Electric light, dance halls, speed.',
+      bistre: 'One colour: a monochrome study from pale to near black, like an old drawing.',
       scene: 'The scene’s own colours, deepened and muted into old oil paint.',
     }),
     planes: score('How large are the planes the picture is cut into?', [
@@ -373,7 +397,7 @@ export default defineLook({
     const notes: string[] = [];
 
     // ---------------------------------------------------------------- palette, tinted by mood
-    const P: Palette = PALETTES[a.palette];
+    const P: Palette = paletteIn(a.palette, context.palette);
     const warm = (mood.warmth - 0.5) * 0.16;
     const tint = (c: RGB): RGB => [clamp01(c[0] * (1 + warm)), clamp01(c[1] * (1 + warm * 0.2)), clamp01(c[2] * (1 - warm))];
     const deep = tint(P.deep), cream = tint(P.cream);

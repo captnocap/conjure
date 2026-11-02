@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type Palette, type PaletteRole, choice, clamp01, defineLook, fromOklch, mix, oklch, paintRGB, rekey, score, seeded } from '@conjure/kit';
 
 /**
  * Ukiyo-e: the frame is cut into blocks the way a publisher's workshop would.
@@ -61,6 +61,37 @@ const PALETTES: Record<string, Inks> = {
   },
 };
 
+/**
+ * How the picture's palette reaches the blocks. Every print tints its paper toward the ground and
+ * prints its horizon wipe and title cartouche in the second colour; the red seal and the key line stay.
+ * The named techniques (Hokusai's Prussian blue, the blue-only aizuri, the rose-and-green benizuri)
+ * keep their pigments; the mood sets (tokaido, kabuki, twilight, autumn) re-key them, the hues near
+ * their brightest pigment taking the ink and the rest the second, so the set still reads as woodblock.
+ */
+const CANONICAL = new Set(['prussian', 'aizuri', 'benizuri']);
+const hexOf = (c: readonly number[]) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
+function keyInks(designed: Inks, palette: Palette | undefined, name: string): Inks {
+  if (!palette) return designed;
+  const half = (role: PaletteRole, list: string[], roles?: PaletteRole[]): string[] => {
+    const bytes = list.map(hex);
+    const out = rekey(Object.fromEntries(bytes.map((c, i) => [i, c])), palette, Object.fromEntries(bytes.map((_, i) => [i, roles?.[i] ?? role])));
+    return list.map((_, i) => {
+      const r = roles?.[i] ?? role;
+      const [L, C, h] = oklch(out[i]);
+      const target = oklch(paintRGB(palette[r]))[2];
+      return hexOf(fromOklch(L, C, target + Math.atan2(Math.sin(h - target), Math.cos(h - target)) * 0.5));
+    });
+  };
+  const [horizon, cartouche] = half('second', [designed.horizon, designed.cartouche]);
+  const keyed = { ...designed, horizon, cartouche };
+  if (CANONICAL.has(name)) return keyed;
+  const lch = designed.pigments.map((h) => oklch(hex(h)));
+  const anchor = lch.reduce((best, c, i) => (c[1] > lch[best][1] ? i : best), 0);
+  const roles = lch.map(([, , h]): PaletteRole => (Math.abs(Math.atan2(Math.sin(h - lch[anchor][2]), Math.cos(h - lch[anchor][2]))) < 0.9 ? 'ink' : 'second'));
+  const [deep, shade] = half('ink', [designed.deep, designed.shade]);
+  return { ...keyed, deep, shade, pigments: half('ink', designed.pigments, roles) };
+}
+
 const PAPERS: Record<string, string> = {
   hosho: '#f0e7d2',
   aged: '#dfcca4',
@@ -107,12 +138,12 @@ export default defineLook({
   questions: {
     palette: choice('Which set of pigments did the publisher pay for?', {
       prussian: 'Prussian blue with pale ochre, soft green and a blush of pink, outlined in blue: the great wave and the mountain views.',
-      tokaido: 'Indigo, leaf green, beni red and yellow under a black line: a bright travel print of the road and its stations.',
+      tokaido: 'A full set of bright, clear pigments under a black line: a lively travel print of the road and its stations.',
       aizuri: 'Blue alone, in three strengths, on bare paper: a cool, quiet, porcelain picture.',
       benizuri: 'Rose red and soft green only, with a little yellow: an early, gentle, two-block print.',
-      kabuki: 'Black, strong red, ochre and olive on a dark mica ground: an actor print, theatrical and severe.',
-      twilight: 'Night blues and violets with lamp orange: a later print of dusk, rain-wet streets and lit windows.',
-      autumn: 'Red lead, ochre, olive and brown on a golden sky: maple season, harvest, warm and dry.',
+      kabuki: 'Black and a few strong, saturated pigments on a dark mica ground: an actor print, theatrical and severe.',
+      twilight: 'Deep night shades with one glowing lamp colour: a later print of dusk, rain-wet streets and lit windows.',
+      autumn: 'Earthy, dusty pigments under a glowing sky: maple season, harvest, ripe and dry.',
     }),
     sky: choice('How is the sky block wiped?', {
       band: 'One dark band wiped across the very top, fading quickly to bare paper.',
@@ -163,7 +194,7 @@ export default defineLook({
     }),
     signature: choice('How is the print titled and signed?', {
       title: 'A coloured title cartouche in a top corner, with a signature column and red seal below.',
-      twin: 'Twin cartouches in red and yellow for the series and the place, a signature panel and a round censor seal.',
+      twin: 'Twin coloured cartouches for the series and the place, a signature panel and a round censor seal.',
       seal: 'No title: only a small signature and a square red seal in a quiet corner.',
       gourd: 'A signature column ending in a gourd-shaped red seal.',
       unsigned: 'Unsigned and untitled, a proof before the lettering was cut.',
@@ -180,16 +211,23 @@ export default defineLook({
       signal.throwIfAborted();
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
     };
-    const inks = PALETTES[a.palette];
+    const designed = PALETTES[a.palette];
+    const inks = keyInks(designed, context.palette, a.palette);
     const grey = (c: RGB): RGB => {
       const l = c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11;
       return [l, l, l];
     };
     // Cheer keeps the pigments fresh; a grim print is a little fugitive and dull.
     const ink = (h: string): RGB => mixRGB(grey(hex(h)), hex(h), 0.74 + 0.26 * mood.cheer);
-    const paper = hex(PAPERS[a.paper]);
-    paper[0] = Math.min(255, paper[0] + (mood.warmth - 0.5) * 8);
-    paper[2] = Math.min(255, paper[2] - (mood.warmth - 0.5) * 12);
+    const paperOf = (c: RGB): RGB => {
+      const out: RGB = [...c];
+      out[0] = Math.min(255, out[0] + (mood.warmth - 0.5) * 8);
+      out[2] = Math.min(255, out[2] - (mood.warmth - 0.5) * 12);
+      return out;
+    };
+    // The paper takes half the ground's tint: washi stays washi.
+    const designedPaper = paperOf(hex(PAPERS[a.paper]));
+    const paper = context.palette ? paperOf(mixRGB(hex(PAPERS[a.paper]), [...rekey({ paper: hex(PAPERS[a.paper]) }, context.palette, { paper: 'ground' }).paper], 0.5)) : designedPaper;
     const key = ink(inks.key);
     const trOf = (c: RGB): RGB => [Math.min(1, c[0] / paper[0]), Math.min(1, c[1] / paper[1]), Math.min(1, c[2] / paper[2])];
 
@@ -279,27 +317,30 @@ export default defineLook({
 
     // ── 4. Cut the colour blocks: match every pixel to a pigment at one of a few strengths ────
     const SKY = 0, PAPER = 1;
+    // Printed in the keyed pigments, matched by the designed ones, so each block keeps its place.
     const targetRGB: RGB[] = [paper, paper];
+    const matchRGB: RGB[] = [designedPaper, designedPaper];
     const targetFamily: number[] = [0, 0];
-    const push = (c: RGB, family: number) => {
+    const push = (c: RGB, d: RGB, family: number) => {
       targetRGB.push(c);
+      matchRGB.push(d);
       targetFamily.push(family);
     };
     const greyInk = ink(inks.grey);
-    push(mixRGB(paper, greyInk, 0.4), 1);
-    push(mixRGB(paper, greyInk, 0.85), 1);
-    push(mixRGB(greyInk, key, 0.82), 1);
+    push(mixRGB(paper, greyInk, 0.4), mixRGB(designedPaper, greyInk, 0.4), 1);
+    push(mixRGB(paper, greyInk, 0.85), mixRGB(designedPaper, greyInk, 0.85), 1);
+    push(mixRGB(greyInk, key, 0.82), mixRGB(greyInk, key, 0.82), 1);
     const fine = a.blocks > 0.55;
     inks.pigments.forEach((h, at) => {
-      const base = ink(h);
-      push(mixRGB(paper, base, 0.42), 2 + at);
-      if (fine) push(mixRGB(paper, base, 0.72), 2 + at);
-      push(base, 2 + at);
-      push(mixRGB(base, key, fine ? 0.34 : 0.4), 2 + at);
-      if (fine) push(mixRGB(base, key, 0.62), 2 + at);
+      const base = ink(h), was = ink(designed.pigments[at]);
+      push(mixRGB(paper, base, 0.42), mixRGB(designedPaper, was, 0.42), 2 + at);
+      if (fine) push(mixRGB(paper, base, 0.72), mixRGB(designedPaper, was, 0.72), 2 + at);
+      push(base, was, 2 + at);
+      push(mixRGB(base, key, fine ? 0.34 : 0.4), mixRGB(was, key, fine ? 0.34 : 0.4), 2 + at);
+      if (fine) push(mixRGB(base, key, 0.62), mixRGB(was, key, 0.62), 2 + at);
     });
     const families = 2 + inks.pigments.length;
-    const targetLab = targetRGB.map((c) => oklab(c[0], c[1], c[2]));
+    const targetLab = matchRGB.map((c) => oklab(c[0], c[1], c[2]));
     const paperL = targetLab[PAPER][0];
 
     // Stretch the scene's own tonal range onto what paper and ink can give.
@@ -751,6 +792,7 @@ export default defineLook({
       return y + count * s * 1.12;
     };
     const sealRed = ink(inks.seal);
+    const secondCartouche = ink(context.palette ? hexOf(rekey({ c: hex('#e0b74a') }, context.palette, { c: 'second' }).c) : '#e0b74a');
     const squareSeal = (x0: number, y0: number, s: number) => {
       for (let y = Math.round(y0); y < Math.round(y0 + s); y++)
         for (let x = Math.round(x0); x < Math.round(x0 + s); x++) {
@@ -839,7 +881,7 @@ export default defineLook({
         const w = 34 * unit, h = (a.signature === 'twin' ? 132 : 150) * unit;
         for (let i = 0; i < panels; i++) {
           const x = titleLeft ? inset + i * (w + 5 * unit) : hi - 12 * unit - w - i * (w + 5 * unit);
-          const fill = i === 0 ? ink(inks.cartouche) : ink(a.palette === 'tokaido' || a.palette === 'autumn' ? '#e0b74a' : inks.seal);
+          const fill = i === 0 ? ink(inks.cartouche) : (a.palette === 'tokaido' || a.palette === 'autumn' ? secondCartouche : ink(inks.seal));
           const tall = i === 0 ? h : h * 0.78;
           fillRect(x, inset, w, tall, mixRGB(paper, fill, 0.86), 0.97, 9 + i);
           frame(x, inset, w, tall, 0.75, key);

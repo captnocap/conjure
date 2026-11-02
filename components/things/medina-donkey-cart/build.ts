@@ -45,6 +45,13 @@ export default defineThing({
       tyres: 'A salvaged car axle with fat rubber tyres.',
     }),
     hat: noul('Has the driver left his straw hat on the seat?'),
+    sides: choice('How are the cart sides built?', {boards:'Solid low timber side boards.',slats:'Three spaced horizontal wooden slats.',wicker:'Woven reed panels held in timber frames.',open:'Open stakes with one narrow top rail.'}),
+    tailgate: choice('How is the rear of the cart closed?', {board:'An upright timber tailboard.',dropped:'The tailboard lies lowered on two retaining chains.',chain:'Two chains span an open rear.',net:'A coarse rope lattice closes the rear.'}),
+    harness: choice('How is the working harness finished?', {plain:'Plain dark leather straps.',studs:'Small brass studs follow the breast collar.',bells:'Three little bells hang from the breast collar.',woven:'A broad patterned textile sleeve wraps the breast collar.'}),
+    headgear: choice('What accompanies the halter?', {plain:'Only the simple leather halter.',blinkers:'Small leather blinkers beside the eyes.',fringe:'A short cord fringe hangs over the brow.',tassel:'Two wool tassels hang beside the cheek straps.'}),
+    stowage: choice('What hangs from the cart side?', {bucket:'An empty metal pail on a hook.',sack:'A tied feed sack suspended by its neck.',lantern:'A small enclosed work lantern on a bracket.',none:'No additional gear hangs from the cart.'}),
+    wheelTrim: choice('How are the wheel hubs finished?', {plain:'Exposed plain working hubs.',cap:'Broad rounded metal hubcaps.',bolts:'A circle of bolts around each hub.',painted:'A narrow coloured ring around each hub.'}),
+    lining: choice('What lines the cart bed beneath the load?', {bare:'Bare timber planks.',mat:'A woven reed mat with a bound edge.',straw:'A thin visible layer of straw.',sack:'A coarse folded sackcloth lining.'}),
   },
 
   build(a, context) {
@@ -59,15 +66,22 @@ export default defineThing({
     s.box([1.1, 0.07, 1.6], [0, bedY, bedZ], wood);
     for (let i = 0; i < 6; i++) s.box([0.005, 0.072, 1.6], [-0.46 + i * 0.184, bedY, bedZ], darkWood);
     for (const x of [-1, 1]) {
-      s.box([0.04, 0.24, 1.6], [x * 0.55, bedY + 0.14, bedZ], wood);
+      if(a.sides==='boards')s.box([.04,.24,1.6],[x*.55,bedY+.14,bedZ],wood);
+      else if(a.sides==='slats')for(let row=0;row<3;row++)s.box([.04,.045,1.6],[x*.55,bedY+.07+row*.095,bedZ],wood);
+      else if(a.sides==='wicker'){const reed=s.material('#b2945d');for(let row=0;row<7;row++)s.rod([x*.55,bedY+.04+row*.038,bedZ-.8],[x*.55,bedY+.04+row*.038,bedZ+.8],.013,reed);for(let k=0;k<16;k++)s.rod([x*.555,bedY+.025,bedZ-.75+k*.1],[x*.555,bedY+.285,bedZ-.75+k*.1],.01,darkWood);}
+      else s.box([.055,.045,1.6],[x*.55,bedY+.28,bedZ],darkWood);
       for (const z of [-0.7, 0, 0.7]) s.box([0.06, 0.34, 0.06], [x * 0.57, bedY + 0.12, bedZ + z], darkWood);
       s.rod([x * 0.36, bedY - 0.04, bedZ + 0.8], [x * 0.38, 0.9, 1.4], 0.032, darkWood, 0.025);
       s.rod([x * 0.36, bedY - 0.06, bedZ - 0.8], [x * 0.36, bedY - 0.06, bedZ + 0.8], 0.04, darkWood);
     }
-    s.box([1.1, 0.24, 0.04], [0, bedY + 0.14, bedZ - 0.8], wood);
+    const cord=s.material('#bca77a');
+    if(a.tailgate==='board')s.box([1.1,.24,.04],[0,bedY+.14,bedZ-.8],wood);
+    else if(a.tailgate==='dropped'){s.box([1.1,.035,.26],[0,bedY+.015,bedZ-.93],wood);for(const x of[-.5,.5])s.tube([[x,bedY+.3,bedZ-.8],[x,bedY+.13,bedZ-.94],[x,bedY+.035,bedZ-1.06]],.009,iron);}
+    else if(a.tailgate==='chain'){for(const y of[bedY+.11,bedY+.26])s.tube([[-.56,y,bedZ-.8],[0,y-.035,bedZ-.8],[.56,y,bedZ-.8]],.01,iron);}
+    else {for(let row=0;row<4;row++)s.rod([-.55,bedY+.04+row*.075,bedZ-.8],[.55,bedY+.04+row*.075,bedZ-.8],.006,cord);for(let k=0;k<12;k++)s.rod([-.55+k*.1,bedY+.04,bedZ-.8],[-.55+k*.1,bedY+.265,bedZ-.8],.006,cord);}
     s.box([1.1, 0.3, 0.04], [0, bedY + 0.17, bedZ + 0.8], wood);
     s.box([1.0, 0.04, 0.26], [0, bedY + 0.33, bedZ + 0.68], darkWood);
-    s.rod([0, bedY - 0.06, bedZ - 0.7], [0, 0, bedZ - 0.78], 0.025, darkWood);
+    s.rod([0, bedY - 0.06, bedZ - 0.7], [0, .025, bedZ - 0.78], 0.025, darkWood);
     const axleY = a.wheels === 'spoked' ? 0.46 : 0.36;
     s.rod([-0.68, axleY, bedZ], [0.68, axleY, bedZ], 0.03, iron);
     for (const x of [-0.3, 0.3]) s.box([0.06, bedY - axleY, 0.1], [x, (bedY + axleY) / 2, bedZ], darkWood);
@@ -84,13 +98,18 @@ export default defineThing({
         add(s.cylinder(0.18, 0.18, 0.08, [0, 0, 0], s.material('#b9bcbc', { metalness: 0.6 }), 16)).rotation.x = Math.PI / 2;
         add(s.cylinder(0.06, 0.06, 0.1, [0, 0, 0], iron, 10)).rotation.x = Math.PI / 2;
       }
-      wheel.position.set(x * 0.68, axleY, bedZ);
+      if(a.wheelTrim==='cap')add(s.ball([.11,.11,.035],[0,0,x*.083],iron,14));
+      else if(a.wheelTrim==='bolts')for(let k=0;k<6;k++){const t=k*Math.PI/3;add(s.cylinder(.013,.013,.025,[Math.cos(t)*.105,Math.sin(t)*.105,x*.075],iron,6)).rotation.x=Math.PI/2;}
+      else if(a.wheelTrim==='painted')add(s.ring(.13,.018,[0,0,x*.065],s.material(BLANKETS[a.blanket][0])));
+      wheel.position.set(x * .68, axleY, bedZ);
       wheel.rotation.set(0, Math.PI / 2, random() * 6, 'YXZ');
       s.root.add(wheel);
     }
 
+    let linerHeight=0;
+    if(a.lining!=='bare'){linerHeight=.015;const cloth=s.material(a.lining==='sack'?'#a99266':a.lining==='straw'?'#c7ab65':'#b39c68',{roughness:1});s.box([1.02,.015,1.48],[0,bedY+.0425,bedZ],cloth);if(a.lining==='mat'){for(let i=0;i<25;i++)s.box([1.01,.003,.009],[0,bedY+.051,bedZ-.7+i*.058],darkWood);for(const x of[-.5,.5])s.box([.018,.005,1.49],[x,bedY+.052,bedZ],cord);}else if(a.lining==='straw'){const points=[];for(let i=0;i<80;i++)points.push({at:[(random()-.5)*.96,bedY+.054,bedZ+(random()-.5)*1.4] as [number,number,number],size:.75+random()*.5,rotation:random()*Math.PI,color:i%2?'#d3bb77':'#a18c50'});s.scatter(new THREE.BoxGeometry(.1,.004,.007),cloth,points);}}
     // Load.
-    const floor = bedY + 0.036, front = bedZ + 0.5, back = bedZ - 0.74;
+    const floor = bedY + .036+linerHeight, front = bedZ + 0.5, back = bedZ - 0.74;
     const amount = a.amount;
     let loadTop = floor;
     if (a.load === 'gas') {
@@ -108,7 +127,7 @@ export default defineThing({
         group.position.set(x, y, z);
         if (lying) { group.rotation.set(0, (random() - 0.5) * 0.3, Math.PI / 2, 'YXZ'); group.position.x += 0.3; group.position.y += 0.15; }
         else group.rotation.z = (random() - 0.5) * 0.06;
-        s.root.add(group);
+        group.updateMatrixWorld(true);group.position.y+=y-new THREE.Box3().setFromObject(group,true).min.y;s.root.add(group);
       };
       for (let r = 0; r < rows; r++) for (let c = 0; c < 3; c++) bottle((c - 1) * 0.33, floor, back + 0.17 + r * 0.32, false);
       loadTop = floor + 0.6;
@@ -119,14 +138,12 @@ export default defineThing({
       const inks = { oranges: ['#f08a12', '#f6a21e', '#e87508'], mint: ['#3f9a3a', '#5cb84a', '#2f7d34'], rubble: ['#9a948a', '#b06a48', '#c9c2b4', '#7d776e'] }[a.load];
       const unit = { oranges: 0.045, mint: 0.085, rubble: 0.07 }[a.load];
       const count = Math.round(mix(120, 520, amount) * (a.load === 'oranges' ? 1 : 0.55));
-      for (let i = 0; i < count; i++) {
-        const u = random() * 2 - 1, v = random() * 2 - 1;
-        const height = peak * Math.max(0, 1 - 0.75 * (u * u + v * v) / 2) * (0.25 + 0.75 * Math.sqrt(random()));
-        points.push({ at: [u * 0.47, floor + unit * 0.6 + height, mix(back + 0.08, front - 0.05, (v + 1) / 2)], size: unit * (0.8 + random() * 0.5), color: inks[Math.floor(random() * inks.length)] });
-      }
+      // Dense layers supply a continuous load; loose surface pieces do not float above an empty bed.
+      const radius=unit,step=radius*1.75,levels=Math.max(1,Math.round(peak/(radius*1.45))),cols=Math.max(3,Math.floor(.92/step)),rows=Math.max(4,Math.floor((front-back-.12)/step));
+      for(let layer=0;layer<levels;layer++){const inset=Math.floor(layer/2),nx=Math.max(2,cols-inset),nz=Math.max(2,rows-inset);for(let ix=0;ix<nx;ix++)for(let iz=0;iz<nz;iz++){const x=(ix-(nx-1)/2)*step,z=(front+back)/2+(iz-(nz-1)/2)*step,y=floor+radius+(a.load==='mint'?radius*.9:radius*1.45)*layer;points.push({at:[x,y,z],size:radius,color:inks[Math.floor(random()*inks.length)]});}}
       const grain = a.load === 'oranges' ? new THREE.SphereGeometry(1, 8, 6) : a.load === 'mint' ? new THREE.SphereGeometry(1, 6, 4).scale(1.3, 0.55, 0.9) : new THREE.DodecahedronGeometry(1, 0);
       s.scatter(grain, s.material('#ffffff', { roughness: a.load === 'oranges' ? 0.5 : 0.95 }), points);
-      loadTop = floor + peak + unit;
+      loadTop=Math.max(...points.map(p=>p.at[1]+unit));
       if (a.load === 'rubble') {
         const sack = s.material('#b9b3a4', { roughness: 1 });
         for (let k = 0; k < 2; k++) s.ball([0.3, 0.1, 0.2], [(k - 0.5) * 0.4, floor + 0.12 + peak * 0.5, front - 0.3 - k * 0.1], sack, 12).rotation.y = random();
@@ -152,6 +169,7 @@ export default defineThing({
       const rope = s.material('#cdb98a', { roughness: 1 });
       for (const z of [back + 0.35, front - 0.3]) s.tube([[-0.58, bedY + 0.2, z], [-0.4, loadTop + 0.02, z], [0, loadTop + 0.06, z], [0.4, loadTop + 0.02, z], [0.58, bedY + 0.2, z]], 0.012, rope);
     }
+    if(a.stowage!=='none'){const x=.72,z=bedZ+.32,attachY=bedY+.27;s.rod([.55,attachY,z],[x,attachY,z],.012,iron);if(a.stowage==='bucket'){const by=attachY-.4;s.lathe([[0,0],[.1,0],[.13,.23],[.118,.23],[.088,.018],[0,.018]],s.material('#a6aaa5',{metalness:.7,roughness:.45}),[x,by,z]);s.tube([[x-.12,by+.2,z],[x-.1,attachY-.03,z],[x,attachY,z],[x+.1,attachY-.03,z],[x+.12,by+.2,z]],.007,iron);}else if(a.stowage==='sack'){s.ball([.15,.22,.13],[x,attachY-.28,z],s.material('#a9946a'),12);s.rod([x,attachY,z],[x,attachY-.12,z],.015,cord);}else {const ly=attachY-.27;s.box([.17,.24,.15],[x,ly,z],s.material('#deb66b',{emissive:'#d5a35c',emissiveIntensity:.2,transparent:true,opacity:.5}));for(const xx of[-.09,.09])for(const zz of[-.08,.08])s.box([.014,.27,.014],[x+xx,ly,z+zz],iron);for(const yy of[-.13,.13])s.box([.2,.025,.18],[x,ly+yy,z],iron);s.ring(.055,.008,[x,attachY-.07,z],iron);}}
     if (a.hat) {
       const straw = s.material('#e3cc8a', { roughness: 0.9, side: THREE.DoubleSide });
       const hx = -0.22 + random() * 0.4, hz = bedZ + 0.68, hy = bedY + 0.35;
@@ -194,6 +212,9 @@ export default defineThing({
     }
     inHead(d.ring(0.088, 0.008, [0, -0.01, 0.1], leather));
     if (a.stance === 'braying') inHead(d.ball([0.05, 0.03, 0.06], [0, -0.1, 0.17], d.material('#7a3a34'), 8));
+    if(a.headgear==='blinkers')for(const x of[-1,1]){inHead(d.box([.018,.14,.13],[x*.116,.03,-.02],leather));inHead(d.rod([x*.08,.09,-.1],[x*.116,.06,-.02],.01,leather));}
+    else if(a.headgear==='fringe'){inHead(d.rod([-.09,.087,.025],[.09,.087,.025],.009,leather));for(let k=0;k<9;k++)inHead(d.rod([-.08+k*.02,.08,.03],[-.08+k*.02,.01,.07],.003,d.material('#bca77a')));}
+    else if(a.headgear==='tassel')for(const x of[-1,1]){inHead(d.rod([x*.09,.03,.06],[x*.13,-.09,.07],.005,leather));inHead(d.ball([.026,.055,.025],[x*.13,-.13,.07],d.material(BLANKETS[a.blanket][0]),8));}
     const ears: THREE.Group[] = [];
     for (const x of [-1, 1]) {
       const ear = new THREE.Group();
@@ -230,7 +251,8 @@ export default defineThing({
     const blanket = d.mesh(new THREE.CylinderGeometry(0.262, 0.262, 0.4, 18, 1, true, Math.PI * 0.55, Math.PI * 0.9), new THREE.MeshStandardMaterial({ map: texture, roughness: 1, side: THREE.DoubleSide }), [0, 0.9, 0.6]);
     blanket.rotation.x = Math.PI / 2;
     blanket.scale.x = 0.96;
-    d.ring(0.2, 0.032, [0, 1.02, 1.07], d.material('#b98a4a', { roughness: 0.8 })).rotation.x = -0.45;
+    const collar=d.ring(.2,a.harness==='woven'?.043:.032,[0,1.02,1.07],d.material(a.harness==='woven'?BLANKETS[a.blanket][0]:'#b98a4a',{roughness:.8}));collar.rotation.x=-.45;
+    if(a.harness!=='plain')for(let k=0;k<(a.harness==='bells'?3:11);k++){const angle=a.harness==='bells'?Math.PI*.7+k*.3:Math.PI*.2+k*Math.PI*.16,position=new THREE.Vector3(Math.sin(angle)*.2,Math.cos(angle)*.2,0).applyAxisAngle(new THREE.Vector3(1,0,0),-.45).add(collar.position);if(a.harness==='bells'){d.rod(position.toArray(),[position.x,position.y-.045,position.z],.005,leather);d.ball([.025,.03,.025],[position.x,position.y-.06,position.z],d.material('#c09a45',{metalness:.8}),8);}else d.ball([.012,.012,.012],position.toArray(),d.material(a.harness==='woven'?BLANKETS[a.blanket][1]:'#c09a45',{metalness:a.harness==='studs'?.8:0}),6);}
     d.ring(0.255, 0.014, [0, 0.9, 0.5], leather).scale.x = 0.95;
     d.ring(0.25, 0.014, [0, 0.88, 0.24], leather).rotation.x = 0.5;
     for (const x of [-1, 1]) {

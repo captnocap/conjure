@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Chondritic meteorite petrography section", "summary": "A permanent closed chondrite section contains several genuinely different inclusion textures in a matrix, rather than the existing iron-meteorite etch pattern. A permanent enlarged chondritic rock section contains adjacent matrix, chondrule, refractory and opaque-mineral volumes; schematic petrographic colors distinguish phases and real cuts expose their contacts.", "scales": ["macro", "tabletop"]});

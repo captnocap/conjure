@@ -1,4 +1,4 @@
-import type { BuildContext, Capture } from '@conjure/kit';
+import { type BuildContext, type Capture, type PaletteRole, type RGB, fromOklch, oklch, rekey, rekeyOne } from '@conjure/kit';
 export type Rect = [number, number, number, number];
 export type P = {paper:string; ink:string; mid:string; accent:string; rgb:[number,number,number]};
 export const palettes: Record<string,P> = {
@@ -7,12 +7,25 @@ export const palettes: Record<string,P> = {
  verdigris:{paper:'#bfc8ae',ink:'#23382f',mid:'#6c8a73',accent:'#a75c38',rgb:[191,200,174]},
  charcoal:{paper:'#cbc3b4',ink:'#282924',mid:'#706c5e',accent:'#905b47',rgb:[203,195,180]},
 };
+const ROLES:Record<string,PaletteRole>={paper:'ground',ink:'ink',mid:'ink',accent:'second'};
+const hexRGB=(v:string):RGB=>[parseInt(v.slice(1,3),16),parseInt(v.slice(3,5),16),parseInt(v.slice(5,7),16)];
+const hexOf=(c:RGB)=>'#'+c.map(v=>v.toString(16).padStart(2,'0')).join('');
+/** A line or mid tone keeps `keep` of its designed distance below the paper, so a pale palette ink cannot wash it into the stock. */
+const below=(c:RGB,paper:RGB,was:string,wasPaper:string,keep:number):RGB=>{const [L,C,h]=oklch(c),cap=oklch(paper)[0]-(oklch(hexRGB(wasPaper))[0]-oklch(hexRGB(was))[0])*keep;return L>cap?fromOklch(cap,C,h):c;};
+/** The stains under the idea's palette: paper takes the ground, ink and mid the ink, the accent the second. As made without one. */
+export function settle(key:string,ctx:BuildContext):P{
+ const base=palettes[key]??palettes.bone;if(!ctx.palette)return base;
+ const c=rekey({paper:hexRGB(base.paper),ink:hexRGB(base.ink),mid:hexRGB(base.mid),accent:hexRGB(base.accent)},ctx.palette,ROLES);
+ return {paper:hexOf(c.paper),ink:hexOf(below(c.ink,c.paper,base.ink,base.paper,.85)),mid:hexOf(below(c.mid,c.paper,base.mid,base.paper,.6)),accent:hexOf(c.accent),rgb:[c.paper[0],c.paper[1],c.paper[2]]};
+}
+/** A build's own fixed colour (a bleach, a bone highlight) under the palette; unchanged without one. */
+export function tint(hex:string,ctx:BuildContext,role:PaletteRole){return ctx.palette?hexOf(rekeyOne(hexRGB(hex),ctx.palette,role)):hex;}
 export function stop(signal:AbortSignal){if(signal.aborted)throw signal.reason??new DOMException('Aborted','AbortError');}
 export function canvas(s:number){const c=document.createElement('canvas');c.width=c.height=s;return c;}
 export function organ(x:number,y:number,rx:number,ry:number,lobes=0,phase=0){const p=new Path2D();for(let k=0;k<=96;k++){const t=k/96*Math.PI*2;const wob=1+Math.sin(t*3+phase)*lobes+Math.sin(t*5-phase)*lobes*.45;const xx=x+Math.cos(t)*rx*wob,yy=y+Math.sin(t)*ry*wob;k?p.lineTo(xx,yy):p.moveTo(xx,yy);}p.closePath();return p;}
 export function oval(x:number,y:number,rx:number,ry=rx){const p=new Path2D();p.ellipse(x,y,rx,ry,0,0,Math.PI*2);return p;}
 export async function prepare(cap:Capture,ctx:BuildContext,signal:AbortSignal,palette:string){
- const s=cap.size,p=palettes[palette]??palettes.bone,src=canvas(s),g=src.getContext('2d')!;
+ const s=cap.size,p=settle(palette,ctx),src=canvas(s),g=src.getContext('2d')!;
  const img=g.createImageData(s,s),out=img.data,boxes=new Map<number,{x:number;y:number;X:number;Y:number;n:number}>();
  for(let y=0;y<s;y++){if(y%64===0){stop(signal);await new Promise<void>(r=>setTimeout(r,0));}for(let x=0;x<s;x++){
   const i=(y*s+x)*4,id=cap.identity[i],c=cap.color,lum=c[i]*.23+c[i+1]*.63+c[i+2]*.14;

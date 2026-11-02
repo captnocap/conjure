@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Whale fall microbial mat sediment contact", "summary": "A thin irregular mat follows the sediment surface and wraps a partly buried bone edge, with an actual section exposing its contact. An irregular thin mat follows the exact upper sediment and exposed bone surfaces, with finite cut edges. It represents a surface habitat at a whale fall; coverage is illustrative and is not a microbial species map.", "scales": ["macro", "tabletop"]});

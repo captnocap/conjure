@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Pencil-shavings canyon settlement", "summary": "Broad curled pencil shavings rise like canyon walls around little timber homes, supported walkways and a bridge between wood-grain cliffs. A settlement on a writing desk, miniature canyon travel and a village built from the traces of drawing.", "scales": ["tabletop", "room"]});

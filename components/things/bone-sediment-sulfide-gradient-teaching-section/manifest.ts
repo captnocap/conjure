@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Bone sediment sulfide gradient teaching section", "summary": "A closed sediment block retains a buried bone fragment and contiguous explicitly schematic biogeochemical zones around it. A true bone-sediment slice has contiguous illustrative process zones and an optional actual marrow opening. Zone geometry is a labeled conceptual model, not measured concentrations, oxygen penetration or quantitative sulfate-reduction rates.", "scales": ["macro", "tabletop"]});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Torsion balance electrostatic calibration plates", "summary": "Supported plate pairs face a central pendulum electrode with real clearance and insulated feedthroughs. An enlarged electrostatic-torque teaching assembly with separated fixed plates, a fiber-suspended moving blade and actual ceramic support paths; electrode geometry is schematic, not a calibrated force computation.", "scales": ["macro", "tabletop"]});

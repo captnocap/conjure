@@ -29,8 +29,8 @@ const ABOUT: Record<string, { key: string; title: string; asking: string }> = {
 
 /** How far along the hairline each stage carries the idea. */
 const PROGRESS: Record<string, number> = {
-  direction: 0.06, scene: 0.16, framing: 0.17, presentation: 0.18, world: 0.2, look: 0.3, casting: 0.48, relations: 0.54,
-  composition: 0.62, build: 0.88, print: 0.96, portrait: 0.98, plates: 0.98, loop: 0.98, saved: 1,
+  direction: 0.06, scene: 0.16, palette: 0.165, materialize: 0.167, framing: 0.17, presentation: 0.18, world: 0.2, look: 0.3, casting: 0.48, relations: 0.54,
+  composition: 0.62, build: 0.88, print: 0.96, portrait: 0.98, plates: 0.98, loop: 0.98, saved: 1, window: 1,
 };
 /** Each component's own questions carry the line from here to there. */
 const DETAILS_FROM = 0.62;

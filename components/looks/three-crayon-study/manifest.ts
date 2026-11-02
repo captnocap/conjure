@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Three crayon study',summary:'Black, sanguine red and white chalk model forms on toned paper, with separate warm middle tones, deep shadows and lifted white lights. Classical figure studies, expressive portraits and delicate coloured drawings.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'painting'});

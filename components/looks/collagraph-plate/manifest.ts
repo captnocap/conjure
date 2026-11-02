@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Collagraph plate impression',summary:'A print pulled from a handmade relief collage of card, cloth, string and grit, with compressed seams, textured ink and embossed paper edges. Experimental print rooms, found materials and the tactile memory of a pieced-together plate.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'print'});

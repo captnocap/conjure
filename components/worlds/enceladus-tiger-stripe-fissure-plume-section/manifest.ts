@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Enceladus tiger stripe fissure plume section", "summary": "A fixed fractured ice ridge retains a true open tiger-stripe fissure, a sectioned subsurface conduit and several plume sheets. A scaled Cassini-inspired fissure setting with permanent icy relief and plume sources. Deep conduit geometry, retained strata and fallout sections are explicitly conceptual; no directly observed ocean chamber is implied.", "scales": ["planetary", "landscape", "tabletop"]});

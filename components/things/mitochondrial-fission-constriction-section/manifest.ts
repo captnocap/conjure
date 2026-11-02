@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Mitochondrial fission constriction section", "summary": "A constricted double envelope retains a continuous central neck and explicit retained matrix, shown as a process-model stage. A schematic pre-scission constriction retains separate inner and outer membranes and a continuous matrix passage. Section windows and external collars are teaching-model geometry, not a universal temporal sequence of fission.", "scales": ["macro", "tabletop"]});

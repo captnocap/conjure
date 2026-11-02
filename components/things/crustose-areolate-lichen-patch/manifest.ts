@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Crustose areolate lichen patch", "summary": "A low polygon-cracked lichen crust grows tightly over an included irregular stone face, with distinct marginal lobes and small apothecia. Cold dry valleys, tenacious slow life, weathered rocks and careful field observation.", "scales": ["macro", "tabletop", "landscape"]});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Eutectic lamellar growth colony", "summary": "Alternating continuous material lamellae fan from a growth center and terminate in a clear advancing front. A magnified materials-science model with solid branches, actual open interdendritic spaces and clearly identified teaching sections.", "scales": ["macro", "tabletop"]});

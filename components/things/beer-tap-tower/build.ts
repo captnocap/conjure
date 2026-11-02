@@ -32,6 +32,12 @@ function badge(lines: readonly string[], ink: string, paper: string, round: bool
 
 export default defineThing({
   questions: {
+    spacing: score('How widely spaced are the taps?', ['A close packed row', 'Compact', 'Room to pull a pint', 'A broad generous row']),
+    nozzle: choice('What kind of outlet does each tap have?', { short: 'A short standard downspout.', long: 'A long straight serving spout.', stout: 'A broad black stout nozzle.', hooked: 'A curved hooked spout.' }),
+    grille: choice('What covers the drip pan?', { bars: 'Parallel steel slats.', grid: 'A square mesh grille.', rods: 'Thin round rods.', open: 'An open pan with its drain exposed.' }),
+    chill: score('How cold does the font look?', ['Dry metal', 'A few beads of condensation', 'Covered with droplets', 'Pale frosted sleeves around the tap bodies']),
+    marker: choice('How are the taps identified below their handles?', { none: 'Only the handle badges.', numbers: 'Small numbered plates fixed under each outlet.', chalk: 'Dark chalk labels on little metal brackets.', tags: 'Cream paper tags tied around the stems.' }),
+    rinser: choice('Is there a glass rinser next to the tray?', { none: 'No rinser.', star: 'A star-shaped push plate over a round drain cup.', ring: 'A ridged round push plate in a square drain pan.', brush: 'A short washing brush standing in a drain cup.' }),
     tower: choice('What shape is the font?', {
       tbar: 'A single stout column with a crossbar on top: the classic T-bar.',
       bridge: 'A long rail carried on two legs, a bridge font spanning the bar.',
@@ -72,7 +78,7 @@ export default defineThing({
     const s = new Sculpture(context);
     const { mood, random } = context;
     const count = { two: 2, three: 3, five: 5 }[a.taps];
-    const pitch = a.tower === 'cobra' ? 0.105 : 0.092;
+    const pitch = (a.tower === 'cobra' ? 0.105 : 0.092) * mix(0.94, 1.3, a.spacing);
     const span = (count - 1) * pitch;
     const tone = { brass: '#d0a13a', chrome: '#d6dcdf', copper: '#a9603a', iron: '#26282c' }[a.finish];
     const metal = new THREE.MeshStandardMaterial({
@@ -132,8 +138,28 @@ export default defineThing({
       const x = xOf(i), y = a.tower === 'ceramic' ? 0.33 : tapY;
       s.rod([x, y, frontZ - 0.05], [x, y, frontZ + 0.05], 0.014, metal);
       s.cylinder(0.019, 0.019, 0.022, [x, y, frontZ + 0.035], metal, 14).rotation.x = Math.PI / 2;
-      s.rod([x, y - 0.005, frontZ + 0.048], [x, y - 0.075, frontZ + 0.066], 0.011, metal, 0.008);
-      spouts.push([x, y - 0.078, frontZ + 0.067]);
+      const nozzleDrop = a.nozzle === 'long' ? 0.115 : a.nozzle === 'short' ? 0.065 : 0.085;
+      const nozzleZ = frontZ + (a.nozzle === 'hooked' ? 0.09 : 0.066);
+      if (a.nozzle === 'hooked') s.tube([[x, y - 0.005, frontZ + 0.048], [x, y - 0.025, frontZ + 0.081], [x, y - 0.06, nozzleZ], [x, y - nozzleDrop, nozzleZ]], 0.009, metal);
+      else s.rod([x, y - 0.005, frontZ + 0.048], [x, y - nozzleDrop, nozzleZ], a.nozzle === 'stout' ? 0.014 : 0.011, a.nozzle === 'stout' ? dark : metal, a.nozzle === 'stout' ? 0.012 : 0.008);
+      spouts.push([x, y - nozzleDrop - 0.003, nozzleZ]);
+      if (a.chill > 0.05) {
+        const ice = s.material('#e5edf0', { roughness: 0.25, metalness: 0.15 });
+        for (let k = 0; k < Math.round(a.chill * 22); k++) {
+          const t = k * 2.4, z = frontZ - 0.025 + random() * 0.06;
+          s.ball([0.0014, 0.0023, 0.0014], [x + Math.cos(t) * 0.014, y + Math.sin(t) * 0.014, z], ice, 6);
+        }
+        if (a.chill > 0.72) s.rod([x, y, frontZ - 0.015], [x, y, frontZ + 0.02], 0.0145, ice);
+      }
+      if (a.marker !== 'none') {
+        const labelZ = frontZ + 0.02, labelY = y - 0.035;
+        const labelMat = s.material(a.marker === 'chalk' ? '#28322e' : a.marker === 'tags' ? '#ddd0aa' : '#bfa665', { roughness: 0.8 });
+        if (a.marker === 'tags') { const cord = s.material('#ac9270'); s.ring(0.017, 0.001, [x, y, labelZ], cord).rotation.x = Math.PI / 2; s.rod([x, y, labelZ + 0.017], [x, labelY + 0.008, labelZ], 0.001, cord); }
+        else s.rod([x, y - 0.01, labelZ], [x, labelY + 0.008, labelZ], 0.002, steel);
+        s.box([0.038, 0.019, 0.002], [x, labelY, labelZ], labelMat);
+        const map = badge([a.marker === 'chalk' ? 'TAP' : '', String(i + 1)], a.marker === 'chalk' ? '#ede9d9' : '#30291e', a.marker === 'chalk' ? '#28322e' : a.marker === 'tags' ? '#ddd0aa' : '#bfa665', false, mood.wear * 0.3);
+        const face = new THREE.Mesh(new THREE.PlaneGeometry(0.035, 0.017), new THREE.MeshStandardMaterial({ map, roughness: 0.8 })); face.position.set(x, labelY, labelZ + 0.0012); s.root.add(face);
+      }
 
       const open = i === active && a.doing === 'pouring';
       const handle = new THREE.Group();
@@ -194,7 +220,24 @@ export default defineThing({
     for (const z of [-1, 1]) s.box([trayW, trayH, 0.005], [0, trayH / 2, trayZ + z * trayD / 2], steel);
     for (const x of [-1, 1]) s.box([0.005, trayH, trayD], [x * trayW / 2, trayH / 2, trayZ], steel);
     const slats = Math.floor(trayW / 0.016);
-    s.scatter(new THREE.BoxGeometry(0.007, 0.004, trayD - 0.012), steel, Array.from({ length: slats }, (_u, i) => ({ at: [(i - (slats - 1) / 2) * 0.016, trayH - 0.004, trayZ] as const, size: 1 })));
+    if (a.grille === 'bars' || a.grille === 'grid') s.scatter(new THREE.BoxGeometry(a.grille === 'grid' ? 0.003 : 0.007, 0.004, trayD - 0.012), steel, Array.from({ length: slats }, (_u, i) => ({ at: [(i - (slats - 1) / 2) * 0.016, trayH - 0.004, trayZ] as const, size: 1 })));
+    if (a.grille === 'grid') for (let k = 0; k < 8; k++) s.box([trayW - 0.01, 0.003, 0.003], [0, trayH - 0.003, trayZ - 0.063 + k * 0.018], steel);
+    if (a.grille === 'rods') for (let k = 0; k < slats; k++) { const x = (k - (slats - 1) / 2) * 0.016; s.rod([x, trayH - 0.004, trayZ - trayD / 2 + 0.006], [x, trayH - 0.004, trayZ + trayD / 2 - 0.006], 0.0025, steel); }
+    if (a.grille === 'open') { s.cylinder(0.021, 0.021, 0.001, [0, 0.005, trayZ], dark, 20); for (let k = -2; k <= 2; k++) s.box([0.032, 0.001, 0.002], [0, 0.006, trayZ + k * 0.006], steel); }
+    if (a.rinser !== 'none') {
+      const rx = trayW / 2 + 0.067, rz = trayZ;
+      if (a.rinser === 'ring') {
+        s.box([0.105, 0.006, 0.105], [rx, 0.003, rz], steel);
+        for (const dz of [-0.05, 0.05]) s.box([0.105, 0.023, 0.005], [rx, 0.014, rz + dz], steel);
+        for (const dx of [-0.05, 0.05]) s.box([0.005, 0.023, 0.105], [rx + dx, 0.014, rz], steel);
+      } else s.lathe([[0, 0], [0.05, 0], [0.052, 0.025], [0.047, 0.025], [0.045, 0.006], [0, 0.006]], steel, [rx, 0, rz]);
+      s.cylinder(0.008, 0.012, 0.027, [rx, 0.0195, rz], steel, 12);
+      if (a.rinser === 'brush') {
+        s.cylinder(0.015, 0.015, 0.08, [rx, 0.07, rz], dark, 12);
+        for (let k = 0; k < 12; k++) { const t = k / 12 * Math.PI * 2; s.rod([rx + Math.cos(t) * 0.013, 0.035, rz + Math.sin(t) * 0.013], [rx + Math.cos(t) * 0.025, 0.11, rz + Math.sin(t) * 0.025], 0.002, s.material('#bfae8b')); }
+      } else if (a.rinser === 'ring') { s.ring(0.031, 0.004, [rx, 0.032, rz], dark).rotation.x = Math.PI / 2; for (const t of [0, Math.PI / 2]) s.box([0.066, 0.005, 0.008], [rx, 0.032, rz], dark).rotation.y = t; }
+      else for (let k = 0; k < 5; k++) { const t = k / 5 * Math.PI * 2; s.rod([rx, 0.032, rz], [rx + Math.cos(t) * 0.038, 0.032, rz + Math.sin(t) * 0.038], 0.004, dark); }
+    }
     const slops = new THREE.MeshStandardMaterial({ color: new THREE.Color(beerTint).lerp(new THREE.Color('#5e4a2c'), 0.6), roughness: 0.08 });
     if (a.tray > 0.12) s.box([trayW - 0.012, 0.003, trayD - 0.012], [0, mix(0.005, trayH - 0.003, Math.min(1, a.tray * 1.15)), trayZ], slops);
     if (a.tray > 0.8) {
@@ -205,25 +248,26 @@ export default defineThing({
       for (let i = 0; i < 5; i++) s.ball([0.012, 0.006, 0.012], [mix(-trayW / 2, trayW / 2, random()), trayH, trayZ + (random() - 0.5) * trayD * 0.8], foam, 8);
     }
 
-    // Glasses.
+    // Glasses rest on the pan floor when the grille is removed.
+    const servingY = a.grille === 'open' ? 0.006 : trayH;
     const pintProfile = [[0, 0], [0.03, 0], [0.031, 0.004], [0.034, 0.1], [0.041, 0.118], [0.04, 0.15]] as const;
     const radiusAt = (y: number) => { for (let i = 1; i < pintProfile.length; i++) if (y <= pintProfile[i][1]) { const [r0, y0] = pintProfile[i - 1], [r1, y1] = pintProfile[i]; return mix(r0, r1, (y - y0) / (y1 - y0)); } return 0.04; };
     const pintAt = (x: number, z: number, fill: number, head: number, lace: boolean) => {
-      s.lathe(pintProfile, glass, [x, trayH, z]);
+      s.lathe(pintProfile, glass, [x, servingY, z]);
       if (fill > 0.02) {
         const top = 0.006 + fill * 0.14;
-        s.lathe([[0, 0.006], [0.028, 0.006], ...Array.from({ length: 8 }, (_u, k) => { const y = 0.006 + (top - 0.006) * (k + 1) / 8; return [radiusAt(y) - 0.002, y] as const; }), [0, top]], beer, [x, trayH, z]);
-        if (head > 0) s.cylinder(radiusAt(top + head) - 0.002, radiusAt(top) - 0.002, head, [x, trayH + top + head / 2, z], foam, 20);
+        s.lathe([[0, 0.006], [0.028, 0.006], ...Array.from({ length: 8 }, (_u, k) => { const y = 0.006 + (top - 0.006) * (k + 1) / 8; return [radiusAt(y) - 0.002, y] as const; }), [0, top]], beer, [x, servingY, z]);
+        if (head > 0) s.cylinder(radiusAt(top + head) - 0.002, radiusAt(top) - 0.002, head, [x, servingY + top + head / 2, z], foam, 20);
       }
-      if (lace) for (let k = 0; k < 4; k++) s.ring(radiusAt(0.03 + k * 0.03) - 0.001, 0.0016, [x, trayH + 0.03 + k * 0.03 + random() * 0.008, z], foam, Math.PI * (0.6 + random())).rotation.set(Math.PI / 2, 0, random() * 6);
+      if (lace) for (let k = 0; k < 4; k++) s.ring(radiusAt(0.03 + k * 0.03) - 0.001, 0.0016, [x, servingY + 0.03 + k * 0.03 + random() * 0.008, z], foam, Math.PI * (0.6 + random())).rotation.set(Math.PI / 2, 0, random() * 6);
     };
     const spout = spouts[Math.max(0, active)];
     const underZ = trayZ - 0.02;
     if (a.pint === 'half') pintAt(spout[0], Math.max(underZ, spout[2] - 0.004), mix(0.4, 0.6, random()), 0.014, false);
     else if (a.pint === 'full') {
       pintAt(spout[0], Math.max(underZ, spout[2] - 0.004), 0.93, 0.018, false);
-      s.ball([0.043, 0.012, 0.043], [spout[0], trayH + 0.154, Math.max(underZ, spout[2] - 0.004)], foam, 16);
-      for (let k = 0; k < 3; k++) { const t = random() * 6; s.rod([spout[0] + Math.cos(t) * 0.041, trayH + 0.15, Math.max(underZ, spout[2] - 0.004) + Math.sin(t) * 0.041], [spout[0] + Math.cos(t) * 0.036, trayH + 0.15 - 0.03 - random() * 0.07, Math.max(underZ, spout[2] - 0.004) + Math.sin(t) * 0.036], 0.005, foam, 0.003); }
+      s.ball([0.043, 0.012, 0.043], [spout[0], servingY + 0.154, Math.max(underZ, spout[2] - 0.004)], foam, 16);
+      for (let k = 0; k < 3; k++) { const t = random() * 6; s.rod([spout[0] + Math.cos(t) * 0.041, servingY + 0.15, Math.max(underZ, spout[2] - 0.004) + Math.sin(t) * 0.041], [spout[0] + Math.cos(t) * 0.036, servingY + 0.15 - 0.03 - random() * 0.07, Math.max(underZ, spout[2] - 0.004) + Math.sin(t) * 0.036], 0.005, foam, 0.003); }
     } else if (a.pint === 'empties') {
       const n = 2 + (mood.density > 0.6 ? 1 : 0);
       for (let k = 0; k < n; k++) pintAt(mix(-trayW / 2 + 0.05, trayW / 2 - 0.05, n === 1 ? 0.5 : k / (n - 1)) + (random() - 0.5) * 0.02, trayZ + 0.02 + (random() - 0.5) * 0.04, k === 0 ? 0.06 : 0, 0, true);
@@ -231,14 +275,14 @@ export default defineThing({
 
     // What the live tap is doing.
     const drops: THREE.Mesh[] = [];
-    const landing = a.pint === 'half' ? trayH + 0.08 : a.pint === 'full' ? trayH + 0.16 : trayH;
+    const landing = a.pint === 'half' ? servingY + 0.08 : a.pint === 'full' ? servingY + 0.16 : servingY;
     if (active >= 0 && a.doing === 'dribble') {
       s.ball([0.012, 0.01, 0.012], [spout[0], spout[1] - 0.004, spout[2]], foam, 10);
       for (let k = 0; k < 3; k++) drops.push(s.ball([0.007, 0.01, 0.007], [spout[0], mix(spout[1], landing, (k + 0.5) / 3), spout[2]], foam, 8));
-      if (a.pint !== 'half' && a.pint !== 'full') s.ball([0.022, 0.008, 0.02], [spout[0], trayH + 0.003, spout[2]], foam, 10);
+      if (a.pint !== 'half' && a.pint !== 'full') s.ball([0.022, 0.008, 0.02], [spout[0], servingY + 0.003, spout[2]], foam, 10);
     } else if (active >= 0 && a.doing === 'pouring') {
       s.rod([spout[0], spout[1], spout[2]], [spout[0], landing, spout[2]], 0.005, beer, 0.004);
-      if (a.pint !== 'half' && a.pint !== 'full') s.ball([0.03, 0.008, 0.026], [spout[0], trayH + 0.003, spout[2]], foam, 10);
+      if (a.pint !== 'half' && a.pint !== 'full') s.ball([0.03, 0.008, 0.026], [spout[0], servingY + 0.003, spout[2]], foam, 10);
     }
 
     const speed = mix(0.08, 0.5, mood.energy);

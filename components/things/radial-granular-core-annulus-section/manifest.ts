@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Radial granular core annulus section", "summary": "A mixed grain bed exposes a smaller-particle central core and larger outer annulus in a physically cut drum cross-section. A true front section retains a fine-rich core inside a surrounding coarse-rich grain bed. Closed bulk volumes support visible particles; the exposed pattern is a selected segregation teaching state rather than individual simulated trajectories.", "scales": ["macro", "tabletop"]});

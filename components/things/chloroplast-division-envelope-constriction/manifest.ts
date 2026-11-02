@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Chloroplast division envelope constriction", "summary": "A double-envelope chloroplast constriction retains continuous stroma and thylakoid sections without inventing a sealed internal septum. Nested envelopes retain an open isthmus instead of a fabricated internal septum. The two ring locations are schematic FtsZ and ARC5 teaching markers, not a claim that the plastid-dividing rings are made of those same proteins.", "scales": ["macro", "tabletop"]});

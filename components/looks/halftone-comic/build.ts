@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type PaletteRole, choice, clamp01, defineLook, mix, rekey, rekeyOne, score, seeded } from '@conjure/kit';
 
 type RGB = readonly [number, number, number];
 
@@ -49,6 +49,17 @@ const INKS: Record<string, InkSet> = {
     cyan: [0, 0, 0], magenta: [0, 0, 0], yellow: [0, 0, 0], black: [22, 22, 26],
     levels: [0, 0.12, 0.25, 0.4, 0.6], saturation: 0, lift: 1, clean: 0, cast: 0,
   },
+};
+
+/**
+ * Under the picture's palette the free books print in its colours: the lead plate carries the ink and
+ * the other two answer in the second colour, keeping their offsets so they still mix as a set. The
+ * newsstand and heroic books are four-colour process by definition and keep their plates; the key
+ * line stays black everywhere, and screentone stays black ink only.
+ */
+const PLATE_ROLES: Record<string, Record<string, PaletteRole>> = {
+  romance: { magenta: 'ink', cyan: 'second', yellow: 'second' },
+  horror: { magenta: 'ink', cyan: 'second', yellow: 'second' },
 };
 
 const PAPERS: Record<string, { tone: RGB; fibre: number; burn: number; name: string }> = {
@@ -124,10 +135,10 @@ export default defineLook({
     inks: choice('Which book was this panel printed for, and with which inks?', {
       newsstand: 'A four-colour newsstand adventure comic: cyan, magenta and yellow in three flat tints each under black line, the classic sixty-four colours.',
       heroic: 'A superhero cover: pure red, blue and yellow at full strength, almost no half measures, loud and confident.',
-      romance: 'A romance or teen book: rose pink, soft teal and peach with plum-black line, tender, wistful, a little faded.',
-      horror: 'A pre-code horror or crime book: slime green, dried-blood red and ochre under heavy black, sickly and lurid.',
+      romance: 'A romance or teen book: three soft pastel plates with a tinted-black line, tender, wistful, a little faded.',
+      horror: 'A pre-code horror or crime book: three murky, clotted plates under heavy black, sickly and lurid.',
       spot: 'A cheap two-colour job: black plus a single spot colour, like a pulp interior, a fanzine or a propaganda leaflet.',
-      screentone: 'A manga page: black ink only, with greys laid in as mechanical dot screentone. Quiet, stark or melancholy.',
+      screentone: 'A manga page: black ink only, with greys laid in as mechanical dot screentone on the stock. Quiet, stark or melancholy.',
     }),
     screen: score('How coarse is the dot screen?', [
       'A fine modern screen that almost reads as flat colour',
@@ -158,15 +169,15 @@ export default defineLook({
       'Wildly off: ghost images in each ink',
     ]),
     paper: choice('What is it printed on, and how has the paper kept?', {
-      pulp: 'Fresh off-white pulp, bought this week.',
-      yellowed: 'Yellowed newsprint from a box in the attic.',
-      brittle: 'Brown, brittle pages with darkened edges, decades old.',
-      grey: 'Grey recycled stock flecked with fibres, cheap and matte.',
+      pulp: 'Fresh pale pulp, faintly tinted, bought this week.',
+      yellowed: 'Aged, dimmed newsprint from a box in the attic.',
+      brittle: 'Browning, brittle pages with darkened edges, decades old.',
+      grey: 'Dull recycled stock flecked with fibres, cheap and matte.',
       white: 'Bright, clean modern stock where the dots sit crisp.',
     }),
     caption: choice('What lettering sits in the panel?', {
       none: 'None: the picture speaks alone.',
-      narration: 'A yellow narration box that states the subject of the picture.',
+      narration: 'A coloured narration box that states the subject of the picture.',
       opener: 'A narration box with a stock scene-setter such as "MEANWHILE..." for a story in mid-flow.',
       balloon: 'A speech balloon with a short exclamation, its tail pointing at the main subject.',
       sound: 'A big jagged sound effect, for impact, noise or violence.',
@@ -191,8 +202,14 @@ export default defineLook({
     const count = size * size;
     const random = seeded((context.seed ^ 0x51ed270b) >>> 0);
     const mood = context.mood;
-    const inks = INKS[answers.inks];
-    const paper = PAPERS[answers.paper];
+    const book = INKS[answers.inks];
+    const plates = PLATE_ROLES[answers.inks] ? rekey({ cyan: book.cyan, magenta: book.magenta, yellow: book.yellow }, context.palette, PLATE_ROLES[answers.inks]) : book;
+    // A spot job prints its one colour in the palette's ink, whichever way the warmth leans.
+    const spot = book.mode === 'spot' ? { cyan: rekeyOne(book.cyan, context.palette, 'ink'), magenta: rekeyOne(book.magenta, context.palette, 'ink') } : {};
+    const inks: InkSet = { ...book, cyan: plates.cyan, magenta: plates.magenta, yellow: plates.yellow, ...spot };
+    const stock = PAPERS[answers.paper];
+    // The stock takes the palette's ground as a tint; bright modern white stays white.
+    const paper = answers.paper === 'white' ? stock : { ...stock, tone: rekeyOne(stock.tone, context.palette, 'ground') };
     const unit = size / 720;
     const low = noiseField((context.seed * 31 + 7) | 0);
     const fine = noiseField((context.seed * 131 + 91) | 0);

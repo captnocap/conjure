@@ -15,9 +15,30 @@ const cross = (a, b) => [
   a[0] * b[1] - a[1] * b[0],
 ];
 
-// The capture is orthographic. Sampling beyond one edge keeps the clamped
-// captured distance constant, exposing the exact pixel-to-world camera basis.
+// Conjure supplies the actual camera. The source Garden's orthographic frame
+// retains its original sampled affine basis when no Conjure snapshot is present.
 export function capturedBasis(f) {
+  const geometry = f.geometrySnapshot?.();
+  if (geometry?.source === 'conjure' && geometry.projection) {
+    const v = geometry.view, p = geometry.projection, w = f.w;
+    const right = unit([v[0], v[4], v[8]]), down = unit([-v[1], -v[5], -v[9]]),
+      forward = unit(cross(right, down)), light = unit(f.reliefLight || [-.45, -.55, .704]);
+    return {
+      conjure: true, perspective: p[11] !== 0, right, down, forward, light,
+      pixelScale: depth => 2 * (p[11] !== 0 ? depth : 1) / (Math.abs(p[0]) * w),
+      worldLight: right.map((x, k) => x * light[0] + down[k] * light[1] - forward[k] * light[2]),
+      planeTolerance: Math.max(1e-7, (geometry.worldScale || 1) * .005),
+      project(point) {
+        const view = [0,1,2,3].map(k => v[k]*point[0] + v[k+4]*point[1] + v[k+8]*point[2] + v[k+12]);
+        const depth = -view[2]/view[3];
+        if (depth <= geometry.near || depth >= geometry.far) return null;
+        const clip = [0,1,2,3].map(k => p[k]*view[0] + p[k+4]*view[1] + p[k+8]*view[2] + p[k+12]*view[3]);
+        if (!(clip[3] > 0)) return null;
+        // Pixel indices, consistent with worldPosition's half-pixel centers.
+        return [(clip[0]/clip[3]+1)*w/2-.5, (1-clip[1]/clip[3])*w/2-.5];
+      },
+    };
+  }
   const w = f.w,
     px = f.worldPosition(w + 1, 0),
     py = f.worldPosition(0, w + 1),
@@ -185,11 +206,12 @@ export function projectFloorShadow(point, planeY, basis, elongation = 3.1) {
       planeY,
       point[2] - light[2] * t * elongation,
     ],
-    v = sub(q, basis.origin);
+    v = basis.conjure ? null : sub(q, basis.origin);
+  if (basis.conjure) return basis.project(q);
   return [dot(v, basis.dx) / basis.scaleX, dot(v, basis.dy) / basis.scaleY];
 }
 
-function fillShadowTriangle(mask, fields, a, b, c, receiverId) {
+function fillShadowTriangle(mask, fields, a, b, c, receiverId, receiverY) {
   const w = fields.w,
     area = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
   if (Math.abs(area) < 0.01) return;
@@ -201,7 +223,8 @@ function fillShadowTriangle(mask, fields, a, b, c, receiverId) {
   for (let y = y0; y <= y1; y++)
     for (let x = x0; x <= x1; x++) {
       const i = y * w + x;
-      if (fields.ids[i] !== receiverId || mask[i]) continue;
+      if (fields.ids[i] !== receiverId || mask[i] || (fields.basis.conjure &&
+          Math.abs(fields.world[i*3+1] - receiverY) > fields.basis.planeTolerance)) continue;
       const k = i * 3,
         n = fields.normals,
         basis = fields.basis,
@@ -225,8 +248,21 @@ export function floorShadows(fields) {
   const { w, ids, world, basis, normals } = fields,
     mask = new Uint8Array(w * w),
     planes = [{ id: 1, y: fields.floorY }];
-  // The plinth is a second real receiver. Its top plane is measured, not moved.
-  for (let i = 0; i < ids.length; i += 7) {
+  // The original study has one known plinth. Variable Conjure scenes use
+  // measured horizontal receiver patches, retaining their real owner/height.
+  if (basis.conjure) {
+    const receivers = new Map(), h = basis.planeTolerance;
+    for (let i = 0; i < ids.length; i += 7) {
+      if (!ids[i]) continue;
+      const k = i*3, up = normals[k]*basis.right[1] + normals[k+1]*basis.down[1] - normals[k+2]*basis.forward[1];
+      if (up < .96) continue;
+      const key = ids[i] + ':' + Math.round(world[k+1]/h), item = receivers.get(key) || { id: ids[i], sum:0, count:0 };
+      item.sum += world[k+1]; item.count++; receivers.set(key,item);
+    }
+    planes.length = 0;
+    for (const item of [...receivers.values()].filter(r => r.count >= 3).sort((a,b) => b.count-a.count).slice(0,32))
+      planes.push({ id:item.id, y:item.sum/item.count });
+  } else for (let i = 0; i < ids.length; i += 7) {
     const k = i * 3,
       up =
         normals[k] * basis.right[1] +
@@ -288,15 +324,15 @@ export function floorShadows(fields) {
               fields.depth[c],
               fields.depth[d],
             ) >
-          Math.max(0.03, Math.sqrt(basis.scaleX) * step * 12)
+          Math.max(0.03, (basis.conjure ? basis.pixelScale(fields.depth[a]) : Math.sqrt(basis.scaleX)) * step * 12)
         )
           continue;
         const aa = [projected[a * 2], projected[a * 2 + 1]],
           bb = [projected[b * 2], projected[b * 2 + 1]],
           cc = [projected[c * 2], projected[c * 2 + 1]],
           dd = [projected[d * 2], projected[d * 2 + 1]];
-        fillShadowTriangle(mask, fields, aa, bb, cc, plane.id);
-        fillShadowTriangle(mask, fields, bb, dd, cc, plane.id);
+        fillShadowTriangle(mask, fields, aa, bb, cc, plane.id, plane.y);
+        fillShadowTriangle(mask, fields, bb, dd, cc, plane.id, plane.y);
       }
   }
   return mask;

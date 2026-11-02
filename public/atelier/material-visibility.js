@@ -23,8 +23,7 @@ export function createMaterialVisibility(descriptor, meshes, view, projection, s
   const inverse = new Map(), screenToLocal = new Map(),
     v = new T.Matrix4().fromArray(view.elements || view),
     p = new T.Matrix4().fromArray(projection.elements || projection);
-  if (Math.abs(p.elements[11]) > 1e-12)
-    throw new Error('Surface material visibility needs an orthographic capture');
+  const perspective = Math.abs(p.elements[11]) > 1e-12;
   const cameraToWorld = v.clone().invert(), clipToCamera = p.clone().invert();
   for (const id of descriptor.objectIds) {
     const mesh = meshes[id - 1];
@@ -35,8 +34,9 @@ export function createMaterialVisibility(descriptor, meshes, view, projection, s
     // Input coordinates are projected x/y and positive camera distance, exactly
     // the sample/path contract. No pixel rounding or source-image repainting.
     const point = (x, y, z) => {
-      const q = new T.Vector3(x / size * 2 - 1, 1 - y / size * 2, 0).applyMatrix4(clipToCamera);
-      q.z = -z;
+      const nz = perspective ? (p.elements[14] - p.elements[10] * z) / (p.elements[15] - p.elements[11] * z) : 0;
+      const q = new T.Vector3(x / size * 2 - 1, 1 - y / size * 2, nz).applyMatrix4(clipToCamera);
+      if (!perspective) q.z = -z;
       return q.applyMatrix4(cameraToWorld).applyMatrix4(worldToLocal).toArray();
     };
     screenToLocal.set(id, point);

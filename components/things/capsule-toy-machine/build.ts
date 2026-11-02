@@ -73,6 +73,12 @@ function drawIcon(g: CanvasRenderingContext2D, prize: Prize, x: number, y: numbe
 
 export default defineThing({
   questions: {
+    handle: choice('What handle turns the capsule mechanism?', { bar: 'A broad straight bar.', cross: 'A three-spoke crank.', wheel: 'A small handwheel with three spokes.', lever: 'A short offset lever with a round grip.' }),
+    chuteDoor: choice('How is the prize chute closed?', { flap: 'A clear flap hanging nearly closed.', lifted: 'A clear flap held partly open.', split: 'Two narrow clear flaps.', open: 'An uncovered recessed prize pocket.' }),
+    cardLayout: choice('How is the prize series shown on its card?', { pair: 'Two large prize illustrations.', grid: 'A grid of six small prize illustrations.', hero: 'One large illustration with a numbered series mark.', ticket: 'One illustration beside a block of ticket-like stripes.' }),
+    standFoot: choice('What supports the cabinet?', { casters: 'Small swivel castors.', pads: 'Four round rubber pads.', rails: 'Two low sled rails.', feet: 'Four short tapered metal feet.' }),
+    lidStyle: choice('How are the top lids made?', { flat: 'Plain flat plastic lids.', ridged: 'Plastic lids with parallel raised ridges.', bevel: 'Lids with sloping bevelled shoulders.', bolts: 'Flat lids secured with visible round fasteners.' }),
+    sidePanel: choice('What detail appears on the cabinet sides?', { plain: 'Plain plastic side panels.', vent: 'Small inset ventilation grilles.', service: 'A rectangular service panel with a key lock.', stripe: 'Two contrasting trim stripes.' }),
     bank: choice('How many machines stand together?', {
       single: 'One machine alone on a low stand, easy to miss.',
       pair: 'Two stacked, one on top of the other: the usual corner pair.',
@@ -109,13 +115,15 @@ export default defineThing({
     const pale = s.material('#f3f1ea', { roughness: 0.45 });
     const chrome = s.material('#cfd4d6', { metalness: 0.85, roughness: 0.25 });
     const clear = new THREE.MeshPhysicalMaterial({ color: '#eaf6ff', transparent: true, opacity: 0.16, roughness: 0.05, depthWrite: false });
+    const ground=(node:THREE.Object3D,floor=0)=>{node.updateMatrixWorld(true);node.position.y+=floor-new THREE.Box3().setFromObject(node,true).min.y;};
     const price = { hundred: '¥100', two: '¥200', three: '¥300', five: '¥500' }[a.price];
     const fade = (hex: string) => new THREE.Color(hex).lerp(new THREE.Color('#d8d2c4'), mood.wear * 0.45);
 
     // Stand: a plinth with castors under the block.
     const total = cols * W;
     s.box([total + 0.02, BASE - 0.05, D], [0, 0.05 + (BASE - 0.05) / 2, 0], s.material('#3a3d44', { roughness: 0.55 }));
-    for (const x of [-1, 1]) for (const z of [-1, 1]) s.cylinder(0.03, 0.03, 0.05, [x * (total / 2 - 0.06), 0.025, z * (D / 2 - 0.06)], dark, 12);
+    if(a.standFoot==='rails')for(const side of [-1,1])s.box([total+.02,.05,.065],[0,.025,side*(D/2-.055)],dark);
+    else for(const side of [-1,1])for(const end of [-1,1]){const x=side*(total/2-.06),z=end*(D/2-.06);if(a.standFoot==='casters'){const wheel=s.cylinder(.025,.025,.025,[x,.025,z],dark,16);wheel.rotation.z=Math.PI/2;s.box([.035,.018,.032],[x,.043,z],chrome);}else s.cylinder(a.standFoot==='pads'?.035:.014,a.standFoot==='pads'?.035:.023,.05,[x,.025,z],a.standFoot==='pads'?dark:chrome,12);}
     if (a.bank === 'single') s.box([total * 0.7, 0.012, 0.01], [0, BASE * 0.6, D / 2 + 0.006], chrome);
 
     const shells: { at: THREE.Vector3; colour: THREE.Color; turn: THREE.Euler }[] = [];
@@ -135,8 +143,12 @@ export default defineThing({
       const broken = unitIndex === brokenIndex;
 
       // Lower body: coin mech, crank, chute.
-      s.box([W - 0.006, BODY_H, D], [x, y + BODY_H / 2, 0], body);
-      s.box([W * 0.88, BODY_H * 0.86, 0.012], [x, y + BODY_H / 2, D / 2 + 0.004], trim);
+      s.box([W-.006,BODY_H,D-.09],[x,y+BODY_H/2,-.045],body);
+      const panel=(width:number,height:number,material:THREE.Material,z:number)=>{const shape=new THREE.Shape();shape.moveTo(-width/2,-height/2);shape.lineTo(width/2,-height/2);shape.lineTo(width/2,height/2);shape.lineTo(-width/2,height/2);shape.closePath();const hole=new THREE.Path();hole.moveTo(-.14,-.128);hole.lineTo(.03,-.128);hole.lineTo(.03,-.041);hole.lineTo(-.14,-.041);hole.closePath();shape.holes.push(hole);return s.mesh(new THREE.ExtrudeGeometry(shape,{depth:.008,bevelEnabled:false}),material,[x,y+BODY_H/2,z]);};
+      panel(W-.006,BODY_H,body,D/2-.004);panel(W*.88,BODY_H*.86,trim,D/2+.005);
+      for(const side of [-1,1])s.box([.014,.09,.09],[x-.055+side*.086,y+.065,D/2-.035],body);
+      s.box([.18,.008,.14],[x-.055,y+.018,D/2-.01],dark);s.box([.17,.086,.008],[x-.055,y+.065,D/2-.08],dark);
+
       const dial = s.cylinder(0.062, 0.062, 0.03, [x + 0.075, y + 0.2, D / 2 + 0.024], pale, 24);
       dial.rotation.x = Math.PI / 2;
       const crank = new THREE.Group();
@@ -144,7 +156,11 @@ export default defineThing({
       bar.position.z = 0.02; bar.castShadow = true;
       const knob = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.03, 12), chrome);
       knob.rotation.x = Math.PI / 2; knob.position.z = 0.036;
-      crank.add(bar, knob);
+      if(a.handle==='bar')crank.add(bar,knob);
+      else if(a.handle==='cross'||a.handle==='wheel'){
+        for(let j=0;j<3;j++){const theta=j*Math.PI*2/3,arm=new THREE.Mesh(new THREE.BoxGeometry(.052,.016,.024),body);arm.position.set(Math.cos(theta)*.025,Math.sin(theta)*.025,.022);arm.rotation.z=theta;crank.add(arm);}crank.add(knob);
+        if(a.handle==='wheel'){const wheel=new THREE.Mesh(new THREE.TorusGeometry(.052,.007,7,32),chrome);wheel.position.z=.024;crank.add(wheel);}
+      }else{const arm=new THREE.Mesh(new THREE.BoxGeometry(.065,.021,.024),body);arm.position.set(.025,0,.02);crank.add(arm);knob.position.set(.055,0,.038);crank.add(knob);}
       crank.position.set(x + 0.075, y + 0.2, D / 2 + 0.03);
       crank.rotation.z = broken ? 1.2 : (random() - 0.5) * 0.7;
       s.root.add(crank);
@@ -152,9 +168,11 @@ export default defineThing({
       s.box([0.07, 0.085, 0.022], [x - 0.115, y + 0.215, D / 2 + 0.016], chrome);
       s.box([0.008, 0.045, 0.004], [x - 0.115, y + 0.225, D / 2 + 0.028], dark);
       s.label(price, 0.1, 0.04, [x - 0.11, y + 0.145, D / 2 + 0.012], '#ffffff', '#c8261e');
-      s.box([0.17, 0.085, 0.02], [x - 0.055, y + 0.062, D / 2 + 0.008], dark);
-      const flap = s.box([0.15, 0.07, 0.006], [x - 0.055, y + 0.07, D / 2 + 0.03], new THREE.MeshStandardMaterial({ color: '#f4f8fa', transparent: true, opacity: 0.35, depthWrite: false }));
-      flap.rotation.x = -0.35;
+      if(a.chuteDoor!=='open'){
+        const sections=a.chuteDoor==='split'?2:1;for(let i=0;i<sections;i++){
+          const hinge=new THREE.Group(),flap=new THREE.Mesh(new THREE.BoxGeometry(.15/sections-.002,.073,.004),new THREE.MeshStandardMaterial({color:'#f4f8fa',transparent:true,opacity:.35,depthWrite:false}));flap.position.y=-.0365;hinge.add(flap);hinge.position.set(x-.055+(i-(sections-1)/2)*.15/sections,y+.108,D/2+.022);hinge.rotation.x=a.chuteDoor==='lifted'?-.95:-.12;s.root.add(hinge);
+        }
+      }
       if (broken) {
         const tape = s.material('#e9d27a', { roughness: 0.8 });
         for (const turn of [0.7, -0.7]) s.box([0.13, 0.022, 0.003], [x - 0.115, y + 0.215, D / 2 + 0.03], tape).rotation.z = turn;
@@ -168,15 +186,24 @@ export default defineThing({
       const by = y + BODY_H;
       s.box([W - 0.03, BIN_H, D - 0.03], [x, by + BIN_H / 2, 0], clear);
       for (const px of [-1, 1]) for (const pz of [-1, 1]) s.box([0.014, BIN_H, 0.014], [x + px * (W / 2 - 0.012), by + BIN_H / 2, pz * (D / 2 - 0.012)], pale);
-      s.box([W - 0.004, 0.03, D + 0.004], [x, by + BIN_H + 0.015, 0], body);
+      const lidY=by+BIN_H;
+      if(a.lidStyle==='bevel'){const shape=new THREE.Shape();shape.moveTo(-W/2,0);shape.lineTo(W/2,0);shape.lineTo(W/2-.02,.03);shape.lineTo(-W/2+.02,.03);shape.closePath();s.mesh(new THREE.ExtrudeGeometry(shape,{depth:D+.004,bevelEnabled:false}),body,[x,lidY,-D/2-.002]);}
+      else s.box([W-.004,.03,D+.004],[x,lidY+.015,0],body);
+      if(a.lidStyle==='ridged')for(let i=0;i<8;i++)s.box([.012,.006,D-.035],[x-W*.36+i*W*.72/7,lidY+.033,0],trim);
+      if(a.lidStyle==='bolts')for(const side of [-1,1])for(const end of [-1,1])s.cylinder(.009,.009,.004,[x+side*(W/2-.035),lidY+.032,end*(D/2-.035)],chrome,10);
+
       const [paper, ink] = CARD[prize];
       const cardMap = texture(256, 96, (g, w, h) => {
         g.fillStyle = `#${fade(paper).getHexString()}`; g.fillRect(0, 0, w, h);
         g.fillStyle = `#${fade(ink).getHexString()}`; g.fillRect(0, 0, w, 10); g.fillRect(0, h - 10, w, 10);
         const inkHex = `#${fade(ink).getHexString()}`;
-        drawIcon(g, prize, 60, 48, 30, inkHex, paper); drawIcon(g, prize, 196, 48, 30, inkHex, paper);
-        g.fillStyle = inkHex; for (let i = 0; i < 5; i++) { g.beginPath(); g.arc(128 + (i - 2) * 9, 30 + (i % 2) * 36, 5, 0, Math.PI * 2); g.fill(); }
-        g.fillRect(104, 44, 48, 8);
+        if(a.cardLayout==='pair'){drawIcon(g,prize,60,48,30,inkHex,paper);drawIcon(g,prize,196,48,30,inkHex,paper);}
+        if(a.cardLayout==='grid')for(let j=0;j<6;j++)drawIcon(g,prize,35+j*37,48,16,inkHex,paper);
+        if(a.cardLayout==='hero'){drawIcon(g,prize,100,48,34,inkHex,paper);g.font='bold 30px monospace';g.fillStyle=inkHex;g.fillText('06',180,58);}
+        if(a.cardLayout==='ticket'){drawIcon(g,prize,65,48,30,inkHex,paper);g.fillStyle=inkHex;for(let j=0;j<6;j++)g.fillRect(128,23+j*9,75-(j%3)*12,4);}
+
+        g.fillStyle=inkHex;for(let i=0;i<(a.cardLayout==='pair'?5:0);i++) { g.beginPath(); g.arc(128 + (i - 2) * 9, 30 + (i % 2) * 36, 5, 0, Math.PI * 2); g.fill(); }
+        if(a.cardLayout==='pair')g.fillRect(104,44,48,8);
       });
       const card = s.mesh(new THREE.PlaneGeometry(W * 0.82, 0.1), new THREE.MeshStandardMaterial({ map: cardMap, roughness: 0.7, emissive: '#ffffff', emissiveMap: cardMap, emissiveIntensity: mix(0.05, 0.4, mood.cheer) }), [x, by + BIN_H - 0.055, D / 2 - 0.008]);
       card.castShadow = false;
@@ -191,7 +218,7 @@ export default defineThing({
           if (layers === 1 && a.fill < 0.2 ? random() > 0.3 : random() > keep) continue;
           const gx = (i % 5) - 2, gz = Math.floor(i / 5) - 2;
           shells.push({
-            at: new THREE.Vector3(x + gx * 0.074 + (random() - 0.5) * 0.02 + (layer % 2) * 0.02, by + R + layer * R * 1.75 + random() * 0.008, gz * 0.07 + (random() - 0.5) * 0.02),
+            at: new THREE.Vector3(x+gx*.0708+(layer%2)*.0177,by+R*1.04+layer*Math.sqrt((R*2.08)**2-.0177**2),gz*.0708),
             colour: new THREE.Color(PALETTE[prize][Math.floor(random() * 5)]),
             turn: new THREE.Euler(random() * Math.PI * 2, random() * Math.PI * 2, random() * Math.PI * 2),
           });
@@ -199,6 +226,11 @@ export default defineThing({
       }
       if (unitIndex === emptyIndex) s.label('SOLD OUT', W * 0.7, 0.085, [x, by + 0.12, D / 2 - 0.004], '#ffffff', '#c8261e').rotation.z = -0.12;
       if (broken) s.label('OUT OF ORDER', W * 0.72, 0.1, [x, by + 0.13, D / 2 - 0.004], '#30343a', '#f4efdc').rotation.z = 0.09;
+      if(a.sidePanel!=='plain')for(const side of [-1,1]){if(cols>1&&!(col===0&&side===-1||col===cols-1&&side===1))continue;const panelX=x+side*(W/2+.001);
+        if(a.sidePanel==='stripe')for(const z of [-.09,.09])s.box([.004,BODY_H*.8,.022],[panelX,y+BODY_H/2,z],trim);
+        if(a.sidePanel==='service'){s.box([.006,.21,.26],[panelX,y+.15,0],chrome);s.box([.009,.19,.24],[panelX+side*.003,y+.15,0],body);const lock=s.cylinder(.012,.012,.012,[panelX+side*.011,y+.19,.08],chrome,12);lock.rotation.z=Math.PI/2;}
+        if(a.sidePanel==='vent'){s.box([.005,.19,.24],[panelX,y+.15,0],dark);for(let j=0;j<8;j++)s.box([.012,.008,.25],[panelX+side*.006,y+.065+j*.024,0],body);}
+      }
       // Peeling stickers on the side in a worn or crowded place.
       const stickers = Math.floor(mood.wear * 2 + mood.density * 2 + random());
       for (let i = 0; i < stickers && (col === 0 || col === cols - 1); i++) {
@@ -214,14 +246,14 @@ export default defineThing({
       const bx = (cols - 1) / 2 * W * (random() > 0.5 ? 1 : -1) * (cols > 1 ? 1 : 0);
       s.box([0.3, 0.012, 0.24], [bx, top + 0.006, 0], basket);
       for (const side of [-1, 1]) { s.box([0.012, 0.12, 0.24], [bx + side * 0.15, top + 0.06, 0], basket); s.box([0.3, 0.12, 0.012], [bx, top + 0.06, side * 0.12], basket); }
-      for (let i = 0; i < 7; i++) shells.push({ at: new THREE.Vector3(bx + (random() - 0.5) * 0.2, top + 0.045 + random() * 0.05, (random() - 0.5) * 0.14), colour: new THREE.Color('#f3f1ea'), turn: new THREE.Euler(random() * 6, random() * 6, 0) });
+      for (let i = 0; i < 7; i++) shells.push({ at: new THREE.Vector3(bx+(i<6?(i%3-1)*.075:0),top+.012+R*1.04+(i<6?0:.06),i<6?(Math.floor(i/3)-.5)*.075:0), colour: new THREE.Color('#f3f1ea'), turn: new THREE.Euler(random() * 6, random() * 6, 0) });
     }
     if (a.state === 'opened') {
       const colour = PALETTE[a.prize][Math.floor(random() * 5)];
       const half = new THREE.SphereGeometry(R * 1.1, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2);
       const fx = (random() - 0.5) * 0.2;
-      const lower = s.mesh(half, s.material(colour, { side: THREE.DoubleSide, roughness: 0.35 }), [fx, R * 1.05, D / 2 + 0.2]); lower.rotation.x = Math.PI + 0.3;
-      const upper = s.mesh(half.clone(), s.material('#f4f6f6', { side: THREE.DoubleSide, roughness: 0.3 }), [fx + 0.13, 0.008, D / 2 + 0.27]); upper.rotation.z = 0.5;
+      const lower = s.mesh(half, s.material(colour, { side: THREE.DoubleSide, roughness: 0.35 }), [fx, R * 1.05, D / 2 + 0.2]); lower.rotation.x=Math.PI+.3;ground(lower);
+      const upper = s.mesh(half.clone(), s.material('#f4f6f6', { side: THREE.DoubleSide, roughness: 0.3 }), [fx + 0.13, 0.008, D / 2 + 0.27]); upper.rotation.z=.5;ground(upper);
       s.ball([0.022, 0.03, 0.022], [fx - 0.09, 0.03, D / 2 + 0.3], s.material(PALETTE[a.prize][0], { emissive: PALETTE[a.prize][0], emissiveIntensity: 0.25 }), 10);
       s.box([0.07, 0.002, 0.05], [fx + 0.03, 0.002, D / 2 + 0.36], s.material('#f6f2e2')).rotation.y = 0.6;
     }

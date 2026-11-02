@@ -1,7 +1,13 @@
 import { renderChromaticShadows, WIDTH } from './chromatic-shadow-core.js';
 import { validateMaterials, defaultMaterials } from './material-state.js';
+import { renderConjureChromaticShadows } from './chromatic-shadow-conjure.js';
 
 export function prepareChromaticShadowFrame(frame) {
+  const source = frame.geometrySnapshot?.();
+  if (source?.source === 'conjure') {
+    if (typeof frame.prepare !== 'function') throw Error('Chromatic shadows needs the frame preparation cache');
+    return frame.prepare('chromatic-shadows-conjure', () => renderConjureChromaticShadows(frame, source).pixels);
+  }
   if (frame.w !== WIDTH) throw new RangeError('Chromatic shadows requires the fixed 720-pixel capture');
   if (typeof frame.prepare !== 'function') throw Error('Chromatic shadows needs the frame preparation cache');
   return frame.prepare('chromatic-shadows', () => {

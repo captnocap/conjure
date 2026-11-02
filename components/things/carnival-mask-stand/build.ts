@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Sculpture, choice, defineThing, mix, noul, score } from '@conjure/kit';
+import { Sculpture, choice, defineThing, mix, noul, score, visibleBounds } from '@conjure/kit';
 
 const MASKS = {
   bauta: 'The bauta: a stark white face with a jutting square jaw and no mouth, under a black tricorn.',
@@ -53,6 +53,27 @@ export default defineThing({
       carnival: 'A painted board: CARNEVALE.',
     }),
     watching: noul('Do the eyes of the main mask glow faintly, as if someone is behind it?'),
+    displaySize: score('What is the overall scale of the display?', ['A compact stall of small masks', 'A street display at chest height', 'A tall display with large theatrical masks']),
+    ornament: choice('What small ornament marks the brows of the masks?', {
+      plain: 'The existing painted face is left clear.', pearls: 'Three small pearl beads over the brow.',
+      diamond: 'A single raised diamond at the forehead.', curls: 'Two fine gold scrolls frame the brow.',
+    }),
+    tieEnds: choice('If ribbons are present, how are their ends finished?', {
+      plain: 'Plain ribbon ends.', beads: 'A small bead weights each ribbon end.',
+      tassels: 'Short tassels hang at the ends of the ribbons.', forked: 'Two narrow tails split from the end of each ribbon.',
+    }),
+    header: choice('What rises above the display?', {
+      open: 'The stand has no header.', banner: 'A narrow fabric banner between two rear uprights.',
+      awning: 'A shallow rear awning with a flat fabric top.', valance: 'A shallow awning with a scalloped front valance.',
+    }),
+    packing: choice('What packing supplies wait beside the stand?', {
+      clear: 'No packing supplies.', box: 'An open wooden packing box.',
+      wrapped: 'A low crate holds two tied paper parcels.', tissue: 'A divided box carries folded paper and ribbon rolls.',
+    }),
+    footing: choice('What is the stand set on?', {
+      boards: 'A small timber platform.', stone: 'A pale stone paving slab.',
+      checker: 'A dark and pale tiled apron.', rug: 'A thin cloth rug with a stitched border.',
+    }),
   },
 
   build(a, context) {
@@ -130,6 +151,9 @@ export default defineThing({
           for (let i = 0; i < 12; i++) { const angle = i * Math.PI / 6; const ray = G(s.cylinder(0, 0.03, i % 2 ? 0.1 : 0.15, [Math.sin(angle) * 0.17, Math.cos(angle) * 0.19, -0.01], i % 2 ? face : gold, 4)); ray.rotation.z = -angle; ray.scale.z = 0.3; }
         }
       }
+      if (a.ornament === 'pearls') for (const x of [-0.034, 0, 0.034]) G(s.ball([0.013, 0.013, 0.01], [x, 0.078, 0.056], lacquer('#eee4ca'), 8));
+      else if (a.ornament === 'diamond') G(s.box([0.04, 0.04, 0.012], [0, 0.077, 0.059], gold)).rotation.z = Math.PI / 4;
+      else if (a.ornament === 'curls') for (const side of [-1, 1]) G(s.ring(0.022, 0.004, [side * 0.03, 0.076, 0.057], gold, Math.PI * 1.6)).rotation.z = side * 0.4;
       // Dressing: feathers on top, ribbons at the temples, all by how fine the display is.
       const dress = a.finery * (main ? 1.3 : 0.7 + random() * 0.5);
       const plumes = kind === 'colombina' ? 2 + Math.round(dress * 5) : kind === 'bauta' || kind === 'sun' || kind === 'jester' || kind === 'doctor' ? 0 : Math.round(dress * 3 - 0.6);
@@ -147,6 +171,12 @@ export default defineThing({
           const ribbon = s.box([0.016, 0.26 + random() * 0.2, 0.003], [0, 0, 0], lacquer(k ? tone.second : tone.accent, { roughness: 0.6, side: THREE.DoubleSide }));
           ribbon.position.y = -(ribbon.geometry as THREE.BoxGeometry).parameters.height / 2;
           hold.add(ribbon);
+          const endY = -(ribbon.geometry as THREE.BoxGeometry).parameters.height;
+          if (a.tieEnds === 'beads') hold.add(s.ball([0.018, 0.022, 0.012], [0, endY - 0.012, 0], gold, 8));
+          else if (a.tieEnds === 'tassels') {
+            hold.add(s.ball([0.016, 0.018, 0.012], [0, endY - 0.01, 0], gold, 8));
+            for (let strand = 0; strand < 3; strand++) hold.add(s.rod([(strand - 1) * 0.009, endY - 0.02, 0], [(strand - 1) * 0.016, endY - 0.09, 0], 0.005, trim));
+          } else if (a.tieEnds === 'forked') for (const side of [-1, 1]) hold.add(s.rod([0, endY, 0], [side * 0.025, endY - 0.1, 0], 0.005, second));
           hold.rotation.z = rs * (0.12 + k * 0.2);
           g.add(hold);
           swaying.push({ node: hold, phase: random() * 6 });
@@ -174,9 +204,11 @@ export default defineThing({
         M(s.ball([0.1, 0.07, 0.04], [0, 2.0, 0.02], gold, 12));
       } else {
         for (let i = 0; i < 6; i++) M(s.box([1.36, 0.008, 0.045], [0, 0.52 + i * 0.25, 0.002], darkWood));
-        for (const x of [-0.62, 0.62]) M(s.box([0.07, 2.0, 0.06], [x, 0.98, -0.04], wood));
-        const prop = s.box([0.06, 1.9, 0.05], [0, 0.88, -0.48], wood); prop.rotation.x = 0.28;
-        s.rod([-0.3, 0.6, -0.15], [0, 0.6, -0.42], 0.012, darkWood); s.rod([0.3, 0.6, -0.15], [0, 0.6, -0.42], 0.012, darkWood);
+        const tilted = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).applyEuler(mount.rotation).toArray() as [number, number, number];
+        for (const x of [-0.62, 0.62]) s.rod([x, 0.035, 0.12], tilted(x, 1.98, -0.04), 0.035, wood);
+        s.rod([0, 0.035, -0.95], tilted(0, 1.86, -0.06), 0.035, wood);
+        for (const x of [-0.3, 0.3]) s.rod(tilted(x, 0.6, -0.04), [0, 0.6, -0.77], 0.012, darkWood);
+        for (const [x, z] of [[-0.62, 0.12], [0.62, 0.12], [0, -0.95]]) s.box([0.11, 0.05, 0.11], [x, 0.025, z], darkWood);
       }
       slots.push({ at: [0, 1.56, 0.07], size: 1.55 });
       for (const [x, y] of [[-0.44, 1.62], [0.44, 1.62], [-0.44, 1.14], [0.44, 1.14], [0, 1.04], [-0.44, 0.68], [0.44, 0.68], [0, 0.62], [-0.22, 1.32], [0.22, 0.86]]) slots.push({ at: [x + (random() - 0.5) * 0.04, y + (random() - 0.5) * 0.04, 0.07] });
@@ -234,6 +266,8 @@ export default defineThing({
           fallen.position.set((random() - 0.5) * 0.7, 0.085 * scale, a.stand === 'tiers' ? 0.9 : 0.75);
           s.root.add(fallen);
           for (const child of [...fallen.children]) if ((child as THREE.Group).isGroup) { fallen.remove(child); const at = swaying.findIndex((entry) => entry.node === child); if (at >= 0) swaying.splice(at, 1); }
+          fallen.updateMatrixWorld(true);
+          fallen.position.y -= new THREE.Box3().setFromObject(fallen, true).min.y;
           s.box([0.02, 0.004, 0.5], [fallen.position.x + 0.2, 0.004, fallen.position.z + 0.12], lacquer(tone.accent)).rotation.y = random() * 3;
         }
         continue;
@@ -259,6 +293,53 @@ export default defineThing({
     }
     // Shed feathers and confetti at the foot when the mood is crowded or festive.
     for (let i = 0; i < Math.round(mood.density * 8 + mood.cheer * 10); i++) s.box([0.03, 0.003, 0.03], [(random() - 0.5) * 1.5, 0.002, 0.3 + random() * 0.6], lacquer(pick([...tone.feathers, tone.accent, tone.second]))).rotation.y = random() * 3;
+
+    if (a.header !== 'open') {
+      const top = Math.max(2.2, visibleBounds(s.root).max.y + 0.14), rear = -0.73;
+      for (const x of [-0.88, 0.88]) {
+        s.box([0.2, 0.07, 0.32], [x, 0.035, rear], darkWood);
+        s.rod([x, 0.07, rear], [x, top, rear], 0.035, wood);
+      }
+      s.rod([-0.88, top, rear], [0.88, top, rear], 0.035, wood);
+      if (a.header === 'banner') s.box([1.75, 0.27, 0.015], [0, top - 0.14, rear + 0.02], s.material(tone.cloth));
+      else {
+        s.box([1.9, 0.035, 0.46], [0, top + 0.01, rear + 0.15], s.material(tone.cloth));
+        for (const x of [-0.88, 0.88]) s.rod([x, top - 0.28, rear], [x, top, rear + 0.36], 0.025, wood);
+        if (a.header === 'valance') for (let i = 0; i < 9; i++) {
+          const x = (i - 4) * 0.2;
+          s.box([0.2, 0.11, 0.015], [x, top - 0.05, rear + 0.38], s.material(tone.cloth));
+          s.ball([0.1, 0.07, 0.009], [x, top - 0.1, rear + 0.38], s.material(tone.cloth), 10);
+        }
+      }
+    }
+    if (a.packing !== 'clear') {
+      const x = visibleBounds(s.root).min.x - 0.34, z = 0.4, paper = s.material('#e1d5ba');
+      s.box([0.52, 0.055, 0.58], [x, 0.0275, z], wood);
+      for (const dx of [-0.24, 0.24]) s.box([0.04, 0.27, 0.58], [x + dx, 0.19, z], wood);
+      for (const dz of [-0.27, 0.27]) s.box([0.52, 0.27, 0.04], [x, 0.19, z + dz], wood);
+      if (a.packing === 'wrapped') for (const dz of [-0.13, 0.13]) {
+        s.box([0.38, 0.24, 0.23], [x, 0.175, z + dz], paper);
+        s.box([0.025, 0.245, 0.235], [x, 0.175, z + dz], darkWood);
+      } else if (a.packing === 'tissue') {
+        s.box([0.035, 0.27, 0.54], [x, 0.19, z], wood);
+        for (let i = 0; i < 6; i++) s.box([0.18, 0.016, 0.4], [x - 0.12, 0.063 + i * 0.016, z], paper);
+        for (let i = 0; i < 3; i++) s.cylinder(0.06, 0.06, 0.14, [x + 0.12, 0.125, z + (i - 1) * 0.16], lacquer(tone.accent), 12);
+      }
+    }
+    // Lift the complete grounded display onto a sized apron, keeping loose pieces supported.
+    const bounds = visibleBounds(s.root), size = bounds.getSize(new THREE.Vector3()), centre = bounds.getCenter(new THREE.Vector3());
+    const platform = a.footing === 'rug' ? 0.014 : a.footing === 'stone' ? 0.09 : 0.06, width = size.x + 0.24, depth = size.z + 0.24;
+    const display = new THREE.Group(); for (const child of [...s.root.children]) display.add(child); s.root.add(display); display.position.y = platform - bounds.min.y;
+    if (a.footing === 'checker') for (let row = 0; row < 6; row++) for (let col = 0; col < 8; col++) s.box([width / 8 - 0.007, platform, depth / 6 - 0.007], [centre.x - width / 2 + (col + 0.5) * width / 8, platform / 2, centre.z - depth / 2 + (row + 0.5) * depth / 6], s.material((row + col) % 2 ? '#57564f' : '#d5cbb3'));
+    else {
+      s.box([width, platform, depth], [centre.x, platform / 2, centre.z], a.footing === 'stone' ? s.material('#c4bdab') : a.footing === 'rug' ? s.material(tone.cloth) : wood);
+      if (a.footing === 'boards') for (let i = 1; i < 9; i++) s.box([0.008, 0.002, depth], [centre.x - width / 2 + width * i / 9, platform + 0.001, centre.z], darkWood);
+      if (a.footing === 'rug') for (const side of [-1, 1]) {
+        s.box([width - 0.08, 0.002, 0.025], [centre.x, platform + 0.001, centre.z + side * (depth / 2 - 0.04)], gold);
+        s.box([0.025, 0.002, depth - 0.08], [centre.x + side * (width / 2 - 0.04), platform + 0.001, centre.z], gold);
+      }
+    }
+    s.root.scale.setScalar(mix(0.82, 1.22, a.displaySize));
 
     const energy = mix(0.2, 1.6, mood.energy);
     const rest = swaying.map(({ node }) => node.rotation.z);

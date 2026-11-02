@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Sculpture, choice, defineThing, mix } from '@conjure/kit';
+import { Sculpture, choice, defineThing, mix, score } from '@conjure/kit';
 
 type Profile = readonly (readonly [number, number])[];
 const BELL: Profile = [[0, -0.018], [0.016, -0.02], [0.034, -0.028], [0.046, -0.046], [0.051, -0.085], [0.058, -0.122], [0.074, -0.152], [0.092, -0.17], [0.096, -0.178], [0.09, -0.18], [0.084, -0.172]];
@@ -27,6 +27,21 @@ function texture(width: number, height: number, draw: (c: CanvasRenderingContext
 
 export default defineThing({
   questions: {
+    voice: score('How substantial is the hanging bell?', ['A little counter bell', 'A light hand-sized bell', 'A solid pub bell', 'A full heavy ship bell']),
+    shoulder: choice('How is the shoulder cast?', {
+      smooth: 'A plain smooth shoulder.', ribs: 'Raised ribs running down from the crown.',
+      studs: 'A circle of round cast studs.', rosette: 'A flower-like ring of small raised petals.',
+    }),
+    mouth: choice('What finishes the bell mouth?', {
+      plain: 'A plain rolled lip.', double: 'Two bold raised rings.', beads: 'A border of little round beads.', braid: 'A close twisted-rope border.',
+    }),
+    striker: choice('What shape is the clapper weight?', {
+      ball: 'A round ball.', pear: 'A long pear-shaped weight.', bar: 'A short thick crossbar.', hammer: 'A squared hammer head.',
+    }),
+    reach: score('How long is the bell pull?', ['Short and tucked under the mouth', 'A modest pull', 'An easy handhold', 'A long dangling pull']),
+    footing: choice('What protects the counter underneath?', {
+      bare: 'The stand rests directly on the counter.', felt: 'A thin green felt pad.', cork: 'A rectangular cork mat.', tray: 'A low wooden tray with raised edges.',
+    }),
     mount: choice('How is the bell mounted?', {
       plaque: 'On a gooseneck bracket screwed to a varnished wooden backboard.',
       post: 'From a scrolled arm on a turned post standing on the bar.',
@@ -115,14 +130,43 @@ export default defineThing({
       s.rod([0, 0.44, 0], [0, 0.41, 0], 0.005, fitting);
     }
 
+    if (a.mount === 'post' || a.mount === 'plaque') s.ring(0.015, 0.003, [hang[0], hang[1] + 0.017, hang[2]], fitting);
+
     // The bell swings as one body about its hanging point; the clapper swings inside it.
     const swing = new THREE.Group();
     swing.position.set(...hang);
+    swing.scale.setScalar(mix(0.76, 1, a.voice));
     s.root.add(swing);
     const part = <T extends THREE.Object3D>(node: T, parent: THREE.Object3D = swing) => { node.traverse((n) => { n.castShadow = true; }); parent.add(node); return node; };
     const loop = part(new THREE.Mesh(new THREE.TorusGeometry(0.014, 0.004, 6, 20), fitting));
     loop.position.y = -0.008;
     part(new THREE.Mesh(new THREE.LatheGeometry(BELL.map(([x, y]) => new THREE.Vector2(x, y)), 44), bellMat));
+    if (a.shoulder !== 'smooth') {
+      for (let i = 0; i < 16; i++) {
+        const t = i / 16 * Math.PI * 2;
+        if (a.shoulder === 'ribs') {
+          const points = [-0.035, -0.045, -0.058, -0.068].map(y => new THREE.Vector3(Math.sin(t) * (radiusAt(y) + 0.001), y, Math.cos(t) * (radiusAt(y) + 0.001)));
+          part(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 8, 0.0018, 5, false), fitting));
+        } else {
+          const bead = part(new THREE.Mesh(new THREE.SphereGeometry(0.0035, 8, 6), fitting));
+          bead.position.set(Math.sin(t) * 0.047, -0.046, Math.cos(t) * 0.047);
+          if (a.shoulder === 'rosette') { bead.scale.set(0.7, 2.3, 0.7); bead.rotation.z = Math.sin(t) * 0.45; bead.rotation.x = Math.cos(t) * -0.45; }
+        }
+      }
+    }
+    if (a.mouth === 'double') {
+      for (const y of [-0.164, -0.176]) {
+        const band = part(new THREE.Mesh(new THREE.TorusGeometry(radiusAt(y) + 0.001, 0.003, 6, 44), fitting));
+        band.position.y = y; band.rotation.x = Math.PI / 2;
+      }
+    } else if (a.mouth === 'beads' || a.mouth === 'braid') {
+      const n = a.mouth === 'beads' ? 40 : 72;
+      for (let i = 0; i < n; i++) {
+        const t = i / n * Math.PI * 2;
+        const bead = part(new THREE.Mesh(new THREE.SphereGeometry(a.mouth === 'beads' ? 0.0032 : 0.0022, 6, 4), fitting));
+        bead.position.set(Math.sin(t) * 0.095, -0.174 + (a.mouth === 'braid' ? Math.sin(i * Math.PI / 2) * 0.002 : 0), Math.cos(t) * 0.095);
+      }
+    }
     for (const y of [-0.05, -0.058, -0.136, -0.144]) {
       const band = part(new THREE.Mesh(new THREE.TorusGeometry(radiusAt(y) + 0.0006, 0.0016, 5, 44), a.metal === 'black' ? brass : bellMat));
       band.rotation.x = Math.PI / 2; band.position.y = y;
@@ -164,12 +208,15 @@ export default defineThing({
     clapper.position.y = -0.03;
     swing.add(clapper);
     part(new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.005, 0.12, 8), fitting), clapper).position.y = -0.06;
-    part(new THREE.Mesh(new THREE.SphereGeometry(0.019, 14, 10), fitting), clapper).position.y = -0.128;
+    const striker = part(new THREE.Mesh(a.striker === 'hammer' ? new THREE.BoxGeometry(0.038, 0.024, 0.026) : a.striker === 'bar' ? new THREE.CylinderGeometry(0.012, 0.012, 0.045, 12) : new THREE.SphereGeometry(0.019, 14, 10), fitting), clapper);
+    striker.position.y = -0.128;
+    if (a.striker === 'pear') striker.scale.set(0.8, 1.3, 0.8);
+    if (a.striker === 'bar') striker.rotation.z = Math.PI / 2;
     const eye = part(new THREE.Mesh(new THREE.TorusGeometry(0.007, 0.0022, 5, 14), fitting), clapper);
     eye.position.y = -0.153;
 
     // The pull hangs from the clapper, below the mouth.
-    const ropeTop = -0.16, ropeLen = { sailor: 0.15, leather: 0.13, cord: 0.14, frayed: 0.1 }[a.rope];
+    const ropeTop = -0.16, ropeLen = { sailor: 0.15, leather: 0.13, cord: 0.14, frayed: 0.1 }[a.rope] * mix(0.48, 1, a.reach);
     const ropeTint = { sailor: '#efe9d8', leather: '#3d2718', cord: '#b3202c', frayed: '#c9b38a' }[a.rope];
     const ropeMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(ropeTint).lerp(new THREE.Color('#7a6a55'), mood.wear * 0.35), roughness: 0.9 });
     const thick = { sailor: 0.0075, leather: 0.003, cord: 0.004, frayed: 0.0018 }[a.rope];
@@ -235,6 +282,17 @@ export default defineThing({
       shot.rotation.x = Math.PI;
       s.ring(0.0235, 0.0014, [fx, 0.001, fz], new THREE.MeshStandardMaterial({ color: '#f4fcff', transparent: true, opacity: 0.8 })).rotation.x = Math.PI / 2;
       for (let i = 0; i < 4 + Math.round(mood.density * 4); i++) s.cylinder(0.011, 0.011, 0.0018, [fx - 0.05 + random() * 0.09, 0.001 + i * 0.0003, fz + 0.035 + random() * 0.04], new THREE.MeshStandardMaterial({ color: i % 3 ? '#c9ccce' : '#b87a4a', metalness: 0.85, roughness: 0.3 }), 14);
+    }
+
+    if (a.footing !== 'bare') {
+      const lift = a.footing === 'tray' ? 0.012 : 0.004;
+      for (const child of s.root.children) child.position.y += lift;
+      const mat = s.material(a.footing === 'felt' ? '#365d48' : a.footing === 'cork' ? '#b39562' : '#6b4226', { roughness: 0.9 });
+      s.box([0.64, lift, 0.42], [0.02, lift / 2, 0.015], mat);
+      if (a.footing === 'tray') {
+        for (const x of [-0.3, 0.34]) s.box([0.012, 0.025, 0.42], [x, 0.018, 0.015], mat);
+        for (const z of [-0.195, 0.225]) s.box([0.64, 0.025, 0.012], [0.02, 0.018, z], mat);
+      }
     }
 
     // Pose and motion.

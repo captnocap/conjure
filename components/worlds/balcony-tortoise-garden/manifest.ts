@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind: 'world', title: "Balcony tortoise garden", summary: "A sheltered balcony contains a low earth habitat with a permanent arched tortoise refuge, broad basking stones and edible planting. Rear railing, accessible water and a partially shaded garden edge create a small domestic habitat rather than a generic terrace.", scales: ["room", "street", "landscape", "tabletop"]});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Mitochondrial nucleoid matrix neighborhood", "summary": "A schematic compact DNA-loop nucleoid rests within an exposed matrix neighborhood beside cristae; DNA is not treated as a free rigid organelle. A compact DNA-protein loop model sits in retained matrix beside a connected crista reference. Fold counts describe one schematic strand per nucleoid, not numbers of mtDNA copies; protein dots and matrix cuts are explanatory.", "scales": ["macro", "tabletop"]});

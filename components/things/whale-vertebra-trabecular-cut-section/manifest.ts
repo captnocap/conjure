@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Whale vertebra trabecular cut section", "summary": "A single cetacean vertebral centrum retains its neural arch and processes, while a true cut exposes a schematic trabecular interior. A centrum with actual cortical cuts carries a connected neural arch and retained processes. Open endplates reveal a connected illustrative trabecular scaffold; anatomy is generalized across cetacean trunk vertebrae, not a species-specific scan.", "scales": ["macro", "tabletop"]});

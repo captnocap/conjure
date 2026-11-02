@@ -110,6 +110,34 @@ function painted(width: number, height: number, draw: (g: CanvasRenderingContext
 export default defineWorld({
   questions: {
     walls: choice('What colours are the palazzo walls?', PALETTES),
+    chimneys: choice('What silhouettes crown the palazzi?', {
+      flared: 'Tall flared Venetian chimney pots.', paired: 'Pairs of slender terracotta pots.',
+      hooded: 'Square chimneys with little tiled hoods.', squat: 'Low broad brick stacks with pale caps.',
+    }),
+    balcony: choice('What encloses the piano-nobile balcony?', {
+      stone: 'Pale stone balusters and a heavy top rail.', iron: 'A fine iron railing with circular ornaments.',
+      timber: 'A close row of dark timber slats.', planters: 'A broad front planter supported on the stone railing.',
+    }),
+    quayGuard: choice('What guards the long open edge of the quay?', {
+      open: 'Only the low white curb.', posts: 'A line of short stone posts.',
+      chains: 'Stone posts linked by drooping iron chains.', rail: 'An iron handrail runs between slender posts.',
+    }),
+    alley: choice('What is fixed along the side alley?', {
+      clear: 'An unobstructed wall and pavement.', bench: 'A narrow timber waiting bench against the wall.',
+      basin: 'A little wall spout over a raised stone basin.', shrine: 'A shallow wall shrine with a small sheltered candle.',
+    }),
+    overhead: choice('What hangs between brackets on the rear facade?', {
+      clear: 'Nothing across the facade.', laundry: 'A line with pale sheets and a striped cloth.',
+      pennants: 'A row of small triangular festival pennants.', lamps: 'Small lanterns hang from a supported cable.',
+    }),
+    farBankFixture: choice('What serves the far-bank landing?', {
+      bare: 'A bare stone edge.', ladder: 'An iron ladder descends toward the water.',
+      bollards: 'Two squat mooring bollards stand at the bank.', lamp: 'A tall square lantern marks the landing.',
+    }),
+    farQuay: choice('Does the opposite bank extend beyond the bridge?', {
+      short: 'The bank ends near the bridge.', stone: 'A narrow stone quay follows the canal edge.',
+      timber: 'A timber walkway on piles reaches a small landing.', canopy: 'A covered timber landing ends the walkway.',
+    }),
     tide: score('Where is the tide?', ['Low: slimy green steps and a tall weed line exposed', 'Mid tide', 'High: water over the landing and lapping at the quay']),
     mist: score('How heavy is the morning mist?', ['A clear cold dawn', 'Thin haze over the water', 'Fog swallowing the bridge and the upper windows']),
     bridge: choice('What kind of bridge crosses behind?', {
@@ -251,18 +279,37 @@ export default defineWorld({
     for (const [w, x, h] of [[wA, (splitX - 8) / 2, HA], [wB, (splitX + 8) / 2, HB]] as const) { s.box([w + 0.1, 0.16, 0.8], [x, h + 0.02, -6.1], istrian); s.box([w + 0.2, 0.12, 0.95], [x, h + 0.16, -6.1], tile); }
     s.box([0.8, 0.16, 12.5], [-8.1, HC + 0.02, -0.2], istrian); s.box([0.95, 0.12, 12.6], [-8.1, HC + 0.16, -0.2], tile);
     for (const [x, h] of [[-5.6 + random() * 2, HA], [3.2 + random() * 3, HB]]) {
-      s.cylinder(0.2, 0.22, 1.1, [x, h + 0.7, -6.25], plain(stuccoA), 10);
-      s.cylinder(0.52, 0.2, 0.6, [x, h + 1.5, -6.25], plain(stuccoA), 12);
-      s.cylinder(0.56, 0.56, 0.08, [x, h + 1.84, -6.25], tile, 12);
+      if (a.chimneys === 'flared') {
+        s.cylinder(0.2, 0.22, 1.1, [x, h + 0.7, -6.25], plain(stuccoA), 10);
+        s.cylinder(0.52, 0.2, 0.6, [x, h + 1.5, -6.25], plain(stuccoA), 12);
+        s.cylinder(0.56, 0.56, 0.08, [x, h + 1.84, -6.25], tile, 12);
+      } else if (a.chimneys === 'paired') {
+        s.box([.8, .28, .65], [x, h + .34, -6.25], brick);
+        for (const dx of [-.2, .2]) { s.cylinder(.14, .18, .85, [x + dx, h + .905, -6.25], tile, 16); s.ring(.14, .035, [x + dx, h + 1.33, -6.25], tile).rotateX(Math.PI / 2); }
+      } else if (a.chimneys === 'hooded') {
+        s.box([.48, .85, .5], [x, h + .625, -6.25], brick);
+        for (const dx of [-.21, .21]) for (const dz of [-.21, .21]) s.rod([x + dx, h + 1.05, -6.25 + dz], [x + dx, h + 1.32, -6.25 + dz], .025, iron);
+        s.box([.68, .09, .7], [x, h + 1.365, -6.25], tile);
+      } else { s.box([.68, .6, .65], [x, h + .5, -6.25], brick); s.box([.83, .12, .8], [x, h + .86, -6.25], istrian); }
+
     }
     // A balcony on the piano nobile and a wall lamp by the door.
     const nobile = fa.openings.find((o) => o.row === 1) ?? { x: wA / 2, y: 3.05, w: 0.95, h: 1.1, row: 1 };
     const bx = -8 + nobile.x;
     s.box([1.7, 0.1, 0.55], [bx, 2.98, -5.72], istrian);
-    for (let i = 0; i <= 8; i++) s.cylinder(0.03, 0.04, 0.5, [bx - 0.78 + i * 0.195, 3.28, -5.5], istrian, 6);
-    s.box([1.72, 0.07, 0.1], [bx, 3.56, -5.5], istrian);
+    for (let i = 0; i <= 8; i++) {
+      const x = bx - .78 + i * .195;
+      if (a.balcony === 'iron') { s.rod([x, 3.03, -5.5], [x, 3.56, -5.5], .016, iron); if (i < 8) s.ring(.07, .012, [x + .0975, 3.29, -5.5], iron); }
+      else if (a.balcony === 'timber') s.box([.09, .5, .055], [x, 3.28, -5.5], plain('#5c4934'));
+      else s.cylinder(.03, .04, .5, [x, 3.28, -5.5], istrian, 6);
+    }
+    s.box([1.72, .07, .1], [bx, 3.56, -5.5], a.balcony === 'iron' ? iron : a.balcony === 'timber' ? plain('#5c4934') : istrian);
     for (const side of [-1, 1]) s.box([0.1, 0.24, 0.5], [bx + side * 0.6, 2.84, -5.74], istrian);
-    if (mood.cheer > 0.35) for (let i = 0; i < 10; i++) s.ball([0.1, 0.09, 0.1], [bx - 0.6 + random() * 1.2, 3.62 + random() * 0.14, -5.48], s.material(i % 3 ? '#d83a4a' : '#3f7a3c', { emissive: i % 3 ? '#8a1020' : '#000000', emissiveIntensity: 0.3 }), 6);
+    if (mood.cheer > .35 || a.balcony === 'planters') {
+      const broad=a.balcony==='planters',height=broad?.23:.17,width=broad?1.62:1.35,soilY=3.595+height;
+      s.box([width, height, broad?.34:.24], [bx, 3.595+height/2, -5.48], tile);
+      for (let i = 0; i < (broad?16:10); i++) { const x = bx - width*.44 + random() * width*.88, y = soilY+.055 + random() * .13,z=-5.48+(broad?(i%2-.5)*.13:0); s.rod([x,soilY,z], [x,y,z], .008, s.material('#3f7a3c')); s.ball([.1,.09,.1],[x,y,z],s.material(i%3?'#d83a4a':'#3f7a3c'),6); }
+    }
     const lampOn = a.mist > 0.45 || mood.daylight < 0.3 || mood.daylight > 0.8;
     s.tube([[-2.6, 3.5, -5.95], [-2.6, 3.75, -5.5], [-2.6, 3.55, -5.25]], 0.025, iron);
     const lamp = s.cylinder(0.17, 0.11, 0.34, [-2.6, 3.32, -5.25], s.material('#f0d6c0', lampOn ? { emissive: '#ffb878', emissiveIntensity: 1.6 } : {}), 6);
@@ -319,6 +366,42 @@ export default defineWorld({
     // The far bank the bridge lands on.
     s.box([1.0, -BASE, 3.2], [7.9, BASE / 2, -4.5], s.material('#9a5440'));
     s.box([1.04, 0.14, 3.24], [7.9, 0, -4.5], istrian);
+
+    // Separate quay fixtures keep the stair entrance and every casting bay clear.
+    if (a.quayGuard !== 'open') {
+      const zs = [1.2, 2.6, 4, 5.4], x = QX - .31;
+      for (const z of zs) { if (a.quayGuard === 'rail') s.rod([x, 0, z], [x, .85, z], .028, iron); else s.cylinder(.09, .12, .55, [x, .275, z], istrian, 10); }
+      for (let i = 1; i < zs.length; i++) { if (a.quayGuard === 'chains') s.tube([[x, .48, zs[i-1]], [x, .32, (zs[i-1]+zs[i])/2], [x, .48, zs[i]]], .025, iron); if (a.quayGuard === 'rail') s.rod([x, .8, zs[i-1]], [x, .8, zs[i]], .026, iron); }
+    }
+    if (a.alley === 'bench') {
+      const x = -7.4, z = 3.05, wood = plain('#8b6c49'); s.box([.48, .075, 1.45], [x, .475, z], wood);
+      for (const dx of [-.18, .18]) for (const dz of [-.57, .57]) s.box([.07, .44, .07], [x + dx, .22, z + dz], wood);
+      for (const dz of [-.57, .57]) s.rod([x - .2, .45, z + dz], [x - .2, .96, z + dz], .03, wood);s.box([.055, .3, 1.45], [x - .2, .82, z], wood);
+    } else if (a.alley === 'basin') {
+      const x = -7.5, z = 3.0;s.box([.48, .68, .55], [x, .34, z], istrian);s.lathe([[.32,0],[.36,.14],[.32,.17],[.26,.04]], istrian, [x,.68,z]);
+      s.rod([-7.94, 1.05, z], [x, 1.05, z], .035, iron);s.rod([x,1.05,z],[x,.96,z],.035,iron);s.ring(.1,.018,[-7.9,1.18,z],iron).rotateY(Math.PI/2);
+    } else if (a.alley === 'shrine') {
+      const x = -7.79, y = 1.7, z = 3.0;s.box([.28,.7,.62],[x,y,z],plain('#6a4533'));s.box([.03,.52,.44],[x+.155,y,z],istrian);
+      s.box([.04,.3,.03],[x+.18,y+.01,z],tile);s.box([.04,.03,.18],[x+.18,y+.07,z],tile);
+      s.box([.55,.07,.8],[x+.08,y-.38,z],istrian);s.cylinder(.04,.04,.16,[x+.22,y-.265,z],s.material('#c56c54',{emissive:'#df9850',emissiveIntensity:.7}),12);
+    }
+    if (a.overhead !== 'clear') {
+      const z=-5.65, x0=.2, x1=7.55, y0=4.95;
+      for(const x of[x0,x1])s.rod([x,y0,-5.94],[x,y0,z],.022,iron);
+      const cable=new THREE.CatmullRomCurve3([new THREE.Vector3(x0,y0,z),new THREE.Vector3((x0+x1)/2,y0-.3,z),new THREE.Vector3(x1,y0,z)]);
+      s.mesh(new THREE.TubeGeometry(cable,48,.012,5,false),iron);
+      for(let i=0;i<9;i++){const p=cable.getPoint((i+1)/10);if(a.overhead==='laundry'){s.box([.42,.7,.018],[p.x,p.y-.35,z],s.material(i%3?'#d8d0b9':'#a8b5ab'));s.box([.025,.05,.04],[p.x-.15,p.y-.015,z],tile);s.box([.025,.05,.04],[p.x+.15,p.y-.015,z],tile);}else if(a.overhead==='pennants'){const shape=new THREE.Shape();shape.moveTo(-.24,0);shape.lineTo(.24,0);shape.lineTo(0,-.42);shape.closePath();s.mesh(new THREE.ShapeGeometry(shape),s.material(i%2?'#a5715c':'#a5ae8b',{side:THREE.DoubleSide}),p.toArray() as [number,number,number]);}else{s.rod([p.x,p.y,z],[p.x,p.y-.15,z],.01,iron);s.box([.17,.24,.17],[p.x,p.y-.27,z],amber());s.cylinder(0,.16,.13,[p.x,p.y-.085,z],iron,4).rotateY(Math.PI/4);}}
+    }
+    if(a.farBankFixture==='ladder'){for(const x of[7.66,8.06])s.rod([x,BASE,-2.82],[x,.7,-2.82],.025,iron);for(let i=0;i<8;i++)s.rod([7.66,BASE+.18+i*.27,-2.82],[8.06,BASE+.18+i*.27,-2.82],.022,iron);for(const x of[7.66,8.06])s.rod([x,.1,-2.82],[x,.1,-3.0],.025,iron);}
+    else if(a.farBankFixture==='bollards')for(const z of[-5.5,-3.3]){s.cylinder(.1,.14,.3,[7.9,.22,z],iron,12);s.ball([.15,.065,.15],[7.9,.39,z],iron,10);}
+    else if(a.farBankFixture==='lamp'){s.cylinder(.06,.1,2.3,[7.9,1.22,-3.3],iron,12);s.box([.3,.42,.3],[7.9,2.55,-3.3],amber());s.cylinder(0,.3,.22,[7.9,2.87,-3.3],iron,4).rotateY(Math.PI/4);}
+    if(a.farQuay!=='short'){
+      const wood=plain('#99805e'),material=a.farQuay==='stone'?istrian:wood;
+      s.box([.9,.14,6.1],[7.9,0,.15],material);
+      for(const z of[-2.5,-.7,1.1,2.9]){if(a.farQuay==='stone')s.box([.7,-BASE,.32],[7.9,BASE/2,z],brick);else for(const x of[7.58,8.22])s.rod([x,BASE,z],[x,-.07,z],.055,wood);}
+      s.box([1.5,.14,1.1],[7.45,0,3.15],material);for(const x of[6.8,8.1])for(const z of[2.7,3.6])s.rod([x,BASE,z],[x,-.07,z],.06,wood);
+      if(a.farQuay==='canopy'){for(const x of[6.84,8.06])for(const z of[2.72,3.58])s.rod([x,.07,z],[x,1.8,z],.04,wood);s.box([1.6,.08,1.22],[7.45,1.84,3.15],tile);}
+    }
 
     // Slow ripples, reflections under the walls, and the mist.
     const inWater = (x: number, z: number) => !(x < QX + 3.9 && z > -3.3 && z < 5.6) && !(z < -3.2);
@@ -389,8 +472,8 @@ export default defineWorld({
       const caseBox = s.box([0.72, 0.5, 0.24], [cx, top + 0.25, cz], leather); caseBox.rotation.y = 0.35;
       for (const dx of [-0.2, 0.2]) { const st = s.box([0.05, 0.52, 0.26], [cx + dx * Math.cos(0.35), top + 0.25, cz - dx * Math.sin(0.35)], strap); st.rotation.y = 0.35; }
       s.ring(0.09, 0.016, [cx, top + 0.52, cz], strap, Math.PI).rotation.y = 0.35;
-      s.cylinder(0.17, 0.17, 0.02, [cx + 0.02, top + 0.515, cz + 0.6], s.material('#2c2a30'), 16);
-      s.cylinder(0.1, 0.11, 0.1, [cx + 0.02, top + 0.57, cz + 0.6], s.material('#2c2a30'), 16);
+      s.cylinder(0.17, 0.17, 0.02, [cx + 0.02, top + 0.515, cz + 0.02], s.material('#2c2a30'), 16);
+      s.cylinder(0.1, 0.11, 0.1, [cx + 0.02, top + 0.57, cz + 0.02], s.material('#2c2a30'), 16);
       s.box([0.74, 0.02, 0.3], [cx, top + 0.01, cz], s.material('#5a5a52'));
     } else if (a.trace === 'footprints') {
       const wet = new THREE.MeshStandardMaterial({ color: '#55574f', roughness: 0.25 });

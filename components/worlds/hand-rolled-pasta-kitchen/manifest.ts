@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind: 'world', title: "Hand-rolled pasta kitchen", summary: "A home kitchen built around a broad flour-dusted dough bench and a permanent ribbon-pasta drying rail. Family batches, hanging utensils and a quiet stove create a room where rolling, filling and drying are all visible parts of one meal.", scales: ["room", "tabletop", "street"]});

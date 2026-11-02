@@ -47,6 +47,12 @@ export default defineThing({
       nothing: 'Nothing, the carrier has taken his cap with him.',
     }),
     hooks: noul('Are extra tiffin bags hung from the iron bicycle hooks at the end?'),
+    tiers: choice('If the tiffins are stacked steel, how many tiers do they have?', { varied: 'A mix of three and four tiers.', short: 'Three-tier lunch carriers.', tall: 'Five-tier family carriers.', paired: 'Compact two-tier carriers.' }),
+    sideSlats: choice('What slats run along the crate sides?', { open: 'The original widely spaced rails.', third: 'An extra middle rail.', diagonal: 'Diagonal braces crossing each long side.', mesh: 'A light rectangular wire grid between the rails.' }),
+    carryingGrip: choice('How are the carrying pole ends gripped?', { bare: 'Bare wooden poles.', rope: 'Rope wound around the ends.', rubber: 'Black rubber sleeves.', cloth: 'Red cloth pads tied around the ends.' }),
+    cornerGuards: choice('What protects the crate corners?', { plain: 'Small original iron plates.', angles: 'Tall iron angle guards.', brass: 'Brass corner strips.', bolts: 'Heavy bolted iron strips.' }),
+    routingTag: choice('How is this batch identified?', { none: 'Only the marks on individual tiffins.', slate: 'A little chalk routing slate tied to the crate.', card: 'A large cream destination card.', numbers: 'Two small numbered enamel plates.' }),
+    sortingKit: choice('What sorting tools wait beside the crate?', { none: 'No extra kit.', chalk: 'A chalk box and cloth on a small wooden block.', ledger: 'A closed ledger and pencil on a low sorting board.', cord: 'A spool of cord and two bundled straps on a board.' }),
   },
 
   build(a, context) {
@@ -56,7 +62,7 @@ export default defineThing({
     const pick = <T,>(list: readonly T[]) => list[Math.floor(random() * list.length)];
 
     const L = 1.76, Wd = 0.58;
-    const y0 = { ground: 0.085, trestle: 0.6, handcart: 0.74 }[a.rest];
+    let y0 = { ground: 0.085, trestle: 0.6, handcart: 0.74 }[a.rest];
 
     const wood = s.material('#a07a4c', { roughness: 0.85 });
     const darkWood = s.material('#6b4f31', { roughness: 0.9 });
@@ -123,6 +129,8 @@ export default defineThing({
       s.rod([-1.3, y0 + 0.08, -0.24], [-1.3, y0 + 0.08, 0.24], 0.02, wood);
     }
 
+    const carrier=new THREE.Group();carrier.name='grounded-tiffin-carrier';carrier.add(...s.root.children);s.root.add(carrier);carrier.updateWorldMatrix(true,true);const carrierLift=-new THREE.Box3().setFromObject(carrier,true).min.y;carrier.position.y+=carrierLift;y0+=carrierLift;
+
     // ---- painted code lids -------------------------------------------------
     const palette = Object.values(CODE_HEX);
     const mainHex = a.colour === 'mixed' ? null : CODE_HEX[a.colour];
@@ -183,10 +191,10 @@ export default defineThing({
       const turn = random() * Math.PI * 2;
       let top = 0;
       if (kind === 'steel') {
-        const tiers = random() < 0.55 ? 4 : 3, h = tiers * 0.068;
+        const tiers = a.tiers==='short'?3:a.tiers==='tall'?5:a.tiers==='paired'?2:random()<.55?4:3,h=tiers*.068;
         bodies.push({ p: [x, y + h / 2, z], s: [1, h, 1], r: lean });
         for (let t = 1; t < tiers; t++) grooves.push({ p: [x, y + t * 0.068, z], r: [Math.PI / 2, 0, 0] });
-        for (const side of [-1, 1]) clips.push({ p: [x + Math.cos(turn) * side * (R + 0.006), y + h / 2 + 0.01, z + Math.sin(turn) * side * (R + 0.006)], s: [1, h + 0.03, 1], r: [0, -turn, 0] });
+        for (const side of [-1, 1]) clips.push({ p: [x + Math.cos(turn) * side * (R + 0.006), y + h / 2 + 0.01, z + Math.sin(turn) * side * (R + 0.006)], s: [1, h - 0.01, 1], r: [0, -turn, 0] });
         loops.push({ p: [x, y + h + 0.012, z], r: [0, -turn, 0] });
         top = h + 0.014;
       } else if (kind === 'canister') {
@@ -248,7 +256,7 @@ export default defineThing({
         const bowl = s.mesh(bowlGeo.clone(), steel, [sx + d.x * 0.24, 0.031, sz + d.z * 0.24]);
         (bowl.material as THREE.MeshStandardMaterial).side = THREE.DoubleSide;
         const lid = s.cylinder(R + 0.004, R + 0.004, 0.012, [sx - d.x * 0.3 + 0.05, R * 0.72, sz - d.z * 0.3 + 0.1], steel, 20);
-        lid.rotation.set(0.9, 1, 0.2);
+        lid.rotation.set(0.9, 1, 0.2);lid.updateMatrixWorld(true);lid.position.y-=new THREE.Box3().setFromObject(lid,true).min.y;
         const grains: { at: V3; size: number }[] = [];
         for (let i = 0; i < 60; i++) { const t = random() * Math.PI * 2, r = Math.sqrt(random()) * 0.2; grains.push({ at: [sx + d.x * 0.3 + Math.cos(t) * r, 0.006, sz + d.z * 0.3 + Math.sin(t) * r * 0.7], size: rnd(0.6, 1.3) }); }
         s.scatter(new THREE.SphereGeometry(0.012, 5, 4), foods[0], grains);
@@ -298,7 +306,7 @@ export default defineThing({
         } else {
           // On the ground the bag slumps beside the hook instead of hanging.
           const bag = s.cylinder(0.075, 0.085, 0.26, [hx + 0.26, 0.13, z * 1.6], s.material(colour, { roughness: 0.95 }), 10);
-          bag.rotation.z = rnd(-0.08, 0.08);
+          bag.rotation.z = rnd(-0.08, 0.08);bag.updateMatrixWorld(true);bag.position.y-=new THREE.Box3().setFromObject(bag,true).min.y;
           s.ring(0.045, 0.007, [hx + 0.26, 0.27, z * 1.6], iron, Math.PI);
         }
       }
@@ -310,6 +318,29 @@ export default defineThing({
     if (mood.density > 0.7 && want > 18) {
       // Lashings over a full load.
       for (const x of [-0.5, 0.5]) s.tube([[x, y0 + 0.19, -Wd / 2 - 0.01], [x, y0 + 0.31, -0.15], [x + 0.01, y0 + 0.32, 0.15], [x, y0 + 0.19, Wd / 2 + 0.01]], 0.007, rope);
+    }
+
+    if(a.sideSlats==='third')for(const z of[-1,1])s.box([L,.025,.018],[0,y0+.12,z*Wd/2],wood);
+    else if(a.sideSlats==='diagonal')for(const z of[-1,1])for(const sign of[-1,1])s.rod([-L/2,y0+(sign>0?.04:.2),z*Wd/2],[L/2,y0+(sign>0?.2:.04),z*Wd/2],.01,darkWood);
+    else if(a.sideSlats==='mesh')for(const z of[-1,1]){for(let i=0;i<18;i++)s.rod([-L/2+i*L/17,y0+.04,z*Wd/2],[-L/2+i*L/17,y0+.2,z*Wd/2],.003,iron);for(const y of[.08,.12,.16])s.rod([-L/2,y0+y,z*Wd/2],[L/2,y0+y,z*Wd/2],.003,iron);}
+    if(a.carryingGrip!=='bare')for(const side of[-1,1])for(const z of[-1,1]){
+      const x=side*(L/2+.13),zz=z*(Wd/2+.03),mat=a.carryingGrip==='rope'?rope:a.carryingGrip==='rubber'?s.material('#252b29'):s.material('#b74036');
+      if(a.carryingGrip==='rope')for(let i=0;i<10;i++)s.ring(.026,.004,[x-.08+i*.018,y0+.01,zz],mat).rotation.y=Math.PI/2;
+      else s.cylinder(.031,.031,.19,[x,y0+.01,zz],mat,12).rotation.z=Math.PI/2;
+    }
+    if(a.cornerGuards!=='plain')for(const side of[-1,1])for(const z of[-1,1]){
+      const mat=a.cornerGuards==='brass'?s.material('#b79a58',{metalness:.6}):iron,x=side*(L/2-.025),zz=z*(Wd/2+.013);
+      s.box([.05,.21,.014],[x,y0+.105,zz],mat);if(a.cornerGuards==='bolts')for(const y of[.04,.17])s.ball([.01,.01,.007],[x,y0+y,zz+z*.012],steel,6);
+    }
+    if(a.routingTag!=='none'){
+      const count=a.routingTag==='numbers'?2:1,w=a.routingTag==='numbers'?.14:.3;
+      for(let i=0;i<count;i++){const x=(i-(count-1)/2)*.19;const plate=s.label(a.routingTag==='slate'?'B  12':a.routingTag==='card'?'CHURCHGATE':i?'17':'B',w,.13,[x,y0+.1,Wd/2+.03],a.routingTag==='slate'?'#e6e0c9':'#333d32',a.routingTag==='slate'?'#344c43':'#e6dcba');for(const dx of[-w*.3,w*.3])s.rod([x+dx,y0+.19,Wd/2],[x+dx,y0+.16,Wd/2+.03],.003,rope);void plate;}
+    }
+    if(a.sortingKit!=='none'){
+      const x=-1.12,z=.72,h=a.sortingKit==='chalk'?.12:.06;s.box([.36,h,.27],[x,h/2,z],wood);
+      if(a.sortingKit==='chalk'){s.box([.17,.035,.12],[x,h+.0175,z],darkWood);for(let i=0;i<5;i++)s.box([.012,.012,.09],[x-.06+i*.028,h+.041,z],white);s.box([.12,.015,.11],[x+.1,h+.0075,z+.08],s.material('#918572'));}
+      else if(a.sortingKit==='ledger'){s.box([.25,.028,.2],[x,h+.014,z],s.material('#526851'));s.box([.22,.018,.19],[x,h+.014,z+.006],s.material('#d9ceb1'));s.rod([x-.11,h+.033,z-.07],[x+.1,h+.033,z+.07],.004,s.material('#c39b37'));}
+      else{s.cylinder(.055,.055,.08,[x-.07,h+.04,z],rope,16);for(const dz of[-.07,.07])s.box([.1,.023,.06],[x+.08,h+.0115,z+dz],s.material('#5b5340'));}
     }
 
     const thing = s.finish();

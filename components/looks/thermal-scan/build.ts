@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type Palette, type PaletteRole, choice, clamp01, defineLook, fromOklch, mix, oklch, paintRGB, rekey, score, seeded } from '@conjure/kit';
 
 type Rgb = [number, number, number];
 const hex = (h: string): Rgb => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
@@ -17,9 +17,36 @@ const RAMPS = {
 } as const;
 const NATIVE = { thermal: 'ironbow', night: 'phosphor', sonar: 'copper', xray: 'film', lidar: 'turbo' } as const;
 
-function lutOf(stops: readonly string[]): Uint8Array {
+/**
+ * The operator's false-colour ramps take the picture's palette, dark to hot: ground, then second, then
+ * ink. The instruments' own (native) ramps are hardware and keep their colours; white-hot keeps its
+ * white and only tints its dark end.
+ */
+type Role = PaletteRole | undefined;
+const RAMP_ROLES: Partial<Record<keyof typeof RAMPS, Role[]>> = {
+  white: ['ground', 'ground', 'ground'],
+  rainbow: ['ground', 'ground', 'second', 'second', 'ink', 'ink', 'ink'],
+  amber: ['ground', 'ground', 'ink', 'ink', 'ink'],
+  arctic: ['ground', 'second', 'second', 'ink', 'ink'],
+  blood: ['ground', 'ink', 'ink', 'ink', 'ink'],
+};
+function keyedRamp(name: keyof typeof RAMPS, palette: Palette | undefined): Rgb[] {
+  const stops = RAMPS[name].map(hex);
+  const roles = RAMP_ROLES[name];
+  if (!palette || !roles) return stops;
+  const out = rekey(Object.fromEntries(stops.map((c, i) => [i, c])), palette, Object.fromEntries(stops.map((_, i) => [i, roles[i]])));
+  // A many-hued ramp keeps half its hue spread inside each role, so every level still differs.
+  return stops.map((c, i) => {
+    const r = roles[i];
+    if (!r) return c;
+    const [L, C, h] = oklch(out[i]);
+    const target = oklch(paintRGB(palette[r]))[2];
+    return fromOklch(L, C, target + Math.atan2(Math.sin(h - target), Math.cos(h - target)) * 0.5);
+  });
+}
+
+function lutOf(c: readonly Rgb[]): Uint8Array {
   const lut = new Uint8Array(768);
-  const c = stops.map(hex);
   for (let i = 0; i < 256; i++) {
     const t = (i / 255) * (c.length - 1);
     const k = Math.min(c.length - 2, Math.floor(t));
@@ -66,11 +93,11 @@ export default defineLook({
     }),
     palette: choice('How is the signal coloured?', {
       native: "The instrument's own classic colours: ironbow heat, green phosphor, copper sonar, blue film, rainbow range.",
-      white: 'White-hot greyscale: stark, military, unsentimental.',
-      rainbow: 'A full medical or weather-radar rainbow: garish, analytical, every level a different colour.',
-      amber: 'Monochrome amber, like an old terminal or a submarine console.',
-      arctic: 'Cold cyan and deep blue: clinical, underwater, lonely.',
-      blood: 'Black and red only: darkroom, alarm, predator.',
+      white: 'White-hot greyscale over a faintly tinted dark: stark, military, unsentimental.',
+      rainbow: 'A full medical or weather-radar ramp: garish, analytical, every level a different colour.',
+      amber: 'One glowing colour climbing out of black, like an old terminal or a submarine console.',
+      arctic: 'A deep shade rising into a pale, bright one: clinical, underwater, lonely.',
+      blood: 'Black and one strong colour only: darkroom, alarm, predator.',
     }),
     signal: choice('What gives the strongest signal on the instrument?', {
       bodies: 'The things themselves: warm bodies standing out from cold empty ground.',
@@ -456,7 +483,7 @@ export default defineLook({
 
     // ---- colour -----------------------------------------------------------------------------
     const rampName = a.palette === 'native' ? NATIVE[inst] : a.palette;
-    const lut = lutOf(RAMPS[rampName]);
+    const lut = lutOf(keyedRamp(rampName, context.palette));
     const pixels = new Uint8ClampedArray(N * 4);
     for (let i = 0; i < N; i++) {
       const o = i * 4;

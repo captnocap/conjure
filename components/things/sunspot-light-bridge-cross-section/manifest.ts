@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Sunspot light bridge cross section", "summary": "A long elevated segmented bridge crosses a depressed umbral basin and retains a cut cross-section showing both margins. An exaggerated teaching relief of a sunspot light bridge and depressed umbral surroundings; field canopies and subsurface sections are explicitly schematic.", "scales": ["planetary", "macro"]});

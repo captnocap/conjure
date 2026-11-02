@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Root endodermis casparian strip section", "summary": "A ring of endodermal cells has a continuous wall-band reference and central stele in an honest transverse or longitudinal section. A magnified schematic endodermal section: cell-local lignified wall bands, selective transport, plant roots and anatomical microscopy.", "scales": ["macro", "tabletop"]});

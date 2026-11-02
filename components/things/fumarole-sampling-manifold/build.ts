@@ -1,0 +1,32 @@
+import * as THREE from 'three';
+import { Sculpture, choice, defineThing, score } from '@conjure/kit';
+export default defineThing({questions:{
+    array:choice('How are the traps arranged?', {'row': 'Four traps along a straight rail.', 'circle': 'Five traps around a circular manifold.', 'stairs': 'Four traps climb in a stepped sequence.', 'pair': 'Two large paired condensers.'}),
+    trap:choice('What kind of collection trap is fitted?', {'bottle': 'Round-bottom glass collection bottles.', 'coil': 'Spiral condensers inside tall cylinders.', 'tube': 'Straight narrow absorption tubes.', 'bulb': 'Two expanded chambers on each trap.'}),
+    frame:choice('How is the manifold carried?', {'rack': 'A rectangular open steel rack.', 'tripod': 'A three-legged stand under a circular tray.', 'case': 'A low protective transport case.', 'skids': 'A short skid frame with carrying handles.'}),
+    inlet:choice('What connects it to the fumarole?', {'probe': 'A long angled inlet probe enters a small vent collar.', 'hose': 'A broad flexible inlet hose.', 'funnel': 'An inverted collection funnel covers the ground vent.', 'capped': 'The inlet is capped for transport.'}),
+    valves:choice('How is flow controlled?', {'handles': 'Cross handles on every stopcock.', 'levers': 'Short flat valve levers.', 'meters': 'Small round flow gauges.', 'clamps': 'Pinch clamps on the flexible connections.'}),
+    thermal:choice('What controls trap temperature?', {'bath': 'A low water bath surrounds the trap bottoms.', 'blanket': 'Insulation wraps each lower chamber.', 'fins': 'Metal cooling fins surround the upper tubes.', 'bare': 'Bare glass with no cooling enclosure.'}),
+    state:choice('What stage is the collection in?', {'running': 'Dark condensate sits in the lower traps.', 'purged': 'The empty traps are connected in a clean loop.', 'isolated': 'Short capped branch tubes isolate every trap.', 'service': 'One removed collection bottle stands beside the frame.'}),
+    record:choice('How is the run documented?', {'tags': 'Numbered tags hang beside the traps.', 'logger': 'A small cabled data logger sits on the rail.', 'chart': 'A small clipboard carries a sampling chart.', 'none': 'No separate record holder.'}),
+    size:score('How wide is the sampling manifold?', ['Compact','Medium','Broad']),
+},build(a,context){
+const s=new Sculpture(context),rnd=context.random;
+const metal=s.material('#9aa6a1',{metalness:0.65}),dark=s.material('#435152'),orange=s.material('#b76f3e'),pale=s.material('#c7c8b4'),rock=s.material('#716f64');
+const W=0.65+a.size*0.55,glass=s.material('#9bbab5',{transparent:true,opacity:0.42,depthWrite:false}),fluid=s.material('#697d68');const n=a.array==='pair'?2:a.array==='circle'?5:4,pts:[number,number,number][]=[];
+for(let j=0;j<n;j++){const t=j/n*Math.PI*2;pts.push(a.array==='circle'?[Math.cos(t)*W*0.65,0.4,Math.sin(t)*W*0.65]:[(j-(n-1)/2)*W*0.55,0.4+(a.array==='stairs'?j*0.17:0),0]);}
+s.box([W*2.1,0.05,0.75],[0,0.17,0],metal);if(a.frame==='tripod')for(let j=0;j<3;j++){const t=j/3*Math.PI*2;s.rod([Math.cos(t)*W,0.02,Math.sin(t)*0.6],[0,0.18,0],0.035,metal);}else for(const x of [-W,W])for(const z of [-0.32,0.32])s.rod([x,0.02,z],[x,0.2,z],0.035,metal);
+if(a.frame==='rack')for(const x of [-W,W]){s.rod([x,0.18,0],[x,1.4,0],0.035,metal);}if(a.frame==='rack')s.rod([-W,1.4,0],[W,1.4,0],0.035,metal);if(a.frame==='case')for(const z of [-0.4,0.4])s.box([W*2.2,0.22,0.035],[0,0.27,z],dark);if(a.frame==='skids')for(const z of [-0.35,0.35])s.tube([[-W-0.2,0.14,z],[-W,0.03,z],[W,0.03,z],[W+0.2,0.14,z]],0.035,dark);
+pts.forEach(([x,y,z],j)=>{s.rod([x,0.2,z],[x,y,z],0.018,metal);if(a.trap==='bottle'||a.trap==='bulb'){s.ball([0.13,0.17,0.13],[x,y+0.18,z],glass,20);s.cylinder(0.045,0.045,0.28,[x,y+0.42,z],glass,16);if(a.trap==='bulb')s.ball([0.1,0.12,0.1],[x,y+0.47,z],glass,18);}else s.cylinder(a.trap==='coil'?0.1:0.055,a.trap==='coil'?0.1:0.055,0.5,[x,y+0.27,z],glass,20);
+s.ring(0.065,0.012,[x,y+0.55,z],metal).rotation.x=Math.PI/2;s.rod([x,y+0.53,z],[x,y+0.67,z],0.022,dark);
+if(a.trap==='coil'){const pp:[number,number,number][]=Array.from({length:65},(_,k)=>{const t=k/64*Math.PI*10;return [x+Math.cos(t)*0.065,y+0.06+k/64*0.42,z+Math.sin(t)*0.065];});s.mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pp.map(p=>new THREE.Vector3(...p))),100,0.012,5,false),metal);}
+if(a.valves==='handles'){s.rod([x-0.07,y+0.62,z],[x+0.07,y+0.62,z],0.015,orange);s.rod([x,y+0.62,z-0.07],[x,y+0.62,z+0.07],0.015,orange);}if(a.valves==='levers')s.box([0.13,0.025,0.035],[x+0.05,y+0.62,z],orange);if(a.valves==='meters'){s.cylinder(0.07,0.07,0.025,[x,y+0.63,z+0.06],pale,20).rotation.x=Math.PI/2;s.rod([x,y+0.63,z+0.08],[x+0.03,y+0.66,z+0.08],0.005,dark);}if(a.valves==='clamps')s.box([0.07,0.06,0.04],[x,y+0.62,z],metal);
+if(a.thermal==='blanket')s.cylinder(0.14,0.14,0.22,[x,y+0.13,z],pale,18);if(a.thermal==='fins')for(let k=0;k<5;k++)s.ring(0.14,0.015,[x,y+0.2+k*0.06,z],metal).rotation.x=Math.PI/2;
+if(a.state==='running')s.cylinder(0.085,0.07,0.1,[x,y+0.08,z],fluid,20);if(a.state==='isolated')s.cylinder(0.035,0.035,0.03,[x,y+0.71,z],orange,12);else if(j<n-1){const next=pts[j+1];s.tube([[x,y+0.67,z],[x,y+0.8,z],[next[0],next[1]+0.8,next[2]],[next[0],next[1]+0.67,next[2]]],0.013,dark);}if(a.record==='tags')s.label(String(j+1),0.1,0.12,[x+0.12,y+0.25,z+0.08],'#344748','#ded9bb');});
+if(a.thermal==='bath'){s.box([W*1.9,0.14,0.65],[0,0.3,0],metal);s.box([W*1.8,0.01,0.55],[0,0.375,0],glass);}const px=-W-0.65;
+if(a.inlet==='probe'){s.rod([px,0.03,0.4],[-W,0.9,0],0.025,metal);s.ring(0.16,0.055,[px,0.05,0.4],rock).rotation.x=Math.PI/2;}if(a.inlet==='hose')s.tube([[-W,0.8,0],[px,0.4,0.2],[px-0.25,0.04,0.55]],0.04,dark);if(a.inlet==='funnel'){s.cylinder(0.035,0.25,0.25,[px,0.14,0.4],metal,24);s.tube([[px,0.28,0.4],[px,0.6,0.4],[-W,0.8,0]],0.025,dark);}if(a.inlet==='capped')s.ball([0.04,0.04,0.04],[-W,0.8,0],orange,12);
+if(a.inlet!=='capped'){const inletY=a.inlet==='probe'?0.9:0.8,first=pts[0];s.tube([[-W,inletY,0],[-W+0.12,Math.max(inletY,first[1]+0.8),0],[first[0],first[1]+0.67,first[2]]],0.018,dark);}
+if(a.record==='logger'){s.box([0.28,0.12,0.22],[W+0.2,0.25,0],dark);s.tube([[W+0.2,0.3,0],[W,0.3,0.2],[pts[n-1][0],pts[n-1][1]+0.6,pts[n-1][2]]],0.008,orange);}if(a.record==='chart'){s.box([0.3,0.025,0.4],[W+0.25,0.04,0.2],pale);for(let j=0;j<5;j++)s.box([0.22,0.004,0.005],[W+0.25,0.055,0.06+j*0.06],dark);}if(a.state==='service')s.ball([0.13,0.17,0.13],[W+0.5,0.17,0.4],glass,20);
+
+return s.finish();
+}});

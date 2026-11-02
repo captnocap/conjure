@@ -1,0 +1,24 @@
+import * as THREE from 'three';
+import { Sculpture, choice, score, noul, defineThing, figure } from '@conjure/kit';
+const questions = {
+  form: choice("What is the maker doing?", {"tie": "Tying the spar crossing.", "paper": "Smoothing paper over the lower panel.", "brush": "Holding a paste brush above the paper.", "check": "Checking the knot at one frame corner.", "pause": "Pausing with hands resting beside the kite."}),
+  state: choice("What is on the work board?", {"frame": "A bare bamboo frame.", "half": "A partly papered kite.", "full": "A complete coloured paper kite.", "repair": "A repair patch covers one corner.", "bridle": "A loose flying bridle lies across the frame."}),
+  detail: choice("What are they wearing?", {"blue": "A blue work shirt.", "green": "A sage garden shirt.", "rust": "A rust-coloured sweater.", "cream": "A pale shirt and dark trousers.", "apron": "A pale craft apron over green clothing."}),
+  support: choice("What supports their knees?", {"mat": "A narrow kneeling mat.", "grass": "Plain grass beneath the maker.", "pad": "Two small padded kneeling blocks.", "cloth": "A folded blanket.", "board": "A broad wooden work platform."}),
+  extra: choice("What is within reach?", {"twine": "A ball of lashing twine.", "paper": "A folded paper packet.", "knife": "A craft knife on its board.", "bag": "A small supply bag.", "none": "A clear work area."}),
+  mark: choice("How is their hair kept back?", {"short": "Short dark hair.", "cap": "A simple pale cap.", "bun": "Hair in a neat bun.", "grey": "Short grey hair.", "band": "A plain cloth head covering."}),
+  extent: score("How tall is the maker?", ["A small adult", "An average adult", "A tall adult"]),
+  load: score("How broad is the kite under construction?", ["A small practice frame", "A medium kite", "A large field kite"]),
+  closed: noul("Are two spare bamboo sticks laid beside the board?"),
+};
+export default defineThing({
+  questions,
+  build(a, context) {
+    const s = new Sculpture(context), { random, mood } = context;
+    const f = Object.keys(questions.form.options).indexOf(a.form), t = Object.keys(questions.state.options).indexOf(a.state), d = Object.keys(questions.detail.options).indexOf(a.detail), u = Object.keys(questions.support.options).indexOf(a.support), e = Object.keys(questions.extra.options).indexOf(a.extra), m = Object.keys(questions.mark.options).indexOf(a.mark);
+    const wood = s.material('#a47c4e'), pale = s.material('#e0d2ac'), metal = s.material('#8f9995', { metalness: 0.7, roughness: 0.35 }), dark = s.material('#3d443c'), green = s.material('#667e50');
+    const colors = ['#a64d39', '#497e70', '#d4af55', '#59778c', '#b47b8c'];
+
+    const h=1.45+a.extent*.4,p=figure(s,{height:h,pose:'kneeling',style:'doll',hair:m===1||m===4?'cap':m===2?'bun':'short',hairColor:m===3?'#aca894':m===1?'#c9bb98':'#5c5140',skin:'#c6a27c',top:['#6b8e9d','#7f966a','#aa7b61','#d1c9aa','#7f966a'][d],bottom:'#647360',shoes:'#625b48'});s.root.add(p.root);if(d===4)p.joints.spine.add(s.box([h*.2,h*.3,.025],[0,-h*.06,h*.085],pale));p.joints.spine.rotation.x=f===4?.15:.38;p.root.updateMatrixWorld(true);const W=.5+a.load*.3,z=.5,H=.3+h*.08;s.box([W+.14,.04,.65],[0,H-.02,z],wood);for(const x of [-W*.42,W*.42])s.box([.06,H-.04,.5],[x,(H-.04)/2,z],wood);const pts:Array<[number,number,number]>=[[0,H+.01,z-.28],[-W/2,H+.01,z],[0,H+.01,z+.28],[W/2,H+.01,z]];for(let i=0;i<4;i++)s.rod(pts[i],pts[(i+1)%4],.002,pale);s.rod(pts[0],pts[2],.005,pale);s.rod(pts[1],pts[3],.005,pale);if(t!==0){const shape=new THREE.Shape();shape.moveTo(0,-.28);shape.lineTo(-W/2,0);shape.lineTo(0,.28);if(t!==1)shape.lineTo(W/2,0);shape.closePath();s.mesh(new THREE.ShapeGeometry(shape),s.material('#af7c62',{side:THREE.DoubleSide}),[0,H+.004,z]).rotation.x=-Math.PI/2;}if(t===3)s.box([.09,.003,.09],[-W*.4,H+.014,z],pale);if(t===4)s.tube([[0,H+.012,z-.2],[.15,H+.012,z],[0,H+.012,z+.2]],.002,pale);p.reach('right',new THREE.Vector3(f===3?-W*.4:-.05,H+(f===2?.17:.04),z),{space:s.root});p.reach('left',new THREE.Vector3(.12,H+.035,z+.05),{space:s.root});p.lookAt(new THREE.Vector3(0,H,z),s.root);const rh=p.hands.right.getWorldPosition(new THREE.Vector3());if(f===2){s.rod([rh.x,rh.y,rh.z],[rh.x,H+.02,z],.006,wood);s.box([.025,.01,.04],[rh.x,H+.02,z],pale);}if(f===0)s.tube([[rh.x,rh.y,rh.z],[0,H+.02,z],[.07,H+.02,z+.1]],.002,pale);if(u===0||u===3||u===4)s.box([.65,.015,.5],[0,.008,-.04],u===4?wood:u===3?pale:green);if(u===2)for(const x of [-.15,.15])s.box([.18,.025,.2],[x,.013,.05],green);const ex=W*.75;if(e===0)s.ball([.05,.04,.05],[ex,.04,.3],pale,14);if(e===1)s.box([.2,.012,.25],[ex,.006,.3],pale);if(e===2){s.box([.12,.012,.25],[ex,.006,.3],wood);s.rod([ex,.02,.23],[ex,.02,.37],.006,metal);}if(e===3)s.ball([.12,.1,.1],[ex,.1,.3],green,14);if(a.closed)for(const x of [-W*.7,-W*.7-.025])s.rod([x,.005,.3],[x,.005,.85],.004,pale);return s.finish({update:(dt,time)=>p.update(dt,time)});
+  },
+});

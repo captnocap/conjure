@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Captive bubble underwater contact section", "summary": "A closed bubble touches the underside of a submerged solid plate through a real interface, held within an open section of the surrounding bath. A retained gas cap touches the underside of a supported submerged plate. Surrounding water has an actual bubble-shaped void; angle choices explicitly describe the gas-side geometric cap and do not claim measured surface wettability.", "scales": ["macro", "tabletop"]});

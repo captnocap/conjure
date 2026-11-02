@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { type Placeable, Sculpture, choice, defineWorld, disposeTree, mix, visibleBounds } from '@conjure/kit';
+import { type Placeable, Sculpture, choice, defineWorld, disposeTree, mix, score, visibleBounds } from '@conjure/kit';
 
 type Draw = (c: CanvasRenderingContext2D, w: number, h: number) => void;
 function paint(width: number, height: number, draw: Draw) {
@@ -28,6 +28,13 @@ const NEON = { none: null, lastcall: ['LAST CALL', '#ff4a3a'], cocktails: ['COCK
 
 export default defineWorld({
   questions: {
+    counter: choice('What is the working surface of the bar?', { wood: 'Varnished wood with a visible grain.', zinc: 'Dull zinc with polished wear marks.', terrazzo: 'Dark terrazzo flecked with pale chips.', tile: 'Cream ceramic tiles with dark grout.' }),
+    stock: score('How well stocked is the back-bar?', ['Mostly empty shelves', 'A sparse row of bottles', 'A good selection', 'Shelves packed from end to end']),
+    mirror: choice('How is the back-bar mirror finished?', { plain: 'One broad plain mirror.', panels: 'Narrow panels divided by wooden mullions.', diamond: 'Etched with a diamond lattice.', clouded: 'Clouded with silver loss around the edges.' }),
+    clock: choice('What small clock stands at the near end of the counter?', { none: 'No clock.', round: 'A round clock at five past midnight.', square: 'A square clock at half past one.', digital: 'A red digital clock reading 02:13.' }),
+    runner: choice('What lies under the objects on the serving counter?', { bare: 'The counter itself.', rubber: 'Individual ribbed black rubber mats.', towel: 'Folded striped bar towels.', cork: 'Rectangular cork serving pads.' }),
+    stemRack: choice('Is stemware stored above the back-bar?', { none: 'No overhead glasses.', short: 'A short brass rack with a few glasses.', full: 'A long rack packed with inverted stemware.', timber: 'Wooden runners holding a modest row of glasses.' }),
+    closingPaper: choice('What paper has been left at the near end?', { none: 'Nothing.', tab: 'A narrow handwritten unpaid tab.', menus: 'A stack of folded drinks menus.', ledger: 'An open cashing-up ledger with a pencil.' }),
     bar: choice('What kind of bar is it?', BARS),
     lamp: choice('What is the one lamp still lit over the bar?', {
       cone: 'An enamel cone pendant throwing a hard pool of light.',
@@ -123,11 +130,22 @@ export default defineWorld({
         c.lineWidth = 1 + random() * 5;
         c.beginPath(); c.moveTo(x, 0); c.bezierCurveTo(x + (random() - 0.5) * 30, h * 0.3, x + (random() - 0.5) * 30, h * 0.7, x + (random() - 0.5) * 20, h); c.stroke();
       }
+      if (a.counter === 'zinc') {
+        c.fillStyle = '#9a9c95'; c.fillRect(0, 0, w, h); c.strokeStyle = 'rgba(235,238,230,0.25)'; c.lineWidth = 1;
+        for (let i = 0; i < 130; i++) { const x = random() * w, y = random() * h; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 2, y + 40 + random() * 100); c.stroke(); }
+      } else if (a.counter === 'terrazzo') {
+        c.fillStyle = '#343c3a'; c.fillRect(0, 0, w, h);
+        for (let i = 0; i < 650; i++) { c.fillStyle = ['#a4ac9b', '#d2c6ae', '#788a88', '#b79876'][i % 4]; const x = random() * w, y = random() * h; c.beginPath(); c.moveTo(x, y); c.lineTo(x + 2 + random() * 7, y + 1); c.lineTo(x + random() * 5, y + 3 + random() * 8); c.closePath(); c.fill(); }
+      } else if (a.counter === 'tile') {
+        c.fillStyle = '#d6d0ba'; c.fillRect(0, 0, w, h); c.strokeStyle = '#615f50'; c.lineWidth = 3;
+        for (let x = 0; x <= w; x += 64) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); }
+        for (let y = 0; y <= h; y += 128) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
+      }
       // Rings and scuffs worn in over the years.
       for (let i = 0; i < Math.round(mood.wear * 26); i++) { c.strokeStyle = `rgba(230,200,160,${0.1 + random() * 0.14})`; c.lineWidth = 2.5; c.beginPath(); c.ellipse(random() * w, random() * h, 20, 7, 0, 0, 7); c.stroke(); }
     });
     woodMap.wrapS = woodMap.wrapT = THREE.RepeatWrapping; woodMap.repeat.set(1, 2);
-    const topMat = new THREE.MeshStandardMaterial({ map: woodMap, roughness: mix(0.22, 0.6, mood.wear), metalness: 0.05 });
+    const topMat = new THREE.MeshStandardMaterial({ map: woodMap, roughness: mix(a.counter === 'zinc' ? 0.4 : 0.22, 0.6, mood.wear), metalness: a.counter === 'zinc' ? 0.65 : 0.05 });
     const wood = s.material(kit.wood, { roughness: 0.5 });
     const barTop = s.box([0.88, 0.07, length], [0, TOP - 0.035, midZ], [wood, wood, topMat, wood, wood, wood] as unknown as THREE.Material);
     const railMat = a.bar === 'dive' ? s.material('#a82c2a', { roughness: 0.5 }) : a.bar === 'tiki' ? trim : wood;
@@ -163,10 +181,17 @@ export default defineWorld({
       for (let x = -200; x < w; x += 230) { c.beginPath(); c.moveTo(x, h); c.lineTo(x + 180, 0); c.stroke(); }
       c.fillStyle = 'rgba(60,50,40,0.3)';
       for (let i = 0; i < mood.wear * 160; i++) c.fillRect(random() * w, random() < 0.5 ? random() * 26 : h - random() * 26, 2 + random() * 5, 2 + random() * 5);
+      if (a.mirror === 'diamond') {
+        c.strokeStyle = 'rgba(230,237,226,0.65)'; c.lineWidth = 2;
+        for (let x = -h; x < w + h; x += 95) for (const sign of [-1, 1]) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x + sign * h, h); c.stroke(); }
+      } else if (a.mirror === 'clouded') {
+        for (let i = 0; i < 330; i++) { const x = random() * w, y = random() < 0.5 ? random() ** 2 * 90 : h - random() ** 2 * 90; c.fillStyle = i % 3 ? 'rgba(65,64,55,0.6)' : 'rgba(190,190,171,0.5)'; c.beginPath(); c.ellipse(x, y, 3 + random() * 16, 3 + random() * 10, random(), 0, Math.PI * 2); c.fill(); }
+      }
     });
     const mirror = s.mesh(new THREE.PlaneGeometry(bbLen - 0.3, 1.62), new THREE.MeshStandardMaterial({ map: mirrorMap, roughness: 0.18, metalness: 0.25, emissive: '#ffffff', emissiveMap: mirrorMap, emissiveIntensity: 0.22 }), [BACK - 0.17, 1.86, bbMid]);
     mirror.rotation.y = Math.PI / 2; mirror.castShadow = false;
     const frame = s.material(new THREE.Color(kit.wood).multiplyScalar(0.85), { roughness: 0.45 });
+    if (a.mirror === 'panels') for (let z = NEAR - 0.7; z > WALL + 0.7; z -= 0.68) s.box([0.035, 1.62, 0.035], [BACK - 0.14, 1.86, z], frame);
     s.box([0.3, 0.2, bbLen], [BACK - 0.06, 2.78, bbMid], frame);
     s.box([0.36, 0.06, bbLen + 0.06], [BACK - 0.03, 2.9, bbMid], frame);
     for (let z = NEAR - 0.3; z > WALL + 0.4; z -= 1.75) {
@@ -190,7 +215,7 @@ export default defineWorld({
     const rows: { y: number; x: number }[] = [{ y: 1.0, x: BACK + 0.02 }, ...shelfY.map((y) => ({ y: y + 0.013, x: BACK - 0.05 }))];
     const stock: { at: THREE.Vector3; h: number; w: number; tint: string; lean: number }[] = [];
     for (const [r, row] of rows.entries()) for (let z = NEAR - 0.45; z > WALL + 0.55; z -= 0.105) {
-      const gap = mix(0.5, 0.04, mood.density) + (r === 3 ? 0.1 : 0);
+      const gap = mix(0.88, 0.02, a.stock) + (r === 3 ? 0.04 : 0);
       if (random() < gap) continue;
       stock.push({ at: new THREE.Vector3(row.x + (random() - 0.5) * 0.05, row.y, z + (random() - 0.5) * 0.03), h: mix(0.78, 1.18, random()), w: mix(0.85, 1.25, random()), tint: bottleTints[Math.floor(random() * bottleTints.length)], lean: 0 });
     }
@@ -202,6 +227,18 @@ export default defineWorld({
     });
     bottles.castShadow = true;
     root.add(bottles);
+    if (a.stemRack !== 'none') {
+      const rackLen = a.stemRack === 'full' ? 4.4 : 2.2, rackZ = 0.2, rackY = 2.68;
+      const rack = a.stemRack === 'timber' ? frame : trim;
+      for (const z of [rackZ - rackLen / 2, rackZ + rackLen / 2]) { s.rod([BACK - 0.08, 2.82, z], [BACK + 0.4, rackY, z], 0.012, rack); s.rod([BACK + 0.1, rackY, z], [BACK + 0.42, rackY, z], 0.012, rack); }
+      for (const x of [BACK + 0.2, BACK + 0.26]) s.rod([x, rackY, rackZ - rackLen / 2], [x, rackY, rackZ + rackLen / 2], 0.009, rack);
+      const glass = new THREE.MeshPhysicalMaterial({ color: '#d3e3e5', opacity: 0.5, transparent: true, roughness: 0.1, side: THREE.DoubleSide });
+      const n = a.stemRack === 'full' ? 23 : a.stemRack === 'short' ? 7 : 10;
+      for (let i = 0; i < n; i++) {
+        const z = rackZ - rackLen / 2 + 0.12 + i * (rackLen - 0.24) / Math.max(1, n - 1);
+        const glassBody = s.lathe([[0, 0], [0.04, 0], [0.04, 0.005], [0.005, 0.01], [0.005, 0.09], [0.025, 0.11], [0.047, 0.15], [0.045, 0.19]], glass, [BACK + 0.23, rackY + 0.009, z]); glassBody.rotation.x = Math.PI;
+      }
+    }
     if (mood.cheer > 0.62) {
       // Somebody strung fairy lights along the cornice and never took them down.
       const bulbs = Array.from({ length: 44 }, (_u, i) => ({ at: [BACK + 0.1, 2.72 - Math.abs(Math.sin(i * 0.9)) * 0.1, NEAR - 0.4 - i * (bbLen - 0.6) / 43] as const, size: 0.022, color: ['#ff5a4a', '#ffd24a', '#5ad8ff', '#7dff8a', '#ff8adf'][i % 5] }));
@@ -274,6 +311,25 @@ export default defineWorld({
     // The far wall.
     const glowMat = (map: THREE.Texture) => new THREE.MeshBasicMaterial({ map });
     const fx = 0.15;
+    if (a.clock !== 'none') {
+      const clockStart = root.children.length;
+      const cx = 1.05, cy = 3.67, cz = WALL + 0.12;
+      if (a.clock === 'digital') {
+        s.box([0.72, 0.25, 0.1], [cx, cy, cz], dark);
+        const clockMap = paint(256, 96, c => { c.fillStyle = '#1a1c1a'; c.fillRect(0, 0, 256, 96); c.fillStyle = '#ef674b'; c.font = 'bold 76px monospace'; c.textAlign = 'center'; c.fillText('02:13', 128, 77); });
+        s.mesh(new THREE.PlaneGeometry(0.65, 0.2), new THREE.MeshBasicMaterial({ map: clockMap }), [cx, cy, cz + 0.051]);
+      } else {
+        const clockMap = paint(256, 256, c => { c.fillStyle = '#ded8bd'; c.fillRect(0, 0, 256, 256); c.strokeStyle = '#2e3732'; c.lineWidth = 4; for (let i = 0; i < 12; i++) { const t = i / 12 * Math.PI * 2; c.beginPath(); c.moveTo(128 + Math.sin(t) * 98, 128 - Math.cos(t) * 98); c.lineTo(128 + Math.sin(t) * 111, 128 - Math.cos(t) * 111); c.stroke(); } const minute = a.clock === 'round' ? Math.PI / 6 : Math.PI, hour = a.clock === 'round' ? 0.045 : Math.PI / 4; c.lineWidth = 8; for (const [t, len] of [[minute, 88], [hour, 62]]) { c.beginPath(); c.moveTo(128, 128); c.lineTo(128 + Math.sin(t) * len, 128 - Math.cos(t) * len); c.stroke(); } });
+        if (a.clock === 'square') s.box([0.61, 0.61, 0.08], [cx, cy, cz], frame);
+        else { const housing = s.cylinder(0.32, 0.32, 0.08, [cx, cy, cz], trim, 32); housing.rotation.x = Math.PI / 2; }
+        s.mesh(a.clock === 'round' ? new THREE.CircleGeometry(0.28, 32) : new THREE.PlaneGeometry(0.55, 0.55), new THREE.MeshStandardMaterial({ map: clockMap, roughness: 0.6 }), [cx, cy, cz + 0.041]);
+      }
+      const clockGroup = new THREE.Group(); clockGroup.position.set(cx, cy, WALL);
+      for (const child of root.children.slice(clockStart)) { child.position.sub(clockGroup.position); clockGroup.add(child); }
+      const clockHeight = a.clock === 'round' ? 0.32 * 0.45 : a.clock === 'square' ? 0.305 * 0.45 : 0.125 * 0.45;
+      clockGroup.scale.setScalar(0.45); clockGroup.position.set(-0.28, TOP + clockHeight + 0.014, 2.0); root.add(clockGroup);
+      s.box([0.27, 0.014, 0.11], [-0.28, TOP + 0.007, 2.055], frame);
+    }
     if (a.far === 'exit') {
       s.box([1.1, 2.25, 0.08], [fx, 1.125, WALL + 0.05], dado);
       s.box([0.94, 2.1, 0.05], [fx, 1.08, WALL + 0.09], s.material(new THREE.Color(kit.wall).multiplyScalar(0.7), { roughness: 0.6 }));
@@ -455,6 +511,24 @@ export default defineWorld({
       for (let i = 0; i < 7; i++) { const slip = s.box([0.075, 0.002, 0.12], [-0.26, TOP + 0.03 + i * 0.012, 0.45], s.material(i % 3 ? '#f4f0e2' : '#f2e3a8', { roughness: 1 })); slip.rotation.set((random() - 0.5) * 0.25, random() * 6, (random() - 0.5) * 0.25); }
     }
 
+    const padLift = a.runner === 'bare' ? 0 : a.runner === 'towel' ? 0.012 : 0.007;
+    if (padLift) for (const [x, z] of [[0, LAMP_Z], [-0.1, -0.3], [0.1, -1.55]]) {
+      const mat = s.material(a.runner === 'rubber' ? '#282d2b' : a.runner === 'cork' ? '#b39159' : '#d7d1bd', { roughness: 0.9 });
+      s.box([0.62, padLift, 0.75], [x, TOP + padLift / 2, z], mat);
+      if (a.runner === 'rubber') for (let k = 0; k < 22; k++) s.box([0.008, 0.003, 0.7], [x - 0.285 + k * 0.027, TOP + padLift, z], mat);
+      if (a.runner === 'towel') for (const dx of [-0.24, -0.21, 0.24]) s.box([0.012, 0.001, 0.75], [x + dx, TOP + padLift + 0.0005, z], s.material('#874f49', { roughness: 1 }));
+    }
+    if (a.closingPaper !== 'none') {
+      const pageMap = paint(256, 256, c => { c.fillStyle = '#dcd2b7'; c.fillRect(0, 0, 256, 256); c.fillStyle = '#3e4642'; c.textAlign = 'center'; c.font = 'bold 27px serif'; c.fillText(a.closingPaper === 'tab' ? 'OPEN TAB' : a.closingPaper === 'menus' ? 'DRINKS' : 'CASH BOOK', 128, 38); c.font = '21px serif'; const rows = a.closingPaper === 'menus' ? ['House sour', 'Old fashioned', 'Highball', 'Last orders 1:30'] : ['2  —  18.00', '1  —   9.50', '3  —  27.00', 'TOTAL  54.50']; rows.forEach((line, i) => c.fillText(line, 128, 85 + i * 39)); });
+      const page = new THREE.MeshStandardMaterial({ map: pageMap, roughness: 1 });
+      const w = a.closingPaper === 'tab' ? 0.13 : a.closingPaper === 'ledger' ? 0.32 : 0.22, d = a.closingPaper === 'tab' ? 0.28 : 0.33;
+      const x = -0.1, z = 2.52;
+      const h = a.closingPaper === 'tab' ? 0.0015 : a.closingPaper === 'menus' ? 0.035 : 0.02;
+      s.box([w, h, d], [x, TOP + h / 2, z], s.material('#b5a68a', { roughness: 1 }));
+      s.box([w, 0.001, d], [x, TOP + h + 0.0005, z], page);
+      if (a.closingPaper === 'ledger') { s.rod([x, TOP + h + 0.002, z - d / 2], [x, TOP + h + 0.002, z + d / 2], 0.002, dark); s.rod([x + 0.19, TOP + 0.006, z - 0.13], [x + 0.19, TOP + 0.006, z + 0.13], 0.004, s.material('#b58b3b')); }
+    }
+
     // Camera: a narrow perspective run down the bar.
     const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 60);
     const slots: readonly (readonly [number, number, number])[] = [[0, LAMP_Z, 1], [-0.1, -0.3, 0.92], [0.1, -1.55, 0.92]];
@@ -465,7 +539,7 @@ export default defineWorld({
         // Bar-top objects are shown generously large; whatever their true size, they fit the bar's width.
         const scale = Math.min(0.52 / Math.max(item.height, 0.01), 0.3 / Math.max(item.radius, 0.01)) * size;
         item.holder.scale.setScalar(scale);
-        item.holder.position.set(x, TOP, z);
+        item.holder.position.set(x, TOP + padLift + (a.runner === 'rubber' ? 0.0015 : 0), z);
         item.holder.rotation.y = 0.35 + (random() - 0.5) * 0.5;
         item.holder.updateMatrixWorld(true);
         if (index === 0) heroTop = Math.max(0.12, visibleBounds(item.holder).max.y - TOP);

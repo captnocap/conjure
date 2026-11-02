@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Araneiform radial channel basin", "summary": "A central depression feeds branching real incised channels that taper and bifurcate across a closed terrain patch. A magnified Martian araneiform terrain teaching section with real incised radial troughs and a central depression; observed spider-like forms, without claiming a simulated formation history.", "scales": ["planetary", "landscape", "macro"]});

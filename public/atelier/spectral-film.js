@@ -132,7 +132,11 @@ export function worldFromPixel(raw, x, y, distance) {
     ];
   const nx = ((x + 0.5) / w) * 2 - 1,
     ny = 1 - ((y + 0.5) / w) * 2,
+    projection = raw.cameraProjection || raw.geometry?.projection,
     nz =
+      projection?.[11] !== undefined && projection[11] !== 0
+        ? (projection[14] - projection[10] * distance) / (projection[15] - projection[11] * distance)
+        :
       (2 * (distance - (raw.near ?? 0.1))) /
         ((raw.far ?? 100) - (raw.near ?? 0.1)) -
       1,

@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind: 'world', title: "Autumn corn husking porch", summary: "A household harvest porch has a permanent slatted maize crib, a husking bench with opened ears and a tied drying braid. Timber rails, covered storage and a visible accumulation of husks keep the place specific to the autumn work in every cast.", scales: ["street", "room", "landscape"]});

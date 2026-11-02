@@ -35,6 +35,8 @@ export interface Exploring {
   roll: number;
   /** Fixes the tour's order for one idea and one owner. */
   seed: number;
+  /** Options under this share sit out of the tour; EXPLORE_FLOOR when absent. */
+  floor?: number;
 }
 /** Options the model gave less than this share are left out of a tour, unless fewer than three would remain. */
 export const EXPLORE_FLOOR = 0.03;
@@ -86,6 +88,27 @@ function sample(weights: [string, number][], temperature: number, random: () => 
   return sharpened.at(-1)![0];
 }
 
+/**
+ * A score's expectation is the right answer for one hump of probability and the wrong one for two:
+ * light split between first and last light averages to noon, which the model all but ruled out.
+ * When the level nearest the expectation holds under 15% and at least 15% lies on each side of it,
+ * the expectation sits in a trough; settle inside the heavier side instead, at its own weighted mean.
+ */
+export function representative(value: number, probabilities: readonly number[]): number {
+  const top = probabilities.length - 1;
+  const near = Math.round(value * top);
+  if (top < 2 || near <= 0 || near >= top || probabilities[near] >= 0.15) return value;
+  const side = (from: number, to: number) => {
+    let mass = 0; let sum = 0;
+    for (let level = from; level <= to; level++) { mass += probabilities[level]; sum += probabilities[level] * (level / top); }
+    return { mass, mean: mass > 0 ? sum / mass : value };
+  };
+  const below = side(0, near - 1);
+  const above = side(near + 1, top);
+  if (below.mass < 0.15 || above.mass < 0.15) return value;
+  return below.mass >= above.mass ? below.mean : above.mean;
+}
+
 export function settleOne(
   question: Question,
   verdict: Verdict | undefined,
@@ -119,7 +142,7 @@ export function settleOne(
   }
   if (question.type === 'score') {
     const top = question.levels.length - 1;
-    let value = verdict?.type === 'score' ? verdict.value : 0.5;
+    let value = verdict?.type === 'score' ? (verdict.probabilities.length === top + 1 ? representative(verdict.value, verdict.probabilities) : verdict.value) : 0.5;
     if (temperature > 0 && verdict?.type === 'score' && verdict.probabilities.length === top + 1) {
       const level = Number(
         sample(
@@ -202,7 +225,7 @@ export function settle(
       const known = verdict?.type === 'choice' ? verdict.probabilities : {};
       const labels = Object.keys(question.options);
       const weights = Object.fromEntries(labels.map((label) => [label, known[label] ?? 0]));
-      value = explore(weights, labels, exploring!.roll, (exploring!.seed ^ hashText(name)) >>> 0, EXPLORE_FLOOR);
+      value = explore(weights, labels, exploring!.roll, (exploring!.seed ^ hashText(name)) >>> 0, exploring!.floor ?? EXPLORE_FLOOR);
       ruling = {
         ...ruling,
         picked: value,

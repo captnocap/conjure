@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind: 'world', title: "Backyard mushroom log yard", summary: "A shaded backyard cultivation yard holds stacked inoculated hardwood logs, a permanent soaking basin and a harvest shelf. Wax plugs, fruiting caps and orderly growing supports distinguish patient domestic food growing from a wild mushroom grove.", scales: ["street", "room", "landscape"]});

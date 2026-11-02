@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Granal thylakoid stack helical junction", "summary": "Stacked flattened thylakoids meet continuous intergranal sheets through documented junction geometry. Finite membrane walls share a continuous modeled lumen through a helical stroma sheet. Spacing is enlarged for teaching; this local reconstruction does not claim to reproduce the entire pitch-balanced native network.", "scales": ["macro", "tabletop"]});

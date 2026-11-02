@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind: 'world', title: "Neighbourhood duck pond garden", summary: "A small public garden wraps around a shallow irregular duck pond. Permanent mallards, reed margins and a keeper’s timber landing anchor the habitat while paths, seating and a planted refuge invite quiet everyday visits.", scales: ["landscape", "street", "room", "tabletop"]});

@@ -49,6 +49,12 @@ const topOf = (profile: Profile) => profile[profile.length - 1][1];
 
 export default defineThing({
   questions: {
+    strainer: choice('What kind of strainer is laid out?', { hawthorne: 'A Hawthorne strainer with a coiled rim spring.', julep: 'An oval perforated julep strainer.', mesh: 'A fine wire-mesh strainer.', double: 'A perforated plate with a dense double spring.' }),
+    jigger: choice('What shape is the measuring jigger?', { waist: 'Two cones joined at a narrow waist.', bell: 'Two rounded bell-shaped cups.', straight: 'Two straight-sided measures.', stepped: 'A tall stepped measure with visible bands.' }),
+    spoon: choice('What ends the bar spoon handle?', { drop: 'A little teardrop counterweight.', fork: 'A small three-pronged garnish fork.', disc: 'A flat muddling disc.', ring: 'An open hanging ring.' }),
+    engraving: choice('How is the shaker body decorated?', { plain: 'Plain metal.', bands: 'Three narrow engraved bands.', ribs: 'Long raised ribs.', stipple: 'Rows of small punched dimples.' }),
+    ice: choice('What ice is visible when the shaker is open?', { cubes: 'Large square cubes.', chips: 'Small irregular chips.', spear: 'A few long ice spears.', empty: 'No ice, only the open mouth.' }),
+    recipe: choice('Is a recipe note laid out?', { none: 'No note.', card: 'A small recipe card with measured ingredients.', ticket: 'A narrow order ticket.', booklet: 'A folded recipe booklet.' }),
     style: choice('What style of shaker is it?', STYLES),
     metal: choice('What is the shaker made of?', METALS),
     state: choice('What is the set doing right now?', {
@@ -144,6 +150,9 @@ export default defineThing({
     } else if (a.mat === 'board') {
       s.box([0.44, 0.018, 0.28], [0, 0.009, 0], wood);
       s.cylinder(0.012, 0.012, 0.02, [0.19, 0.009, -0.11], s.material('#2a1d14'), 12);
+      s.box([0.065, 0.008, 0.016], [0.105, matY + 0.004, -0.105], s.material('#34271d'));
+      const blade = new THREE.Shape(); blade.moveTo(0.073, -0.007); blade.lineTo(0.015, -0.005); blade.quadraticCurveTo(0.008, 0.004, 0.07, 0.008); blade.closePath();
+      const knife = new THREE.Mesh(new THREE.ExtrudeGeometry(blade, { depth: 0.0015, bevelEnabled: false }), steel); knife.rotation.x = -Math.PI / 2; knife.position.set(0, matY + 0.003, -0.105); s.root.add(knife);
     } else {
       s.lathe([[0, 0], [0.22, 0], [0.235, 0.012], [0.238, 0.012], [0.224, 0.004], [0, 0.004]], steel, [0, 0, 0]);
     }
@@ -171,7 +180,21 @@ export default defineThing({
         }
       }
     };
-    const makeBody = () => { const g = new THREE.Group(); g.add(turned(shape.body, cold)); bead(g, shape.body, frost); dress(g, null); return g; };
+    const makeBody = () => {
+      const g = new THREE.Group(); g.add(turned(shape.body, cold)); bead(g, shape.body, frost); dress(g, null);
+      if (a.engraving === 'bands') for (const f of [0.22, 0.48, 0.74]) {
+        const y = bodyH * f, ring = new THREE.Mesh(new THREE.TorusGeometry(radiusAt(shape.body, y) + 0.0007, 0.0011, 5, 36), clean); ring.rotation.x = Math.PI / 2; ring.position.y = y; g.add(ring);
+      }
+      if (a.engraving === 'ribs') for (let i = 0; i < 18; i++) {
+        const t = i / 18 * Math.PI * 2, points = Array.from({ length: 12 }, (_v, k) => { const y = bodyH * (0.12 + k / 11 * 0.7), r = radiusAt(shape.body, y) + 0.0007; return new THREE.Vector3(Math.cos(t) * r, y, Math.sin(t) * r); });
+        g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 16, 0.0009, 4, false), clean));
+      }
+      if (a.engraving === 'stipple') for (let row = 0; row < 6; row++) for (let i = 0; i < 18; i++) {
+        const t = (i + (row % 2) * 0.5) / 18 * Math.PI * 2, y = bodyH * (0.16 + row * 0.125), r = radiusAt(shape.body, y) + 0.0005;
+        const dot = new THREE.Mesh(new THREE.SphereGeometry(0.0012, 5, 3), clean); dot.position.set(Math.cos(t) * r, y, Math.sin(t) * r); g.add(dot);
+      }
+      return g;
+    };
     const makeTop = () => {
       const g = new THREE.Group();
       g.add(turned(shape.top, a.style === 'boston' ? cold : clean));
@@ -199,11 +222,11 @@ export default defineThing({
       g.add(makeBody());
       // Ice heaped in the open mouth.
       const ice = new THREE.MeshStandardMaterial({ color: '#e9f6fb', roughness: 0.15, transparent: true, opacity: 0.85 });
-      for (let i = 0; i < 7; i++) {
-        const cube = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.022, 0.022), ice);
+      for (let i = 0; i < (a.ice === 'empty' ? 0 : a.ice === 'chips' ? 18 : a.ice === 'spear' ? 3 : 7); i++) {
+        const cube = new THREE.Mesh(a.ice === 'chips' ? new THREE.IcosahedronGeometry(0.009, 0) : a.ice === 'spear' ? new THREE.BoxGeometry(0.012, 0.044, 0.012) : new THREE.BoxGeometry(0.022, 0.022, 0.022), ice);
         const angle = random() * 6.3, r = random() * 0.022;
         cube.position.set(Math.cos(angle) * r, bodyH - 0.012 + random() * 0.014, Math.sin(angle) * r);
-        cube.rotation.set(random() * 3, random() * 3, random() * 3);
+        cube.rotation.set(random() * (a.ice === 'spear' ? 0.35 : 3), random() * 3, random() * (a.ice === 'spear' ? 0.35 : 3));
         g.add(cube);
       }
       const top = makeTop();
@@ -227,21 +250,22 @@ export default defineThing({
 
     // Hawthorne strainer: a perforated plate, a coiled spring and a flat handle.
     const strainer = new THREE.Group();
-    const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.043, 0.043, 0.0025, 28), steel);
-    plate.castShadow = true;
-    strainer.add(plate);
-    const holes = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.0028, 0.0028, 0.0032, 8), new THREE.MeshStandardMaterial({ color: '#23262a' }), 19);
-    const hm = new THREE.Matrix4();
-    let hole = 0;
-    for (let ring = 0; ring < 3; ring++) for (let i = 0; i < [1, 6, 12][ring]; i++) {
-      const angle = i / [1, 6, 12][ring] * Math.PI * 2;
-      hm.makeTranslation(Math.cos(angle) * ring * 0.011, 0, Math.sin(angle) * ring * 0.011);
-      holes.setMatrixAt(hole++, hm);
+    if (a.strainer === 'mesh') {
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.043, 0.0022, 5, 36), steel); rim.rotation.x = Math.PI / 2; strainer.add(rim);
+      for (let k = -7; k <= 7; k++) for (const turn of [0, Math.PI / 2]) {
+        const off = k * 0.0055, length = 2 * Math.sqrt(0.041 ** 2 - off ** 2);
+        const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.00055, 0.00055, length, 4), steel); wire.rotation.z = Math.PI / 2; wire.rotation.y = turn; wire.position.set(turn ? off : 0, 0, turn ? 0 : off); strainer.add(wire);
+      }
+    } else {
+      const outline = new THREE.Shape(); outline.absarc(0, 0, 0.043, 0, Math.PI * 2, false);
+      for (let ring = 0; ring < 3; ring++) for (let i = 0; i < [1, 6, 12][ring]; i++) { const angle = i / [1, 6, 12][ring] * Math.PI * 2, hole = new THREE.Path(); hole.absarc(Math.cos(angle) * ring * 0.011, Math.sin(angle) * ring * 0.011, 0.0028, 0, Math.PI * 2, true); outline.holes.push(hole); }
+      const plate = new THREE.Mesh(new THREE.ExtrudeGeometry(outline, { depth: 0.0025, bevelEnabled: false, curveSegments: 6 }), steel); plate.rotation.x = -Math.PI / 2; plate.castShadow = true; strainer.add(plate);
     }
-    strainer.add(holes);
     const coil = new THREE.Mesh(new THREE.TorusGeometry(0.039, 0.0045, 6, 40, Math.PI * 1.55), steel);
     coil.rotation.set(Math.PI / 2, 0, Math.PI * 0.72); coil.position.y = -0.005; coil.castShadow = true;
-    strainer.add(coil);
+    if (a.strainer === 'hawthorne' || a.strainer === 'double') strainer.add(coil);
+    if (a.strainer === 'double') { const inner = coil.clone(); inner.scale.set(0.82, 0.82, 0.82); inner.position.y = -0.002; strainer.add(inner); }
+    if (a.strainer === 'julep') strainer.scale.set(0.82, 1, 1.15);
     const handle = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.0025, 0.075), steel);
     handle.position.set(0, 0, 0.075); handle.castShadow = true;
     strainer.add(handle);
@@ -252,7 +276,7 @@ export default defineThing({
 
     // Jigger: two cones joined at the waist.
     const jig = group([0.165, matY, -0.04]);
-    const jiggerProfile: Profile = [[0.017, 0], [0.006, 0.036], [0.006, 0.04], [0.021, 0.09]];
+    const jiggerProfile: Profile = a.jigger === 'bell' ? [[0.02, 0], [0.017, 0.012], [0.008, 0.03], [0.007, 0.04], [0.017, 0.064], [0.024, 0.09]] : a.jigger === 'straight' ? [[0.018, 0], [0.018, 0.032], [0.009, 0.035], [0.009, 0.039], [0.021, 0.042], [0.021, 0.09]] : a.jigger === 'stepped' ? [[0.017, 0], [0.017, 0.02], [0.012, 0.022], [0.012, 0.037], [0.016, 0.04], [0.016, 0.061], [0.022, 0.065], [0.022, 0.09]] : [[0.017, 0], [0.006, 0.036], [0.006, 0.04], [0.021, 0.09]];
     const jigger = turned(jiggerProfile, clean);
     jig.add(jigger);
     if (a.state === 'drying') { jig.rotation.z = Math.PI / 2; jig.position.set(0.17, matY + 0.021, -0.07); jig.rotation.y = random(); }
@@ -273,7 +297,11 @@ export default defineThing({
     bowl.scale.set(0.02, 0.004, 0.012); bowl.position.x = 0.15; bowl.castShadow = true;
     const tear = new THREE.Mesh(new THREE.SphereGeometry(0.006, 10, 8), clean);
     tear.scale.x = 1.6; tear.position.x = -0.14;
-    spoon.add(bowl, tear);
+    spoon.add(bowl);
+    if (a.spoon === 'drop') spoon.add(tear);
+    else if (a.spoon === 'disc') { const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.004, 16), clean); disc.position.x = -0.143; spoon.add(disc); }
+    else if (a.spoon === 'ring') { const ring = new THREE.Mesh(new THREE.TorusGeometry(0.008, 0.0012, 5, 20), clean); ring.rotation.x = Math.PI / 2; ring.position.x = -0.143; spoon.add(ring); }
+    else { const crossbar = new THREE.Mesh(new THREE.BoxGeometry(0.005, 0.002, 0.016), clean); crossbar.position.x = -0.14; spoon.add(crossbar); for (const z of [-0.006, 0, 0.006]) { const tine = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.002, 0.002), clean); tine.position.set(-0.15, 0, z); spoon.add(tine); } }
 
     // The optional extra.
     if (a.extra === 'muddler') {
@@ -311,6 +339,8 @@ export default defineThing({
         half.add(face);
         g.add(half);
       }
+      s.rod([-0.18, matY + 0.013, -0.1], [-0.083, matY + 0.013, -0.1], 0.008, wood);
+      const reamer = s.mesh(new THREE.ConeGeometry(0.013, 0.035, 8), wood, [-0.067, matY + 0.013, -0.1]); reamer.rotation.z = -Math.PI / 2;
     }
 
     // Garnish debris, more of it when the scene is busy.
@@ -362,6 +392,15 @@ export default defineThing({
       }
     }
 
+    if (a.recipe !== 'none') {
+      const x = 0, z = -0.32, w = a.recipe === 'ticket' ? 0.055 : 0.11, d = a.recipe === 'ticket' ? 0.13 : 0.075;
+      const canvas = document.createElement('canvas'); canvas.width = 256; canvas.height = 192;
+      const c = canvas.getContext('2d')!; c.fillStyle = '#e8ddc1'; c.fillRect(0, 0, 256, 192); c.fillStyle = '#38494a'; c.textAlign = 'center'; c.font = 'bold 26px serif'; c.fillText(a.recipe === 'ticket' ? 'TABLE 7' : 'HOUSE SOUR', 128, 36); c.font = '22px serif'; ['60 — spirit', '25 — lemon', '15 — syrup'].forEach((line, i) => c.fillText(line, 128, 84 + i * 34));
+      const map = new THREE.CanvasTexture(canvas); map.colorSpace = THREE.SRGBColorSpace;
+      const card = new THREE.MeshStandardMaterial({ map, roughness: 1 });
+      s.box([w, 0.0015, d], [x, 0.00075, z], card);
+      if (a.recipe === 'booklet') { s.box([w, 0.004, d], [x, 0.002, z], s.material('#baac8f')); s.box([w, 0.001, d], [x, 0.0045, z], card); }
+    }
     return s.finish();
   },
 });

@@ -26,6 +26,12 @@ function canvasTexture(width: number, height: number, draw: (g: CanvasRenderingC
 
 export default defineThing({
   questions: {
+    divisions: choice('How many hanging panels divide the noren?', { two: 'Two broad panels.', three: 'Three ordinary panels.', four: 'Four narrower panels.', five: 'Five slim panels.' }),
+    weave: choice('What kind of cloth is the noren made from?', { cotton: 'Plain fine cotton.', linen: 'Slubby linen with visible cross threads.', canvas: 'Heavy coarse canvas.', silk: 'Smooth subtly shining silk.' }),
+    hem: choice('How is the bottom edge finished?', { straight: 'A plain straight hem.', fringe: 'A short fringe of separated threads.', scallop: 'A row of shallow rounded scallops.', band: 'A narrow contrasting hem band.' }),
+    lattice: choice('What pattern divides the sliding-door panels?', { vertical: 'Close vertical bars with two cross rails.', square: 'A regular square lattice.', fine: 'A fine close rectangular grid.', diagonal: 'A diagonal diamond lattice.' }),
+    stepSurface: choice('What is the entrance step made of?', { stone: 'A plain grey stone slab.', grooves: 'Stone cut with shallow parallel grooves.', tile: 'Small glazed blue and cream tiles.', wood: 'Two broad wooden boards.' }),
+    curtainMount: choice('How does the cloth attach to its rod?', { sleeve: 'The rod passes through a sewn sleeve.', loops: 'Separate cloth loops pass over the rod.', ties: 'Short tied fabric straps.', clips: 'Small metal rings and clips.' }),
     cloth: choice('What colour is the noren curtain?', CLOTHS),
     crest: choice('What is dyed on the curtain?', {
       ring: 'A bold circular family crest with a dot in the middle.',
@@ -78,6 +84,7 @@ export default defineThing({
     const lit = a.door !== 'shut-dark';
     const wood = s.material('#4a3324', { roughness: 0.8 });
     const paleWood = s.material('#b08a5c', { roughness: 0.8 });
+    const ground=(node:THREE.Object3D,height=0)=>{node.updateWorldMatrix(true,true);node.position.y+=height-new THREE.Box3().setFromObject(node,true).min.y;};
     const stone = s.material('#9a968c', { roughness: 0.95 });
     const warm = new THREE.Color('#ffd9a0').lerp(new THREE.Color('#ffb060'), mood.warmth * 0.6);
     const glow = mix(0.6, 1.2, mood.cheer);
@@ -129,8 +136,7 @@ export default defineThing({
       g.fillStyle = emit ? (lit ? '#ffffff' : '#000') : lit ? '#f4dcae' : '#7d848c';
       g.fillRect(10, 10, w - 20, h * 0.68);
       g.fillStyle = emit ? '#000' : '#3d2a1e';
-      for (let x = 10; x < w - 10; x += 12) g.fillRect(x, 10, 4, h * 0.68);
-      for (const y of [0.24, 0.48]) g.fillRect(10, h * y, w - 20, 5);
+      if(a.lattice==='diagonal'){g.save();g.beginPath();g.rect(10,10,w-20,h*.68);g.clip();g.strokeStyle=emit?'#000':'#3d2a1e';g.lineWidth=3;for(let k=-h;k<w+h;k+=24)for(const sign of [-1,1]){g.beginPath();g.moveTo(k,10);g.lineTo(k+sign*h,h*.72);g.stroke();}g.restore();}else{const pitch=a.lattice==='fine'?8:a.lattice==='square'?22:12;for(let x=10;x<w-10;x+=pitch)g.fillRect(x,10,a.lattice==='fine'?2:4,h*.68);if(a.lattice==='vertical')for(const y of [.24,.48])g.fillRect(10,h*y,w-20,5);else for(let y=10;y<h*.72;y+=a.lattice==='fine'?14:22)g.fillRect(10,y,w-20,a.lattice==='fine'?2:4);}
       if (!emit) { g.fillStyle = '#4a3324'; g.fillRect(10, h * 0.72 + 6, w - 20, h * 0.28 - 16); g.fillStyle = 'rgba(0,0,0,0.3)'; for (let x = 10; x < w - 10; x += 22) g.fillRect(x, h * 0.72 + 6, 2, h * 0.28 - 16); }
     });
     const panelW = OPEN_W / 2 + 0.03;
@@ -144,11 +150,12 @@ export default defineThing({
     // The noren: a rod on two hooks and cloth panels that pivot from it.
     const [cloth, ink] = CLOTH[a.cloth];
     const clothTone = `#${new THREE.Color(cloth).lerp(new THREE.Color('#b9ad9a'), mood.wear * 0.45).getHexString()}`;
-    const panels = a.crest === 'ramen' ? 4 : 3;
+    const panels={two:2,three:3,four:4,five:5}[a.divisions];
     const length = mix(0.36, 1.3, a.length);
     const clothW = OPEN_W - 0.06, rodY = OPEN_H - 0.02, rodZ = 0.16;
     const curtainMap = canvasTexture(512, Math.max(96, Math.round(512 * length / clothW)), (g, w, h) => {
       g.fillStyle = clothTone; g.fillRect(0, 0, w, h);
+      if(a.weave==='linen'||a.weave==='canvas'){const pitch=a.weave==='canvas'?6:3;g.strokeStyle=a.weave==='canvas'?'rgba(0,0,0,.12)':'rgba(255,255,255,.13)';g.lineWidth=1;for(let x=0;x<w;x+=pitch){g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke();}for(let y=0;y<h;y+=pitch){g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke();}}
       for (let i = 0; i < 80; i++) { g.fillStyle = `rgba(255,255,255,${random() * 0.04})`; g.fillRect(0, random() * h, w, 1); }
       const span = Math.min(h * 0.74, w * 0.42), cx = w / 2, cy = h * 0.52;
       g.strokeStyle = ink; g.fillStyle = ink; g.lineCap = 'round';
@@ -158,9 +165,11 @@ export default defineThing({
       if (a.crest === 'ramen') [...'ラーメン'].forEach((char, index) => drawGlyph(g, char, (index + 0.5) * w / 4 - span * 0.26, cy - span * 0.26, span * 0.52, ink, 0.15));
       if (a.crest === 'stripe') g.fillRect(0, h * 0.42, w, h * 0.2);
       if (a.crest === 'waves') { g.lineWidth = 5; for (let row = 0; row < Math.min(3, Math.floor(h / 60)); row++) for (let i = -1; i < 12; i++) for (const ring of [1, 0.62, 0.28]) { g.beginPath(); g.arc(i * 48 + (row % 2) * 24, h - row * 26, 24 * ring, Math.PI, Math.PI * 2); g.stroke(); } }
+      if(a.hem==='band'){g.fillStyle=ink;g.fillRect(0,h-12,w,7);}
+      if(a.hem==='fringe'){g.globalCompositeOperation='destination-out';for(let x=0;x<w;x+=5)g.fillRect(x,h-12,2,12);g.globalCompositeOperation='source-over';}
       for (let i = 0; i < mood.wear * 10; i++) { g.fillStyle = `rgba(60,50,40,${0.06 + random() * 0.1})`; g.beginPath(); g.ellipse(random() * w, h * 0.6 + random() * h * 0.4, 30, 18, 0, 0, Math.PI * 2); g.fill(); }
     });
-    const clothMaterial = new THREE.MeshStandardMaterial({ map: curtainMap, roughness: 0.95, side: THREE.DoubleSide });
+    const clothMaterial = new THREE.MeshStandardMaterial({ map:curtainMap,roughness:a.weave==='silk'?.4:.95,alphaTest:.5,side: THREE.DoubleSide });
     const bamboo = s.material('#b9a35a', { roughness: 0.6 });
     const rod = s.cylinder(0.022, 0.022, OPEN_W + 0.3, [0, rodY, rodZ], bamboo, 10);
     rod.rotation.z = Math.PI / 2;
@@ -173,12 +182,13 @@ export default defineThing({
     } else {
       const w = clothW / panels;
       for (let i = 0; i < panels; i++) {
-        const geometry = new THREE.PlaneGeometry(w - 0.012, length, 5, 8);
+        const geometry = new THREE.PlaneGeometry(w-.012,length,24,12);
         geometry.translate(0, -length / 2, 0);
         const position = geometry.attributes.position, uv = geometry.attributes.uv;
         const phase = random() * 6;
         for (let v = 0; v < position.count; v++) {
           const depth = -position.getY(v) / length;
+          if(a.hem==='scallop')position.setY(v,position.getY(v)+.035*(1+Math.cos(position.getX(v)/w*Math.PI*6))*depth**8);
           position.setZ(v, Math.sin(position.getX(v) * 9 + phase) * 0.035 * depth + (random() - 0.5) * 0.006);
           uv.setX(v, (i + uv.getX(v)) / panels);
           uv.setY(v, 1 - depth);
@@ -194,13 +204,17 @@ export default defineThing({
         mesh.rotation.x = -rest;
         s.root.add(mesh);
         flaps.push({ mesh, rest, phase });
-        s.box([w * 0.5, 0.05, 0.05], [centre * w, rodY, rodZ], new THREE.MeshStandardMaterial({ color: clothTone, roughness: 0.95 }));
+        const tieMat=s.material(clothTone,{roughness:.85});if(a.curtainMount==='sleeve')s.box([w*.9,.05,.05],[centre*w,rodY,rodZ],tieMat);
+        else for(const side of [-1,1]){const x=centre*w+side*w*.28;if(a.curtainMount==='loops'){const loop=s.ring(.027,.007,[x,rodY,rodZ],tieMat);loop.rotation.y=Math.PI/2;}else if(a.curtainMount==='clips'){const loop=s.ring(.028,.003,[x,rodY+.006,rodZ],s.material('#929999',{metalness:.7}));loop.rotation.y=Math.PI/2;s.box([.018,.028,.009],[x,rodY-.026,rodZ+.006],s.material('#929999',{metalness:.7}));}else{s.tube([[x-.014,rodY-.02,rodZ],[x-.014,rodY+.03,rodZ],[x+.014,rodY+.03,rodZ],[x+.014,rodY-.02,rodZ]],.005,tieMat);s.tube([[x,rodY+.03,rodZ],[x+.025,rodY+.055,rodZ],[x+.04,rodY+.015,rodZ]],.004,tieMat);}}
       }
     }
 
     // Step and whatever was left by it.
-    s.box([OPEN_W + 0.3, 0.14, 0.55], [0, 0.07, 0.3], stone);
-    const stepTop = 0.14;
+    const stepMat=a.stepSurface==='wood'?s.material('#97744c',{roughness:.85}):stone;s.box([OPEN_W+.3,.14,.55],[0,.07,.3],stepMat);
+    if(a.stepSurface==='grooves')for(let k=0;k<8;k++)s.box([OPEN_W+.27,.001,.008],[0,.1405,.065+k*.067],s.material('#65645f'));
+    if(a.stepSurface==='tile')for(let i=0;i<12;i++)for(let j=0;j<3;j++)s.box([.164,.009,.172],[-(OPEN_W+.3)/2+.085+i*.17,.1445,.03+.09+j*.18],s.material((i+j)%2?'#c7d0c6':'#406a83',{roughness:.3}));
+    if(a.stepSurface==='wood')s.box([OPEN_W+.3,.001,.006],[0,.1405,.3],s.material('#62462f'));
+    const stepTop=a.stepSurface==='tile'?.149:.141;
     if (a.outside === 'shoes') {
       const leather = s.material(random() > 0.5 ? '#2a211c' : '#7a4a2c', { roughness: 0.5 });
       const sx = (random() - 0.5) * 0.8;
@@ -225,9 +239,9 @@ export default defineThing({
     const pots = a.outside === 'plants' ? 5 + Math.floor(random() * 3) : Math.floor(mood.density * 2.6);
     for (let i = 0; i < pots; i++) {
       const side = i % 2 ? 1 : -1, px = side * (OPEN_W / 2 + 0.22 + random() * 0.3), pz = 0.2 + random() * 0.5, size = mix(0.09, 0.17, random());
-      s.cylinder(size, size * 0.7, size * 1.5, [px, size * 0.75, pz], s.material(['#b5613f', '#4f6a8c', '#d8d2c2'][Math.floor(random() * 3)]), 12);
+      s.lathe([[0,0],[size*.7,0],[size,size*1.5],[size*.87,size*1.5],[size*.6,size*.15],[0,size*.15]],s.material(['#b5613f','#4f6a8c','#d8d2c2'][Math.floor(random()*3)]),[px,0,pz]);s.cylinder(size*.82,size*.82,.01,[px,size*1.35,pz],s.material('#574733'),14);
       const leaf = s.material(['#4d7a3c', '#6f9a48', '#3f6a4c'][Math.floor(random() * 3)]);
-      for (let j = 0; j < 4; j++) s.ball([size * (0.6 + random() * 0.6), size * (0.8 + random()), size * (0.6 + random() * 0.6)], [px + (random() - 0.5) * size, size * 1.6 + random() * size * 1.6, pz + (random() - 0.5) * size], leaf, 8);
+      for(let j=0;j<4;j++){const foliage=s.ball([size * (0.6 + random() * 0.6), size * (0.8 + random()), size * (0.6 + random() * 0.6)], [px + (random() - 0.5) * size, size * 1.6 + random() * size * 1.6, pz + (random() - 0.5) * size],leaf,8);s.rod([px,size*1.35,pz],foliage.position.toArray() as [number,number,number],size*.055,leaf);}
     }
 
     // Menu.
@@ -240,7 +254,7 @@ export default defineThing({
       const chalk = canvasTexture(128, 192, (g, w, h) => { g.fillStyle = '#26302b'; g.fillRect(0, 0, w, h); drawGlyph(g, '生', w * 0.36, 6, 34, '#f0d86a', 0.12); scribble(g, w, h, '#eeeae0', 5); });
       for (const side of [-1, 1]) {
         const board = s.box([0.5, 0.82, 0.025], [bx, 0.4, bz + side * 0.12], side > 0 ? new THREE.MeshStandardMaterial({ map: chalk, roughness: 0.9 }) : paleWood);
-        board.rotation.x = side * 0.28;
+        board.rotation.x=side*.28;ground(board);
         s.box([0.54, 0.04, 0.03], [bx, 0.79, bz + side * 0.015], paleWood);
       }
     } else if (a.menu === 'slats') {

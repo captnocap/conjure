@@ -1,8 +1,28 @@
-import type { Capture, BuildContext } from '@conjure/kit';
+import { type Capture, type BuildContext, type Palette, type PaletteRole, fromOklch, oklch, rekey } from '@conjure/kit';
 export type Box = [number, number, number, number];
 export type RGB = [number, number, number];
 export const inks: Record<string, RGB> = { iron: [29, 38, 36], rust: [91, 35, 26], violet: [58, 39, 65], blue: [24, 51, 69], olive: [52, 59, 30] };
 export const css = (c: RGB) => `rgb(${c.join(',')})`;
+/** The warm print paper develop() washes toward, as the look was made (warmed by the mood). */
+export function stock(ctx: BuildContext): RGB { return [239, 232-ctx.mood.warmth*9, 216-ctx.mood.warmth*14]; }
+export type Shade = RGB | string;
+const rgbOf = (c: Shade): RGB => typeof c === 'string' ? [parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)] : c;
+const hexOf = (c: readonly number[]) => '#'+c.map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');
+/** The look's designed colours (RGB or #rrggbb) under the idea's palette, each in the form it came in; without a palette the same object, untouched. */
+export function keyed<T extends Record<string, Shade>>(colours: T, palette: Palette | undefined, roles: { readonly [K in keyof T]?: PaletteRole }): T {
+  if (!palette) return colours;
+  const out = rekey(Object.fromEntries(Object.entries(colours).map(([k,v]) => [k, rgbOf(v)])), palette, roles as Record<string, PaletteRole>);
+  return Object.fromEntries(Object.entries(colours).map(([k,v]) => [k, typeof v === 'string' ? hexOf(out[k]) : [...out[k]] as RGB])) as T;
+}
+/** Each develop ink's own character under a palette (lightness shift, share of the palette ink's vividness), so options that only differed in hue still differ: iron muted, rust vivid, violet soft, blue deep, olive earthy. */
+export const tempers: Record<string, [number, number]> = { iron: [-.05, .35], rust: [.05, 1], violet: [.02, .6], blue: [-.08, .85], olive: [.03, .45] };
+/** A colour re-keyed to its role, then lifted/darkened and made more or less vivid; the colour itself without a palette. */
+export function tempered(colour: RGB, palette: Palette | undefined, role: PaletteRole, lift = 0, vivid = 1): RGB {
+  if (!palette) return colour;
+  const [L, C, h] = oklch(rekey({ colour }, palette, { colour: role }).colour); return fromOklch(Math.min(.97, Math.max(.03, L+lift)), C*vivid, h);
+}
+/** One of the shared develop inks under the palette's ink, keeping its character. */
+export function inkFor(name: string, palette: Palette | undefined): RGB { const [lift, vivid] = tempers[name] ?? [0, 1]; return tempered(inks[name], palette, 'ink', lift, vivid); }
 export function surface(n: number) { const canvas = document.createElement('canvas'); canvas.width = canvas.height = n; return canvas; }
 export function snapshot(c: HTMLCanvasElement) { const o = surface(c.width); o.getContext('2d')!.drawImage(c, 0, 0); return o; }
 export function hash(x: number, y: number, seed: number) { let a = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ seed; a = Math.imul(a ^ (a >>> 13), 1274126177); return ((a ^ (a >>> 16)) >>> 0) / 4294967296; }
@@ -13,8 +33,8 @@ export function crop(c: Capture, index = 0, zoom = 1): Box {
   if (!b) return [.2,.2,.6,.6]; const span = Math.min(n, Math.max(n * .12, Math.max(b[2]-b[0], b[3]-b[1]) * 1.22 / zoom));
   return [Math.max(0, Math.min(n-span, (b[0]+b[2]-span)/2))/n, Math.max(0, Math.min(n-span,(b[1]+b[3]-span)/2))/n,span/n,span/n];
 }
-export async function develop(c: Capture, ctx: BuildContext, signal: AbortSignal, mode: 'silver'|'etch'|'carbon'|'phosphor'|'negative'|'bleach', ink: RGB): Promise<HTMLCanvasElement> {
-  const n = c.size, out = new Uint8ClampedArray(n*n*4), p: RGB = [239, 232-ctx.mood.warmth*9, 216-ctx.mood.warmth*14];
+export async function develop(c: Capture, ctx: BuildContext, signal: AbortSignal, mode: 'silver'|'etch'|'carbon'|'phosphor'|'negative'|'bleach', ink: RGB, paperTone: RGB = stock(ctx)): Promise<HTMLCanvasElement> {
+  const n = c.size, out = new Uint8ClampedArray(n*n*4), p: RGB = paperTone;
   for (let y=0;y<n;y++) { if (y % 64 === 0) { if(signal.aborted) throw new DOMException('Aborted','AbortError'); await new Promise<void>(r=>setTimeout(r,0)); }
     for(let x=0;x<n;x++){ const i=(y*n+x)*4, id=c.identity[i], lum=(c.color[i]*.25+c.color[i+1]*.59+c.color[i+2]*.16)/255; const noise=(hash(x,y,ctx.seed)-.5)*(3+ctx.mood.wear*12);
       const edge=x<n-1&&y<n-1&&(c.identity[i+4]!==id||c.identity[i+n*4]!==id); let v=Math.max(0,Math.min(1,(lum-.12)*1.14));

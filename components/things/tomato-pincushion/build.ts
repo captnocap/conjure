@@ -83,6 +83,48 @@ export default defineThing({
       spilled: 'Half of them pulled out and scattered on the table around it.',
       threaded: 'A needle still threaded, its long tail of thread trailing off across the table.',
     }),
+    proportions: choice('How is the stuffed cushion proportioned?', {
+      regular: 'Its ordinary rounded proportions.',
+      flat: 'A compressed, low cushion that spreads across the table.',
+      tall: 'A tall, firmly stuffed cushion with a high crown.',
+      broad: 'An elongated cushion, wider from side to side.',
+    }),
+    pinLength: choice('How long are the working pins?', {
+      fine: 'Short fine pins for tiny hems.',
+      dress: 'Ordinary dressmaking pins.',
+      long: 'Long pins that project far above the stuffing.',
+      mixed: 'Short and long pins mixed together.',
+    }),
+    closure: choice('How is the filling opening closed?', {
+      hidden: 'A hidden seam without extra fittings.',
+      laced: 'A small opening cross-laced with cream thread.',
+      buttons: 'A short flap fastened with three contrasting buttons.',
+      zip: 'A small brass zipper with a visible pull.',
+    }),
+    mending: choice('What repair is visible on the cushion?', {
+      none: 'No added repair.',
+      patch: 'A rectangular contrasting patch with a stitched border.',
+      darn: 'A little woven square of crossing repair threads.',
+      stitches: 'Two long parallel rows of visible repair stitches.',
+    }),
+    identity: choice('What identifies its owner or use?', {
+      none: 'No tag.',
+      name: 'A stitched cloth name tab tied to the side.',
+      class: 'A numbered paper sewing-class tag on a short cord.',
+      gift: 'A dedication gift tag with a ribbon loop.',
+    }),
+    threadKit: choice('What thread supply is beside it?', {
+      none: 'No extra thread.',
+      spool: 'A small wooden thread reel with a loose end.',
+      bobbins: 'Three low machine bobbins filled with thread.',
+      cards: 'Two flat winding cards of embroidery thread.',
+    }),
+    foundation: choice('What is the pincushion resting on?', {
+      bare: 'Directly on the work surface.',
+      doily: 'A thin round lace mat.',
+      wood: 'A small wooden working board with a raised rim.',
+      tray: 'A shallow ceramic tray with a raised rim.',
+    }),
     emery: noul('Does a little strawberry emery dangle from it on a cord?'),
     extra: choice('What else is stuck in or set beside it?', {
       none: 'Nothing else.',
@@ -224,6 +266,17 @@ export default defineThing({
       }
     }
 
+    // Reshape the cushion before locating pins and loose accessories, so metal parts stay round.
+    const proportions = new THREE.Vector3(...({ regular: [1, 1, 1], flat: [1.15, 0.72, 1.15], tall: [0.9, 1.3, 0.9], broad: [1.35, 0.95, 0.9] }[a.proportions] as [number, number, number]));
+    const cushion = new THREE.Group();
+    for (const child of [...s.root.children]) cushion.add(child);
+    cushion.scale.copy(proportions); s.root.add(cushion);
+    centre.multiply(proportions); radii.multiply(proportions);
+    if (flatTop) {
+      const original = flatTop;
+      flatTop = { y: original.y * proportions.y, inside: (x, z) => original.inside(x / proportions.x, z / proportions.z), span: original.span * Math.max(proportions.x, proportions.z) };
+    }
+
     // Pins.
     const palettes = {
       glass: ['#e2332e', '#f2c21d', '#2c7fd1', '#2fa35a', '#f1f0ea', '#e563a5', '#ef7d22'],
@@ -236,7 +289,7 @@ export default defineThing({
     const count = Math.round(mix(4, a.shape === 'wrist' ? 46 : 96, a.crowd * a.crowd) * mix(0.75, 1.3, mood.density));
     const shafts: Item[] = [], heads: Item[] = [], loose: { from: V3; direction: V3; length: number; color: string }[] = [];
     const headSize = a.heads === 'steel' ? 0.0011 : a.heads === 'yellow' ? 0.0024 : a.heads === 'flower' ? 0.0036 : 0.0021;
-    const pinLength = a.heads === 'yellow' ? 0.036 : 0.026;
+    const pinLength = (a.heads === 'yellow' ? 0.036 : 0.026) * { fine: 0.65, dress: 1, long: 1.45, mixed: 1.2 }[a.pinLength];
     const jitter = a.scene === 'neat' ? 0.06 : 0.38;
     const rings = Math.max(1, Math.round(Math.sqrt(count / 5)));
     const stick = (from: V3, direction: V3, length: number, color: string) => {
@@ -246,7 +299,7 @@ export default defineThing({
     };
     for (let i = 0; i < count; i++) {
       const color = palettes[Math.floor(random() * palettes.length)];
-      const length = pinLength * mix(0.55, 1, random());
+      const length = pinLength * mix(a.pinLength === 'mixed' ? 0.3 : 0.55, 1, random());
       if (a.scene === 'spilled' && random() < 0.5) {
         const angle = random() * Math.PI * 2, far = mix(0.062, 0.115, random()), turn = random() * Math.PI * 2;
         loose.push({ from: new THREE.Vector3(Math.cos(angle) * far, 0.0012, Math.sin(angle) * far), direction: new THREE.Vector3(Math.cos(turn), 0, Math.sin(turn)), length: pinLength, color });
@@ -358,6 +411,99 @@ export default defineThing({
       s.lathe([[0.0085, 0], [0.009, 0.001], [0.0082, 0.014], [0.0068, 0.02], [0.004, 0.0225], [0, 0.023]], s.material('#c4c8cb', { metalness: 0.9, roughness: 0.32, side: THREE.DoubleSide }), [-far * 0.75, 0, far * 0.62]);
     }
 
+    // Stitch-work follows a small tangent plane on the cushion's forward shoulder.
+    const patchGroup = new THREE.Group();
+    const direction = new THREE.Vector3(-0.3, 0.65, 0.7).normalize();
+    const at = flatTop ? new THREE.Vector3(-0.015, flatTop.y + 0.001, 0.012) : centre.clone().add(direction.clone().multiply(radii).multiplyScalar(a.shape === 'tomato' ? 0.91 : 1.01));
+    patchGroup.position.copy(at);
+    patchGroup.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), flatTop ? UP : direction.clone().divide(radii).normalize());
+    s.root.add(patchGroup);
+    const thread = s.material('#eee2c2'), contrast = s.material('#8b5664');
+    const bar = (x: number, y: number, w: number, h: number, mat: THREE.Material, z = 0.001) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.0008), mat); m.position.set(x, y, z); m.castShadow = true; patchGroup.add(m); return m;
+    };
+    if (a.mending === 'patch') {
+      bar(0, 0, 0.025, 0.017, contrast);
+      for (let k = -2; k <= 2; k++) for (const side of [-1, 1]) bar(k * 0.0045, side * 0.007, 0.001, 0.003, thread, 0.002);
+    } else if (a.mending === 'darn') {
+      for (let k = -3; k <= 3; k++) {
+        bar(k * 0.0025, 0, 0.0011, 0.019, thread);
+        bar(0, k * 0.0025, 0.02, 0.001, contrast, 0.0016);
+      }
+    } else if (a.mending === 'stitches') for (let k = -3; k <= 3; k++) for (const side of [-1, 1]) {
+      const m = bar(k * 0.003, side * 0.005, 0.001, 0.005, thread); m.rotation.z = side * 0.4;
+    }
+    const closeX = 0.018;
+    if (a.closure === 'laced') {
+      bar(closeX, 0, 0.008, 0.025, contrast);
+      for (let k = -2; k <= 2; k++) for (const side of [-1, 1]) { const m = bar(closeX, k * 0.004, 0.001, 0.008, thread, 0.002); m.rotation.z = side * 0.9; }
+    } else if (a.closure === 'buttons') {
+      bar(closeX, 0, 0.008, 0.027, contrast);
+      for (let k = -1; k <= 1; k++) {
+        const m = new THREE.Mesh(new THREE.CylinderGeometry(0.0025, 0.0025, 0.001, 10), thread);
+        m.rotation.x = Math.PI / 2; m.position.set(closeX, k * 0.008, 0.002); patchGroup.add(m);
+      }
+    } else if (a.closure === 'zip') {
+      bar(closeX, 0, 0.005, 0.028, contrast);
+      for (let k = -5; k <= 5; k++) bar(closeX + (k % 2 ? 0.001 : -0.001), k * 0.0023, 0.0025, 0.001, steel, 0.002);
+      bar(closeX, -0.014, 0.004, 0.006, steel, 0.002);
+    }
+    if (!flatTop) {
+      patchGroup.updateMatrixWorld(true);
+      const basis = patchGroup.quaternion.clone();
+      for (const child of patchGroup.children) {
+        const mesh = child as THREE.Mesh;
+        const originalZ = mesh.position.z;
+        const tangentPoint = mesh.position.clone().setZ(0).applyQuaternion(basis).add(patchGroup.position);
+        const radial = tangentPoint.clone().sub(centre).divide(radii).normalize();
+        let shell = 1;
+        if (a.shape === 'tomato') {
+          // Read the actual tomato mesh at this direction, including its gathered grooves.
+          const body = cushion.children.find(c => c instanceof THREE.Mesh && c.geometry instanceof THREE.SphereGeometry) as THREE.Mesh | undefined;
+          if (body) {
+            const positions = body.geometry.attributes.position; let best = -Infinity, bestRadius = 1;
+            for (let i = 0; i < positions.count; i++) {
+              const vertex = new THREE.Vector3(positions.getX(i), positions.getY(i), positions.getZ(i));
+              const similarity = vertex.clone().normalize().dot(radial);
+              if (similarity > best) { best = similarity; bestRadius = vertex.length(); }
+            }
+            shell = bestRadius;
+          }
+        }
+        const surface = radial.clone().multiply(radii).multiplyScalar(shell).add(centre);
+        const normal = radial.clone().divide(radii).normalize();
+        const localNormal = normal.clone().applyQuaternion(basis.clone().invert());
+        mesh.position.copy(surface.sub(patchGroup.position).applyQuaternion(basis.clone().invert())).addScaledVector(localNormal, originalZ + 0.0005);
+        mesh.quaternion.premultiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), localNormal));
+      }
+    }
+    if (a.identity !== 'none') {
+      const x = -Math.max(radii.x, 0.05) - 0.022, z = 0.045;
+      const canvas = document.createElement('canvas'); canvas.width = 192; canvas.height = 96;
+      const c = canvas.getContext('2d')!; c.fillStyle = '#eee2c2'; c.fillRect(0, 0, 192, 96);
+      c.strokeStyle = '#8b5664'; c.lineWidth = 4; c.strokeRect(5, 5, 182, 86); c.fillStyle = '#493b3d'; c.font = 'bold 32px serif'; c.textAlign = 'center';
+      c.fillText(a.identity === 'name' ? 'A. SEW' : a.identity === 'class' ? 'CLASS 07' : 'FOR YOU', 96, 57);
+      const tex = new THREE.CanvasTexture(canvas); tex.colorSpace = THREE.SRGBColorSpace;
+      const tag = s.box([0.04, 0.001, 0.023], [x, 0.0005, z], s.material('#ffffff', { map: tex }));
+      if (a.identity === 'gift') { tag.rotation.y = 0.35; s.ring(0.005, 0.001, [x + 0.02, 0.001, z], contrast).rotation.x = -Math.PI / 2; }
+      s.tube([[centre.x - radii.x * 0.7, centre.y, 0.02], [x + 0.03, 0.007, z - 0.015], [x + 0.017, 0.002, z]], 0.0007, thread);
+    }
+    if (a.threadKit !== 'none') {
+      const x = Math.max(radii.x, 0.05) + 0.035, z = -0.055;
+      const wood = s.material('#b89567'), floss = s.material(threadTint);
+      if (a.threadKit === 'spool') {
+        for (const y of [0.002, 0.026]) s.cylinder(0.012, 0.012, 0.004, [x, y, z], wood, 20);
+        s.cylinder(0.0095, 0.0095, 0.022, [x, 0.014, z], floss, 20);
+        s.tube([[x + 0.009, 0.012, z], [x + 0.022, 0.001, z + 0.014], [x + 0.04, 0.001, z + 0.02]], 0.0007, floss);
+      } else if (a.threadKit === 'bobbins') for (let i = 0; i < 3; i++) {
+        for (const y of [0.001, 0.008]) s.cylinder(0.01, 0.01, 0.002, [x, y, z + i * 0.025], steel, 18);
+        s.cylinder(0.008, 0.008, 0.006, [x, 0.0045, z + i * 0.025], floss, 18);
+      } else for (let i = 0; i < 2; i++) {
+        s.box([0.024, 0.0015, 0.04], [x + i * 0.028, 0.00075, z], thread);
+        s.box([0.025, 0.003, 0.024], [x + i * 0.028, 0.002, z], floss);
+      }
+    }
+
     // Sawdust leaking from a worn seam.
     if (mood.wear > 0.6) {
       const dust: Item[] = [];
@@ -369,6 +515,32 @@ export default defineThing({
     }
 
     if (a.shape === 'hedgehog') s.root.rotation.y = -0.6 - random() * 0.4;
+    if (a.foundation !== 'bare') {
+      // Reparent the complete working kit, preserving its chosen shape, before raising it.
+      const contents = new THREE.Group(); contents.rotation.copy(s.root.rotation); contents.scale.copy(s.root.scale);
+      for (const child of [...s.root.children]) contents.add(child);
+      s.root.rotation.set(0, 0, 0); s.root.scale.set(1, 1, 1); s.root.add(contents);
+      s.root.updateMatrixWorld(true);
+      const bounds = new THREE.Box3().setFromObject(contents), size = bounds.getSize(new THREE.Vector3()), mid = bounds.getCenter(new THREE.Vector3());
+      const h = a.foundation === 'doily' ? 0.001 : 0.006;
+      contents.position.y = h - bounds.min.y;
+      const baseMat = s.material(a.foundation === 'wood' ? '#b89567' : a.foundation === 'tray' ? '#d3dfd9' : '#eee2c2');
+      if (a.foundation === 'doily') {
+        const R = Math.max(size.x, size.z) * 0.6 + 0.015;
+        s.cylinder(R, R, h, [mid.x, h / 2, mid.z], baseMat, 48);
+        for (let i = 0; i < 30; i++) {
+          const t = i / 30 * Math.PI * 2;
+          s.ring(0.005, 0.0008, [mid.x + Math.cos(t) * R, h, mid.z + Math.sin(t) * R], baseMat).rotation.x = -Math.PI / 2;
+        }
+      } else {
+        const w = size.x + 0.03, d = size.z + 0.03;
+        s.box([w, h, d], [mid.x, h / 2, mid.z], baseMat);
+        for (const side of [-1, 1]) {
+          s.box([w, 0.005, 0.003], [mid.x, h + 0.0025, mid.z + side * (d - 0.003) / 2], baseMat);
+          s.box([0.003, 0.005, d], [mid.x + side * (w - 0.003) / 2, h + 0.0025, mid.z], baseMat);
+        }
+      }
+    }
     return s.finish();
   },
 });

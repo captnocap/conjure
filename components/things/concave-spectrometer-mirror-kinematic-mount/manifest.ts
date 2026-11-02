@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Concave spectrometer mirror kinematic mount", "summary": "A finite concave mirror has a real curved face, rear support contacts and a three-point kinematic mount with exposed adjustments. A finite spherical or elliptically cropped concave face has a conformal back and three actual rear screw contacts. Model cuts retain supported mirror sectors; axis marks are geometric guides and no focal tolerance or calibrated figure is claimed.", "scales": ["macro", "tabletop"]});

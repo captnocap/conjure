@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Intergranular magnetic bright point cluster", "summary": "Small compact elevated elements occupy an actual lane intersection, with contrasting lane and granule geometry. A schematic relief of small magnetic bright elements in depressed intergranular lanes; field traces are explanatory geometry for solar surface structure.", "scales": ["planetary", "macro"]});

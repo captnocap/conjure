@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Spiral shell bookshelf", "summary": "A cut-open spiral shell becomes a bookcase, with stepped shelves fitted into its chambers and small books facing the reader. A private collection, borrowed shelter, a library grown by slow increments and stories kept close.", "scales": ["tabletop", "room", "macro"]});

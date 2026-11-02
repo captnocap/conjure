@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind:'thing',title:'Polar circumplanetary ring',summary:'A narrow circumpolar ring crosses a planet almost at right angles to its equator, accompanied by small shepherd bodies and nodal marks. An unfamiliar orbital orientation, celestial hoops and a world seen from a different axis.',scales:['cosmic','planetary','tabletop']});

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Sculpture, choice, defineThing, mix, score } from '@conjure/kit';
+import { Sculpture, choice, defineThing, mix, score, visibleBounds } from '@conjure/kit';
 
 export default defineThing({
   questions: {
@@ -36,13 +36,21 @@ export default defineThing({
       crate: 'An upturned red plastic crate.',
       floor: 'Straight on the wet floor.',
     }),
+    format: choice('What proportions are the foam boxes?', { standard: 'Standard rectangular fish boxes.', long: 'Long shallow boxes.', deep: 'Deep compact boxes.', square: 'Nearly square wide boxes.' }),
+    corners: choice('How are their corners protected?', { bare: 'Plain foam corners.', tape: 'Short red tape corner patches.', cardboard: 'Brown cardboard corner guards.', clips: 'Grey metal corner clips.' }),
+    handholds: choice('How are the boxes lifted?', { recess: 'Plain recessed handholds.', rope: 'Short rope handles.', tabs: 'Moulded projecting foam grips.', slots: 'Long dark horizontal hand slots.' }),
+    drainPlug: choice('What is fitted to the meltwater outlet?', { none: 'No visible plug.', red: 'A small red stopper.', blue: 'A blue capped outlet.', hose: 'A short curved rubber drain spout.' }),
+    seal: choice('What inspection seal is on each box?', { none: 'No inspection seal.', round: 'A round red paper seal.', strip: 'A blue paper strip across the lid seam.', tag: 'A tied card under the corner tape.' }),
+    deliveryKit: choice('What came with the delivery?', { none: 'No delivery kit.', clipboard: 'A clipboard leaning on a small crate.', straps: 'Two coiled webbing straps.', scales: 'A small floor scale waiting for the next box.' }),
+    wrappingKit: choice('What packaging supplies lie beside the stack?', { none: 'No loose supplies.', tape: 'Two rolls of packing tape.', twine: 'A spool of red tying twine.', cutter: 'A tape dispenser beside a folded carton.' }),
+    iceTools: choice('What ice handling tool is nearby?', { none: 'No tool.', scoop: 'A broad steel ice scoop.', shovel: 'A short shovel leaning against a bucket.', pail: 'A blue pail with an ice pick across its rim.' }),
   },
 
   build(a, context) {
     const s = new Sculpture(context);
     const { mood, random } = context;
     const pick = <T,>(list: readonly T[]) => list[Math.floor(random() * list.length)];
-    const BW = 0.6, BH = 0.27, BD = 0.4;
+    const [BW,BH,BD]=a.format==='long'?[.78,.22,.4]:a.format==='deep'?[.53,.35,.4]:a.format==='square'?[.62,.25,.58]:[.6,.27,.4];
     const foam = s.material('#f4f4ef', { roughness: 0.95 });
     const foamShade = s.material('#e4e5df', { roughness: 0.95 });
     const steel = s.material('#aeb4b6', { metalness: 0.6, roughness: 0.45 });
@@ -130,6 +138,22 @@ export default defineThing({
         const side = mesh(g, new THREE.PlaneGeometry(BD * 0.8, (BH - lidH) * 0.8), pick(decals), [BW / 2 - 0.014, (BH - lidH) / 2, 0]);
         side.rotation.y = Math.PI / 2; side.castShadow = false;
       }
+      const trim=s.material(a.corners==='tape'?'#b84635':a.corners==='cardboard'?'#ae8a57':'#939c9d');
+      if(a.corners!=='bare')for(const x of[-1,1])for(const z of[-1,1]){part(g,[.055,.08,.008],[x*(BW/2-.03),.06,z*(BD/2-.01)],trim);part(g,[.008,.08,.055],[x*(BW/2-.01),.06,z*(BD/2-.03)],trim);}
+      for(const side of[-1,1]) {
+        const x=side*(BW/2-.012),y=BH*.48;
+        if(a.handholds==='rope'){const handle=mesh(g,new THREE.TorusGeometry(.045,.005,6,16,Math.PI),s.material('#b29a68'),[x,y,0]);handle.rotation.set(0,Math.PI/2,Math.PI);}
+        else if(a.handholds==='tabs')part(g,[.045,.025,.14],[x,y,0],foam);
+        else part(g,[.006,a.handholds==='slots'?.025:.035,a.handholds==='slots'?.2:.12],[x,y,0],foamShade);
+      }
+      if(a.drainPlug!=='none') {
+        const z=BD/2-.006,x=BW*.32;
+        if(a.drainPlug==='hose'){const spout=mesh(g,new THREE.TorusGeometry(.035,.009,6,12,Math.PI/2),s.material('#455153'),[x,.045,z+.025]);spout.rotation.y=Math.PI/2;}
+        else {const plug=mesh(g,new THREE.CylinderGeometry(a.drainPlug==='red'?.018:.024,a.drainPlug==='red'?.018:.024,.02,12),s.material(a.drainPlug==='red'?'#b83c34':'#538cbd'),[x,.04,z]);plug.rotation.x=Math.PI/2;}
+      }
+      if(a.seal==='round'){const seal=mesh(g,new THREE.CircleGeometry(.033,16),s.material('#ba4338'),[-BW*.28,BH-.06,BD/2+.004]);seal.castShadow=false;}
+      else if(a.seal==='strip')part(g,[.035,.09,.008],[-BW*.28,BH-.055,BD/2+.003],s.material('#527d9f'));
+      else if(a.seal==='tag'){part(g,[.065,.08,.008],[-BW*.28,BH-.08,BD/2+.012],s.material('#e1cda3'));part(g,[.004,.055,.008],[-BW*.28,BH-.02,BD/2+.012],s.material('#785d40'));}
       // Meltwater streaks from the bottom corners.
       if (random() < 0.3 + mood.wear * 0.5) part(g, [0.03 + random() * 0.05, 0.12 + random() * 0.1, 0.004], [(random() - 0.5) * BW * 0.8, -0.04, BD / 2 - 0.012], wet).castShadow = false;
       return g;
@@ -210,6 +234,7 @@ export default defineThing({
           g.position.set(dir * lean * mix(0.02, 0.06, random()) + (random() - 0.5) * 0.02 * (1 + lean * 2), BH + 0.002, (random() - 0.5) * 0.03 * (1 + lean * 2));
           g.rotation.set((random() - 0.5) * 0.01 * lean, (random() - 0.5) * 0.12 * (0.3 + lean), -dir * lean * mix(0.008, 0.022, random()));
         }
+        const supportY=i===0?baseY:BH;g.updateMatrixWorld(true);g.position.y+=supportY-visibleBounds(g).min.y;
         parent.add(g);
         parent = g;
         if (opened) {
@@ -248,6 +273,7 @@ export default defineThing({
         g.rotation.set(0, random() * 3, 0);
         if (random() < 0.5) { g.rotation.z = Math.PI / 2; g.position.y = BW / 2; g.position.x += BH / 2; }
       }
+      g.updateMatrixWorld(true);g.position.y-=visibleBounds(g).min.y;
       s.root.add(g);
     }
 
@@ -255,6 +281,20 @@ export default defineThing({
     const puddle = s.cylinder(1, 1, 0.005, [0.1, 0.003, 0.12], wet, 28);
     puddle.scale.set(mix(0.5, 0.95, mood.wear) + fallen * 0.15, 1, mix(0.35, 0.6, mood.wear));
     puddle.castShadow = false;
+
+    const iron=s.material('#374145'),wood=s.material('#987957'),red=s.material('#b84b40');
+    if(a.deliveryKit==='clipboard'){s.box([.3,.18,.24],[-.83,.09,-.08],wood);const board=s.box([.23,.3,.02],[-.83,.29,-.1],wood);board.rotation.x=-.25;s.box([.07,.018,.03],[-.83,.43,-.063],steel);}
+    else if(a.deliveryKit==='straps')for(const z of[-.06,.13]){s.cylinder(.065,.065,.045,[-.8,.0225,z],red,20);s.box([.045,.006,.18],[-.8,.003,z+.1],red);}
+    else if(a.deliveryKit==='scales'){s.box([.46,.07,.42],[-.83,.035,0],steel);s.box([.4,.025,.36],[-.83,.0825,0],iron);s.rod([-.83,.07,-.2],[-.83,.5,-.2],.012,steel);s.box([.18,.1,.04],[-.83,.53,-.2],iron);s.box([.14,.05,.006],[-.83,.54,-.176],s.material('#a9c6a5'));}
+    const kx=.75,kz=-.4;
+    if(a.wrappingKit==='tape')for(const dx of[-.06,.06]){const ring=s.ring(.045,.012,[kx+dx,.012,kz],s.material('#b98a4e'));ring.rotation.x=Math.PI/2;}
+    else if(a.wrappingKit==='twine'){s.cylinder(.055,.055,.11,[kx,.055,kz],s.material('#c35b64'),20);for(const y of[.008,.102])s.cylinder(.065,.065,.016,[kx,y,kz],wood,16);}
+    else if(a.wrappingKit==='cutter'){s.box([.28,.012,.25],[kx,.006,kz],wood);s.box([.15,.045,.055],[kx,.0345,kz],iron);s.cylinder(.035,.035,.045,[kx-.045,.067,kz],s.material('#b98a4e'),16).rotation.x=Math.PI/2;}
+    if(a.iceTools!=='none') {
+      const x=-.75,z=.48;
+      if(a.iceTools==='scoop'){s.box([.14,.015,.22],[x,.0075,z],steel);for(const dx of[-.065,.065])s.box([.012,.05,.22],[x+dx,.03,z],steel);s.rod([x,.035,z-.1],[x,.035,z-.3],.014,wood);}
+      else {s.lathe([[0,0],[.1,0],[.14,.25]],s.material('#548ca6'),[x,0,z]);if(a.iceTools==='pail'){s.rod([x-.22,.26,z],[x+.2,.26,z],.012,wood);s.rod([x-.15,.26,z-.06],[x-.15,.26,z+.06],.007,steel);}else{const shovel=new THREE.Group();s.root.add(shovel);shovel.add(s.box([.18,.22,.014],[0,.11,0],steel));shovel.add(s.rod([0,.18,0],[0,.65,0],.014,wood));shovel.rotation.x=-.32;shovel.position.set(x+.22,0,z);shovel.updateMatrixWorld(true);shovel.position.y-=new THREE.Box3().setFromObject(shovel,true).min.y;}}
+    }
 
     const energy = mood.energy;
     return s.finish({

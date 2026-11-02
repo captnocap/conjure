@@ -21,6 +21,13 @@ const METAL_LOOK: Record<keyof typeof METALS, [string, number, number]> = { bras
 
 export default defineThing({
   questions: {
+    column: choice('How is the upright column shaped?', { round: 'A smooth turned column.', fluted: 'Fine vertical fluting.', octagon: 'An eight-sided column.', twisted: 'A twisted polygonal column.' }),
+    glasswork: choice('What finish is on the shade glass?', { clear: 'Smooth glossy coloured glass.', frosted: 'Soft frosted coloured glass.', ribbed: 'Shallow transverse glass ribs.', etched: 'A lightly etched repeating leaf pattern.' }),
+    pivots: choice('What do the shade-pivot knobs look like?', { button: 'Small plain round buttons.', milled: 'Wide milled adjustment wheels.', acorn: 'Acorn-shaped end knobs.', rosette: 'Six-lobed decorative rosettes.' }),
+    cordRoute: choice('How is the power cord laid out?', { trailing: 'A short loose S-shaped trail.', looped: 'A wide loop behind the lamp.', coiled: 'A small coil beside the base.', straight: 'A longer nearly straight cable.' }),
+    plug: choice('What is on the end of the cord?', { flat: 'A small flat two-prong plug.', round: 'A round dark plug body.', elbow: 'A thick right-angle plug body.', ceramic: 'An old cream ceramic plug.' }),
+    trim: choice('How is the lower shade edge trimmed?', { metal: 'A narrow matching metal rail.', dark: 'A dark enamel rail.', beads: 'A rail with a row of small metal beads.', glass: 'A plain coloured glass lip.' }),
+    badge: choice('What mark is on the base?', { oval: 'A small oval maker plate.', rectangle: 'A rectangular engraved plate.', screws: 'A plain blank plate with visible corner screws.', crest: 'A small raised circular crest.' }),
     shade: choice('What colour is the glass shade?', SHADES),
     light: choice('Is the lamp on?', {
       lit: 'Lit, steady: the shade glows and a pool of light falls on the desk.',
@@ -75,11 +82,19 @@ export default defineThing({
     }
     // Column, yoke and shade pivots.
     const PIVOT_Y = 0.3, PIVOT_Z = 0.02, HALF = 0.132, colZ = a.base === 'round' ? 0 : -0.02;
-    s.lathe([[0.016, 0], [0.011, 0.02], [0.014, 0.05], [0.008, 0.065], [0.008, 0.14], [0.013, 0.15], [0.009, 0.165]], metal, [0, baseTop, colZ]);
+    const columnGeometry=new THREE.LatheGeometry([[.016,0],[.011,.02],[.014,.05],[.008,.065],[.008,.14],[.013,.15],[.009,.165]].map(([x,y])=>new THREE.Vector2(x,y)),a.column==='octagon'||a.column==='twisted'?8:32);
+    if(a.column==='fluted'||a.column==='twisted'){const pos=columnGeometry.attributes.position;for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i),y=pos.getY(i),r=Math.hypot(x,z)*(a.column==='fluted'?1+.13*Math.cos(Math.atan2(z,x)*8):1),t=Math.atan2(z,x)+(a.column==='twisted'?y*9:0);pos.setX(i,Math.cos(t)*r);pos.setZ(i,Math.sin(t)*r);}columnGeometry.computeVertexNormals();}
+    s.mesh(columnGeometry,metal,[0,baseTop,colZ]);
+    const badgeZ=a.base==='round'?.078:.061,badgeY=a.base==='round'?.011:.013;
+    if(a.badge==='crest'){const crest=s.cylinder(.012,.012,.002,[0,badgeY,badgeZ],metal,16);crest.rotation.x=Math.PI/2;s.ball([.006,.006,.003],[0,badgeY,badgeZ+.003],s.material('#684f28'),10);}
+    else{const badgePaint=s.material('#bba16b',{metalness:.7,roughness:.4});const plate=a.badge==='oval'?s.mesh(new THREE.CircleGeometry(.011,24),badgePaint,[0,badgeY,badgeZ]):s.box([.045,.017,.002],[0,badgeY,badgeZ],badgePaint);if(a.badge==='oval')plate.scale.x=2;if(a.badge!=='screws')s.label(a.badge==='oval'?'LUX':'DESK LIGHT',.039,.012,[0,badgeY,badgeZ+.0012],'#413824','#bba16b');else for(const side of [-1,1])s.ball([.002,.002,.001],[side*.018,badgeY,badgeZ+.002],metal,7);}
     const yokeY = baseTop + 0.165;
     for (const side of [-1, 1]) {
       s.tube([[0, yokeY, colZ], [side * 0.05, yokeY - 0.004, colZ - 0.012], [side * 0.11, yokeY + 0.02, colZ - 0.02], [side * HALF, PIVOT_Y - 0.04, PIVOT_Z - 0.03], [side * HALF, PIVOT_Y, PIVOT_Z]], 0.0055, metal);
-      s.cylinder(0.011, 0.011, 0.01, [side * (HALF + 0.004), PIVOT_Y, PIVOT_Z], metal, 16).rotation.z = Math.PI / 2;
+      s.cylinder(a.pivots==='milled'?.016:.011,a.pivots==='milled'?.016:.011,.01,[side*(HALF+.004),PIVOT_Y,PIVOT_Z],metal,a.pivots==='milled'?16:24).rotation.z=Math.PI/2;
+      if(a.pivots==='acorn')s.ball([.014,.012,.012],[side*(HALF+.013),PIVOT_Y,PIVOT_Z],metal,12);
+      if(a.pivots==='rosette')for(let i=0;i<6;i++){const t=i*Math.PI/3;s.ball([.005,.0045,.0045],[side*(HALF+.01),PIVOT_Y+Math.cos(t)*.011,PIVOT_Z+Math.sin(t)*.011],metal,8);}
+      if(a.pivots==='milled')for(let i=0;i<12;i++){const t=i*Math.PI/6;s.ball([.005,.0018,.0018],[side*(HALF+.006),PIVOT_Y+Math.cos(t)*.016,PIVOT_Z+Math.sin(t)*.016],metal,6);}
     }
     s.ball([0.013, 0.013, 0.013], [0, yokeY, colZ], metal, 14);
 
@@ -89,10 +104,12 @@ export default defineThing({
     head.rotation.x = mix(0.5, -0.75, a.tilt);
     s.root.add(head);
     const RAD = 0.062, LEN = HALF * 2 - 0.012;
-    const glass = new THREE.MeshStandardMaterial({ color: glassColour, roughness: 0.18 + mood.wear * 0.3, emissive: glow, emissiveIntensity: on ? 0.75 : 0.03, side: THREE.DoubleSide });
+    const glass = new THREE.MeshStandardMaterial({ color: glassColour, roughness: (a.glasswork==='frosted'?.7:.18) + mood.wear * 0.2, emissive: glow, emissiveIntensity: on ? 0.75 : 0.03, side: THREE.DoubleSide });
+    if(a.glasswork==='etched'){const canvas=document.createElement('canvas');canvas.width=canvas.height=128;const ctx=canvas.getContext('2d')!;ctx.fillStyle=glassColour;ctx.fillRect(0,0,128,128);ctx.strokeStyle='#b8d6bd';ctx.lineWidth=2;for(let y=15;y<128;y+=26)for(let x=13;x<128;x+=26){ctx.beginPath();ctx.ellipse(x,y,7,3,.6,0,7);ctx.stroke();ctx.beginPath();ctx.moveTo(x-8,y-5);ctx.lineTo(x+8,y+7);ctx.stroke();}glass.map=new THREE.CanvasTexture(canvas);glass.map.colorSpace=THREE.SRGBColorSpace;glass.color.set('#ffffff');}
     const lining = new THREE.MeshStandardMaterial({ color: '#efe9d6', roughness: 0.5, emissive: warm, emissiveIntensity: on ? 1.3 : 0, side: THREE.DoubleSide });
     const trough = (radius: number, material: THREE.Material) => {
-      const geometry = new THREE.CylinderGeometry(radius, radius, LEN, 28, 1, true, -0.25, Math.PI + 0.5);
+      const geometry = new THREE.CylinderGeometry(radius, radius, LEN, 28, a.glasswork==='ribbed'?32:1, true, -0.25, Math.PI + 0.5);
+      if(a.glasswork==='ribbed'){const pos=geometry.attributes.position;for(let i=0;i<pos.count;i++){const scale=1+.035*Math.cos(pos.getY(i)*190);pos.setX(i,pos.getX(i)*scale);pos.setZ(i,pos.getZ(i)*scale);}geometry.computeVertexNormals();}
       geometry.rotateZ(Math.PI / 2);
       const mesh = new THREE.Mesh(geometry, material);
       mesh.scale.set(1, 0.82, 1.08);
@@ -110,13 +127,15 @@ export default defineThing({
     };
     trough(RAD, glass);
     trough(RAD - 0.004, lining);
-    const rim = s.box([LEN + 0.006, 0.004, 0.004], [0, -0.014, RAD * 1.07], metal);
-    const rimBack = s.box([LEN + 0.006, 0.004, 0.004], [0, -0.014, -RAD * 1.07], metal);
+    const rimMaterial=a.trim==='dark'?s.material('#242729'):a.trim==='glass'?glass:metal;
+    const rim = s.box([LEN + 0.006, 0.004, 0.004], [0, -0.014, RAD * 1.07], rimMaterial);
+    const rimBack = s.box([LEN + 0.006, 0.004, 0.004], [0, -0.014, -RAD * 1.07], rimMaterial);
     const socket = s.cylinder(0.012, 0.012, 0.05, [-LEN / 2 + 0.03, 0.006, 0], metal, 12);
     socket.rotation.z = Math.PI / 2;
     const bulbMaterial = new THREE.MeshStandardMaterial({ color: '#f7f1dc', emissive: warm, emissiveIntensity: on ? 2.2 : 0, roughness: 0.3 });
     const bulb = s.ball([0.045, 0.02, 0.02], [0.012, 0.006, 0], bulbMaterial, 14);
     head.add(rim, rimBack, socket, bulb);
+    if(a.trim==='beads')for(let i=0;i<24;i++)head.add(s.ball([.003,.003,.003],[-LEN/2+i*LEN/23,-.014,RAD*1.07],metal,7));
 
     // Pull chain: beads hanging from the socket end, free to swing.
     const chain = new THREE.Group();
@@ -136,7 +155,17 @@ export default defineThing({
 
     // Cord trailing off the back.
     const cz = colZ - (a.base === 'round' ? 0.085 : 0.06), wander = (random() - 0.5) * 0.12;
-    s.tube([[0, 0.01, cz + 0.01], [0.02, 0.003, cz - 0.03], [0.06 + wander, 0.003, cz - 0.06], [0.03 + wander, 0.003, cz - 0.1], [0.1 + wander, 0.003, cz - 0.13]], 0.0028, s.material(a.metal === 'iron' ? '#1a1a1c' : '#4a3626', { roughness: 0.9 }));
+    const cordPoints: [number,number,number][] = [[0,.01,cz+.01],[.02,.003,cz-.03]];
+    if(a.cordRoute==='trailing')cordPoints.push([.06+wander,.003,cz-.06],[.03+wander,.003,cz-.1],[.1+wander,.003,cz-.13]);
+    if(a.cordRoute==='looped')cordPoints.push([-.05,.003,cz-.09],[0,.003,cz-.16],[.12,.003,cz-.13],[.11,.003,cz-.07]);
+    if(a.cordRoute==='straight')cordPoints.push([.09,.003,cz-.09],[.17,.003,cz-.15],[.24,.003,cz-.2]);
+    if(a.cordRoute==='coiled'){for(let i=0;i<=32;i++){const t=i/32*Math.PI*4,r=.027+i*.00045;cordPoints.push([.12+Math.cos(t)*r,.003,cz-.08+Math.sin(t)*r]);}cordPoints.push([.19,.003,cz-.07]);}
+    s.tube(cordPoints,.0028,s.material(a.metal==='iron'?'#1a1a1c':'#4a3626',{roughness:.9}));
+    const end=cordPoints.at(-1)!,plugPaint=s.material(a.plug==='ceramic'?'#e7debd':'#242424',{roughness:a.plug==='ceramic'?.3:.6});
+    if(a.plug==='round'||a.plug==='ceramic'){const plug=s.cylinder(.011,.011,.023,[end[0]+.012,.011,end[2]],plugPaint,16);plug.rotation.z=Math.PI/2;}
+    else s.box([.026,a.plug==='elbow'?.026:.012,.021],[end[0]+.012,a.plug==='elbow'?.013:.006,end[2]],plugPaint);
+    for(const side of [-1,1])s.box([.015,.002,.002],[end[0]+.032,.003,end[2]+side*.005],s.material('#9c8c55',{metalness:.7,roughness:.4}));
+
 
     // Pool of light on the desk.
     const pools: THREE.MeshBasicMaterial[] = [];

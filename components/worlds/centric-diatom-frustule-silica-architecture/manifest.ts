@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Centric diatom frustule silica architecture", "summary": "A permanent sectioned centric diatom valve and overlapping girdle bands retain resolved areola chambers and silica rims. A comparative centric-frustule teaching setting with permanent silica architecture and enlarged real chamber pores. Separate labeled process studies compare taxa and are not claimed to occur on every diatom.", "scales": ["macro", "tabletop"]});

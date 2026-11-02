@@ -4,14 +4,14 @@ import { Sculpture, choice, defineThing, mix, score } from '@conjure/kit';
 const STRAW = { natural: '#d9b76a', bleached: '#efe3bd', honey: '#b98538', black: '#3a332c' } as const;
 const RIBBON = { black: '#26262b', red: '#c8303a', navy: '#27407e', white: '#f4f0e4', lilac: '#a98fd0', twine: '#8a6a3a' } as const;
 
-function strawTexture(base: string, random: () => number, wear: number) {
+function strawTexture(base: string, random: () => number, wear: number, weave: string) {
   const canvas = document.createElement('canvas');
   canvas.width = 512; canvas.height = 256;
   const ctx = canvas.getContext('2d')!;
   const tone = new THREE.Color(base);
   ctx.fillStyle = `#${tone.getHexString()}`;
   ctx.fillRect(0, 0, 512, 256);
-  const rows = 26;
+  const rows = weave==='fine'?42:weave==='coarse'?15:26;
   for (let row = 0; row < rows; row++) {
     const y = (row / rows) * 256, h = 256 / rows;
     const shade = tone.clone().offsetHSL(0, 0, (random() - 0.5) * 0.09);
@@ -25,10 +25,11 @@ function strawTexture(base: string, random: () => number, wear: number) {
     for (let x = (row % 2) * 4; x < 512; x += 8) {
       ctx.beginPath();
       ctx.moveTo(x, y + 1);
-      ctx.lineTo(x + (row % 2 ? -5 : 5), y + h - 2);
+      ctx.lineTo(x + (weave==='herringbone'?(row%2?-7:7):weave==='basket'?0:row%2?-5:5), y + h - 2);
       ctx.stroke();
     }
   }
+  if(weave==='basket'){ctx.globalAlpha=.23;ctx.fillStyle='#fff0ca';for(let y=0;y<256;y+=18)for(let x=0;x<512;x+=18)if((x/18+y/18)%2===0)ctx.fillRect(x,y,15,15);ctx.globalAlpha=1;}
   for (let i = 0; i < wear * 60; i++) {
     ctx.fillStyle = `rgba(70,55,35,${0.12 + random() * 0.2})`;
     ctx.beginPath();
@@ -61,6 +62,12 @@ function strip(points: THREE.Vector3[], width: number, side: THREE.Vector3) {
 
 export default defineThing({
   questions: {
+    weave: choice('How is the straw woven?',{fine:'Very fine close plaited rows.',coarse:'Broad coarse straw plaits.',herringbone:'Alternating angled herringbone plaits.',basket:'Square over-and-under basket weave.'}),
+    edging: choice('How is the brim edge finished?',{rolled:'A narrow rolled straw edge.',bound:'A ribbon-bound edge matching the hatband.',braided:'A thick braided straw border.',fringe:'Short loose straw ends fringe the brim.'}),
+    sweatband: choice('What lines the inside edge of the crown?',{leather:'A dark brown leather sweatband.',cotton:'A soft ivory cotton sweatband.',blue:'A blue fabric lining band.',printed:'A pale lining band with a small maker label.'}),
+    cord: choice('What kind of chin fastening lies across the brim?',{twine:'A fine natural twine chin loop.',leather:'A dark leather cord with a sliding bead.',ribbon:'A narrow ribbon chin tie.',beads:'A thin cord with two wooden beads.'}),
+    fastening: choice('What small fastening decorates the hatband?',{buckle:'A rectangular metal ribbon buckle.',button:'A small round shell button.',rosette:'A folded fabric rosette.',pin:'A slender hatpin with a pearl head.'}),
+    crownSet: choice('How has the crown been shaped?',{round:'The crown keeps its original rounded shape.',crease:'A shallow lengthwise crease dents the crown top.',pinch:'Two small pinches narrow the front of the crown.',dimple:'A soft circular dimple marks the crown top.'}),
     brim: choice('What shape is the hat?', {
       sunhat: 'A wide, gently wavy brim and a rounded crown: the classic garden sun hat.',
       cartwheel: 'An enormous flat cartwheel brim, glamorous, a Riviera or wedding hat.',
@@ -114,7 +121,7 @@ export default defineThing({
     const s = new Sculpture(context);
     const { mood, random } = context;
     const hat = new THREE.Group();
-    const strawMap = strawTexture(STRAW[a.straw], random, mood.wear);
+    const strawMap = strawTexture(STRAW[a.straw], random, mood.wear,a.weave);
     const straw = new THREE.MeshStandardMaterial({ map: strawMap, roughness: 0.85, side: THREE.DoubleSide });
     const ribbon = new THREE.MeshStandardMaterial({ color: RIBBON[a.ribbon], roughness: a.ribbon === 'twine' ? 0.95 : 0.45, side: THREE.DoubleSide });
 
@@ -150,17 +157,31 @@ export default defineThing({
         pos.setY(i, -shape.droop * out * out + wobble * out + (a.brim === 'gardener' ? -out * 0.03 : 0));
       }
     }
+    for(let i=0;i<pos.count;i++){
+      const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);if(y<height*.55)continue;const lift=(y-height*.55)/(height*.6);
+      if(a.crownSet==='crease')pos.setY(i,y-.018*Math.exp(-((x/.022)**2))*lift);
+      if(a.crownSet==='dimple')pos.setY(i,y-.024*Math.exp(-(x*x+z*z)/(.035*.035))*lift);
+      if(a.crownSet==='pinch'&&z>0)pos.setX(i,x*(1-.23*lift*Math.max(0,z/crown)));
+    }
     shell.computeVertexNormals();
     const shellMesh = new THREE.Mesh(shell, straw);
     shellMesh.castShadow = shellMesh.receiveShadow = true;
     hat.add(shellMesh);
-    // A rolled edge gives the brim a readable rim.
-    if (shape.wave === 0) {
-      const rim = new THREE.Mesh(new THREE.TorusGeometry(brimRadius, 0.004, 6, 64), straw);
-      rim.rotation.x = Math.PI / 2;
-      rim.castShadow = true;
-      hat.add(rim);
-    }
+    // The edge follows exactly the same bent brim as the straw shell.
+    const edgeY=(angle:number)=>-shape.droop+Math.sin(angle*lobes+phase)*shape.wave+Math.sin(angle*2+dent)*shape.wave*.6*(.5+mood.wear)-(a.brim==='gardener'?.03:0);
+    const edgeArt=new Sculpture(context),edgeSkin=a.edging==='bound'?ribbon:straw;
+    const edgePoints:[number,number,number][]=Array.from({length:97},(_,i)=>{const t=i*Math.PI*2/96;return[Math.cos(t)*brimRadius,edgeY(t),Math.sin(t)*brimRadius];});
+    edgeArt.tube(edgePoints,a.edging==='bound'?.0055:a.edging==='braided'?.005:.003,edgeSkin);
+    if(a.edging==='braided')for(const side of [-1,1]){const pts:[number,number,number][]=Array.from({length:193},(_,i)=>{const t=i*Math.PI*2/192,r=brimRadius+Math.cos(t*48)*.003*side;return[Math.cos(t)*r,edgeY(t)+Math.sin(t*48)*.003*side,Math.sin(t)*r];});edgeArt.tube(pts,.0015,straw);}
+    if(a.edging==='fringe')for(let i=0;i<96;i++){const t=i*Math.PI*2/96;edgeArt.rod([Math.cos(t)*brimRadius,edgeY(t),Math.sin(t)*brimRadius],[Math.cos(t)*(brimRadius+.012),edgeY(t)-.002,Math.sin(t)*(brimRadius+.012)],.0007,straw);}
+    const lining=edgeArt.material({leather:'#624332',cotton:'#e6ddc3',blue:'#7894a8',printed:'#ddd0ae'}[a.sweatband],{roughness:.8,side:THREE.DoubleSide});
+    edgeArt.mesh(new THREE.CylinderGeometry(crown-.002,crown-.002,.018,48,1,true),lining,[0,.011,0]);
+    if(a.sweatband==='printed')edgeArt.label('SUMMER',.042,.012,[0,.011,-crown+.003],'#594d3d','#ddd0ae');
+    const cordMaterial=edgeArt.material(a.cord==='leather'?'#594335':a.cord==='ribbon'?RIBBON[a.ribbon]:'#b7a06d',{roughness:.8});
+    const cordPoints:[number,number,number][]=[[-crown,.003,0],[-crown*.9,.006,crown*.5],[0,.007,crown*.88],[crown*.9,.006,crown*.5],[crown,.003,0]];
+    edgeArt.tube(cordPoints,a.cord==='ribbon'?.003:.0012,cordMaterial);
+    if(a.cord==='leather'||a.cord==='beads')for(let i=0;i<(a.cord==='beads'?2:1);i++)edgeArt.ball([.004,.004,.005],[(i-.5)*.012,.008,crown*.88],edgeArt.material('#a17c46'),10);
+    hat.add(edgeArt.root);
 
     // Ribbon band hugging the crown base.
     const bandHeight = a.ribbon === 'twine' ? 0.008 : a.brim === 'boater' ? 0.038 : 0.028;
@@ -174,6 +195,12 @@ export default defineThing({
       stripe.position.y = bandHeight / 2 + 0.002;
       hat.add(stripe);
     }
+    const clasp=new Sculpture(context),metal=clasp.material('#bea472',{metalness:.55,roughness:.35});
+    if(a.fastening==='buckle')clasp.tube([[-.018,-.011,0],[-.018,.011,0],[.018,.011,0],[.018,-.011,0],[-.018,-.011,0]],.002,metal);
+    if(a.fastening==='button'){clasp.cylinder(.012,.012,.003,[0,0,0],clasp.material('#e3d6b4'),16).rotation.x=Math.PI/2;for(const x of [-.003,.003])clasp.ball([.0012,.0012,.0007],[x,0,.002],metal,6);}
+    if(a.fastening==='rosette')for(let i=0;i<8;i++){const t=i*Math.PI/4;const petal=clasp.ball([.008,.015,.003],[Math.sin(t)*.011,Math.cos(t)*.011,0],ribbon,10);petal.rotation.z=-t;}
+    if(a.fastening==='pin'){clasp.rod([-.028,-.01,0],[.025,.012,0],.001,metal);clasp.ball([.005,.005,.004],[.025,.012,0],clasp.material('#eee6d3'),12);}
+    clasp.root.position.set(0,bandHeight*.6,crown+.006);hat.add(clasp.root);
     const tails: THREE.Mesh[] = [];
     const back = new THREE.Vector3(0, bandHeight / 2, -(crown + 0.006));
     if (a.tails !== 'band') {
@@ -343,6 +370,10 @@ export default defineThing({
       hat.position.y = brimRadius * 0.98;
       for (let i = 0; i < 14; i++)
         grassPoints.push({ at: [(random() - 0.5) * brimRadius * 2.2, 0, (random() - 0.5) * 0.2], lean: 0.5 + random() * 0.4, turn: Math.PI / 2, h: 0.06 + random() * 0.08 });
+    }
+    if(a.state!=='snagged'){
+      hat.updateMatrixWorld(true);const support=a.state==='placed'||a.state==='upturned'?shellMesh:hat;hat.position.y-=new THREE.Box3().setFromObject(support,true).min.y;hat.updateMatrixWorld(true);
+      if(a.state==='placed')for(const tail of tails){const vertices=tail.geometry.getAttribute('position');const point=new THREE.Vector3();for(let i=0;i<vertices.count;i++){point.fromBufferAttribute(vertices,i);tail.localToWorld(point);if(point.y<.0005){point.y=.0005;tail.worldToLocal(point);vertices.setXYZ(i,point.x,point.y,point.z);}}vertices.needsUpdate=true;tail.geometry.computeVertexNormals();}
     }
     s.root.add(hat);
 

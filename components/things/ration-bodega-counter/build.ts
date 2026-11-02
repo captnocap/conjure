@@ -53,6 +53,48 @@ export default defineThing({
       blue: 'Sky blue with a cream top edge, faded.',
       cream: 'Cream with a band of state red along the bottom.',
     }),
+    counterTop: choice('What surface covers the counter?', {
+      wood: 'Thick worn timber with a few narrow plank joints.',
+      zinc: 'A dull zinc sheet folds over the front edge.',
+      tiles: 'Small pale ceramic tiles with dark grout.',
+      inlay: 'A broad timber top with a contrasting inset border.',
+    }),
+    packaging: choice('What dispenses wrapping beside the counter?', {
+      none: 'No wrapping dispenser is fitted.',
+      paper: 'A brown paper roll turns on a bracket at the counter end.',
+      string: 'A large twine ball sits in an open metal holder.',
+      bags: 'Folded paper bags hang from a narrow side rack.',
+    }),
+    shelfFront: choice('How are the shelf fronts arranged?', {
+      plain: 'Plain exposed timber shelf edges.',
+      lip: 'A raised timber lip runs along each shelf.',
+      labels: 'Small cream label holders divide the shelf fronts.',
+      rail: 'A thin retaining rail stands in front of the stock.',
+    }),
+    queueGuide: choice('What marks the waiting area?', {
+      open: 'Open pavement in front of the counter.',
+      rope: 'Two low posts carry a sagging queue rope.',
+      rail: 'A short tubular rail guides the queue.',
+      footprints: 'Three pairs of painted waiting marks run along the front.',
+    }),
+    wallFan: choice('What ventilation fan is mounted high on the wall?', {
+      none: 'There is no electric fan.',
+      round: 'A round three-bladed wall fan with a wire cage.',
+      square: 'A square-framed extraction fan.',
+      twin: 'Two small side-by-side circular fans.',
+    }),
+    highVent: choice('What opening is above the chalkboard?', {
+      closed: 'The wall above the board is plain.',
+      louvers: 'Three deep horizontal ventilation louvers.',
+      lattice: 'A small lattice grille set into the wall.',
+      transom: 'A narrow frosted-glass transom with a centre mullion.',
+    }),
+    floor: choice('What floor surrounds the counter and sacks?', {
+      bare: 'The shop fittings stand on the scene ground.',
+      terrazzo: 'A shallow cream terrazzo floor with dark flecks.',
+      tiles: 'A floor of broad square ceramic tiles.',
+      boards: 'Close parallel timber floorboards.',
+    }),
   },
 
   build(a, context) {
@@ -68,7 +110,16 @@ export default defineThing({
     // Counter: plank front, thick top, kick board.
     const CW = 2.3, CH = 0.95, CZ = 0.55;
     s.box([CW, CH - 0.06, 0.55], [0, (CH - 0.06) / 2, CZ], body);
-    s.box([CW + 0.1, 0.06, 0.66], [0, CH - 0.03, CZ + 0.02], a.paint === 'blue' ? s.material('#eadfc2') : worn);
+    const topMaterial=a.counterTop==='zinc'?steel:a.counterTop==='tiles'?s.material('#e6e1d1'):a.paint==='blue'?s.material('#eadfc2'):worn;
+    s.box([CW + 0.1, 0.06, 0.66], [0, CH - 0.03, CZ + 0.02], topMaterial);
+    if(a.counterTop==='wood')for(const z of[CZ-.12,CZ+.09])s.box([CW+.09,.001,.004],[0,CH+.0005,z],darkWood);
+    else if(a.counterTop==='zinc')s.box([CW+.1,.055,.012],[0,CH-.025,CZ+.355],steel);
+    else if(a.counterTop==='tiles'){
+      for(let i=1;i<12;i++)s.box([.004,.001,.65],[-1.2+i*.2,CH+.0005,CZ+.02],darkWood);
+      for(const z of[CZ-.09,CZ+.13])s.box([2.39,.001,.004],[0,CH+.0005,z],darkWood);
+    }else{
+      for(const side of[-1,1]){s.box([CW-.04,.001,.014],[0,CH+.0005,CZ+.02+side*.27],darkWood);s.box([.014,.001,.54],[side*(CW/2-.02),CH+.0005,CZ+.02],darkWood);}
+    }
     s.box([CW + 0.02, 0.12, 0.57], [0, 0.06, CZ], a.paint === 'cream' ? s.material('#b3352b') : darkWood);
     for (let i = 1; i < 12; i++) s.box([0.012, CH - 0.2, 0.01], [-CW / 2 + i * CW / 12, CH / 2 + 0.03, CZ + 0.278], darkWood);
     if (a.paint !== 'bare') for (let i = 0; i < 3 + Math.floor(mood.wear * 12); i++) s.box([0.05 + random() * 0.18, 0.03 + random() * 0.12, 0.008], [(random() - 0.5) * (CW - 0.2), random() < 0.5 ? CH - 0.1 - random() * 0.1 : 0.16 + random() * 0.15, CZ + 0.277], worn);
@@ -83,11 +134,19 @@ export default defineThing({
     const stock = Math.min(1, a.stock * mix(0.7, 1.15, mood.density)) * (a.state === 'gone' ? 0.35 : 1);
     const tinColours = ['#b3352b', '#e3b62c', '#2f6f8f', '#e9e2cf', '#48834f', '#d9722b'];
     levels.forEach((y, level) => {
-      s.box([SW, 0.035, 0.3], [SX, y, BZ + 0.15], wood).rotation.z = (random() - 0.5) * mood.wear * 0.03;
+      const tilt=(random()-.5)*mood.wear*.03;
+      s.box([SW, 0.035, 0.3], [SX, y, BZ + 0.15], wood).rotation.z = tilt;
+      const shelfTop=(x:number)=>y+.0175/Math.cos(tilt)+(x-SX)*Math.tan(tilt);
+      if(a.shelfFront==='lip')s.box([SW,.06,.018],[SX,y+.028,BZ+.305],wood).rotation.z=tilt;
+      else if(a.shelfFront==='labels')for(let i=0;i<7;i++)s.box([.13,.055,.014],[SX-SW/2+.15+i*.26,shelfTop(SX-SW/2+.15+i*.26)-.027,BZ+.31],paper).rotation.z=tilt;
+      else if(a.shelfFront==='rail'){
+        s.rod([SX-SW/2,shelfTop(SX-SW/2)+.09,BZ+.31],[SX+SW/2,shelfTop(SX+SW/2)+.09,BZ+.31],.009,iron);
+        for(const x of[SX-SW/2,SX,SX+SW/2])s.rod([x,shelfTop(x),BZ+.29],[x,shelfTop(x)+.09,BZ+.31],.008,iron);
+      }
       const count = level === 1 && stock < 0.1 ? 1 : Math.round(stock * mix(4, 12, random()));
       let x = SX - SW / 2 + 0.12 + random() * 0.3;
       for (let i = 0; i < count && x < SX + SW / 2 - 0.12; i++) {
-        const kind = Math.floor(random() * 5), z = BZ + 0.15 + (random() - 0.5) * 0.08, top = y + 0.018;
+        const kind = Math.floor(random() * 5), z = BZ + 0.15 + (random() - 0.5) * 0.08, top = shelfTop(x);
         if (kind === 0) {
           const colour = pick(tinColours), stack = 1 + Math.floor(random() * 2.2);
           for (let k = 0; k < stack; k++) { s.cylinder(0.045, 0.045, 0.11, [x, top + 0.055 + k * 0.112, z], steel, 14); s.cylinder(0.0465, 0.0465, 0.075, [x, top + 0.055 + k * 0.112, z], s.material(colour), 14); }
@@ -139,6 +198,27 @@ export default defineThing({
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
     const BX = 0.98, BY = 1.62;
+    if(a.highVent!=='closed'){
+      s.box([.79,.19,.018],[BX,2.18,BZ+.014],dark);
+      if(a.highVent==='louvers')for(let i=0;i<3;i++)s.box([.76,.065,.045],[BX,2.115+i*.065,BZ+.055],wood).rotation.x=.35;
+      else if(a.highVent==='lattice'){
+        for(let i=0;i<9;i++)s.box([.014,.18,.02],[BX-.35+i*.0875,2.18,BZ+.03],wood);
+        for(const dy of[-.06,0,.06])s.box([.77,.014,.02],[BX,2.18+dy,BZ+.035],wood);
+      }else{
+        s.box([.76,.16,.012],[BX,2.18,BZ+.028],s.material('#b7c8c4',{roughness:.65}));s.box([.026,.18,.022],[BX,2.18,BZ+.04],wood);
+      }
+    }
+    const rotors:THREE.Group[]=[];
+    if(a.wallFan!=='none')for(const x of(a.wallFan==='twin'?[-1.16,-.82]:[-1.02])){
+      const r=a.wallFan==='twin'?.13:.19,y=2.19,z=BZ+.39;
+      s.rod([x,y-.12,BZ],[x,y,z],.025,iron);
+      const rotor=new THREE.Group();rotor.position.set(x,y,z);s.root.add(rotor);rotors.push(rotor);
+      for(let i=0;i<3;i++){const blade=new THREE.Mesh(new THREE.BoxGeometry(r*.95,r*.28,.012),steel);const t=i*Math.PI*2/3;blade.position.set(Math.cos(t)*r*.42,Math.sin(t)*r*.42,0);blade.rotation.z=t+.35;blade.castShadow=true;rotor.add(blade);}
+      s.cylinder(r*.16,r*.16,.055,[x,y,z],iron,12).rotation.x=Math.PI/2;
+      if(a.wallFan==='square')for(const side of[-1,1]){s.box([r*2.2,.025,.06],[x,y+side*r*1.05,z],iron);s.box([.025,r*2.2,.06],[x+side*r*1.05,y,z],iron);}
+      else s.ring(r,.012,[x,y,z+.025],iron);
+      for(let i=0;i<4;i++){const t=i*Math.PI/4;s.rod([x-Math.cos(t)*r,y-Math.sin(t)*r,z+.04],[x+Math.cos(t)*r,y+Math.sin(t)*r,z+.04],.004,iron);}
+    }
     s.box([0.94, 0.84, 0.035], [BX, BY, BZ + 0.02], wood).rotation.z = (random() - 0.5) * 0.05;
     const slate = s.mesh(new THREE.PlaneGeometry(0.86, 0.75), new THREE.MeshStandardMaterial({ map: texture, roughness: 0.95 }), [BX, BY, BZ + 0.04]);
     slate.castShadow = false;
@@ -265,12 +345,45 @@ export default defineThing({
       for (let i = 0; i < n; i++) lying(-1.75 + (i % 2) * 0.08, 0.11 + i * 0.19, 0.7 + (random() - 0.5) * 0.08, (random() - 0.5) * 0.4 + (i % 2 ? Math.PI / 2 : 0) * 0.15);
       const tx = -1.75, tz = 1.5;
       for (const k of [-1, 1]) { s.rod([tx + k * 0.2, 0.13, tz], [tx + k * 0.2, 1.2, tz + 0.5], 0.015, s.material('#3f6fae')); const w = s.cylinder(0.13, 0.13, 0.05, [tx + k * 0.26, 0.13, tz + 0.04], dark, 16); w.rotation.z = Math.PI / 2; }
-      s.box([0.46, 0.015, 0.25], [tx, 0.02, tz - 0.12], s.material('#3f6fae'));
+      s.box([0.46, 0.015, 0.25], [tx, 0.0075, tz - 0.12], s.material('#3f6fae'));
+      for (const side of [-1, 1]) s.rod([tx + side * .2, .015, tz], [tx + side * .2, .13, tz], .015, s.material('#3f6fae'));
       for (const t of [0.35, 0.7, 1]) s.rod([tx - 0.2, 0.13 + t * 1.07, tz + t * 0.5], [tx + 0.2, 0.13 + t * 1.07, tz + t * 0.5], 0.012, s.material('#3f6fae'));
-      lying(tx, 0.16, tz - 0.14, Math.PI / 2);
+      lying(tx, 0.125, tz - 0.14, Math.PI / 2);
     }
 
+    if(a.packaging!=='none'){
+      const x=-CW/2-.15,y=.79,z=CZ;
+      for(const dz of[-.19,.19])s.rod([-CW/2,y-.12,z+dz],[x,y,z+dz],.018,iron);
+      if(a.packaging==='paper'){
+        s.cylinder(.09,.09,.32,[x,y,z],paper,18).rotation.x=Math.PI/2;s.rod([x,y,z-.21],[x,y,z+.21],.015,iron);
+        s.box([.012,.23,.3],[x-.085,y-.12,z],paper);
+      }else if(a.packaging==='string'){
+        s.box([.22,.018,.28],[x,y-.1,z],iron);s.ball([.085,.09,.085],[x,y-.001,z],burlap,14);
+        for(const dz of[-.12,.12])s.rod([x-.1,y-.09,z+dz],[x-.1,y+.08,z+dz],.008,iron);
+        s.tube([[x-.04,y+.08,z],[x-.11,y+.03,z+.13],[x-.11,y-.23,z+.13]],.003,burlap);
+      }else{
+        s.rod([x,y+.12,z-.2],[x,y+.12,z+.2],.012,iron);
+        for(let i=0;i<5;i++)s.box([.025,.26,.13],[x-.035+i*.014,y-.025,z-.12+i*.06],paper);
+      }
+    }
+    if(a.queueGuide==='rope'||a.queueGuide==='rail'){
+      const z=1.34,y=.76;
+      for(const x of[-.9,.9]){s.cylinder(.11,.14,.035,[x,.0175,z],iron,16);s.rod([x,.035,z],[x,y,z],.018,iron);}
+      if(a.queueGuide==='rope')s.tube([[-.9,y,z],[0,y-.16,z],[.9,y,z]],.014,burlap);
+      else s.rod([-.9,y,z],[.9,y,z],.025,steel);
+    }else if(a.queueGuide==='footprints')for(let i=0;i<3;i++)for(const side of[-1,1])s.box([.07,.002,.19],[-.7+i*.7+side*.09,.001,1.35],paper);
+    if(a.floor!=='bare'){
+      const shop=new THREE.Group();for(const child of[...s.root.children])shop.add(child);s.root.add(shop);shop.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(shop,true),c=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3()),h=.035;shop.position.y+=h;
+      const tile=s.material('#c2bcab');s.box([size.x+.18,h,size.z+.18],[c.x,h/2,c.z],tile);
+      if(a.floor==='terrazzo'){
+        const g=new THREE.BoxGeometry(.024,.001,.012),m=new THREE.InstancedMesh(g,dark,90);
+        for(let i=0;i<90;i++)m.setMatrixAt(i,new THREE.Matrix4().makeRotationY(random()*Math.PI).setPosition(c.x+(random()-.5)*(size.x+.16),h+.0005,c.z+(random()-.5)*(size.z+.16)));s.root.add(m);
+      }else{
+        const cols=Math.ceil((size.x+.16)/(a.floor==='boards'?.16:.42)),rows=a.floor==='boards'?1:Math.ceil((size.z+.16)/.42),w=(size.x+.16)/cols,d=(size.z+.16)/rows,m=new THREE.InstancedMesh(new THREE.BoxGeometry(w-.006,.012,d-.006),a.floor==='boards'?worn:tile,cols*rows);
+        for(let i=0;i<cols;i++)for(let j=0;j<rows;j++)m.setMatrixAt(i*rows+j,new THREE.Matrix4().makeTranslation(c.x-(size.x+.16)/2+(i+.5)*w,h+.006,c.z-(size.z+.16)/2+(j+.5)*d));m.castShadow=true;m.receiveShadow=true;s.root.add(m);shop.position.y+=.012;
+      }
+    }
     const sway = mix(0.01, 0.12, mood.energy), phase = random() * 6, rest = swing.rotation.z;
-    return s.finish({ update: a.scale === 'hanging' ? (_dt, time) => { swing.rotation.z = rest + Math.sin(time * 2.2 + phase) * sway; swing.rotation.x = Math.cos(time * 1.7 + phase) * sway * 0.5; } : undefined });
+    return s.finish({ update: a.scale === 'hanging'||rotors.length ? (_dt, time) => {if(a.scale==='hanging'){swing.rotation.z = rest + Math.sin(time * 2.2 + phase) * sway; swing.rotation.x = Math.cos(time * 1.7 + phase) * sway * 0.5;}for(const rotor of rotors)rotor.rotation.z=time*mix(1,8,mood.energy); } : undefined });
   },
 });

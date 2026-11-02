@@ -38,6 +38,13 @@ function texture(width: number, height: number, draw: (c: CanvasRenderingContext
 
 export default defineThing({
   questions: {
+    vesselColour: choice('What colour is the vessel?', { clear: 'Colourless glass or bare metal.', amber: 'Amber glass or ochre-painted tin.', green: 'Bottle-green glass or green-painted tin.', blue: 'Cobalt glass or blue-painted tin.' }),
+    lettering: choice('How is the sign lettered?', { marker: 'Thick casual marker lettering.', block: 'Neat square block capitals.', serif: 'Formal serif letters.', fine: 'Fine slanted handwriting.' }),
+    neckwear: choice('What is tied around its mouth?', { bare: 'Nothing.', twine: 'Several turns of natural twine.', ribbon: 'A red ribbon with a bow.', beads: 'A little string of coloured beads.' }),
+    folding: choice('How have the paper tips been folded?', { crumpled: 'Crumpled into little wads.', folded: 'Folded into flat packets.', rolled: 'Rolled tightly into little tubes.', accordion: 'Pleated into little accordion folds.' }),
+    strays: choice('How is any loose change arranged outside?', { scattered: 'Scattered where it landed.', row: 'Counted into a tidy row.', stack: 'Gathered into little stacks.', arc: 'Pushed into an arc in front of the jar.' }),
+    counting: choice('What helps with counting the tips?', { none: 'Nothing.', pencil: 'A short pencil and a tally slip.', tally: 'A folded tally card with rows of five marks.', counter: 'A small mechanical tally counter.' }),
+    footing: choice('What is underneath the collection?', { bare: 'The bare counter.', cork: 'A rectangular cork mat.', felt: 'A green felt counting mat.', tray: 'A shallow wooden counting tray.' }),
     jar: choice('What is the tip jar?', JARS),
     sign: choice('What does the hand-lettered sign say?', {
       tips: 'Just TIPS.',
@@ -82,12 +89,26 @@ export default defineThing({
     const { mood, random } = context;
     const shape = SHAPES[a.jar];
     const isCan = a.jar === 'can';
+    const vesselTint = a.vesselColour === 'clear' ? (isCan ? '#b9bcbc' : '#dcecf0') : { amber: '#c49a4c', green: '#4f8064', blue: '#537dad' }[a.vesselColour];
     const wall = isCan
-      ? new THREE.MeshStandardMaterial({ color: '#b9bcbc', metalness: 0.8, roughness: 0.4 + mood.wear * 0.3, side: THREE.DoubleSide })
-      : new THREE.MeshPhysicalMaterial({ color: '#dcecf0', transparent: true, opacity: 0.3, roughness: 0.05, side: THREE.DoubleSide });
+      ? new THREE.MeshStandardMaterial({ color: vesselTint, metalness: a.vesselColour === 'clear' ? 0.8 : 0.25, roughness: 0.4 + mood.wear * 0.3, side: THREE.DoubleSide })
+      : new THREE.MeshPhysicalMaterial({ color: vesselTint, transparent: true, opacity: 0.3, roughness: 0.05, side: THREE.DoubleSide });
     const bright = new THREE.MeshStandardMaterial({ color: '#f1fafc', transparent: true, opacity: 0.7, roughness: 0.05 });
     s.lathe(shape.profile, wall);
     const mouthR = shape.profile[shape.profile.length - 1][0];
+    if (a.neckwear !== 'bare') {
+      const cord = s.material(a.neckwear === 'ribbon' ? '#a62e3e' : '#b49b70', { roughness: 0.85 });
+      if (a.neckwear === 'beads') {
+        const colours = ['#d1a958', '#628fa0', '#a54b48', '#e6d6ad'];
+        const n = 32;
+        for (let i = 0; i < n; i++) { const t = i / n * Math.PI * 2; s.ball([0.0032, 0.0032, 0.0032], [Math.sin(t) * (mouthR + 0.002), shape.mouth - 0.006, Math.cos(t) * (mouthR + 0.002)], s.material(colours[i % 4]), 8); }
+      } else {
+        for (let i = 0; i < 4; i++) s.ring(mouthR + 0.001, a.neckwear === 'ribbon' ? 0.0015 : 0.0009, [0, shape.mouth - 0.008 + i * 0.0018, 0], cord).rotation.x = Math.PI / 2;
+        if (a.neckwear === 'ribbon') {
+          for (const side of [-1, 1]) { const loop = s.ring(0.009, 0.0023, [side * 0.008, shape.mouth - 0.005, mouthR + 0.004], cord); loop.scale.set(1.3, 0.65, 1); loop.rotation.z = side * 0.4; s.rod([0, shape.mouth - 0.007, mouthR + 0.004], [side * 0.01, shape.mouth - 0.032, mouthR + 0.007], 0.002, cord); }
+        }
+      }
+    }
     s.ring(mouthR, 0.0018, [0, shape.mouth, 0], isCan ? wall : bright).rotation.x = Math.PI / 2;
     if (a.jar === 'mason') for (let i = 0; i < 3; i++) s.ring(0.0368, 0.0012, [0, 0.122 + i * 0.005, 0], bright).rotation.x = Math.PI / 2;
     if (a.jar === 'pitcher') {
@@ -129,11 +150,12 @@ export default defineThing({
 
     // Crumpled notes: lumpy low-poly wads.
     const wad = (at: [number, number, number], size: number, colour: string) => {
-      const geometry = new THREE.IcosahedronGeometry(1, 1);
+      const geometry = a.folding === 'rolled' ? new THREE.CylinderGeometry(0.24, 0.24, 1.7, 12, 1, true) : a.folding === 'folded' ? new THREE.BoxGeometry(1.6, 0.22, 0.9) : a.folding === 'accordion' ? new THREE.PlaneGeometry(1.6, 1.1, 10, 1).rotateX(-Math.PI / 2) : new THREE.IcosahedronGeometry(1, 1);
       const p = geometry.attributes.position;
-      for (let i = 0; i < p.count; i++) { const k = 0.72 + ((Math.sin(i * 12.9898 + at[0] * 900 + at[1] * 700) * 43758.5453) % 1 + 1) % 1 * 0.5; p.setXYZ(i, p.getX(i) * k, p.getY(i) * k * 0.7, p.getZ(i) * k); }
+      if (a.folding === 'crumpled') for (let i = 0; i < p.count; i++) { const k = 0.72 + ((Math.sin(i * 12.9898 + at[0] * 900 + at[1] * 700) * 43758.5453) % 1 + 1) % 1 * 0.5; p.setXYZ(i, p.getX(i) * k, p.getY(i) * k * 0.7, p.getZ(i) * k); }
+      if (a.folding === 'accordion') for (let i = 0; i < p.count; i++) p.setY(i, (i % 2 ? 1 : -1) * 0.15);
       geometry.computeVertexNormals();
-      const mesh = s.mesh(geometry, new THREE.MeshStandardMaterial({ color: colour, roughness: 0.9, flatShading: true }), at);
+      const mesh = s.mesh(geometry, new THREE.MeshStandardMaterial({ color: colour, roughness: 0.9, flatShading: true, side: THREE.DoubleSide }), at);
       mesh.scale.setScalar(size);
       mesh.rotation.set(random() * 6, random() * 6, random() * 6);
       return mesh;
@@ -161,9 +183,11 @@ export default defineThing({
     // A few strays on the bar when the scene is busy or the jar is brimming.
     const strays = Math.round(mood.density * 4 + (a.fill > 0.85 ? 3 : 0));
     for (let i = 0; i < strays; i++) {
-      const t = mix(-0.4, 1.9, random()), r = shape.profile[1][0] + 0.035 + random() * 0.05;
-      if (i % 3 === 2 && a.mostly !== 'coins') wad([Math.sin(t) * r, 0.011, Math.cos(t) * r], 0.016, palette[i % palette.length]);
-      else s.cylinder(0.011, 0.011, 0.0016, [Math.sin(t) * r, 0.0008 + i * 0.0001, Math.cos(t) * r], new THREE.MeshStandardMaterial({ color: coinTints[i % coinTints.length], metalness: 0.85, roughness: 0.3 }), 14);
+      const t = a.strays === 'arc' ? mix(-0.65, 0.65, i / Math.max(1, strays - 1)) : mix(-0.4, 1.9, random()), r = shape.profile[1][0] + 0.035 + (a.strays === 'arc' ? 0.04 : random() * 0.05);
+      const x = a.strays === 'row' ? (i - (strays - 1) / 2) * 0.025 : a.strays === 'stack' ? 0.08 + (i % 2) * 0.027 : Math.sin(t) * r;
+      const z = a.strays === 'row' ? 0.13 : a.strays === 'stack' ? 0.09 : Math.cos(t) * r;
+      if (i % 3 === 2 && a.mostly !== 'coins' && a.strays === 'scattered') wad([x, 0.011, z], 0.016, palette[i % palette.length]);
+      else s.cylinder(0.011, 0.011, 0.0016, [x, 0.0008 + (a.strays === 'stack' ? Math.floor(i / 2) * 0.0016 : i * 0.0001), z], new THREE.MeshStandardMaterial({ color: coinTints[i % coinTints.length], metalness: 0.85, roughness: 0.3 }), 14);
     }
 
     // The odd thing: resting on top of the heap against the front glass, or propped at the foot of a tin.
@@ -221,7 +245,7 @@ export default defineThing({
       c.textAlign = 'center'; c.textBaseline = 'middle';
       c.save(); c.translate(128, 96); c.rotate(-0.05 + (random() - 0.5) * 0.08);
       const size = line2 ? 66 : 96;
-      c.font = `bold ${size}px cursive`;
+      c.font = a.lettering === 'fine' ? `italic ${size * 0.9}px cursive` : `bold ${size}px ${a.lettering === 'block' ? 'sans-serif' : a.lettering === 'serif' ? 'serif' : 'cursive'}`;
       if (line2) { c.fillText(line1, 0, -36, 236); c.fillText(line2, 0, 38, 236); } else c.fillText(line1, 0, 0, 236);
       if (a.sign === 'thanks') { c.fillStyle = '#d83a55'; c.font = '40px sans-serif'; c.fillText('♥', 96, 44); }
       c.lineWidth = 5; c.strokeStyle = c.fillStyle; c.beginPath(); c.moveTo(-80, line2 ? 78 : 60); c.quadraticCurveTo(0, (line2 ? 78 : 60) + 10, 84, (line2 ? 78 : 60) - 4); c.stroke();
@@ -258,6 +282,29 @@ export default defineThing({
       board.rotation.z = -0.06;
     }
 
+    if (a.counting === 'pencil' || a.counting === 'tally') {
+      const tallyMap = texture(192, 128, c => { c.fillStyle = '#eee4c9'; c.fillRect(0, 0, 192, 128); c.strokeStyle = '#394653'; c.lineWidth = 3; for (let row = 0; row < 3; row++) for (let group = 0; group < 3; group++) { const x = 14 + group * 57, y = 18 + row * 35; for (let k = 0; k < 4; k++) { c.beginPath(); c.moveTo(x + k * 8, y); c.lineTo(x + k * 8, y + 24); c.stroke(); } c.beginPath(); c.moveTo(x - 2, y + 21); c.lineTo(x + 28, y + 2); c.stroke(); } });
+      const card = s.box([0.074, 0.001, 0.052], [0.132, 0.0005, -0.062], new THREE.MeshStandardMaterial({ map: tallyMap, roughness: 1 })); card.rotation.y = -0.2;
+      if (a.counting === 'pencil') { s.rod([0.1, 0.003, -0.103], [0.174, 0.003, -0.081], 0.0025, s.material('#cf9b36')); s.rod([0.174, 0.003, -0.081], [0.182, 0.003, -0.079], 0.0025, s.material('#bba67d'), 0.0004); }
+      else { const fold = s.box([0.074, 0.001, 0.017], [0.132, 0.007, -0.079], new THREE.MeshStandardMaterial({ map: tallyMap, roughness: 1 })); fold.rotation.set(-0.75, -0.2, 0); }
+    } else if (a.counting === 'counter') {
+      const metal = s.material('#afb8bb', { metalness: 0.8, roughness: 0.3 });
+      s.box([0.042, 0.028, 0.035], [0.13, 0.014, -0.06], metal);
+      s.box([0.027, 0.012, 0.001], [0.13, 0.019, -0.042], s.material('#242b2b'));
+      s.label('0042', 0.024, 0.009, [0.13, 0.019, -0.0413], '#e8e1c9', '#242b2b');
+      s.cylinder(0.007, 0.007, 0.009, [0.13, 0.032, -0.06], metal, 12);
+      s.ring(0.018, 0.0015, [0.13, 0.018, -0.081], metal);
+    }
+    if (a.footing !== 'bare') {
+      const lift = a.footing === 'tray' ? 0.009 : 0.003;
+      for (const child of s.root.children) child.position.y += lift;
+      const mat = s.material(a.footing === 'felt' ? '#365e4c' : a.footing === 'cork' ? '#b99865' : '#735033', { roughness: 0.9 });
+      s.box([0.44, lift, 0.36], [0.025, lift / 2, 0.025], mat);
+      if (a.footing === 'tray') {
+        for (const x of [-0.195, 0.245]) s.box([0.008, 0.021, 0.36], [x, 0.015, 0.025], mat);
+        for (const z of [-0.155, 0.205]) s.box([0.44, 0.021, 0.008], [0.025, 0.015, z], mat);
+      }
+    }
     return s.finish();
   },
 });

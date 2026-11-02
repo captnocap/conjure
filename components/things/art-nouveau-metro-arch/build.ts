@@ -58,6 +58,11 @@ export default defineThing({
       newspapers: 'A tied bundle of newspapers waiting for the morning.',
     }),
     map: noul('Is there a network map board standing beside the entrance?'),
+    railInfill: choice('What ornaments fill the railing panels?', { scroll: 'The original open organic scrolls.', seed: 'A seed-shaped medallion in each panel.', fan: 'Three slender fan ribs in each panel.', leaf: 'A pointed leaf hanging at the centre.' }),
+    curbDetail: choice('How is the stone curb finished?', { plain: 'Plain cut stone.', grooves: 'Long shallow grooves on its outer face.', caps: 'Square cap blocks under the posts.', brick: 'A band of red brick along the base.' }),
+    signCrest: choice('What rises above the sign frame?', { none: 'No extra crest.', bud: 'A central closed flower bud.', leaves: 'Two long leaves curling away from the centre.', rosette: 'A small round floral rosette.' }),
+    lampCage: choice('How is the glass protected?', { bare: 'Uncovered glass buds.', ribs: 'Four thin iron ribs around each bud.', band: 'A narrow brass collar around each bud.', petals: 'Three cast metal petals cupping the glass.' }),
+    entryPaving: choice('What paving marks the top of the stair?', { bare: 'No separate paving apron.', stone: 'Broad pale stone slabs.', mosaic: 'Cream and charcoal mosaic.', cobbles: 'A short band of rounded grey setts.' }),
   },
 
   build(a, context) {
@@ -104,6 +109,9 @@ export default defineThing({
       const at = (u: number, v: number): [number, number, number] => [ax + dx * (u + 0.5), 0.22 + v, az + dz * (u + 0.5)];
       s.tube([at(0, 0.12), at(0.3, 0.42), at(0.36, 0.86), at(0, 0.7), at(-0.36, 0.86), at(-0.3, 0.42)], 0.022, iron, true);
       s.tube([at(-0.46, 0.1), at(-0.2, 0.3), at(0, 0.58), at(0.2, 0.3), at(0.46, 0.1)], 0.016, accent);
+      if(a.railInfill==='seed')s.ball([.11,.19,.055],at(0,.46),accent,14);
+      else if(a.railInfill==='fan')for(const u of[-.28,0,.28])s.rod(at(0,.13),at(u,.72),.009,accent);
+      else if(a.railInfill==='leaf')s.tube([at(0,.72),at(.15,.42),at(0,.2),at(-.15,.42),at(0,.72)],.014,accent);
       s.rod(at(-0.5, 0.95), at(0.5, 0.95), 0.03, iron);
       s.rod(at(-0.5, 0.06), at(0.5, 0.06), 0.02, iron);
     };
@@ -277,6 +285,24 @@ export default defineThing({
         const outside = random() < 0.7;
         return { at: [(random() - 0.5) * (outside ? 5 : 2.4), 0.012, outside ? Z1 + 0.2 + random() * 1.1 : mix(Z0, Z1, random())] as [number, number, number], size: 0.05 + random() * 0.05, color: tones[Math.floor(random() * tones.length)] };
       })).castShadow = false;
+    }
+
+    if(a.curbDetail==='grooves')for(const side of[-1,1])for(const y of[.06,.12,.18])s.box([.008,.012,Z1-Z0],[side*(W+.154),y,0],s.material('#8a867c'));
+    else if(a.curbDetail==='caps')for(const side of[-1,1])for(let i=0;i<sidePanels;i++)s.box([.38,.035,.32],[side*W,.2375,mix(Z0,Z1,i/sidePanels)],stone);
+    else if(a.curbDetail==='brick')for(const side of[-1,1])for(let i=0;i<16;i++)s.box([.31,.07,.284],[side*W,.035,Z0+.15+i*.3],s.material(i%3?'#a1755e':'#8e6453'));
+    const crestY=signY+signH/2+.16;
+    if(a.signCrest==='bud'){s.rod([0,crestY,Z1],[0,crestY+.22,Z1],.025,iron);s.ball([.11,.16,.065],[0,crestY+.31,Z1],accent,16);}
+    else if(a.signCrest==='leaves')for(const side of[-1,1])s.tube([[0,crestY,Z1],[side*.13,crestY+.21,Z1],[side*.37,crestY+.27,Z1],[side*.27,crestY+.13,Z1],[0,crestY,Z1]],.018,accent);
+    else if(a.signCrest==='rosette'){s.rod([0,crestY,Z1],[0,crestY+.19,Z1],.018,iron);for(let i=0;i<7;i++){const t=i*Math.PI*2/7;s.ball([.045,.045,.025],[Math.cos(t)*.09,crestY+.22+Math.sin(t)*.09,Z1],accent,10);}}
+    if(a.lampCage!=='bare')for(const side of[-1,1]) {
+      const x=side*(W-.76),y=3.69;
+      if(a.lampCage==='band')s.ring(.202,.012,[x,y,Z1],s.material('#b79a56',{metalness:.6})).rotation.x=Math.PI/2;
+      else for(let i=0;i<(a.lampCage==='ribs'?4:3);i++){const t=i*Math.PI*2/(a.lampCage==='ribs'?4:3),dx=Math.cos(t),dz=Math.sin(t);s.tube([[x,y-.3,Z1],[x+dx*.2,y-.14,Z1+dz*.2],[x+dx*.2,y+.1,Z1+dz*.2],[x,y+.3,Z1]],a.lampCage==='ribs'?.009:.025,iron);}
+    }
+    if(a.entryPaving!=='bare') {
+      const mat=s.material('#bbb5a7');s.box([4.5,.04,1.15],[0,-.027,Z1+.65],mat);
+      const count=a.entryPaving==='stone'?6:a.entryPaving==='mosaic'?24:16,rows=a.entryPaving==='stone'?2:5;
+      for(let x=0;x<count;x++)for(let z=0;z<rows;z++){const colour=a.entryPaving==='mosaic'?((x+z)%3?'#d9cfb7':'#626864'):a.entryPaving==='cobbles'?(x%3?'#999b93':'#b4b3a7'):'#d2cabc';s.box([4.5/count-.012,.006,1.15/rows-.012],[-2.25+(x+.5)*4.5/count,-.003,Z1+.075+(z+.5)*1.15/rows],s.material(colour));}
     }
 
     const flicker = mix(0.02, 0.22, mood.energy);

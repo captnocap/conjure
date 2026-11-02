@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import { Sculpture, choice, defineThing, mix, noul, score } from '@conjure/kit';
 
 type Band = readonly [number, number, string];
@@ -47,6 +48,12 @@ export default defineThing({
       garland: 'A marigold garland tied round the grab pole.',
       sandal: 'One lost sandal on the footboard.',
     }),
+    roofVents: choice('What ventilators run along the roof?', { boxes: 'Five low rectangular ventilator boxes.', cowls: 'Five mushroom-shaped ventilator cowls.', louvres: 'Long louvred ventilation boxes.', rings: 'Low round vent caps.' }),
+    windowGuards: choice('What extra metalwork protects the outer windows?', { plain: 'Only the painted original bars.', horizontal: 'Three raised horizontal guard bars.', grid: 'A square raised steel grille.', frames: 'Heavy rectangular guard frames.' }),
+    footboard: choice('What tread is on the doorway footboards?', { plain: 'Plain dark metal.', bars: 'Closely spaced transverse tread bars.', mesh: 'A rectangular open grid.', edge: 'A bright yellow edge strip.' }),
+    bogieBrace: choice('How is each bogie frame reinforced?', { plain: 'The original straight beams.', cross: 'Diagonal side braces.', springs: 'Paired visible coil springs.', plates: 'Large bolted bearing plates.' }),
+    ballast: choice('How is the track bed finished?', { plain: 'A plain compacted bed.', stone: 'Angular pale ballast beside the sleepers.', dark: 'A dark stone bed with a wide shoulder.', sand: 'A light sandy shoulder at the track edge.' }),
+    sleepers: choice('What sleepers carry the rails?', { concrete: 'Pale rectangular concrete sleepers.', timber: 'Dark broad wooden sleepers.', twin: 'Paired concrete blocks joined by a narrow tie.', steel: 'Shallow rust-brown pressed steel sleepers.' }),
   },
 
   build(a, context) {
@@ -229,7 +236,12 @@ export default defineThing({
     const roofGeometry = new THREE.ExtrudeGeometry(arc, { depth: Lc + 0.1, bevelEnabled: false, curveSegments: 10 });
     roofGeometry.rotateY(Math.PI / 2); roofGeometry.translate(-Lc / 2 - 0.05, 0, 0);
     B(s.mesh(roofGeometry, roofMaterial, [0, top, 0]));
-    for (let i = 0; i < 5; i++) B(s.box([0.5, 0.12, 0.34], [-Lc / 2 + 1.2 + i * (Lc - 2.4) / 4, top + 0.44, 0], roofMaterial));
+    for(let i=0;i<5;i++){const x=-Lc/2+1.2+i*(Lc-2.4)/4;
+      if(a.roofVents==='boxes')B(s.box([.5,.12,.34],[x,top+.44,0],roofMaterial));
+      else if(a.roofVents==='cowls'){B(s.cylinder(.085,.085,.16,[x,top+.45,0],roofMaterial,12));B(s.cylinder(.22,.18,.07,[x,top+.565,0],roofMaterial,16));}
+      else if(a.roofVents==='rings')B(s.cylinder(.18,.2,.075,[x,top+.4175,0],roofMaterial,16));
+      else{B(s.box([.7,.16,.36],[x,top+.46,0],roofMaterial));for(let j=0;j<7;j++)B(s.box([.035,.012,.3],[x-.27+j*.09,top+.545,0],under));}
+    }
     for (const z of [-1, 1]) B(s.box([Lc, 0.04, 0.05], [0, top + 0.02, z * (Wc / 2 + 0.04)], roofMaterial)); // rain gutter
     B(s.box([Lc, 0.1, Wc - 0.02], [0, base + 0.02, 0], s.material(lightsOn ? '#8a7648' : '#242321', { roughness: wet ? 0.35 : 0.9, ...(lightsOn ? { emissive: '#ffcf70', emissiveIntensity: 0.3 } : {}) })));
     B(s.box([Lc - 0.1, 0.05, Wc - 0.1], [0, top - 0.03, 0], interior));
@@ -354,9 +366,32 @@ export default defineThing({
     s.box([trackL, 0.06, 3.3], [0, 0.03, 0], s.material(wet ? '#4a4742' : '#6a655c', { roughness: wet ? 0.5 : 1 }));
     const sleepers: { at: [number, number, number]; size: number }[] = [];
     for (let i = 0; i < 24; i++) sleepers.push({ at: [-trackL / 2 + 0.3 + i * (trackL - 0.6) / 23, 0.11, 0], size: 1 });
-    s.scatter(new THREE.BoxGeometry(0.26, 0.12, 2.6), s.material('#8b877c', { roughness: 0.95 }), sleepers);
+    if(a.sleepers==='twin'){
+      const blocks=sleepers.flatMap(p=>[-gauge,gauge].map(z=>({at:[p.at[0],.11,z]as[number,number,number],size:1})));s.scatter(new THREE.BoxGeometry(.3,.12,.6),s.material('#a9a69b'),blocks);s.scatter(new THREE.BoxGeometry(.1,.05,2.2),steel,sleepers);
+    }else s.scatter(new THREE.BoxGeometry(a.sleepers==='timber'?.32:.26,a.sleepers==='steel'?.08:.12,2.6),s.material(a.sleepers==='timber'?'#655440':a.sleepers==='steel'?'#8c6248':'#8b877c',{roughness:.85}),sleepers.map(p=>({...p,at:[p.at[0],a.sleepers==='steel'?.13:p.at[1],p.at[2]]as[number,number,number]})));
     const railMaterial = s.material('#6a5648', { metalness: 0.6, roughness: 0.45 });
     for (const z of [-gauge, gauge]) { s.box([trackL, 0.13, 0.07], [0, 0.235, z], railMaterial); s.box([trackL, 0.02, 0.075], [0, railTop - 0.005, z], steel); }
+
+    if(a.windowGuards!=='plain')for(const side of[-1,1])for(const win of windows){
+      const z=side*(Wc/2+.025),y=base+1.34;
+      if(a.windowGuards==='frames'){for(const dx of[-1,1])B(s.box([.035,.78,.035],[win.x+dx*win.w/2,y,z],steel));for(const dy of[-.39,.39])B(s.box([win.w,.035,.035],[win.x,y+dy,z],steel));}
+      else{for(const dy of[-.25,0,.25])B(s.rod([win.x-win.w/2,y+dy,z],[win.x+win.w/2,y+dy,z],.012,steel));if(a.windowGuards==='grid')for(const dx of[-.27,0,.27])B(s.rod([win.x+dx,y-.36,z],[win.x+dx,y+.36,z],.01,steel));}
+    }
+    if(a.footboard!=='plain')for(const x of doors)for(const side of[-1,1]){
+      const z=side*(Wc/2+.1),y=base-.031;
+      if(a.footboard==='edge')B(s.box([doorW+.2,.008,.045],[x,y,z+side*.12],yellow));
+      else{for(let i=0;i<17;i++)B(s.box([.018,.006,.23],[x-doorW/2+i*doorW/16,y,z],steel));if(a.footboard==='mesh')for(const dz of[-.08,0,.08])B(s.box([doorW+.16,.006,.012],[x,y+.005,z+dz],steel));}
+    }
+    if(a.bogieBrace!=='plain')for(const x of[-4.1,4.1])for(const z of[-1.08,1.08]){
+      if(a.bogieBrace==='cross')for(const sign of[-1,1])s.rod([x-.85,railTop+wheelR+sign*.16,z],[x+.85,railTop+wheelR-sign*.16,z],.025,steel);
+      else if(a.bogieBrace==='springs')for(const dx of[-.48,.48])for(let i=0;i<6;i++)s.ring(.09,.012,[x+dx,railTop+wheelR+.04+i*.036,z],steel).rotation.x=Math.PI/2;
+      else for(const dx of[-.85,.85]){s.box([.26,.24,.045],[x+dx,railTop+wheelR,z],steel);for(const dz of[-.07,.07])for(const dy of[-.07,.07])s.ball([.025,.025,.018],[x+dx+dz,railTop+wheelR+dy,z+Math.sign(z)*.03],under,8);}
+    }
+    if(a.ballast!=='plain'){
+      if(a.ballast==='stone'){
+        const stones:{at:[number,number,number];size:number;color:string}[]=[];for(let i=0;i<240;i++){const side=i%2?1:-1;stones.push({at:[-trackL/2+.1+random()*(trackL-.2),.075,side*(1.31+random()*.25)],size:.045+random()*.025,color:i%3?'#a2a49b':'#c3bfae'});}s.scatter(new THREE.IcosahedronGeometry(1,0),s.material('#ffffff'),stones);
+      }else for(const side of[-1,1])s.box([trackL,.035,.38],[0,.0175,side*1.62],s.material(a.ballast==='sand'?'#bead86':'#393d39'));
+    }
 
     // ---- rain across the doorways -----------------------------------------
     const drops: THREE.InstancedMesh[] = [];
@@ -390,6 +425,25 @@ export default defineThing({
       }
     };
     placeRain();
+
+    // Consolidate rigid untextured pieces within each moving frame. The body
+    // still sways and every hanging strap keeps its independent animation.
+    const removedGeometry=new Set<THREE.BufferGeometry>();
+    const compact=(parent:THREE.Object3D)=>{
+      parent.updateMatrixWorld(true);const before=new THREE.Box3().setFromObject(parent,true);
+      const groups=new Map<THREE.Material,Map<string,THREE.Mesh[]>>();
+      for(const child of parent.children){const mesh=child as THREE.Mesh;if(!mesh.isMesh||(mesh as THREE.InstancedMesh).isInstancedMesh||Array.isArray(mesh.material))continue;const material=mesh.material as THREE.MeshStandardMaterial;if(material.map||material.transparent)continue;
+        const flags=String(mesh.castShadow)+String(mesh.receiveShadow),bucket=groups.get(material)??new Map<string,THREE.Mesh[]>(),list=bucket.get(flags)??[];list.push(mesh);bucket.set(flags,list);groups.set(material,bucket);
+      }
+      for(const[material,bucket]of groups)for(const list of bucket.values())if(list.length>1){
+        const parts=list.map(mesh=>{mesh.updateMatrix();const clone=mesh.geometry.clone(),geometry=clone.index?clone.toNonIndexed():clone;if(geometry!==clone)clone.dispose();for(const name of Object.keys(geometry.attributes))if(name!=='position'&&name!=='normal')geometry.deleteAttribute(name);geometry.applyMatrix4(mesh.matrix);return geometry;});
+        const geometry=mergeGeometries(parts);if(!geometry)throw new Error('Coach static merge failed');const merged=new THREE.Mesh(geometry,material);merged.castShadow=list[0].castShadow;merged.receiveShadow=list[0].receiveShadow;
+        for(const mesh of list){removedGeometry.add(mesh.geometry);parent.remove(mesh);}parent.add(merged);for(const part of parts)part.dispose();
+      }
+      parent.updateMatrixWorld(true);const after=new THREE.Box3().setFromObject(parent,true);if(before.min.distanceTo(after.min)>1e-5||before.max.distanceTo(after.max)>1e-5)throw new Error('Coach compaction changed bounds');
+    };
+    compact(body);compact(s.root);
+    const retainedGeometry=new Set<THREE.BufferGeometry>();s.root.traverse(node=>{if((node as THREE.Mesh).isMesh)retainedGeometry.add((node as THREE.Mesh).geometry);});for(const geometry of removedGeometry)if(!retainedGeometry.has(geometry))geometry.dispose();
 
     const sway = mix(0, 0.012, mood.energy), swing = mix(0.03, 0.4, mood.energy);
     const move = (time: number) => {

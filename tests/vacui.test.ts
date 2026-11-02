@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Capture } from '../kit/contract';
+import { DOODLE_SET_NAMES } from '../engine/doodles';
 import { VACUI_FILLS, VACUI_FORMS, VACUI_GRAINS, VACUI_INKS, VACUI_QUESTIONS, applyVacui, vacuiOf, type VacuiFill, type VacuiForm, type VacuiGrain, type VacuiInk } from '../engine/vacui';
 import { CAMERA_MOVES, MOTION_QUESTIONS, cameraAt, cameraMoveOf, type CameraMove } from '../engine/motion';
 import { decideSchema } from '../server/decision-schema';
@@ -26,8 +27,10 @@ function scene(size = 160): { capture: Capture; print: Uint8ClampedArray } {
 test('the dead-space and loop camera questions are typed and fit the live schema', () => {
   decideSchema.parse({ idea: 'x', brief: 'y', questions: [...Object.values(VACUI_QUESTIONS), ...Object.values(MOTION_QUESTIONS)] });
   assert.ok(!('none' in VACUI_QUESTIONS.vacui.options), 'horror vacui: the empty space always fills');
-  assert.deepEqual(vacuiOf({ vacui: 'lace', vacuiGrain: 'halo', vacuiReach: 0.3, vacuiForm: 'skull', vacuiInk: 'blacklight', vacuiDrip: true }), { fill: 'lace', grain: 'halo', reach: 0.3, form: 'skull', ink: 'blacklight', drip: true });
-  assert.deepEqual(vacuiOf({ vacui: '__proto__', vacuiGrain: 7, vacuiReach: Number.NaN, vacuiForm: 'constructor' }), { fill: 'tissue', grain: 'hug', reach: 0, form: 'land', ink: 'print', drip: false });
+  assert.deepEqual(vacuiOf({ vacui: 'lace', vacuiGrain: 'halo', vacuiReach: 0.3, vacuiForm: 'skull', vacuiInk: 'blacklight', vacuiDrip: true, vacuiDoodles: 'fungi' }), { fill: 'lace', grain: 'halo', reach: 0.3, form: 'skull', ink: 'blacklight', drip: true, doodles: 'fungi' });
+  assert.deepEqual(vacuiOf({ vacui: '__proto__', vacuiGrain: 7, vacuiReach: Number.NaN, vacuiForm: 'constructor', vacuiDoodles: 'toString' }), { fill: 'tissue', grain: 'hug', reach: 0, form: 'land', ink: 'print', drip: false, doodles: 'machinery' });
+  assert.deepEqual(Object.keys(VACUI_QUESTIONS.vacuiDoodles.options), DOODLE_SET_NAMES, 'the doodle question offers every set');
+  assert.equal(Object.keys(VACUI_QUESTIONS).at(-1), 'vacuiDoodles', 'the doodle question comes last, so older draws of the dead-space stream are unchanged');
   assert.equal(cameraMoveOf({ loopCamera: 'push' }), 'push');
   assert.equal(cameraMoveOf({ loopCamera: 'constructor' }), 'drift');
 });
@@ -126,4 +129,25 @@ test('drips run down from solid dark forms, and the blacklight fill glows violet
   let blue = 0, red = 0, green = 0;
   for (let i = 0; i < count; i++) { red += glow[i * 4]; green += glow[i * 4 + 1]; blue += glow[i * 4 + 2]; }
   assert.ok(blue > red && red > green, 'violet and pink over indigo');
+});
+
+test('the blacklight glows in the idea’s palette, and graphite only tints its paper', () => {
+  const size = 200, count = size * size;
+  const print = new Uint8ClampedArray(count * 4).fill(236);
+  const capture: Capture = { size, color: new Uint8ClampedArray(print), normal: new Uint8ClampedArray(count * 4), depth: new Uint8Array(count * 4), identity: new Uint8Array(count * 4), diffuse: new Uint8Array(count * 4), near: 0.1, far: 100, pixelWorldSize: 0.01, light: [0, 0, 1], baseColors: [] };
+  const vacui = { fill: 'glyphs', grain: 'even', reach: 1, form: 'land', ink: 'blacklight', drip: false } as const;
+  const sums = (pixels: Uint8ClampedArray) => {
+    let red = 0, green = 0, blue = 0;
+    for (let i = 0; i < count; i++) { red += pixels[i * 4]; green += pixels[i * 4 + 1]; blue += pixels[i * 4 + 2]; }
+    return { red, green, blue };
+  };
+  const forest = sums(applyVacui(print, capture, vacui, 8, 0, { ink: 'lime', ground: 'forest', second: 'mint' }).pixels);
+  assert.ok(forest.green > forest.red && forest.green > forest.blue, `lime on forest is green: ${JSON.stringify(forest)}`);
+  const ember = sums(applyVacui(print, capture, vacui, 8, 0, { ink: 'amber', ground: 'rust', second: 'coral' }).pixels);
+  assert.ok(ember.red > ember.green && ember.red > ember.blue, `amber on rust is warm: ${JSON.stringify(ember)}`);
+  const plain = sums(applyVacui(print, capture, { ...vacui, ink: 'graphite' }, 8).pixels);
+  const navy = sums(applyVacui(print, capture, { ...vacui, ink: 'graphite' }, 8, 0, { ink: 'magenta', ground: 'navy', second: 'lime' }).pixels);
+  assert.ok(plain.red >= plain.blue, 'graphite paper is warm as made');
+  assert.ok(navy.blue > navy.red, `a navy ground cools the paper: ${JSON.stringify(navy)}`);
+  assert.ok(Math.abs(navy.green - plain.green) < plain.green * 0.15, 'the pencil keeps its tone');
 });

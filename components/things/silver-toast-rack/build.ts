@@ -5,6 +5,12 @@ type P3 = [number, number, number];
 
 export default defineThing({
   questions: {
+    capacity: choice('How many slots does the toast rack have?',{four:'Four slots in a compact rack.',five:'Five slots for a small breakfast table.',six:'Six evenly spaced toast slots.',seven:'Seven slots in a long family rack.'}),
+    grip: choice('What shape is the carrying handle?',{ring:'A circular finger ring on a short stem.',heart:'A heart-shaped carrying loop.',arch:'A broad arch spanning the middle dividers.',square:'A small rectangular finger loop.'}),
+    feet: choice('How is the rack raised off the table?',{ball:'Four polished ball feet.',pad:'Short legs ending in flat round pads.',scroll:'Four small curled scroll feet.',sled:'Two low continuous sled runners.'}),
+    toastMarks: choice('What texture marks the toast faces?',{pores:'An uneven porous bread crumb.',grill:'Dark parallel grill lines.',seeds:'Visible sesame and grain seeds.',patches:'Broad irregular patches of darker browning.'}),
+    railDetail: choice('How are the rack rails decorated?',{plain:'Smooth plain side rails.',beaded:'A line of small metal beads along each rail.',twist:'Fine spiral wire wrapped around the rails.',lozenges:'Little open diamond ornaments below the rails.'}),
+    service: choice('Which small serving item accompanies the rack?',{tongs:'Spring toast tongs laid beside it.',knife:'A butter knife on a small knife rest.',brush:'A small crumb brush with a wooden back.',card:'A folded place card with a table number.'}),
     slices: choice('How many slices stand in the rack?', {
       one: 'A single slice left, the rest of the rack bare.',
       two: 'Two slices, a breakfast for one.',
@@ -64,7 +70,7 @@ export default defineThing({
     });
     const wire = a.metal === 'iron' ? 0.0032 : 0.0024;
 
-    const slots = 6, pitch = 0.027, half = 0.04, railY = 0.014;
+    const slots = {four:4,five:5,six:6,seven:7}[a.capacity], pitch = 0.027, half = 0.04, railY = 0.014;
     const length = slots * pitch;
     const x0 = -length / 2;
     const arcTop = a.bread === 'triangles' ? 0.07 : 0.086;
@@ -73,9 +79,19 @@ export default defineThing({
     for (const z of [-half, half]) r.rod([x0 - 0.008, railY, z], [-x0 + 0.008, railY, z], wire, metal);
     for (const x of [x0 - 0.008, -x0 + 0.008]) {
       r.rod([x, railY, -half], [x, railY, half], wire, metal);
-      for (const z of [-half, half]) r.ball([0.006, 0.006, 0.006], [x, 0.006, z], metal, 12);
+      for (const z of [-half, half]) {
+        if(a.feet==='ball')r.ball([.006,.006,.006],[x,.006,z],metal,12);
+        if(a.feet==='pad'){r.cylinder(.007,.007,.003,[x,.0015,z],metal,12);r.rod([x,.003,z],[x,railY,z],wire,metal);}
+        if(a.feet==='scroll')r.tube([[x,.014,z],[x+.006,.012,z],[x+.009,.005,z],[x+.003,.0025,z],[x-.002,.005,z]],wire,metal);
+      }
     }
     r.rod([0, railY, -half], [0, railY, half], wire, metal);
+    if(a.feet==='sled')for(const z of [-half,half]){r.rod([x0-.01,.0025,z],[-x0+.01,.0025,z],.0025,metal);for(const x of [x0,-x0])r.rod([x,.0025,z],[x,railY,z],wire,metal);}
+    for(const z of [-half,half]){
+      if(a.railDetail==='beaded')for(let x=x0;x<=-x0;x+=.009)r.ball([.003,.003,.003],[x,railY,z],metal,8);
+      if(a.railDetail==='twist'){const pts:P3[]=[];for(let i=0;i<=slots*25;i++){const t=i/(slots*25),angle=t*slots*8*Math.PI;pts.push([mix(x0,-x0,t),railY+Math.sin(angle)*.0034,z+Math.cos(angle)*.0034]);}r.tube(pts,.0007,metal);}
+      if(a.railDetail==='lozenges')for(let i=0;i<slots;i++){const x=x0+(i+.5)*pitch;r.tube([[x-.008,railY,z],[x,railY-.008,z],[x+.008,railY,z],[x,railY+.006,z],[x-.008,railY,z]],.001,metal);}
+    }
 
     const arch = (x: number): P3[] => {
       if (a.arches === 'gothic') return [[x, railY, -half], [x, arcTop * 0.55, -half * 0.98], [x, arcTop * 0.86, -half * 0.5], [x, arcTop, 0], [x, arcTop * 0.86, half * 0.5], [x, arcTop * 0.55, half * 0.98], [x, railY, half]];
@@ -101,11 +117,14 @@ export default defineThing({
         } else r.tube(arch(x), wire, metal);
       }
     }
-    // Carrying loop.
-    r.rod([0, arcTop, 0], [0, arcTop + 0.016, 0], wire, metal);
-    const loop = r.ring(0.013, wire, [0, arcTop + 0.028, 0], metal);
-    if (a.arches === 'gothic') loop.scale.set(0.8, 1.25, 1);
-    r.ball([0.005, 0.005, 0.005], [0, arcTop + 0.0145, 0], metal, 10);
+    // A clear grip silhouette, attached to the dividers.
+    if(a.grip==='arch')r.tube([[-pitch,arcTop*.94,0],[-pitch,arcTop+.028,0],[0,arcTop+.041,0],[pitch,arcTop+.028,0],[pitch,arcTop*.94,0]],wire,metal);
+    else{
+      r.rod([0,arcTop,0],[0,arcTop+.014,0],wire,metal);
+      if(a.grip==='ring')r.ring(.013,wire,[0,arcTop+.027,0],metal);
+      if(a.grip==='square')r.tube([[-.012,arcTop+.014,0],[-.012,arcTop+.041,0],[.012,arcTop+.041,0],[.012,arcTop+.014,0],[-.012,arcTop+.014,0]],wire,metal);
+      if(a.grip==='heart')r.tube([[0,arcTop+.014,0],[-.014,arcTop+.031,0],[-.012,arcTop+.043,0],[-.004,arcTop+.045,0],[0,arcTop+.037,0],[.004,arcTop+.045,0],[.012,arcTop+.043,0],[.014,arcTop+.031,0],[0,arcTop+.014,0]],wire,metal);
+    }
 
     // Toast.
     const thick = a.bread === 'doorstop' ? 0.019 : 0.011;
@@ -159,6 +178,10 @@ export default defineThing({
         g.fill();
       }
       if (a.bread === 'brown') { g.fillStyle = 'rgba(60,35,12,0.6)'; for (let i = 0; i < 60; i++) g.fillRect(random() * 128, random() * 128, 2, 2); }
+      if(a.toastMarks==='grill'){g.strokeStyle='rgba(43,22,6,.6)';g.lineWidth=5;for(let y=14;y<128;y+=22){g.beginPath();g.moveTo(0,y);g.lineTo(128,y-20);g.stroke();}}
+      if(a.toastMarks==='seeds')for(let i=0;i<55;i++){g.save();g.translate(random()*128,random()*128);g.rotate(random()*Math.PI);g.fillStyle=i%3?'#ead1a0':'#74552c';g.beginPath();g.ellipse(0,0,3.2,1.3,0,0,Math.PI*2);g.fill();g.restore();}
+      if(a.toastMarks==='patches')for(let i=0;i<10;i++){g.fillStyle='rgba(65,28,5,.22)';g.beginPath();g.ellipse(random()*128,random()*128,10+random()*17,6+random()*12,random()*3,0,Math.PI*2);g.fill();}
+      if(a.toastMarks==='pores'){g.fillStyle='rgba(78,51,21,.22)';for(let i=0;i<110;i++){g.beginPath();g.arc(random()*128,random()*128,.6+random()*1.4,0,Math.PI*2);g.fill();}}
       const edge = g.createRadialGradient(64, 64, 30, 64, 64, 92);
       edge.addColorStop(0, 'rgba(40,20,5,0)');
       edge.addColorStop(1, `rgba(30,15,5,${0.15 + done * 0.6})`);
@@ -177,8 +200,8 @@ export default defineThing({
       return mesh;
     };
 
-    const count = { one: 1, two: 2, four: 4, full: 6 }[a.slices];
-    const order = [0, 1, 2, 3, 4, 5];
+    const count = Math.min(slots,{ one: 1, two: 2, four: 4, full: slots }[a.slices]);
+    const order = Array.from({length:slots},(_,i)=>i);
     for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
     const filled = order.slice(0, count).sort((p, q) => p - q);
     filled.forEach((slot, index) => {
@@ -192,6 +215,7 @@ export default defineThing({
       holder.add(mesh);
       holder.position.set(x0 + (slot + 0.5) * pitch + wobble(0.002), railY + wire, wobble(0.004));
       holder.rotation.z = wobble(a.bread === 'doorstop' ? 0.05 : 0.16);
+      holder.updateMatrixWorld(true);holder.position.y+=railY+wire-new THREE.Box3().setFromObject(holder,true).min.y;
       r.root.add(holder);
     });
 
@@ -289,6 +313,13 @@ export default defineThing({
       }
     }
 
+    // Serving tools lie on the tabletop to the left of the rack.
+    const tool=new Sculpture(context),wood=tool.material('#ac7846'),ix=-.17,iz=-.018;
+    if(a.service==='tongs'){tool.tube([[-.009,.003,.055],[-.012,.003,-.038],[0,.003,-.05],[.012,.003,-.038],[.009,.003,.055]],.0025,steel);for(const x of [-.009,.009])tool.box([.013,.002,.021],[x,.003,.055],steel);}
+    if(a.service==='knife'){tool.box([.018,.008,.028],[0,.004,-.01],china);tool.box([.012,.0015,.074],[0,.010,-.035],steel);tool.box([.01,.006,.06],[0,.008,.031],wood);}
+    if(a.service==='brush'){tool.box([.029,.01,.069],[0,.013,0],wood);for(let i=0;i<9;i++)for(let j=0;j<4;j++)tool.rod([-.01+j*.0067,.009,-.028+i*.007],[ -.01+j*.0067,.0008,-.028+i*.007],.0008,tool.material('#c8b68c'));}
+    if(a.service==='card'){const front=tool.box([.055,.001,.038],[0,.018,.009],tool.material('#f0e8d5'));front.rotation.x=-1.1;const back=tool.box([.055,.001,.038],[0,.018,-.009],tool.material('#e4dac4'));back.rotation.x=1.1;const label=tool.label('TABLE 3',.043,.012,[0,.021,.009],'#46525a','#f0e8d5');label.rotation.x=-.47;}
+    tool.root.position.set(ix,0,iz);tool.root.rotation.y=-.3;tool.root.updateMatrixWorld(true);tool.root.position.y-=new THREE.Box3().setFromObject(tool.root,true).min.y;s.root.add(tool.root);
     return s.finish();
   },
 });

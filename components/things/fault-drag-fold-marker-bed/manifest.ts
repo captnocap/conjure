@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Fault drag fold marker bed", "summary": "A continuous colored geological layer bends into a fault surface and is visibly offset across the cut. An exposed structural-geology teaching specimen with matching fault surfaces, connected mineral growth and physically cut sections.", "scales": ["tabletop", "macro"]});

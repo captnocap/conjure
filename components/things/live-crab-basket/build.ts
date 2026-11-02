@@ -79,6 +79,13 @@ export default defineThing({
       crate: 'An upturned plastic crate.',
       sack: 'A folded hessian sack, damp and dark.',
     }),
+    lining: choice('What lines the crab containers?', { bare: 'The container bottom is bare.', leaves: 'Broad green leaves overlap beneath the crabs.', straw: 'A thin bed of yellow straw.', cloth: 'A blue cloth folded under the catch.' }),
+    rimBinding: choice('What reinforces the container rims?', { plain: 'The original rim alone.', rope: 'A thick rope around each rim.', clips: 'Four metal repair clips.', cord: 'A red cord laced around the edge.' }),
+    handles: choice('How are the containers lifted?', { none: 'By the rim alone.', loops: 'Two upright rope loops.', bars: 'Two short wooden grips.', sling: 'A rope carrying sling around the sides.' }),
+    cover: choice('What cover is kept behind the crabs?', { none: 'No cover.', lid: 'A woven lid propped on the floor.', net: 'A net on a hoop leaning behind the basket.', board: 'A slatted wooden cover laid behind it.' }),
+    tyingKit: choice('What is used to tie the next crab?', { none: 'No tying kit.', spool: 'A raffia spool with loose cord.', shears: 'A pair of shears beside a grass bundle.', bundles: 'Three tied bundles of rush grass.' }),
+    sortingTray: choice('What sorting tray sits beside the basket?', { none: 'No extra tray.', enamel: 'A shallow white enamel tray.', divided: 'A wooden tray divided into three compartments.', scale: 'A small tabletop balance with an empty pan.' }),
+    scoop: choice('What tool rests across the nearest rim?', { none: 'No tool.', bamboo: 'Long split bamboo tongs.', metal: 'A pair of curved steel tongs.', net: 'A small dip net with a wooden handle.' }),
   },
 
   build(a, context) {
@@ -149,6 +156,13 @@ export default defineThing({
       beds.push({ x: 0, y: baseY + 0.035, r: 0.26, square: true, rimY: baseY + 0.18 });
     }
 
+    for(const bed of beds)if(a.lining!=='bare') {
+      const mat=s.material(a.lining==='leaves'?'#496849':a.lining==='straw'?'#c8a75b':'#659ca5');
+      if(a.lining==='cloth')s.box([bed.square?.7:bed.r*1.5,.006,bed.r*1.3],[bed.x,bed.y+.004,0],mat);
+      else if(a.lining==='leaves')for(let i=0;i<5;i++)s.ball([bed.r*.5,.006,bed.r*.32],[bed.x+Math.sin(i*1.25)*bed.r*.4,bed.y+.004,Math.cos(i*1.25)*bed.r*.4],mat,12).rotation.y=i*1.25;
+      else for(let i=0;i<25;i++){const t=i*2.4,r=bed.r*.65*Math.sqrt((i+.5)/25);s.rod([bed.x+Math.cos(t)*r-.04,bed.y+.004,Math.sin(t)*r-.025],[bed.x+Math.cos(t)*r+.04,bed.y+.004,Math.sin(t)*r+.025],.003,mat);}
+      bed.y+=.008;
+    }
     // Lay the crabs.
     const placed: { kind: Kind; at: THREE.Vector3; turn: number; tilt: number; size: number }[] = [];
     beds.forEach((bed, bedIndex) => {
@@ -236,7 +250,7 @@ export default defineThing({
       const kind: Kind = a.kind === 'mixed' ? pick(kinds) : a.kind;
       const spec = KINDS[kind], size = spec.size * 1.5;
       const shell = plain(spec.shell);
-      const crab = new THREE.Group();
+      const crab = new THREE.Group(); crab.name = 'escaped-crab';
       add(crab, ball, shell, [0, 0, 0], [size * 0.5, size * 0.17, size * 0.36]);
       for (const side of [-1, 1]) {
         add(crab, ball, plain('#141414'), [side * size * 0.11, size * 0.15, size * 0.3], [size * 0.028, size * 0.04, size * 0.028]);
@@ -285,6 +299,69 @@ export default defineThing({
     const damp = s.cylinder(1, 1, 0.004, [twoWide ? 0.45 : 0, 0.002, 0.05], wet, 28);
     damp.scale.set(twoWide ? 1.2 : 0.75, 1, 0.65); damp.castShadow = false;
 
+    const caneMat=s.material(cane),ropeMat=s.material('#b29b6b'),metal=s.material('#b8c1c4',{metalness:.6,roughness:.4});
+    for(const bed of beds) {
+      const radius=bed.square?.4:bed.r+.07, rim=bed.rimY;
+      if(a.rimBinding==='rope') {
+        if(bed.square)for(const z of[-.28,.28])s.rod([bed.x-.4,rim,z],[bed.x+.4,rim,z],.012,ropeMat);
+        else s.ring(radius,.012,[bed.x,rim,0],ropeMat).rotation.x=Math.PI/2;
+      } else if(a.rimBinding==='clips')for(let i=0;i<4;i++){const t=Math.PI/4+i*Math.PI/2;const x=bed.square?Math.sign(Math.sin(t))*.4:Math.sin(t)*radius,z=bed.square?Math.sign(Math.cos(t))*.25:Math.cos(t)*radius;s.box([.025,.08,.035],[bed.x+x,rim-.015,z],metal).rotation.y=t;}
+      else if(a.rimBinding==='cord')for(let i=0;i<12;i++){const t=i*Math.PI/6,x=bed.square?Math.sin(t)*.39:Math.sin(t)*radius,z=bed.square?Math.cos(t)*.28:Math.cos(t)*radius;s.ring(.018,.004,[bed.x+x,rim,z],s.material('#b5362e')).rotation.y=t;}
+      for(const side of[-1,1]) {
+        const x=bed.x+side*(bed.square?.415:radius);
+        if(a.handles==='loops')s.ring(.055,.008,[x,rim+.04,0],ropeMat,Math.PI).rotation.y=Math.PI/2;
+        else if(a.handles==='bars'){s.rod([x,rim,-.07],[x,rim,.07],.018,caneMat);for(const z of[-.055,.055])s.rod([x-side*.035,rim-.03,z],[x,rim,z],.007,ropeMat);}
+        else if(a.handles==='sling')s.tube([[bed.x,baseY+.005,-.1],[x,baseY+.05,0],[x*1+(bed.x-x)*.15,rim+.2,0],[bed.x,rim+.33,0]],.008,ropeMat);
+      }
+    }
+    if(a.cover!=='none') {
+      const coverGroup=new THREE.Group();s.root.add(coverGroup);
+      const add=(obj:THREE.Object3D)=>{coverGroup.add(obj);return obj;};
+      if(a.cover==='board')for(let i=0;i<6;i++)add(s.box([.1,.025,.55],[-.275+i*.11,0,0],caneMat));
+      else {
+        const mesh=add(s.ring(.37,.014,[0,0,0],caneMat));mesh.rotation.x=Math.PI/2;
+        if(a.cover==='lid')add(s.cylinder(.36,.36,.012,[0,0,0],new THREE.MeshStandardMaterial({color:cane,map:weave,roughness:.8}),28));
+        else for(let i=-4;i<=4;i++){const x=i*.075,reach=Math.sqrt(.36*.36-x*x);add(s.rod([x,0,-reach],[x,0,reach],.002,ropeMat));add(s.rod([-reach,0,x],[reach,0,x],.002,ropeMat));}
+      }
+      coverGroup.position.set(twoWide?.45:0,0,-.68);coverGroup.rotation.x=a.cover==='board'?0:1.05;
+      coverGroup.updateMatrixWorld(true);coverGroup.position.y-=new THREE.Box3().setFromObject(coverGroup,true).min.y;
+    }
+    const kx=twoWide?1.55:.68,kz=-.38;
+    if(a.tyingKit==='spool'){s.cylinder(.055,.055,.1,[kx,.05,kz],stringMaterial,16);for(const y of[.008,.092])s.cylinder(.07,.07,.016,[kx,y,kz],caneMat,16);s.tube([[kx,.015,kz],[kx+.1,.005,kz+.04],[kx+.18,.005,kz-.03]],.004,stringMaterial);}
+    else if(a.tyingKit==='shears'){for(const x of[-.025,.025])s.ring(.025,.006,[kx+x,.007,kz-.05],metal).rotation.x=Math.PI/2;s.rod([kx-.02,.007,kz],[kx+.025,.007,kz+.12],.008,metal);s.rod([kx+.02,.007,kz],[kx-.025,.007,kz+.12],.008,metal);for(let i=0;i<9;i++)s.rod([kx+.08+i*.005,.005,kz-.08],[kx+.1+i*.005,.005,kz+.16],.003,ropeMat);}
+    else if(a.tyingKit==='bundles')for(let j=0;j<3;j++){for(let i=0;i<7;i++)s.rod([kx+(i-3)*.006,.006+j*.014,kz-.15],[kx+(i-3)*.006,.006+j*.014,kz+.15],.004,ropeMat);s.box([.055,.018,.012],[kx,.007+j*.014,kz],stringMaterial);}
+    if(a.sortingTray!=='none') {
+      const x=-.76,z=.05,mat=a.sortingTray==='enamel'?s.material('#ebe9d8'):caneMat;
+      s.box([.35,.025,.48],[x,.0125,z],mat);
+      if(a.sortingTray==='scale'){s.cylinder(.07,.08,.12,[x,.085,z],metal,16);s.rod([x-.14,.17,z],[x+.14,.17,z],.009,metal);s.lathe([[0,0],[.12,0],[.15,.035]],metal,[x,.17,z]);}
+      else {for(const dx of[-.165,.165])s.box([.02,.06,.48],[x+dx,.04,z],mat);for(const dz of[-.23,.23])s.box([.35,.06,.02],[x,.04,z+dz],mat);if(a.sortingTray==='divided')for(const dz of[-.08,.08])s.box([.33,.06,.014],[x,.04,z+dz],mat);}
+    }
+    if(a.scoop!=='none') {
+      const bed=beds[0],y=bed.rimY+.014,z=.05;
+      if(a.scoop==='net'){s.rod([bed.x-.48,y,z],[bed.x+.03,y,z],.01,caneMat);s.ring(.115,.006,[bed.x+.14,y,z],metal).rotation.x=Math.PI/2;for(let i=-2;i<=2;i++){const dz=i*.035,span=Math.sqrt(.108**2-dz**2);s.rod([bed.x+.14-span,y,z+dz],[bed.x+.14+span,y,z+dz],.002,ropeMat);}}
+      else for(const side of[-1,1])s.rod([bed.x-.43,y,z],[bed.x+.36,y,z+side*.045],a.scoop==='metal'?.006:.009,a.scoop==='metal'?metal:caneMat);
+    }
+
+    // Measure the moving crab in its parent's floor coordinates after every pose.
+    // Yaw, world placement and the component's final centring must not change this contact.
+    const localPoint = new THREE.Vector3(), relative = new THREE.Matrix4(), inverse = new THREE.Matrix4();
+    const settleRunner = () => {
+      if (!runner || a.escape === 'rim') return;
+      runner.parent!.updateWorldMatrix(true, true);
+      inverse.copy(runner.parent!.matrixWorld).invert();
+      let low = Infinity;
+      runner.traverse(node => {
+        const mesh = node as THREE.Mesh; if (!mesh.isMesh) return;
+        const positions = mesh.geometry.getAttribute('position');
+        relative.multiplyMatrices(inverse, mesh.matrixWorld);
+        for (let i = 0; i < positions.count; i++) {
+          localPoint.fromBufferAttribute(positions, i).applyMatrix4(relative);
+          low = Math.min(low, localPoint.y);
+        }
+      });
+      if (Number.isFinite(low)) runner.position.y -= low;
+    };
+    settleRunner();
     const energy = mood.energy;
     const start = runner ? runner.position.clone() : null;
     return s.finish({
@@ -294,6 +371,7 @@ export default defineThing({
         for (const mover of movers) mover.pivot.rotation.z = (mover.pivot.rotation.z > 0 ? 1 : 1) * (0.3 + Math.sin(time * pace + mover.phase) * mover.reach);
         legs.forEach((leg, index) => { leg.rotation.z = Math.sin(time * pace * 6 + index * 1.3) * 0.18; });
         if (runner && start && a.escape === 'floor') runner.position.x = start.x + Math.sin(time * pace * 0.8) * 0.03;
+        settleRunner();
       },
     });
   },

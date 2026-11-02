@@ -60,6 +60,48 @@ export default defineThing({
       cigarette: 'A cigarette burning in a glass ashtray.',
       coffee: 'A cup of black coffee.',
     }),
+    sections: choice('How are the fruit segments divided?', {
+      broad: 'Eight broad segments around the cut face.',
+      regular: 'Ten regular segments.',
+      fine: 'Fourteen narrow segments.',
+      varied: 'A naturally varying eleven to thirteen segments.',
+    }),
+    pith: choice('How much pith surrounds the flesh?', {
+      thin: 'A thin clean rim of pale pith.',
+      natural: 'The usual pith thickness for this fruit.',
+      broad: 'A broad soft pith ring.',
+      thick: 'A very thick cushioned white rim.',
+    }),
+    peel: choice('What texture does the rind have?', {
+      smooth: 'Smooth gently glossy rind.',
+      pores: 'Dense tiny citrus pores.',
+      mottled: 'Small pale and dark mottled patches.',
+      scored: 'Fine shallow vertical scoring lines.',
+    }),
+    spoonShape: choice('What shape is the grapefruit spoon?', {
+      serrated: 'A pointed spoon with small serrations.',
+      oval: 'A smooth rounded oval spoon.',
+      pointed: 'A narrow sharply pointed citrus spoon.',
+      broad: 'A broad shallow spoon with a few large teeth.',
+    }),
+    rim: choice('How is the serving dish rim finished?', {
+      plain: 'An undecorated rim.',
+      double: 'Two fine blue lines circle the rim.',
+      gilt: 'A narrow golden line follows the edge.',
+      beads: 'Small raised ceramic beads ring the border.',
+    }),
+    seeds: choice('How many seeds are visible in the cut flesh?', {
+      none: 'No visible seeds.',
+      pair: 'A pair of pale seeds.',
+      several: 'Several seeds remain near the centre.',
+      many: 'A ring of many pale seeds between the segments.',
+    }),
+    napkin: choice('How is the breakfast napkin arranged?', {
+      square: 'A neatly folded square linen napkin.',
+      triangle: 'A triangular folded napkin.',
+      roll: 'A tightly rolled napkin with a small ring.',
+      fan: 'An open accordion-folded napkin.',
+    }),
   },
 
   build(a, context) {
@@ -68,7 +110,7 @@ export default defineThing({
     const wobble = (amount: number) => (random() - 0.5) * 2 * amount;
     const f = FRUIT[a.fruit];
     const R = f.r;
-    const segments = 10 + Math.floor(random() * 3);
+    const segments={broad:8,regular:10,fine:14,varied:11+Math.floor(random()*3)}[a.sections];
     const steel = s.material('#d9dcdc', { metalness: 0.9, roughness: 0.22 });
     const china = s.material('#f5f2ea', { roughness: 0.28, side: THREE.DoubleSide });
     const sugarSkin = s.material('#ffffff', { roughness: 0.9 });
@@ -92,10 +134,21 @@ export default defineThing({
       top = 0.0065;
     }
 
+    const rimY=a.dish==='coupe'?.072:a.dish==='silver'?.03:.016;
+    if(a.rim==='double')for(const inset of [.002,.006])s.ring(dr-inset,.0007,[0,rimY+.0007,0],s.material('#44738e')).rotation.x=Math.PI/2;
+    if(a.rim==='gilt')s.ring(dr,.001,[0,rimY+.0008,0],s.material('#bca05a',{metalness:.7,roughness:.3})).rotation.x=Math.PI/2;
+    if(a.rim==='beads')for(let i=0;i<36;i++){const t=i*Math.PI*2/36;s.ball([.0018,.0015,.0018],[Math.sin(t)*dr,rimY+.0012,Math.cos(t)*dr],china,8);}
+
     // The fruit: a rind hemisphere and a cut face drawn in polar coordinates.
     const halfAt = (x: number, y: number, z: number, eaten: number, topping: typeof a.topping | 'none') => {
       const group = new Sculpture(context);
-      const rindSkin = new THREE.MeshStandardMaterial({ color: new THREE.Color(f.rind).lerp(new THREE.Color('#8a7a3a'), mood.wear * 0.3), roughness: 0.6, side: THREE.DoubleSide });
+      const rindCanvas=document.createElement('canvas');rindCanvas.width=256;rindCanvas.height=128;
+      const rg=rindCanvas.getContext('2d')!;rg.fillStyle=f.rind;rg.fillRect(0,0,256,128);
+      if(a.peel==='pores')for(let i=0;i<1800;i++){rg.fillStyle=i%2?'rgba(97,71,10,.24)':'rgba(255,246,182,.3)';rg.beginPath();rg.arc(random()*256,random()*128,.5+random(),0,Math.PI*2);rg.fill();}
+      if(a.peel==='mottled')for(let i=0;i<130;i++){rg.fillStyle=i%2?'rgba(119,117,36,.2)':'rgba(255,241,151,.3)';rg.beginPath();rg.ellipse(random()*256,random()*128,3+random()*9,2+random()*6,random()*3,0,Math.PI*2);rg.fill();}
+      if(a.peel==='scored'){rg.strokeStyle='rgba(117,95,24,.32)';rg.lineWidth=1.4;for(let i=0;i<20;i++){rg.beginPath();rg.moveTo(i*13,0);rg.quadraticCurveTo(i*13+6,64,i*13,128);rg.stroke();}}
+      const rindMap=new THREE.CanvasTexture(rindCanvas);rindMap.colorSpace=THREE.SRGBColorSpace;
+      const rindSkin=new THREE.MeshStandardMaterial({color:new THREE.Color('#fff').lerp(new THREE.Color('#8a7a3a'),mood.wear*.3),map:rindMap,roughness:a.peel==='smooth'?.4:.67,side:THREE.DoubleSide});
       const hollow = eaten > 0.9;
       const squash = hollow ? 0.8 : 0.96;
       const rind = group.mesh(new THREE.SphereGeometry(R, 36, 14, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), rindSkin, [0, R * squash, 0]);
@@ -110,7 +163,7 @@ export default defineThing({
       canvas.height = 128;
       const g = canvas.getContext('2d')!;
       // v = 0 is the centre (bottom of the canvas), v = 1 the outer rind.
-      const pithBand = Math.round(128 * f.pith);
+      const pithBand=Math.round(128*(a.pith==='thin'?.05:a.pith==='broad'?.19:a.pith==='thick'?.27:f.pith));
       g.fillStyle = '#f8f0d2';
       g.fillRect(0, 0, 720, 128);
       g.fillStyle = f.rind;
@@ -147,6 +200,8 @@ export default defineThing({
       const face = group.mesh(new THREE.LatheGeometry(profile, 48), hollow ? new THREE.MeshStandardMaterial({ color: '#efe2bc', roughness: 0.8, side: THREE.DoubleSide }) : faceSkin, [0, R * squash, 0]);
       face.castShadow = false;
       const peak = R * squash - dip;
+      if(!hollow){const n={none:0,pair:2,several:5,many:9}[a.seeds];for(let i=0;i<n;i++){const t=(i+.3)/Math.max(n,1)*Math.PI*2,rr=R*.28,sy=R*squash-dip*Math.cos(.28*Math.PI/2)**1.5+.0018;group.ball([.0018,.0012,.004],[Math.sin(t)*rr,sy,Math.cos(t)*rr],group.material('#f1e2ad'),10).rotation.y=t;}}
+
       if (!hollow) {
         if (topping === 'cherry') {
           group.ball([0.009, 0.0085, 0.009], [0, peak + 0.006, 0], new THREE.MeshStandardMaterial({ color: '#c8102e', roughness: 0.12, emissive: '#7a0a18', emissiveIntensity: 0.3 }), 14);
@@ -161,17 +216,17 @@ export default defineThing({
       group.root.position.set(x, y + R * 0.05, z);
       group.root.rotation.set(0.24 + wobble(0.04), random() * 6, wobble(0.05));
       s.root.add(group.root);
-      return R * squash - dip;
+      group.root.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(group.root,true);group.root.position.y+=y-bounds.min.y;
+      return group.root.position.y-y+R*squash-dip;
     };
     const faceY = top + halfAt(0, top, 0, a.eaten, a.topping);
 
     // The serrated spoon.
     const spoon = new Sculpture(context);
     const bowlShape = new THREE.Shape();
-    bowlShape.moveTo(0, -0.022);
-    for (let i = 1; i <= 8; i++) bowlShape.lineTo(0.0085 * Math.sin((i / 8) * Math.PI) + (i % 2 ? 0.0012 : 0), -0.022 + (i / 8) * 0.044 * 0.8);
-    bowlShape.lineTo(0, 0.02);
-    for (let i = 7; i >= 1; i--) bowlShape.lineTo(-0.0085 * Math.sin((i / 8) * Math.PI) - (i % 2 ? 0.0012 : 0), -0.022 + (i / 8) * 0.044 * 0.8);
+    const bowlWidth=a.spoonShape==='broad'?.012:a.spoonShape==='pointed'?.0055:.0085;
+    if(a.spoonShape==='oval')bowlShape.absellipse(0,0,.01,.018,0,Math.PI*2,false,0);
+    else {bowlShape.moveTo(0,-.022);for(let i=1;i<=8;i++)bowlShape.lineTo(bowlWidth*Math.sin(i/8*Math.PI)+(i%2&&a.spoonShape!=='pointed'?(a.spoonShape==='broad'?.002:.0012):0),-.022+i/8*.044*.8);bowlShape.lineTo(0,.02);for(let i=7;i>=1;i--)bowlShape.lineTo(-bowlWidth*Math.sin(i/8*Math.PI)-(i%2&&a.spoonShape!=='pointed'?(a.spoonShape==='broad'?.002:.0012):0),-.022+i/8*.044*.8);}
     bowlShape.closePath();
     const blade = spoon.mesh(new THREE.ExtrudeGeometry(bowlShape, { depth: 0.0012, bevelEnabled: false }), steel);
     blade.rotation.x = Math.PI / 2;
@@ -274,6 +329,18 @@ export default defineThing({
       s.cylinder(0.0365, 0.0365, 0.001, [cx, 0.054, cz], new THREE.MeshStandardMaterial({ color: '#1e120a', roughness: 0.12 }), 24);
     }
 
+    const nx=dr+.09,nz=dr+.045,linen=s.material('#e9e2cd',{roughness:1});
+    if(a.napkin==='square'){
+      for(let i=0;i<3;i++)s.box([.064,.0015,.064],[nx,.00075+i*.0015,nz],linen).rotation.y=.12;
+      for(const side of [-1,1])s.box([.057,.0004,.001],[nx,.0048,nz+side*.023],s.material('#819998'));
+    }else if(a.napkin==='triangle'){
+      const sh=new THREE.Shape();sh.moveTo(-.04,-.034);sh.lineTo(.04,-.034);sh.lineTo(0,.04);sh.closePath();const folded=s.mesh(new THREE.ExtrudeGeometry(sh,{depth:.003,bevelEnabled:false}),linen,[nx,0,nz]);folded.rotation.x=-Math.PI/2;
+    }else if(a.napkin==='roll'){
+      const roll=s.cylinder(.012,.012,.065,[nx,.012,nz],linen,24);roll.rotation.x=Math.PI/2;
+      s.ring(.0125,.0015,[nx,.012,nz],s.material('#b99964',{metalness:.2}));
+    }else{
+      const group=new THREE.Group();for(let i=0;i<9;i++){const sh=new THREE.Shape();sh.moveTo(0,0);sh.lineTo(-.005,.065);sh.lineTo(.005,.065);sh.closePath();const leaf=new THREE.Mesh(new THREE.ShapeGeometry(sh),new THREE.MeshStandardMaterial({color:i%2?'#d8cfb6':'#eee5cf',side:THREE.DoubleSide,roughness:1}));leaf.rotation.x=-Math.PI/2;leaf.rotation.z=(i-4)*.13;leaf.position.y=.001+(i%2)*.001;group.add(leaf);}group.position.set(nx,0,nz);s.root.add(group);
+    }
     return s.finish();
   },
 });

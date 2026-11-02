@@ -21,6 +21,12 @@ const SIZES: Record<keyof typeof PAPERS, [number, number]> = { napkin: [0.125, 0
 
 export default defineThing({
   questions: {
+    inkColour: choice('What ink was used?', { black: 'Black ink.', blue: 'Blue-black ink.', brown: 'Faded brown ink.', green: 'Dark green ink.' }),
+    layout: choice('How is the writing laid out?', { centre: 'Centred as a formal little note.', left: 'Set toward the left margin.', slanted: 'Written at a noticeable diagonal.', large: 'Large cramped lettering dominates the paper.' }),
+    ruling: choice('What border was added to the note?', { plain: 'No added border.', single: 'One thin hand-drawn border.', double: 'A double ruled border.', corners: 'Small ornamental corner marks.' }),
+    corner: choice('How do the unpinned paper edges sit?', { flat: 'Mostly flat edges.', dogear: 'One corner lightly turned up.', curl: 'A rolled-up lower edge.', crease: 'A strong diagonal corner crease.' }),
+    annotation: choice('What small annotation accompanies the amount?', { date: 'A small handwritten date.', table: 'A table-number note.', witness: 'A short witness-initials note.', deadline: 'The word TOMORROW in the lower margin.' }),
+    attachment: choice('What small attachment is on the note?', { clip: 'A silver paperclip.', seal: 'A small red wax seal.', staple: 'A single metal staple.', ribbon: 'A small tied string bow.' }),
     amount: choice('How much is owed?', Object.fromEntries(Object.entries(AMOUNTS).map(([key, value]) => [key, value[0]])) as Record<keyof typeof AMOUNTS, string>),
     hand: score('What is the handwriting like?', ['Calm, neat and level, a businesslike note', 'Hurried', 'Frantic: slanting, blotted, earlier amounts crossed out and raised']),
     paper: choice('What is it written on?', PAPERS),
@@ -91,12 +97,13 @@ export default defineThing({
     }
 
     // The writing: letter by letter, so the hand can shake.
-    const shake = a.hand, ink = mood.cheer < 0.35 ? '#15151a' : '#1c2f7a';
+    const shake = a.hand, ink = {black:'#15151a',blue:'#1c2f7a',brown:'#795332',green:'#24503b'}[a.inkColour];
     const write = (text: string, cx: number, y: number, size: number, strike = false) => {
+      cx=a.layout==='left'?cx-w*.075:cx;size*=a.layout==='large'?1.12:a.layout==='left'?.94:1;
       ctx.font = `italic bold ${size}px "Segoe Script", "Bradley Hand", "Comic Sans MS", cursive`;
       ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = ink; ctx.strokeStyle = ink;
       const fit = Math.min(1, (w * 0.84) / ctx.measureText(text).width);
-      const total = ctx.measureText(text).width * fit, slope = (random() - 0.3) * shake * 0.22;
+      const total = ctx.measureText(text).width * fit, slope = (random() - 0.3) * shake * 0.22+(a.layout==='slanted'?.15:0);
       let x = cx - total / 2;
       ctx.save(); ctx.translate(cx, y); ctx.rotate(-slope); ctx.translate(-cx, -y);
       for (const char of text) {
@@ -154,28 +161,40 @@ export default defineThing({
       for (let y = 0; y < h; y += 5) { x += (random() - 0.5) * 9; ctx.clearRect(x - 8, y, 16, 5); }
     }
 
+    ctx.strokeStyle=ink;ctx.fillStyle=ink;ctx.lineWidth=2;
+    if(a.ruling==='single'||a.ruling==='double'){ctx.strokeRect(41,41,w-82,h-82);if(a.ruling==='double')ctx.strokeRect(47,47,w-94,h-94);}
+    if(a.ruling==='corners')for(const x of [45,w-45])for(const y of [45,h-45]){const sx=x<w/2?1:-1,sy=y<h/2?1:-1;ctx.beginPath();ctx.moveTo(x+sx*26,y);ctx.lineTo(x,y);ctx.lineTo(x,y+sy*26);ctx.stroke();}
+    ctx.font='italic 19px serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText({date:'30 OCT',table:'TABLE 4',witness:'WITNESS: J.M.',deadline:'TOMORROW'}[a.annotation],w*.13,h*.9);
     const map = new THREE.CanvasTexture(canvas);
     map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 4;
     const sheetMaterial = new THREE.MeshStandardMaterial({ map, roughness: 0.92, side: THREE.DoubleSide, alphaTest: 0.5 });
     const geometry = new THREE.PlaneGeometry(width, depth, 28, 28);
     geometry.rotateX(-Math.PI / 2);
     // Ripple and curl; the pinned spot stays flat on the table.
+    const attachX=width*.29,attachZ=-depth*.34;
     const pin: [number, number] = a.weight === 'pen' ? [0, -depth * 0.47] : a.weight === 'knife' ? [width * 0.04, -depth * 0.43] : [-width * 0.33, depth * 0.36];
     const ripple = (a.fate === 'crumpled' ? 0.006 : mix(0.0006, 0.003, mood.wear)) * (a.paper === 'coaster' ? 0.1 : 1);
     const phases = Array.from({ length: 6 }, () => random() * 6.28);
     const position = geometry.getAttribute('position');
     for (let i = 0; i < position.count; i++) {
       const x = position.getX(i), z = position.getZ(i);
-      const free = a.weight === 'nothing' ? 1 : Math.min(1, Math.hypot(x - pin[0], z - pin[1]) / 0.05);
+      const free = Math.min(a.weight === 'nothing' ? 1 : Math.min(1, Math.hypot(x - pin[0], z - pin[1]) / 0.05),Math.min(1,Math.hypot(x-attachX,z-attachZ)/.018));
       const f = a.fate === 'crumpled' ? 150 : 60;
       const wave = Math.abs(Math.sin(x * f + phases[0]) * Math.sin(z * f * 0.9 + phases[1]) + 0.5 * Math.sin(x * f * 2.3 + phases[2]) * Math.sin(z * f * 1.9 + phases[3]));
       const corner = Math.pow(Math.max(Math.abs(x) / (width / 2), Math.abs(z) / (depth / 2)), 5) * (a.paper === 'coaster' ? 0 : mix(0.002, 0.012, mood.wear)) * (0.5 + 0.5 * Math.sin(Math.atan2(z, x) * 2 + phases[4]));
-      position.setY(i, 0.0006 + (wave * ripple + Math.max(0, corner)) * free * free);
+      const lower=Math.max(0,(z/depth+.5)-.76)/.24,diagonal=Math.max(0,(-x/width+z/depth)-.5);
+      const added=a.paper==='coaster'?0:a.corner==='dogear'?diagonal*.022:a.corner==='curl'?lower*lower*.012:a.corner==='crease'?Math.abs(diagonal-.14)*.018*(diagonal>0?1:0):0;
+      position.setY(i,.0006+(wave*ripple+Math.max(0,corner)*(a.corner==='flat'?.15:1)+added)*free*free);
     }
     geometry.computeVertexNormals();
     const sheet = s.mesh(geometry, sheetMaterial);
     sheet.castShadow = false;
     if (a.paper === 'coaster') s.cylinder(width / 2 - 0.0006, width / 2 - 0.0006, 0.0018, [0, -0.0004, 0], s.material('#b9a987', { roughness: 1 }), 40);
+    const clipMetal=s.material('#b7bdc0',{metalness:.85,roughness:.3});
+    if(a.attachment==='clip')s.tube([[attachX-.004,.0015,attachZ+.014],[attachX-.005,.0015,attachZ-.009],[attachX,.0015,attachZ-.013],[attachX+.005,.0015,attachZ-.009],[attachX+.005,.0015,attachZ+.011],[attachX+.001,.0015,attachZ+.014],[attachX-.001,.0015,attachZ+.009],[attachX-.001,.0015,attachZ-.005]],.0007,clipMetal);
+    if(a.attachment==='seal'){s.cylinder(.011,.012,.003,[attachX,.0022,attachZ],s.material('#9e2930',{roughness:.5}),18);const stamp=s.label('J',.012,.012,[attachX,.0039,attachZ],'#6c1922','#9e2930');stamp.rotation.x=-Math.PI/2;}
+    if(a.attachment==='staple'){s.rod([attachX-.006,.001,attachZ],[attachX-.006,.003,attachZ],.0005,clipMetal);s.rod([attachX-.006,.003,attachZ],[attachX+.006,.003,attachZ],.0005,clipMetal);s.rod([attachX+.006,.003,attachZ],[attachX+.006,.001,attachZ],.0005,clipMetal);}
+    if(a.attachment==='ribbon'){const twine=s.material('#b7a882');for(const side of [-1,1])s.tube([[attachX,.0018,attachZ],[attachX+side*.009,.003,attachZ-.006],[attachX+side*.016,.002,attachZ],[attachX+side*.009,.003,attachZ+.006],[attachX,.0018,attachZ],[attachX+side*.015,.0018,attachZ+.018]],.0008,twine);}
     const yaw = mix(-0.4, 0.4, random());
     s.root.rotation.y = yaw;
 

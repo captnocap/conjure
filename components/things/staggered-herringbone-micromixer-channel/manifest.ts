@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Staggered herringbone micromixer channel", "summary": "Alternating asymmetric herringbone floor grooves cross a rectangular channel, with connected inlet/outlet and true recessed grooves. An enlarged staggered herringbone teaching chip based on original asymmetric floor-groove construction; actual recessed grooves remain visible beneath optional schematic flow traces.", "scales": ["macro", "tabletop"]});

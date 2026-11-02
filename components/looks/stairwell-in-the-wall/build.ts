@@ -9,7 +9,7 @@ export default defineLook({questions:{
  story:choice('What has happened on the staircase?',{unfinished:'The treads stop in midair before each landing.',returning:'Every flight returns to the same scene at a smaller scale.',barred:'Some landings have been barred with narrow iron rails.',fractured:'The staircase has broken into suspended fragments.'}),
  flights:score('How many turns must the visitor climb?',['Three long flights','Six shorter flights','Nine flights with tiny further turns']),
  tread:choice('How do the stairs articulate?',{solid:'Thick slab treads with dark underside shadows.',skeletal:'Thin floating treads on narrow open stringers.',carved:'Dense engraved steps cut into old stone.'}),
- pigment:choice('What inks describe the impossible stairs?',{bone:'Warm bone paper, charcoal and grey olive.',rust:'Brick red, faded plaster and dry iron.',ink:'Cold stone, blue black and chalk.',acid:'Sulphur dust, damp green and soot.'})
+ pigment:choice('What inks describe the impossible stairs?',{bone:'Pale warm paper, soft dark and grey mid tones.',rust:'Deep toned brick, faded plaster, heavy dark.',ink:'Cold, quiet stone, deep line and chalk.',acid:'Sour dust, damp vivid mid tones and soot.'})
 },async apply(c,a,context,signal){
  const t=prepare(c,context,signal,a.pigment),{g,p,source,boxes}=t,r=context.random,m=context.mood,count=3+Math.round(a.flights*6);
  for(let j=0;j<count;j++){

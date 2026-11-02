@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Seasonal polar slab fracture junction", "summary": "Intersecting real fractures divide a retained ice slab into supported pieces with exposed substrate beneath the openings. A Martian seasonal ice-fracture teaching section with real openings and substrate contacts; polygonal cracks, retreating slab remnants and dust within exposed fissures.", "scales": ["planetary", "landscape", "macro"]});

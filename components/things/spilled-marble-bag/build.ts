@@ -43,6 +43,42 @@ export default defineThing({
       calico: 'A hand-sewn cream cotton bag with a red initial stitched on it.',
       sock: 'Not a bag at all: an old striped sock tied with string.',
     }),
+    sizes: choice('How are the ordinary marbles sized?', {
+      standard: 'An even set of ordinary playing marbles.',
+      assorted: 'Small peewees and larger marbles are mixed together.',
+      tiny: 'A collection of small peewee marbles beside the big shooter.',
+      large: 'Mostly large marbles, almost as big as the shooter.',
+    }),
+    finish: choice('What finish was made on the marbles?', {
+      polished: 'Bright polished glass with clear reflections.',
+      satin: 'A soft satin sheen.',
+      frosted: 'An intentionally frosted glass surface.',
+      bubbles: 'Small trapped bubbles catch pale light inside the glass.',
+    }),
+    cordEnds: choice('How do the bag’s drawstrings end?', {
+      knot: 'Small tied knots finish the strings.',
+      barrel: 'Wooden barrel beads are threaded onto the ends.',
+      tassel: 'Short soft tassels finish the drawcords.',
+      bell: 'Two tiny metal bells hang from the strings.',
+    }),
+    sewing: choice('What construction detail is visible on the pouch?', {
+      plain: 'A simple unobtrusive sewn pouch.',
+      running: 'A clear line of pale running stitches follows its side.',
+      patch: 'A contrasting rectangular repair patch is stitched onto the side.',
+      cross: 'Crossed reinforcing stitches strengthen the lower half.',
+    }),
+    accessory: choice('What playing accessory lies beside the bag?', {
+      chalk: 'A short stick of chalk for drawing a playing ring.',
+      tally: 'A small wooden tally board records the game.',
+      scoop: 'A shallow wooden scoop for collecting the marbles.',
+      gauge: 'A small board with differently sized marble-gauge holes.',
+    }),
+    keepsake: choice('What was kept with the collection?', {
+      none: 'Only the marbles and their bag.',
+      medal: 'A little prize medal on a folded ribbon.',
+      packet: 'A folded paper packet for a promised trade.',
+      card: 'A small handwritten ownership card.',
+    }),
   },
 
   build(a, context) {
@@ -51,7 +87,7 @@ export default defineThing({
     const jit = (range: number) => (random() - 0.5) * 2 * range;
     const pick = <T>(list: readonly T[]) => list[Math.floor(random() * list.length)];
     const R = 0.0112;
-    const gloss = mix(0.08, 0.45, mood.wear);
+    const gloss = a.finish === 'frosted' ? 0.76 : a.finish === 'satin' ? 0.42 : mix(0.08, 0.45, mood.wear);
 
     const texture = (width: number, height: number, draw: (g: Ctx) => void, repeat = false) => {
       const canvas = document.createElement('canvas');
@@ -131,7 +167,13 @@ export default defineThing({
     const glass = (kind: Kind) => {
       let material = materials.get(kind);
       if (!material) {
-        material = new THREE.MeshStandardMaterial({ map: texture(256, 128, painters[kind]), roughness: gloss, metalness: kind === 'steely' ? 0.35 : 0.05 });
+        material = new THREE.MeshStandardMaterial({ map: texture(256, 128, (g) => {
+          painters[kind](g);
+          if (a.finish === 'bubbles') for (let i = 0; i < 16; i++) {
+            g.strokeStyle = 'rgba(255,255,240,0.55)'; g.lineWidth = 1.4;
+            g.beginPath(); g.arc(random() * 256, random() * 128, 2 + random() * 4, 0, Math.PI * 2); g.stroke();
+          }
+        }), roughness: gloss, metalness: kind === 'steely' ? 0.35 : 0.05 });
         materials.set(kind, material);
       }
       return material;
@@ -191,6 +233,14 @@ export default defineThing({
         g.fillStyle = one; g.fillRect(0, 0, 64, 20); g.fillRect(0, 104, 64, 24);
       }),
     }[a.bag]();
+    if (a.sewing !== 'plain') {
+      const canvas = cloth.image as HTMLCanvasElement, g = canvas.getContext('2d')!, W = canvas.width, H = canvas.height;
+      g.strokeStyle = '#e4cda4'; g.lineWidth = Math.max(1.2, W / 85); g.setLineDash([W / 24, W / 28]);
+      if (a.sewing === 'running') { g.beginPath(); g.moveTo(W * .3, H * .14); g.lineTo(W * .3, H * .87); g.stroke(); }
+      if (a.sewing === 'patch') { g.fillStyle = a.bag === 'calico' ? '#5b7991' : '#bca47d'; g.fillRect(W * .12, H * .35, W * .32, H * .3); g.strokeRect(W * .135, H * .365, W * .29, H * .27); }
+      if (a.sewing === 'cross') for (let i = 0; i < 7; i++) { const x = W * (.1 + i * .11); g.beginPath(); g.moveTo(x, H * .3); g.lineTo(x + W * .07, H * .55); g.moveTo(x, H * .55); g.lineTo(x + W * .07, H * .3); g.stroke(); }
+      cloth.needsUpdate = true;
+    }
     const bagMaterial = new THREE.MeshStandardMaterial({ map: cloth, roughness: a.bag === 'velvet' ? 0.75 : 0.95, side: THREE.DoubleSide });
     bagMaterial.color.lerp(new THREE.Color('#8b8275'), mood.wear * 0.3);
     const bag = new THREE.Group();
@@ -210,10 +260,16 @@ export default defineThing({
       const path = [[0.139, floorY * 0.6, side * 0.022], [0.12, 0.004, side * 0.05], [0.08 + jit(0.02), 0.003, side * (0.08 + random() * 0.02)], [0.04 + jit(0.03), 0.003, side * (0.07 + random() * 0.04)], [jit(0.03), 0.003, side * (0.1 + random() * 0.03)]] as [number, number, number][];
       const lace = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(path.map((p) => new THREE.Vector3(...p))), 24, 0.0024, 6), cord);
       lace.castShadow = true;
-      const bead = new THREE.Mesh(new THREE.SphereGeometry(0.006, 10, 8), cord);
-      bead.position.set(path[4][0], 0.006, path[4][2]);
+      const endMat = a.cordEnds === 'bell' ? s.material('#c5a156', { metalness: 0.6, roughness: 0.3 }) : a.cordEnds === 'barrel' ? s.material('#b98d55') : cord;
+      const endShape = a.cordEnds === 'barrel' ? new THREE.CylinderGeometry(0.006, 0.006, 0.012, 12) : a.cordEnds === 'tassel' ? new THREE.ConeGeometry(0.008, 0.019, 12) : new THREE.SphereGeometry(a.cordEnds === 'bell' ? 0.007 : 0.0055, 12, 8);
+      const bead = new THREE.Mesh(endShape, endMat);
+      bead.position.set(path[4][0], a.cordEnds === 'tassel' ? 0.0095 : a.cordEnds === 'bell' ? 0.007 : 0.006, path[4][2]);
       bead.castShadow = true;
       bag.add(lace, bead);
+      if (a.cordEnds === 'bell') {
+        const slit = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.001, 0.0012), s.material('#4b4233'));
+        slit.position.set(path[4][0], 0.0137, path[4][2]); bag.add(slit);
+      }
     }
     bag.rotation.y = -heading;
     s.root.add(bag);
@@ -229,7 +285,7 @@ export default defineThing({
       return placed.every((other) => Math.hypot(other.at.x - x, other.at.z - z) > (other.r + r) * slack);
     };
     const drop = (x: number, z: number, r: number, kind = pick(collection.kinds)) => { placed.push({ at: new THREE.Vector3(x, r, z), r, kind, tint: pick(collection.tints) }); };
-    const size = () => R * (0.9 + random() * 0.2);
+    const size = () => R * (a.sizes === 'tiny' ? 0.58 + random() * 0.13 : a.sizes === 'large' ? 1.22 + random() * 0.15 : a.sizes === 'assorted' ? 0.6 + random() * 0.75 : 0.9 + random() * 0.2);
     const total = Math.round(mix(14, 50, mood.density) * mix(1, 0.5, full));
 
     // The shooter gets its place first.
@@ -317,6 +373,36 @@ export default defineThing({
         dashes.push({ at: [ringCentre.x + Math.cos(angle) * radius, 0.0006, ringCentre.z + Math.sin(angle) * radius], size: 0.8 + random() * 0.5 });
       }
       s.scatter(new THREE.CylinderGeometry(0.0052, 0.0052, 0.0012, 7), new THREE.MeshStandardMaterial({ color: pick(['#f6f3ea', '#f3b4c2', '#a9d0f0', '#f4dc6a']), roughness: 1 }), dashes).castShadow = false;
+    }
+
+    const wood = s.material('#be985e'), pale = s.material('#e7d8b9'), ink = s.material('#5a554c');
+    const toolX = -0.058, toolZ = -0.095;
+    if (a.accessory === 'chalk') {
+      const chalk = s.cylinder(0.0045, 0.0045, 0.043, [toolX, 0.0045, toolZ], s.material('#ece7d8'), 12); chalk.rotation.z = Math.PI / 2;
+    } else if (a.accessory === 'tally') {
+      s.box([0.074, 0.005, 0.045], [toolX, 0.0025, toolZ], wood);
+      for (let i = 0; i < 9; i++) s.box([0.0014, 0.0006, 0.017], [toolX - 0.027 + i * 0.0065, 0.0053, toolZ], ink);
+    } else if (a.accessory === 'scoop') {
+      s.box([0.052, 0.003, 0.045], [toolX, 0.0015, toolZ], wood);
+      for (const x of [-1, 1]) s.box([0.003, 0.012, 0.045], [toolX + x * 0.0245, 0.009, toolZ], wood);
+      s.box([0.052, 0.012, 0.003], [toolX, 0.009, toolZ - 0.021], wood);
+      s.box([0.011, 0.006, 0.045], [toolX, 0.003, toolZ - 0.043], wood);
+    } else {
+      const shape = new THREE.Shape([new THREE.Vector2(-.043,-.026),new THREE.Vector2(.043,-.026),new THREE.Vector2(.043,.026),new THREE.Vector2(-.043,.026)]);
+      for (const [x,r] of [[-.024,.008],[0,.0105],[.026,.013]]) { const hole = new THREE.Path(); hole.absarc(x,0,r,0,Math.PI*2,true); shape.holes.push(hole); }
+      const board = new THREE.Mesh(new THREE.ExtrudeGeometry(shape,{depth:.004,bevelEnabled:false,curveSegments:20}),wood);
+      board.rotation.x = -Math.PI/2; board.position.set(toolX,0,toolZ); board.castShadow=board.receiveShadow=true; s.root.add(board);
+    }
+    if (a.keepsake === 'medal') {
+      s.box([0.017,0.001,0.049],[-.061,.0005,.055],s.material('#9e5050'));
+      s.cylinder(.013,.013,.003,[-.061,.0025,.08],s.material('#c9a455',{metalness:.5,roughness:.3}),24);
+    }
+    if (a.keepsake === 'packet') {
+      s.box([.06,.003,.043],[-.065,.0015,.065],pale);
+      s.tube([[-.093,.0032,.045],[-.065,.0035,.067],[-.037,.0032,.045]],.00065,ink);
+    }
+    if (a.keepsake === 'card') {
+      const card = s.label('MY MARBLES',.064,.037,[-.066,.001,.062],'#665340','#e8dab8'); card.rotation.x=-Math.PI/2;
     }
 
     const roll = mix(0, 0.012, mood.energy), pace = mix(0.5, 2, mood.energy);

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Granular avalanche drum section", "summary": "A transparent half-section drum contains a real sloped grain bed, a thin surface avalanche band and attached axle supports. A supported transparent drum retains a closed grain bed and finite surface-flow section. Individual visible grains contact the retained bulk; fill and slope are selected process snapshots, not a dynamic particle simulation.", "scales": ["macro", "tabletop"]});

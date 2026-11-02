@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Calcium aluminum rich inclusion section", "summary": "An irregular refractory inclusion uses verified layered mineral textures, with a real rim and non-spherical internal islands. A schematic CAI section using selected spinel\u2013melilite\u2013pyroxene interfaces from primary rim microscopy; refractory inclusions and early Solar System mineral textures.", "scales": ["macro", "tabletop"]});

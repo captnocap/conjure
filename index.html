@@ -10,6 +10,7 @@
   <body data-state="idle">
     <main>
       <header class="prompt-bar">
+        <a id="wordmark" class="wordmark" href="./" aria-label="Conjure, a new idea"></a>
         <form id="ask" class="prompt" autocomplete="off">
           <span class="mirror" aria-hidden="true"></span>
           <input id="idea" name="idea" type="text" autocomplete="off" autofocus maxlength="600" placeholder="an idea, a mood, anything" aria-label="An idea or a mood" />
@@ -19,25 +20,34 @@
         <p id="status" role="status"></p>
       </header>
       <section class="stage">
-        <div class="frame">
-          <canvas id="stage" aria-label="The conjured scene in three dimensions"></canvas>
-          <canvas id="print" aria-label="The scene redrawn by the chosen treatment"></canvas>
-          <img id="svg-overlay" alt="The print with generative vector sheets" />
-        </div>
-        <div class="under">
-          <div class="toggle" role="group" aria-label="Which picture to show">
-            <button id="show-print" type="button" aria-pressed="true">Print</button>
-            <button id="show-scene" type="button" aria-pressed="false">Scene</button>
+        <div class="picture">
+          <div class="frame">
+            <canvas id="stage" aria-label="The conjured scene in three dimensions"></canvas>
+            <canvas id="print" aria-label="The scene redrawn by the chosen treatment"></canvas>
+            <img id="svg-overlay" alt="The print with generative vector sheets" />
+            <div id="loop" class="loop" hidden><video id="loop-video" autoplay loop muted playsinline aria-label="A moving print: the scene over a couple of seconds, drawn frame by frame"></video></div>
+            <img id="history-print" alt="" hidden />
           </div>
-          <p id="scene-caption"></p>
-          <span class="save-buttons"><button id="save-loop" type="button" hidden>Save loop (WebM)</button><button id="save-series" type="button" hidden>Save series PNG</button><button id="save-picture" type="button" disabled>Save PNG</button></span>
+          <div id="plates" class="plates" hidden></div>
         </div>
-        <div id="plates" class="plates" hidden></div>
-        <div id="loop" class="loop" hidden><p class="plates-title">A moving print: the scene over a couple of seconds, drawn frame by frame</p><video id="loop-video" autoplay loop muted playsinline></video></div>
-      </section>
-      <section id="activity" aria-label="What the studio is deciding">
-        <ol></ol>
-        <p class="activity-foot"></p>
+        <aside class="side">
+          <div id="facts"></div>
+          <div class="under">
+            <div class="toggle" role="group" aria-label="Which picture to show">
+              <button id="show-print" type="button" aria-pressed="true">Print</button>
+              <button id="show-scene" type="button" aria-pressed="false">Scene</button>
+              <button id="show-window" type="button" aria-pressed="false" hidden title="The scene widened to fill this window">Window</button>
+            </div>
+            <span class="save-buttons"><button id="save-loop" type="button" hidden>Save loop (WebM)</button><button id="save-series" type="button" hidden>Save series PNG</button><button id="save-window" type="button" hidden>Save window PNG</button><button id="save-picture" type="button" disabled>Save PNG</button></span>
+          </div>
+          <div class="rolls"><button id="again" type="button" disabled>Roll again</button><button id="first" type="button" disabled>First choices</button></div>
+          <p id="scene-caption"></p>
+          <div id="history-facts" hidden></div>
+          <section id="activity" aria-label="What the studio is deciding">
+            <ol></ol>
+            <p class="activity-foot"></p>
+          </section>
+        </aside>
       </section>
       <section class="desk">
         <nav class="launch" aria-label="The library, the gallery and the settings">
@@ -45,8 +55,6 @@
           <div class="library-actions"><button id="browse" type="button">Explore library</button><button id="invent" type="button">Invent an idea</button><button id="settings" type="button" aria-expanded="false" aria-controls="controls">Settings</button></div>
         </nav>
         <div id="controls" class="controls">
-          <button id="again" type="button" disabled>Roll again</button>
-          <button id="first" type="button" disabled>First choices</button>
           <label>Model <select id="model"></select></label>
           <label class="look-control">Next look <select id="look-select"><option value="">Let the idea decide</option></select></label>
         </div>
@@ -83,6 +91,11 @@
         </details>
       </section>
     </main>
+    <button id="window-exit" type="button" hidden>Back to the studio</button>
+    <nav id="dock" aria-label="Every picture conjured so far">
+      <p class="dock-label"><span>Gallery</span> <small id="dock-count"></small></p>
+      <div class="dock-strip" tabindex="0"></div>
+    </nav>
     <dialog id="library" aria-labelledby="library-title">
       <div class="library-header"><div><p class="eyebrow">From deep space to the corner shop</p><h2 id="library-title">The scene library</h2></div><button id="library-close" type="button" aria-label="Close the scene library">Close</button></div>
       <div class="library-toolbar">

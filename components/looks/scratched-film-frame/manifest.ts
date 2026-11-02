@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Scratched direct-animation film',summary:'A luminous picture scratched and painted directly into a film frame, with needle hatching, exposed emulsion, coloured ink blocks and tiny sprocket holes. Handmade animation, experimental projection and a drawing that seems ready to move.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'optical'});

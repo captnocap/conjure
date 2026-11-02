@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Layered gum pigment print',summary:'Hand-brushed pigment exposures built up on paper, with separate colour coats, soft washout and visible coating borders. Painterly photographic prints, muted botanical studies and atmospheric layered colour.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'print'});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Capillary rise open tube comparator", "summary": "Two open tubes with different bores rise from a shared bath and contain curved menisci at distinct illustrative heights. The bath excludes the actual tube walls, and curved liquid columns fill their open bores. Relative center heights follow inverse bore radius at equal wall wetting; dimensions are an enlarged schematic comparison rather than a calibrated equilibrium experiment.", "scales": ["macro", "tabletop"]});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Coral coenosarc skeletal bridge", "summary": "A tissue bridge spans connected neighboring calices and retains a sectioned gastrovascular route rather than floating fabric. A schematic coenosarc bridge with an actual gastrovascular lumen and attached calice context; connected coral colonies, tissue continuity and section microscopy.", "scales": ["macro", "tabletop"]});

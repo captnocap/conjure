@@ -91,6 +91,42 @@ export default defineWorld({
       photograph: 'A framed photograph of the person it is for.',
       calendar: 'A calendar with one date ringed in red.',
     }),
+    surface: choice('What covers the worktable beneath the garment?', {
+      wood: 'The original scarred wooden tabletop.',
+      grid: 'A green cutting surface ruled with a large square grid.',
+      canvas: 'A pale woven canvas work cover.',
+      leather: 'A dark leather cutting pad with a stitched perimeter.',
+    }),
+    stock: choice('How are small notions stored along the back edge?', {
+      clear: 'The back edge is clear.',
+      cubbies: 'Open wooden cubbies sort small packets and reels.',
+      drawers: 'A tiny chest of shallow drawers with label holders.',
+      jars: 'Three glass jars hold buttons, snaps and hooks.',
+    }),
+    paperwork: choice('What paperwork is clipped below the window?', {
+      none: 'No additional paperwork.',
+      orders: 'An order sheet lists garments and fitting dates.',
+      measurements: 'A measurement chart records chest, waist and sleeve lengths.',
+      receipt: 'A receipt and a small fabric shop envelope.',
+    }),
+    samples: choice('How are cloth samples kept for comparison?', {
+      none: 'No extra swatches.',
+      fan: 'A fan of swatch cards lies along the back edge.',
+      chain: 'Small fabric squares hang from a short supported sample rail.',
+      wall: 'A wall board displays four contrasting cloth swatches.',
+    }),
+    pressing: choice('What pressing aid stands at the far right of the table?', {
+      none: 'No pressing aid.',
+      sleeve: 'A narrow padded sleeve board on two low supports.',
+      ham: 'A rounded tailor’s pressing ham on a small cradle.',
+      clapper: 'A hardwood clapper and seam roll share a small support board.',
+    }),
+    offcuts: choice('How are the saved offcuts collected?', {
+      none: 'No collection at the edge.',
+      basket: 'A shallow slatted basket holds folded useful scraps.',
+      tray: 'A metal sorting tray holds small folded remnants.',
+      bundle: 'A stack of fabric offcuts is tied with a ribbon.',
+    }),
     lamp: noul('Is a work lamp switched on over the table?'),
   },
 
@@ -129,6 +165,16 @@ export default defineWorld({
     const scarMesh = s.scatter(new THREE.BoxGeometry(0.3, 0.004, 0.012), stuff('#7d6444'), scars);
     scarMesh.castShadow = false;
     scarMesh.rotation.y = 0.2;
+
+    if (a.surface !== 'wood') {
+      const map = paint(1024, 768, (c, w, h) => {
+        c.fillStyle = a.surface === 'grid' ? '#406d58' : a.surface === 'canvas' ? '#ded2b8' : '#634a3a'; c.fillRect(0, 0, w, h);
+        if (a.surface === 'grid') { c.strokeStyle = '#b4cdb0'; c.lineWidth = 2; for (let x = 0; x <= w; x += 64) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); } for (let y = 0; y <= h; y += 64) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); } }
+        else if (a.surface === 'canvas') { c.fillStyle = '#b7a98b'; for (let x = 0; x < w; x += 7) c.fillRect(x, 0, 1, h); for (let y = 0; y < h; y += 7) c.fillRect(0, y, w, 1); }
+        else { c.strokeStyle = '#d6bc8d'; c.lineWidth = 3; c.setLineDash([14, 10]); c.strokeRect(18, 18, w - 36, h - 36); }
+      });
+      const pad = s.mesh(new THREE.PlaneGeometry(11.6, 7.55), new THREE.MeshStandardMaterial({ map, roughness: 0.95 }), [0, 0.008, 0]); pad.rotation.x = -Math.PI / 2;
+    }
 
     // Back wall.
     const wallMap = paint(1024, 512, (ctx, w, h) => {
@@ -309,6 +355,7 @@ export default defineWorld({
     s.scatter(new THREE.CylinderGeometry(0.105, 0.105, 0.26, 14), stuff('#ffffff', { roughness: 0.85 }), reels);
     s.scatter(new THREE.CylinderGeometry(0.12, 0.12, 0.04, 14), stuff('#d6b98a'), flanges);
     if (a.pegboard !== 'outlines') {
+      for (const x of [-2.3, -0.7]) s.rod([x, 2.75, -3.92], [x, 2.75, pz + 0.12], 0.025, woodLight);
       s.rod([-2.3, 2.75, pz + 0.12], [-0.7, 2.75, pz + 0.12], 0.025, woodLight);
       for (let i = 0; i < 4; i++) {
         const tint = stuff(['#d9788f', '#2c7fd1', '#f1ede0', '#c8202b', '#2f8f6a'][Math.floor(random() * 5)], { roughness: 0.5 });
@@ -519,8 +566,9 @@ export default defineWorld({
       for (let i = 0; i <= 36; i++) ctx.fillRect(i * w / 36, 0, i % 12 === 0 ? 5 : 2.5, i % 3 === 0 ? h * 0.7 : h * 0.4);
     });
     const yard = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.035, 0.2), [0, 1, 2, 3, 4, 5].map((face) => face === 2 ? new THREE.MeshStandardMaterial({ map: stick, roughness: 0.6 }) : stuff('#c9a563')));
-    yard.position.set(2.6, a.stage === 'packed' ? 0.02 : 0.1, -3.35);
-    yard.rotation.y = (random() - 0.5) * 0.12;
+    yard.position.set(2.6, -0.15, 4.025);
+    yard.rotation.set(Math.PI / 2, 0, 0);
+    for (const x of [0.1, 5.1]) s.rod([x, -0.15, 3.9], [x, -0.15, 4.05], 0.022, steel);
     add(yard);
     if (mood.density > 0.3) {
       // A cup of tea gone cold, and a dish of pins.
@@ -558,6 +606,71 @@ export default defineWorld({
       pool.rotation.x = -Math.PI / 2;
       pool.position.set(-3.3, 0.13, -1.6);
       s.root.add(pool);
+    }
+
+    // Compact edge stations leave the six cast slots free.
+    if (a.stock !== 'clear') {
+      const x = 0.15, z = -3.62, w = 1.6;
+      if (a.stock === 'jars') for (let k = 0; k < 3; k++) {
+        const cx = x - 0.52 + k * 0.52;
+        s.cylinder(0.2, 0.19, 0.44, [cx, 0.22, z], stuff('#cee0de', { transparent: true, opacity: 0.24, depthWrite: false }), 18);
+        s.cylinder(0.21, 0.21, 0.06, [cx, 0.47, z], steel, 18);
+        for (let n = 0; n < 10; n++) s.cylinder(0.035, 0.035, 0.018, [cx + (random() - 0.5) * 0.2, 0.04 + Math.floor(n / 3) * 0.07, z + (random() - 0.5) * 0.2], stuff(reelTints[(k * 3 + n) % reelTints.length]), 8);
+      } else {
+        for (const y of [0.035, 0.34, 0.65]) s.box([w, 0.07, 0.48], [x, y, z], frame);
+        for (const cx of [x - w / 2 + 0.035, x, x + w / 2 - 0.035]) s.box([0.07, 0.62, 0.48], [cx, 0.34, z], frame);
+        s.box([w, 0.65, 0.04], [x, 0.325, z - 0.22], frame);
+        for (let k = 0; k < 4; k++) {
+          const cx = x + (k % 2 ? 0.39 : -0.39), y = 0.185 + Math.floor(k / 2) * 0.31;
+          if (a.stock === 'drawers') { s.box([0.69, 0.23, 0.03], [cx, y, z + 0.24], woodLight); s.box([0.24, 0.09, 0.015], [cx, y, z + 0.26], trim); s.ball([0.035, 0.035, 0.035], [cx + 0.22, y, z + 0.28], steel, 8); }
+          else for (let n = 0; n < 3; n++) s.box([0.14, 0.12, 0.25], [cx - 0.2 + n * 0.2, y - 0.06, z], stuff(reelTints[k + n]));
+        }
+      }
+    }
+    if (a.paperwork !== 'none') {
+      const map = paint(512, 256, (c, w, h) => {
+        c.fillStyle = '#efe5cf'; c.fillRect(0, 0, w, h); c.fillStyle = '#514739'; c.font = 'bold 32px serif'; c.fillText(a.paperwork === 'orders' ? 'FITTING ORDERS' : a.paperwork === 'measurements' ? 'MEASUREMENTS' : 'CLOTH RECEIPT', 20, 44);
+        c.font = '25px monospace'; const rows = a.paperwork === 'orders' ? ['DRESS    MON 10', 'JACKET   WED 14', 'HEM      FRI 09'] : a.paperwork === 'measurements' ? ['CHEST  92 cm', 'WAIST  74 cm', 'SLEEVE 58 cm'] : ['COTTON    4 m', 'LINING    2 m', 'THREAD    3 reels'];
+        rows.forEach((r, k) => c.fillText(r, 20, 100 + k * 55));
+      });
+      s.mesh(new THREE.PlaneGeometry(1.45, 0.7), new THREE.MeshStandardMaterial({ map }), [3.1, 0.77, -3.975]);
+      s.box([0.15, 0.08, 0.03], [3.1, 1.11, -3.95], steel);
+      if (a.paperwork === 'receipt') s.box([0.7, 0.4, 0.018], [4.3, 0.7, -3.975], stuff('#c5ac81'));
+    }
+    if (a.samples !== 'none') {
+      const colors = ['#8d4559', '#d4bc91', '#4b7092', '#728c63'];
+      if (a.samples === 'fan') for (let k = 0; k < 4; k++) {
+        const swatch = s.box([0.55, 0.018, 0.42], [1.5 + k * 0.17, (a.surface === 'wood' ? 0 : 0.008) + 0.009 + k * 0.018, -3.05], stuff(colors[k])); swatch.rotation.y = (k - 1.5) * 0.22;
+      } else if (a.samples === 'chain') {
+        for (const x of [4.65, 5.7]) s.rod([x, 0, -2.55], [x, 1.1, -2.55], 0.025, woodLight);
+        s.rod([4.65, 1.1, -2.55], [5.7, 1.1, -2.55], 0.025, woodLight);
+        for (let k = 0; k < 4; k++) { const x = 4.8 + k * 0.25; s.rod([x, 1.1, -2.55], [x, 0.91, -2.55], 0.012, steel); s.box([0.22, 0.38, 0.015], [x, 0.73, -2.55], stuff(colors[k])); }
+      } else {
+        s.box([1.3, 1.05, 0.04], [5.55, 3.8, -3.98], frame);
+        for (let k = 0; k < 4; k++) s.box([0.5, 0.38, 0.018], [5.25 + k % 2 * 0.6, 3.57 + Math.floor(k / 2) * 0.48, -3.951], stuff(colors[k]));
+      }
+    }
+    if (a.pressing !== 'none') {
+      const x = 5.45, z = 0.75, wood = stuff('#bc9968'), padding = stuff('#e5dbc4', { roughness: 1 });
+      if (a.pressing === 'sleeve') {
+        for (const dz of [-0.58, 0.58]) s.box([0.38, 0.26, 0.12], [x, 0.13, z + dz], wood);
+        s.box([0.6, 0.11, 1.55], [x, 0.315, z], padding);
+      } else {
+        s.box([0.65, 0.08, 1.15], [x, 0.04, z], wood);
+        if (a.pressing === 'ham') s.ball([0.28, 0.23, 0.47], [x, 0.31, z], padding, 20);
+        else { s.box([0.3, 0.12, 0.65], [x - 0.12, 0.14, z - 0.1], wood); s.cylinder(0.12, 0.12, 0.7, [x + 0.18, 0.2, z + 0.1], padding, 16).rotation.x = Math.PI / 2; }
+      }
+    }
+    if (a.offcuts !== 'none') {
+      const x = -5.45, z = 2.55, w = 0.95, d = 1.2, bottom = a.offcuts === 'bundle' ? 0.01 : 0.06;
+      const rim = a.offcuts === 'tray' ? steel : frame;
+      if (a.offcuts !== 'bundle') {
+        s.box([w, 0.06, d], [x, 0.03, z], rim);
+        for (const side of [-1, 1]) { s.box([w, 0.2, 0.04], [x, 0.16, z + side * d / 2], rim); s.box([0.04, 0.2, d], [x + side * w / 2, 0.16, z], rim); }
+        if (a.offcuts === 'basket') for (let k = 0; k < 5; k++) for (const side of [-1, 1]) s.box([0.04, 0.3, 0.04], [x - w * 0.42 + k * w * 0.21, 0.2, z + side * d / 2], woodLight);
+      }
+      for (let k = 0; k < 4; k++) s.box([0.73 - k * 0.04, 0.075, 0.86 - k * 0.04], [x, bottom + 0.0375 + k * 0.077, z], stuff(reelTints[k + 1]));
+      if (a.offcuts === 'bundle') { s.box([0.07, 0.008, 0.9], [x, bottom + 0.316, z], trim); for (const side of [-1, 1]) s.box([0.07, 0.31, 0.008], [x, bottom + 0.155, z + side * 0.43], trim); }
     }
 
     const base = lampLight?.intensity ?? 0;

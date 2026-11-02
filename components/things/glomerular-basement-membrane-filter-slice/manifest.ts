@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Glomerular basement membrane filter slice", "summary": "An explicitly schematic layered extracellular membrane slice separates endothelial and podocyte sides with actual finite edges. The continuous matrix separates endothelial and podocyte sides. Contrast regions and surface strands are explicitly enlarged teaching conventions, not stacked perforated membranes or a molecular-scale reconstruction.", "scales": ["macro", "tabletop"]});

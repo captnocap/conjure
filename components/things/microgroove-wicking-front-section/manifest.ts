@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Microgroove wicking front section", "summary": "A substrate with actual open parallel grooves contains a connected advancing fluid front, with dry grooves preserved beyond it. Real open parallel grooves join a liquid reservoir; each channel retains a curved fluid front and a dry continuation. Floor changes and uneven fronts are schematic wetting snapshots, with no implied front speed or numerical equilibrium solution.", "scales": ["macro", "tabletop"]});

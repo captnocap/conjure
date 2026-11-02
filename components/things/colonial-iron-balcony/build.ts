@@ -53,6 +53,42 @@ export default defineThing({
       grille: 'A tall window behind a projecting iron cage.',
       blank: 'Blank wall with the ghost of a painted shop sign and a house number.',
     }),
+    canopy: choice('What shelters the upper balcony?', {
+      open: 'Open sky above the fanlight and balcony.',
+      canvas: 'A striped canvas awning on diagonal iron braces.',
+      slats: 'A light timber slatted shade projects from the wall.',
+      metal: 'A shallow corrugated metal hood with a folded front edge.',
+    }),
+    railTop: choice('How is the top handrail finished?', {
+      round: 'A narrow rounded iron rail.',
+      flat: 'A broad flat iron handrail.',
+      timber: 'A polished timber cap follows the rail and returns.',
+      finials: 'Small iron spear finials rise above the handrail.',
+    }),
+    corniceCrest: choice('What stands above the cornice?', {
+      plain: 'A plain flat cornice.',
+      urns: 'Two squat decorative urns sit on square plinths.',
+      spheres: 'Three stone balls rest on pedestals.',
+      pediment: 'A small triangular central pediment crowns the facade.',
+    }),
+    slabEdge: choice('How is the balcony slab edge detailed?', {
+      plain: 'A smooth plain stone fascia.',
+      flutes: 'A row of shallow vertical flutes runs along the edge.',
+      teeth: 'Small square dentils project beneath the front lip.',
+      brick: 'A thin exposed brick course lines the front edge.',
+    }),
+    wallFitting: choice('What fixture is mounted beside the lower opening?', {
+      lantern: 'A small glass street lantern hangs from a wall bracket.',
+      letterbox: 'A narrow metal letterbox with a sloping rain hood.',
+      bell: 'A ceramic bell button and exposed wire on the plaster.',
+      keybox: 'A small timber key cabinet with two doors.',
+    }),
+    threshold: choice('What paving meets the facade?', {
+      bare: 'The facade meets bare pavement.',
+      tiles: 'A narrow checkerboard of ceramic entrance tiles.',
+      stone: 'Three worn stone slabs line the foot of the wall.',
+      bricks: 'A short brick apron follows the facade.',
+    }),
   },
 
   build(a, context) {
@@ -118,10 +154,39 @@ export default defineThing({
     s.box([W + 0.3, 0.16, T + 0.3], [0, H - 0.08, -T / 2 + 0.08], trim);
     s.box([W + 0.16, 0.12, T + 0.18], [0, H - 0.22, -T / 2 + 0.05], trim);
     for (let i = 0; i < 11; i++) s.box([0.12, 0.12, 0.12], [-W / 2 + 0.2 + i * (W - 0.4) / 10, H - 0.34, 0.05], trim);
+    if(a.corniceCrest==='urns')for(const x of[-1.3,1.3]){
+      s.box([.26,.12,.26],[x,H+.06,0],trim);
+      s.lathe([[0,0],[.08,0],[.06,.08],[.14,.19],[.1,.3],[.12,.32],[0,.32]],trim,[x,H+.12,0]);
+    }else if(a.corniceCrest==='spheres')for(const x of[-1.3,0,1.3]){
+      s.box([.23,.13,.23],[x,H+.065,0],trim);s.ball([.13,.13,.13],[x,H+.26,0],trim,12);
+    }else if(a.corniceCrest==='pediment'){
+      const crest=new THREE.Shape();crest.moveTo(-.7,0);crest.lineTo(0,.45);crest.lineTo(.7,0);crest.closePath();
+      s.mesh(new THREE.ExtrudeGeometry(crest,{depth:.14,bevelEnabled:false}),trim,[0,H,-.1]);
+      for(const side of[-1,1])s.rod([0,H+.45,.06],[side*.73,H,.06],.045,trim);
+    }
+    if(a.canopy!=='open'){
+      const y=H-.22,depth=1.15,frontY=y-.2;
+      for(const x of[-1.3,1.3]){s.rod([x,y-.65,.02],[x,frontY,depth],.02,iron);s.rod([x,y,.02],[x,frontY,depth],.018,iron);}
+      s.rod([-1.3,frontY,depth],[1.3,frontY,depth],.022,iron);
+      if(a.canopy==='canvas')for(let i=0;i<10;i++){
+        const x=-1.3+(i+.5)*.26,cloth=s.material(i%2?'#ece2c9':paintHue,{side:THREE.DoubleSide});
+        const panel=s.box([.26,.012,Math.hypot(depth,.2)],[x,y-.1,depth/2],cloth);panel.rotation.x=Math.atan2(.2,depth);
+        s.box([.26,.16,.012],[x,frontY-.08,depth],cloth);
+      }else if(a.canopy==='slats'){
+        for(let i=0;i<15;i++)s.rod([-1.35+(i+.5)*.18,y,.01],[-1.35+(i+.5)*.18,frontY,depth],.035,joinery);
+      }else{
+        const hood=s.box([2.75,.025,Math.hypot(depth,.2)],[0,y-.1,depth/2],s.material('#9baba5',{metalness:.65}));hood.rotation.x=Math.atan2(.2,depth);
+        for(let i=0;i<17;i++)s.rod([-1.28+i*.16,y+.015,.01],[-1.28+i*.16,frontY+.015,depth],.012,iron);
+        s.box([2.75,.075,.025],[0,frontY-.035,depth],iron);
+      }
+    }
 
     // Balcony slab on scrolled brackets.
     s.box([2.7, 0.14, 0.82], [0, F - 0.07, 0.41], trim);
     s.box([2.78, 0.05, 0.86], [0, F - 0.025, 0.43], trim);
+    if(a.slabEdge==='flutes')for(let i=0;i<25;i++)s.box([.035,.09,.012],[-1.3+i*.108,F-.085,.827],shadow);
+    else if(a.slabEdge==='teeth')for(let i=0;i<18;i++)s.box([.085,.07,.1],[-1.27+i*.149,F-.16,.79],trim);
+    else if(a.slabEdge==='brick')for(let i=0;i<13;i++)s.box([.198,.09,.04],[-1.272+i*.212,F-.095,.83],brick);
     for (const x of [-1.1, 0, 1.1]) {
       const shape = new THREE.Shape();
       shape.moveTo(0, 0); shape.lineTo(0.7, 0); shape.quadraticCurveTo(0.6, -0.3, 0.12, -0.42); shape.quadraticCurveTo(0.2, -0.6, 0, -0.72); shape.closePath();
@@ -187,6 +252,12 @@ export default defineThing({
       const at = (x: number, y: number, extra?: THREE.Matrix4) => { const m = frame.clone().multiply(new THREE.Matrix4().makeTranslation(x, y, 0)); return extra ? m.multiply(extra) : m; };
       const end = new THREE.Vector3(run.length, 0, 0).applyMatrix4(frame);
       for (const y of [0.08, RH]) s.rod([run.origin[0], F + y, run.origin[2]], [end.x, F + y, end.z], y > 0.5 ? 0.022 : 0.014, iron);
+      if(a.railTop==='flat'||a.railTop==='timber'){
+        const cap=s.box([run.length+.04,a.railTop==='timber'?.055:.018,.075],[(run.origin[0]+end.x)/2,F+RH+.025,(run.origin[2]+end.z)/2],a.railTop==='timber'?joinery:iron);cap.rotation.y=run.yaw;
+      }else if(a.railTop==='finials')for(let i=1;i<Math.round(run.length/.24);i++){
+        const p=new THREE.Vector3(i*run.length/Math.round(run.length/.24),RH+.08,0).applyMatrix4(frame);
+        s.cylinder(.009,.009,.16,[p.x,p.y,p.z],iron,6);s.ball([.023,.045,.023],[p.x,p.y+.09,p.z],iron,6);
+      }
       const panels = Math.max(2, Math.round(run.length / 0.33)), w = run.length / panels;
       if (a.iron === 'bars' || a.iron === 'mended') {
         const n = Math.round(run.length / 0.11);
@@ -358,6 +429,25 @@ export default defineThing({
       s.tube([[0.9, 1.8, 0.05], [0.95, 2.6, 0.04], [1.5, 2.8, 0.04], [W / 2, 2.75, 0.04]], 0.012, shadow);
     }
     // A drainpipe and a sagging cable belong to every slice.
+    const fixtureX=-1.17,fixtureY=1.8;
+    if(a.wallFitting==='lantern'){
+      s.rod([fixtureX,fixtureY+.2,0],[fixtureX,fixtureY+.2,.32],.025,iron);
+      s.box([.2,.3,.2],[fixtureX,fixtureY,.32],s.material('#e5d5a3',{emissive:'#e9b956',emissiveIntensity:glow}));
+      for(const dx of[-.11,.11])for(const dz of[-.11,.11])s.rod([fixtureX+dx,fixtureY-.17,.32+dz],[fixtureX+dx,fixtureY+.17,.32+dz],.012,iron);
+      s.cylinder(.01,.18,.13,[fixtureX,fixtureY+.235,.32],iron,4).rotation.y=Math.PI/4;
+    }else if(a.wallFitting==='letterbox'){
+      s.box([.3,.39,.13],[fixtureX,fixtureY,.065],iron);s.box([.23,.025,.01],[fixtureX,fixtureY+.08,.135],shadow);
+      s.box([.34,.025,.19],[fixtureX,fixtureY+.205,.08],iron).rotation.x=.2;
+    }else if(a.wallFitting==='bell'){
+      s.box([.1,.15,.035],[fixtureX,fixtureY,.0175],trim);s.ball([.025,.025,.018],[fixtureX,fixtureY,.04],iron,8);
+      s.tube([[fixtureX,fixtureY+.075,.025],[fixtureX,2.6,.025],[fixtureX-.12,2.75,.025]],.005,shadow);
+    }else{
+      s.box([.36,.42,.14],[fixtureX,fixtureY,.07],joinery);
+      for(const side of[-1,1]){s.box([.162,.38,.025],[fixtureX+side*.085,fixtureY,.151],trim);s.ball([.013,.013,.013],[fixtureX+side*.025,fixtureY,.175],iron,8);}
+    }
+    if(a.threshold==='tiles')for(let x=0;x<14;x++)for(let z=0;z<3;z++)s.box([W/14-.008,.018,.18],[-W/2+(x+.5)*W/14,.009,.51+(z+.5)*.19],(x+z)%2?trim:joinery);
+    else if(a.threshold==='stone')for(let i=0;i<3;i++)s.box([W/3-.014,.025,.62],[-W/2+(i+.5)*W/3,.0125,.82],trim);
+    else if(a.threshold==='bricks')for(let row=0;row<4;row++)for(let i=0;i<12;i++)s.box([W/12-.012,.023,.13],[-W/2+(i+.5)*W/12,.0115,.55+row*.14],brick);
     const pipeX = (random() < 0.5 ? -1 : 1) * (W / 2 - 0.12);
     s.cylinder(0.05, 0.05, H - 0.7, [pipeX, (H - 0.7) / 2 + 0.25, 0.06], s.material(mood.wear > 0.5 ? '#8a5a3a' : '#5a6a6a', { metalness: 0.4 }), 10);
     s.tube([[-W / 2, F + 2.9, 0.03], [-0.5, F + 2.75 - random() * 0.2, 0.06], [0.6, F + 2.85, 0.06], [W / 2, F + 3.05, 0.03]], 0.008, shadow);

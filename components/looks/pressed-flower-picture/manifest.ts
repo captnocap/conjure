@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Pressed flower picture',summary:'A scene assembled from flattened flower heads, translucent petals, little veined leaves and fine dried stems on botanical paper. Kept summer walks, herbarium pages, handmade cards and a fragile garden preserved between sheets.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'craft'});

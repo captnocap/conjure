@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Sculpture, choice, defineThing, mix } from '@conjure/kit';
+import { Sculpture, choice, defineThing, mix, score } from '@conjure/kit';
 
 type P = readonly [number, number, number];
 const FINISH = {
@@ -44,6 +44,44 @@ export default defineThing({
       tiles: 'A patch of patterned cement tiles in faded geometric colours.',
       boards: 'A few worn porch boards.',
     }),
+    seatWidth: score('How broad is the chair?', ['Narrow chair for a small porch', 'An ordinary adult rocker', 'A broad comfortable armchair']),
+    backLean: score('How far does the back recline?', ['Nearly upright for conversation', 'A relaxed porch angle', 'Deeply reclined for a nap']),
+    arms: choice('What shape are the armrests?', {
+      scroll: 'Slender curved rails end in small wooden scrolls.',
+      flat: 'Broad flat timber pads support the forearms.',
+      turned: 'Rounded armrails have turned collars on their front posts.',
+      open: 'Low simple rails with no curled ends.',
+    }),
+    weave: choice('What pattern is woven into the cane?', {
+      holes: 'A traditional open diagonal weave with small round holes.',
+      basket: 'Broad crossing strips form square basket-weave openings.',
+      herringbone: 'Close diagonal strips make a fine herringbone chevron.',
+      bands: 'Alternating light and dark cane forms bold striped bands.',
+    }),
+    cushion: choice('What pad lies over the cane seat?', {
+      none: 'The cane is bare.',
+      thin: 'A thin square faded cushion.',
+      thick: 'A plump buttoned cushion fills the seat.',
+      tied: 'A narrow cushion is tied to both rear posts.',
+    }),
+    footrest: choice('What is provided for resting the feet?', {
+      none: 'No footrest.',
+      stool: 'A small separate slatted footstool stands in front.',
+      upholstered: 'A low padded footrest stands on four turned legs.',
+      folding: 'A light canvas footrest opens on crossed legs.',
+    }),
+    stretcher: choice('How are the lower legs braced?', {
+      plain: 'A plain front cross-stretcher.',
+      turned: 'Three turned wooden collars decorate the front stretcher.',
+      crossed: 'Two diagonal braces cross beneath the seat.',
+      shelf: 'A small slatted magazine shelf spans the lower braces.',
+    }),
+    crestDetail: choice('What ornament finishes the back frame?', {
+      plain: 'Plain polished wood.',
+      rosette: 'A carved circular rosette is fixed to the top rail.',
+      finials: 'Small turned finials crown the two back posts.',
+      inlay: 'A short pale inlay follows the upper rail.',
+    }),
   },
 
   build(a, context) {
@@ -61,6 +99,18 @@ export default defineThing({
     for (let i = -16; i < 32; i++) { ctx.beginPath(); ctx.moveTo(i * 16, 0); ctx.lineTo(i * 16 + 256, 256); ctx.stroke(); ctx.beginPath(); ctx.moveTo(i * 16, 256); ctx.lineTo(i * 16 + 256, 0); ctx.stroke(); }
     ctx.fillStyle = '#3a2a18';
     for (let x = 0; x < 16; x++) for (let y = 0; y < 16; y++) { ctx.beginPath(); ctx.arc(x * 16 + 8, y * 16 + 8, 4.2, 0, 6.3); ctx.fill(); }
+    if (a.weave !== 'holes') {
+      ctx.fillStyle = '#c8a56c'; ctx.fillRect(0, 0, 256, 256);
+      if (a.weave === 'basket') {
+        for(let x=0;x<16;x++)for(let y=0;y<16;y++){
+          ctx.fillStyle=(x+y)%2?'#a6814c':'#dfc38c';ctx.fillRect(x*16,y*16,15,15);
+          ctx.fillStyle='#544027';ctx.fillRect(x*16+5,y*16+5,6,6);
+        }
+      } else if (a.weave === 'herringbone') {
+        ctx.lineWidth=5;ctx.strokeStyle='#88683d';
+        for(let y=-32;y<288;y+=12)for(let x=0;x<256;x+=32){ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+16,y+12);ctx.lineTo(x+32,y);ctx.stroke();}
+      } else for(let x=0;x<256;x+=24){ctx.fillStyle=x%48?'#7e603a':'#e0c491';ctx.fillRect(x,0,12,256);ctx.fillStyle='rgba(85,63,34,.45)';for(let y=0;y<256;y+=20)ctx.fillRect(0,y,256,3);}
+    }
     const weave = new THREE.CanvasTexture(canvas);
     weave.colorSpace = THREE.SRGBColorSpace; weave.wrapS = weave.wrapT = THREE.RepeatWrapping; weave.repeat.set(1.6, 1.6);
     const cane = new THREE.MeshStandardMaterial({ map: weave, roughness: 0.8, side: THREE.DoubleSide });
@@ -68,6 +118,8 @@ export default defineThing({
     const RR = 1.15, SEAT = 0.42;
     const makeChair = () => {
       const c = new Sculpture(context);
+      const rockers: THREE.Mesh[] = [];
+      const backAngle=-mix(0.08,0.4,a.backLean);
       const tone = new THREE.Color(TONE[a.finish]);
       const wood = c.material(tone, { roughness: painted ? 0.45 : a.finish === 'bleached' ? 0.95 : 0.35 });
       const bare = c.material('#9a7a52', { roughness: 0.9 });
@@ -76,6 +128,8 @@ export default defineThing({
         const points: P[] = [];
         for (let i = 0; i <= 10; i++) { const phi = mix(-0.5, 0.42, i / 10); points.push([x, RR * (1 - Math.cos(phi)) + 0.02, RR * Math.sin(phi)]); }
         const rocker = c.tube(points, 0.022, wood);
+        rocker.name='chair-rocker';
+        rockers.push(rocker);
         rocker.scale.y = 1;
         // Legs: front post up to the arm, back post up to the seat.
         const at = (z: number) => RR - Math.sqrt(RR * RR - z * z) + 0.02;
@@ -84,11 +138,20 @@ export default defineThing({
         c.ball([0.03, 0.03, 0.03], [x, 0.3, 0.245], wood, 10);
         c.rod([x, 0.2, 0.24], [x, 0.18, -0.2], 0.012, wood);
         // Arm with a scrolled end.
-        c.tube([[x * 1.02, 0.68, -0.3], [x * 1.08, 0.7, 0], [x * 1.1, 0.67, 0.26], [x * 1.1, 0.63, 0.31]], 0.022, wood).scale.set(1, 1, 1);
-        c.ball([0.034, 0.034, 0.034], [x * 1.1, 0.63, 0.31], wood, 10);
+        const rearZ=-.22+Math.sin(backAngle)*.26,rearY=SEAT+Math.cos(backAngle)*.26;
+        if(a.arms==='flat')c.box([0.095,0.035,.31-rearZ],[x,0.6775,(.31+rearZ)/2],wood);
+        else if(a.arms==='open')c.rod([x,rearY,rearZ],[x,0.66,0.29],0.02,wood);
+        else {
+          c.tube([[x * 0.96, rearY, rearZ], [x * 1.08, 0.7, 0], [x * 1.1, 0.67, 0.26], [x * 1.1, 0.63, 0.31]], 0.022, wood);
+          c.ball([0.034, 0.034, 0.034], [x * 1.1, 0.63, 0.31], wood, 10);
+          if(a.arms==='turned')for(const y of[0.49,0.54,0.59])c.cylinder(0.033,0.033,0.035,[x,y,0.25],wood,10);
+        }
       }
       c.rod([-0.26, 0.24, 0.24], [0.26, 0.24, 0.24], 0.014, wood);
       c.ball([0.026, 0.026, 0.026], [0, 0.24, 0.24], wood, 10);
+      if(a.stretcher==='turned')for(const x of[-0.16,0,0.16]){const collar=c.cylinder(0.034,0.034,0.05,[x,0.24,0.24],wood,10);collar.rotation.z=Math.PI/2;}
+      else if(a.stretcher==='crossed'){c.rod([-0.25,0.2,-0.2],[0.25,0.35,0.23],0.014,wood);c.rod([0.25,0.2,-0.2],[-0.25,0.35,0.23],0.014,wood);}
+      else if(a.stretcher==='shelf')for(let i=0;i<5;i++){const shelf=c.box([0.5,0.012,0.065],[0,0.196+i*0.003, -0.14+i*0.075],wood);shelf.rotation.x=-0.045;}
       // Seat frame and cane.
       for (const z of [-0.22, 0.25]) c.box([0.56, 0.04, 0.05], [0, SEAT, z], wood);
       for (const x of [-0.26, 0.26]) c.box([0.05, 0.04, 0.5], [x, SEAT, 0.015], wood);
@@ -103,7 +166,7 @@ export default defineThing({
       // Back, leaning.
       const back = new Sculpture(context);
       back.root.position.set(0, SEAT, -0.22);
-      back.root.rotation.x = -0.24;
+      back.root.rotation.x = backAngle;
       for (const x of [-0.25, 0.25]) back.rod([x, 0, 0], [x * 0.96, 0.72, 0], 0.022, wood, 0.017);
       back.box([0.5, 0.04, 0.03], [0, 0.12, 0], wood);
       if (a.back === 'arched') {
@@ -124,14 +187,27 @@ export default defineThing({
         const missing = mood.wear > 0.7 ? Math.floor(random() * 5) : -1;
         for (let i = 0; i < 5; i++) if (i !== missing) back.box([0.045, 0.56, 0.016], [-0.18 + i * 0.09, 0.41, 0], wood);
       }
+      const crestY=a.back==='arched'?.81:a.back==='medallion'?.74:.745;
+      if(a.crestDetail==='rosette'){
+        const medallion=back.cylinder(0.055,0.055,0.018,[0,crestY,0.027],wood,12);medallion.rotation.x=Math.PI/2;
+        for(let i=0;i<6;i++){const t=i*Math.PI/3;back.ball([0.012,0.012,0.006],[Math.cos(t)*.033,crestY+Math.sin(t)*.033,0.04],bare,6);}
+      }else if(a.crestDetail==='finials')for(const side of[-1,1]){back.cylinder(0.018,0.021,0.07,[side*.24,.78,0],wood,8);back.ball([0.031,.04,.031],[side*.24,.83,0],wood,10);}
+      else if(a.crestDetail==='inlay')back.tube([[-.18,crestY-.025,.027],[0,crestY+.003,.028],[.18,crestY-.025,.027]],.006,c.material('#d6c29a'));
       c.root.add(back.root);
 
       // What rests on it.
-      const top = SEAT + 0.02;
+      const cushionHeight=a.cushion==='none'?0:a.cushion==='thick'?.065:.025;
+      if(cushionHeight){
+        const cloth=c.material(a.cushion==='thick'?'#89916b':a.cushion==='thin'?'#b89178':'#809497');
+        c.box([.46,cushionHeight,.42],[0,SEAT+.02+cushionHeight/2,.015],cloth);
+        if(a.cushion==='thick')for(const x of[-.12,.12])for(const z of[-.1,.1])c.cylinder(.009,.009,.002,[x,SEAT+.02+cushionHeight+.001,z],wood,8);
+        if(a.cushion==='tied')for(const side of[-1,1])c.tube([[side*.21,SEAT+.025,-.19],[side*.28,SEAT+.025,-.24],[side*.25,SEAT-.04,-.25]],.005,cloth);
+      }
+      const top = SEAT + 0.02 + cushionHeight;
       if (a.rests === 'fan') {
-        const fan = c.mesh(new THREE.CircleGeometry(0.2, 16, 0.25, Math.PI - 0.5), new THREE.MeshStandardMaterial({ color: pick(['#c8372f', '#e9d9a8', '#2f5a8a', '#1f1f1f']), side: THREE.DoubleSide, roughness: 0.8 }), [(random() - 0.5) * 0.1, top + 0.012, 0.05]);
+        const fan = c.mesh(new THREE.CircleGeometry(0.2, 16, 0.25, Math.PI - 0.5), new THREE.MeshStandardMaterial({ color: pick(['#c8372f', '#e9d9a8', '#2f5a8a', '#1f1f1f']), side: THREE.DoubleSide, roughness: 0.8 }), [(random() - 0.5) * 0.1, top + 0.001, 0.05]);
         fan.rotation.set(-Math.PI / 2, 0, random() * 3);
-        const ribs = c.mesh(new THREE.CircleGeometry(0.09, 16, 0.25, Math.PI - 0.5), new THREE.MeshStandardMaterial({ color: '#d9c08a', side: THREE.DoubleSide }), [fan.position.x, top + 0.014, 0.05]);
+        const ribs = c.mesh(new THREE.CircleGeometry(0.09, 16, 0.25, Math.PI - 0.5), new THREE.MeshStandardMaterial({ color: '#d9c08a', side: THREE.DoubleSide }), [fan.position.x, top + 0.002, 0.05]);
         ribs.rotation.copy(fan.rotation);
       } else if (a.rests === 'newspaper') {
         const paper = c.box([0.3, 0.02, 0.22], [0.02, top + 0.012, 0.03], c.material('#e6e0cf'));
@@ -148,7 +224,7 @@ export default defineThing({
       } else if (a.rests === 'shawl') {
         const yarn = c.material(pick(['#c8372f', '#e9e4d8', '#7a4fa8', '#e0a81c', '#2f8f8a']), { roughness: 1 });
         const drape = new Sculpture(context);
-        drape.root.position.set(0, SEAT, -0.22); drape.root.rotation.x = -0.24;
+        drape.root.position.set(0, SEAT, -0.22); drape.root.rotation.x = backAngle;
         const peak = a.back === 'arched' ? 0.82 : 0.75;
         drape.box([0.42, 0.42, 0.012], [0.03, peak - 0.2, 0.03], yarn).rotation.z = 0.06;
         drape.box([0.42, 0.3, 0.012], [0.03, peak - 0.14, -0.035], yarn).rotation.z = 0.06;
@@ -162,11 +238,13 @@ export default defineThing({
         c.box([0.18, 0.012, 0.14], [0.1, top + 0.01, 0.08], yarn).rotation.y = 0.3;
         c.tube([[-0.02, top + 0.02, 0.06], [0.03, top + 0.012, 0.1], [0.08, top + 0.014, 0.06]], 0.004, yarn);
       }
-      return c.root;
+      c.root.scale.x=mix(.85,1.25,a.seatWidth);
+      return {root:c.root,rockers};
     };
 
     // Ground patch.
     let lift = 0;
+    const wideFloor=['twin','table','plant'].includes(a.beside);
     if (a.floor === 'tiles') {
       lift = 0.03;
       const tile = document.createElement('canvas');
@@ -183,23 +261,40 @@ export default defineThing({
         if (random() < mood.wear * 0.5) { t.fillStyle = 'rgba(150,145,135,0.75)'; t.fillRect(x + 2, y + 2, 124, 124); }
       }
       const map = new THREE.CanvasTexture(tile); map.colorSpace = THREE.SRGBColorSpace;
-      s.box([1.6, 0.03, 1.6], [0, 0.015, 0], [s.material('#b9b0a0'), s.material('#b9b0a0'), new THREE.MeshStandardMaterial({ map, roughness: 0.7 }), s.material('#b9b0a0'), s.material('#b9b0a0'), s.material('#b9b0a0')] as unknown as THREE.Material);
+      s.box([wideFloor?2.2:1.6, 0.03, 1.6], [0, 0.015, 0], [s.material('#b9b0a0'), s.material('#b9b0a0'), new THREE.MeshStandardMaterial({ map, roughness: 0.7 }), s.material('#b9b0a0'), s.material('#b9b0a0'), s.material('#b9b0a0')] as unknown as THREE.Material).name='chair-floor';
     } else if (a.floor === 'boards') {
       lift = 0.035;
-      for (let i = 0; i < 9; i++) s.box([0.17, 0.035, 1.5 + random() * 0.12], [-0.72 + i * 0.18, 0.0175, (random() - 0.5) * 0.06], s.material(new THREE.Color('#9a8468').offsetHSL(0, 0, (random() - 0.5) * 0.08), { roughness: 1 }));
+      const count=wideFloor?13:9;
+      for (let i = 0; i < count; i++) s.box([0.17, 0.035, 1.5 + random() * 0.12], [(i-(count-1)/2) * 0.18, 0.0175, (random() - 0.5) * 0.06], s.material(new THREE.Color('#9a8468').offsetHSL(0, 0, (random() - 0.5) * 0.08), { roughness: 1 }));
     }
 
-    const chairs: { root: THREE.Group; x: number; z: number; phase: number; gain: number }[] = [];
+    const chairs: { root: THREE.Group; rockers: THREE.Mesh[]; x: number; z: number; phase: number; gain: number }[] = [];
     const place = (x: number, z: number, yaw: number, gain: number) => {
       const holder = new THREE.Group();
+      holder.name='chair-support-frame';
       holder.position.set(x, lift, z); holder.rotation.y = yaw;
-      const root = makeChair();
+      const {root,rockers} = makeChair();
       holder.add(root); s.root.add(holder);
-      chairs.push({ root, x, z, phase: random() * 6, gain });
+      chairs.push({ root, rockers, x, z, phase: random() * 6, gain });
     };
     if (a.beside === 'twin') { place(-0.42, 0, 0.45, 1); place(0.42, 0.05, -0.5, 0.35); }
     else place(0, 0, (random() - 0.5) * 0.3, 1);
+    if(a.footrest!=='none'){
+      const beforeRest=new Set(s.root.children),rest=new THREE.Group();
+      const z=1.08,wood=s.material(TONE[a.finish]),cloth=s.material('#a9a789');
+      if(a.footrest==='folding'){
+        for(const x of[-.18,.18]){s.rod([x,lift,-.14+z],[x,lift+.24,.14+z],.014,wood);s.rod([x,lift,.14+z],[x,lift+.24,-.14+z],.014,wood);}
+        s.box([.39,.015,.31],[0,lift+.2475,z],cloth);
+      }else{
+        for(const x of[-.18,.18])for(const dz of[-.13,.13])s.cylinder(.018,.025,.2,[x,lift+.1,z+dz],wood,10);
+        if(a.footrest==='upholstered')s.box([.44,.075,.36],[0,lift+.2375,z],cloth);
+        else for(let i=0;i<4;i++)s.box([.43,.025,.075],[0,lift+.2125,z-.12+i*.08],wood);
+      }
+      for(const child of [...s.root.children])if(!beforeRest.has(child))rest.add(child);
+      s.root.add(rest);rest.updateMatrixWorld(true);rest.position.y-=new THREE.Box3().setFromObject(rest,true).min.y;
+    }
 
+    const besideStart=s.root.children.length;
     if (a.beside === 'doorway') {
       const wallColour = pick(['#e9c36a', '#8fc7c2', '#e6a08c', '#b7cf9a', '#d9b6d2']);
       const wall = s.material(wallColour, { roughness: 0.95 });
@@ -246,11 +341,16 @@ export default defineThing({
       }
     }
 
+    if(a.beside==='table'||a.beside==='plant'){
+      const beside=new THREE.Group();for(const child of s.root.children.slice(besideStart))beside.add(child);s.root.add(beside);beside.name='supported-chair-side-piece';beside.updateMatrixWorld(true);beside.position.y+=lift-new THREE.Box3().setFromObject(beside,true).min.y;
+    }
     const amplitude = { rocking: mix(0.1, 0.24, mood.energy), breeze: mix(0.012, 0.04, mood.energy), settled: 0 }[a.motion];
     const pose = (time: number) => chairs.forEach((chair) => {
       const theta = Math.sin(time * 2.4 + chair.phase) * amplitude * chair.gain - 0.03;
       chair.root.rotation.x = theta;
-      chair.root.position.set(0, RR * (1 - Math.cos(theta)), RR * (theta - Math.sin(theta)) + RR * theta * 0.0);
+      let lowest=Infinity;
+      for(const rocker of chair.rockers){const p=rocker.geometry.getAttribute('position');for(let i=0;i<p.count;i++)lowest=Math.min(lowest,Math.cos(theta)*p.getY(i)-Math.sin(theta)*p.getZ(i));}
+      chair.root.position.set(0, -lowest, RR * (theta - Math.sin(theta)));
     });
     pose(0);
     return s.finish({ update: amplitude ? (_dt, time) => pose(time) : undefined });

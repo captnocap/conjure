@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Enceladus fissure slot ice wall section", "summary": "Two finite rough ice walls bound an actual narrow vent slot with open upper throat and retained stratigraphic sections. A scaled teaching section of an icy tiger-stripe slot. The retained layers and wall deformation are conceptual geometry, distinct from a directly observed deep ice-shell section.", "scales": ["planetary", "landscape", "tabletop"]});

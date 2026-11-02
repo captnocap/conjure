@@ -1,0 +1,26 @@
+import * as THREE from 'three';
+import { Sculpture, choice, score, noul, diorama, defineThing, defineWorld, figure } from '@conjure/kit';
+export default defineThing({
+  questions: {
+    task: choice("What is the fuller doing?", {"paddle": "Guiding cloth with a long paddle.", "lift": "Lifting a folded cloth edge.", "inspect": "Holding a cloth sample.", "rake": "Using a two-pronged cloth rake."}),
+    clothes: choice("What work clothing is worn?", {"apron": "A thick waterproof apron.", "shirt": "A plain linen shirt.", "coat": "A short work coat.", "vest": "A wool waistcoat."}),
+    head: choice("What hair or headwear is shown?", {"cap": "A close work cap.", "short": "Short uncovered hair.", "bun": "Hair in a bun.", "none": "A bare head."}),
+    trough: choice("What fulling station is used?", {"box": "A low rectangular trough.", "round": "A round timber tub.", "stone": "A stone-lined bath.", "split": "A two-cell working trough."}),
+    stock: choice("What beating stock is visible?", {"raised": "A raised timber hammer.", "side": "A hammer parked to one side.", "pair": "Two raised narrow stocks.", "none": "Only the washing trough."}),
+    cloth: choice("What cloth is handled?", {"folds": "A bundle of heavy folds.", "roll": "A partially unrolled cloth roll.", "sheet": "A broad cloth sheet.", "small": "A short sample length."}),
+    equipment: choice("What supply is nearby?", {"earth": "A small fullers-earth tub.", "bucket": "A handled water bucket.", "brush": "A stiff cloth brush.", "none": "No extra equipment."}),
+    state: choice("What stage of work is shown?", {"stopped": "The mechanism is stopped for handling.", "draining": "A front drain is open.", "sample": "A sample card marks the batch.", "finished": "A folded clean bundle lies beside it."}),
+    height: score("How tall is the fuller?", ["Short adult", "Average adult", "Tall adult"])
+  },
+  build(a,context){
+ const s=new Sculpture(context),wood=s.material('#9d8159'),light=s.material('#bca272'),dark=s.material('#555b45'),iron=s.material('#61745f',{metalness:.4}),cloth=s.material('#c9c3a4',{side:THREE.DoubleSide}),stone=s.material('#b3b59a'),water=s.material('#86aca0',{transparent:true,opacity:.55,depthWrite:false});
+
+ const H=1.58+a.height*.25,Y=.55,z=.4;const p=figure(s,{height:H,pose:'standing',style:'doll',hair:a.head,top:a.clothes==='coat'?'#748270':'#d2c5a4',bottom:'#68634d',shoes:'#455241',skin:'#b99a75'});p.root.position.z=-.1;s.root.add(p.root);if(a.clothes==='apron')s.box([.32,.5,.025],[0,H*.48,-.05],dark);if(a.clothes==='vest')s.box([.28,.32,.025],[0,H*.64,-.05],wood);
+ const mat=a.trough==='stone'?stone:wood;if(a.trough==='round')s.lathe([[0,0],[.3,0],[.36,Y],[.32,Y],[.27,.05],[0,.05]],wood,[0,0,z]);else{s.box([.85,.05,.65],[0,.025,z],mat);for(const zz of [z-.325,z+.325])s.box([.85,Y,.045],[0,Y/2,zz],mat);for(const x of [-.425,.425])s.box([.045,Y,.65],[x,Y/2,z],mat);if(a.trough==='split')s.box([.035,Y,.65],[0,Y/2,z],wood);}
+ if(a.trough==='round')s.cylinder(.28,.28,.012,[0,.22,z],water,28);else s.box([.55,.012,.45],[0,.22,z],water);const cy=Y+.15;if(a.cloth==='sheet')s.surface((u,v,q)=>q.set((u-.5)*.5,Y+.015-Math.sin(v*Math.PI)*.12,z-.1+v*.55),cloth,{segments:[8,16]});else for(const x of a.trough==='split'?[-.2,.2]:[0]){const w=a.trough==='split'?.3:a.cloth==='small'?.25:.46;if(a.cloth==='roll')s.cylinder(.1,.1,w,[x,.35,z],cloth,24).rotation.z=Math.PI/2;else for(let j=0;j<4;j++)s.box([w,.035,.32],[x,.27+j*.035,z],cloth);}
+ if(a.stock!=='none'){const sx=a.stock==='side'?.58:.4;for(const xx of [sx-.15,sx+.15])s.rod([xx,0,z+.28],[xx,1.55,z+.28],.035,wood);s.rod([sx-.2,1.55,z+.28],[sx+.2,1.55,z+.28],.04,wood);for(const dx of a.stock==='pair'?[-.08,.08]:[0]){s.rod([sx+dx,1.5,z+.28],[sx+dx,1.05,z+.05],.025,wood);s.box([.14,.16,.2],[sx+dx,1.05,z+.05],wood);}}
+ const gy=H*.65;if(a.task==='paddle'||a.task==='rake'){const lo:[number,number,number]=[.08,.35,z+.08],hi:[number,number,number]=[-.13,gy,.06];s.rod(lo,hi,.017,wood);if(a.task==='paddle')s.box([.16,.08,.08],lo,wood);else{s.rod([.03,.35,z+.08],[.13,.35,z+.08],.012,wood);for(const x of [.03,.13])s.rod([x,.4,z+.08],[x,.28,z+.08],.012,wood);}p.reach('right',new THREE.Vector3(...hi),{space:s.root});const t=.9;p.reach('left',new THREE.Vector3(lo[0]+t*(hi[0]-lo[0]),lo[1]+t*(hi[1]-lo[1]),lo[2]+t*(hi[2]-lo[2])),{space:s.root});}else{const hy=H*.61;s.surface((u,v,tgt)=>tgt.set((u-.5)*.32,a.task==='lift'?hy-v*(hy-Y-.025):hy-v*.24,a.task==='lift'?.15+v*.25:.15+Math.sin(v*Math.PI)*.06),cloth,{segments:[8,12]});p.reach('right',new THREE.Vector3(-.16,hy,.15),{space:s.root});p.reach('left',new THREE.Vector3(.16,hy,.15),{space:s.root});}p.lookAt(new THREE.Vector3(0,.6,z),s.root);
+ if(a.equipment==='earth')s.cylinder(.14,.12,.24,[-.6,.12,z],wood,24);if(a.equipment==='bucket'){s.lathe([[0,0],[.12,0],[.16,.25],[.14,.25],[.1,.02],[0,.02]],iron,[-.6,0,z]);s.tube([[-.75,.22,z],[-.6,.4,z],[-.45,.22,z]],.007,iron);}if(a.equipment==='brush')s.box([.2,.06,.1],[-.6,.03,z],dark);if(a.state==='draining')s.tube([[a.trough==='round'?.3:.425,.13,z],[.55,.13,z],[.55,.03,z]],.025,iron);if(a.state==='sample')s.label('BATCH 4',.2,.09,[0,.4,z+.35],'#ded4b1','#5b6046');if(a.state==='finished')for(let j=0;j<4;j++)s.box([.35,.035,.3],[-.65,.0175+j*.035,-.15],cloth);return s.finish();
+
+  },
+});

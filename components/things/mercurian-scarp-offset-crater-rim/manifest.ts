@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Mercurian scarp offset crater rim", "summary": "An annular crater rim is physically displaced and truncated by a scarp crossing, preserving both sides of the offset. A continuous cratered terrain block contains displaced rim arcs and a genuinely offset floor across a younger scarp. Horizontal shortening and relative relief are schematic; neither absolute age nor measured slip is assigned.", "scales": ["planetary", "landscape", "tabletop"]});

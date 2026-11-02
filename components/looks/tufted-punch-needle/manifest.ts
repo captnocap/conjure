@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({ kind: 'look', title: 'Tufted punch needle', medium: 'craft', scales: ['cosmic', 'planetary', 'landscape', 'street', 'room', 'tabletop', 'macro'], summary: 'A picture made from dense punched yarn loops, with raised pile, stepped colour fields, corded outlines and a fabric backing. Small rugs, tactile wall hangings, domestic craft and scenes assembled one soft loop at a time.' });

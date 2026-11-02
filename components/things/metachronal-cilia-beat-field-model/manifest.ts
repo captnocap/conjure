@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Metachronal cilia beat field model", "summary": "Multiple individually rooted curved cilia form a phased wave across a fixed tissue patch, with real differences in stroke geometry. Individually rooted cilia display a schematic phase wave with distinct effective and recovery stroke curves. The field is a static teaching snapshot of mucociliary motion, with magnified spacing and optional fluid references.", "scales": ["macro", "tabletop"]});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Glomerular mesangial core capillary support", "summary": "A branching mesangial core visibly meets supported capillary loops at the inner tuft angles. The inner-angle contacts reach real capillary walls. The branched loop layout is explicitly schematic; the mesangial core is not drawn as a perforated filtration layer.", "scales": ["macro", "tabletop"]});

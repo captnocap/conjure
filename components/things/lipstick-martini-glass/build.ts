@@ -53,6 +53,12 @@ function texture(width: number, height: number, draw: (c: CanvasRenderingContext
 
 export default defineThing({
   questions: {
+    glassTint: choice('Is the glass itself tinted?', { clear: 'Clear with a cool edge.', smoke: 'Smoky grey glass.', rose: 'A faint rose tint.', amber: 'Warm amber glass.' }),
+    stem: choice('How is the stem shaped?', { straight: 'A plain straight stem.', knop: 'A rounded knop at its centre.', twist: 'A twisted spiral stem.', faceted: 'A sharply faceted stem.' }),
+    cutting: choice('How is the bowl decorated?', { smooth: 'Plain smooth glass.', ribs: 'Fine raised ribs down the bowl.', diamonds: 'A crisscross diamond-cut pattern.', bands: 'Three cut horizontal bands.' }),
+    impression: choice('How did the lipstick transfer?', { light: 'A faint partial touch.', full: 'One clear full impression.', double: 'Two impressions from successive sips.', dragged: 'An impression dragged sideways into a smear.' }),
+    coldness: score('How cold is the glass?', ['Warm and dry', 'A few beads', 'Misted and beaded', 'Frosty with long trails of condensation']),
+    charm: choice('Is there a glass marker around the stem?', { none: 'No marker.', bead: 'A small blue bead on a silver loop.', heart: 'A red heart hanging from a wire loop.', star: 'A small brass star on a wire loop.' }),
     glass: choice('What kind of glass is it?', GLASSES),
     drink: choice('What was the drink?', DRINKS),
     left: score('How much of the drink is left?', ['Drained to a film in the bottom', 'A last mouthful', 'Half', 'Barely sipped, still nearly full']),
@@ -89,7 +95,7 @@ export default defineThing({
   build(a, context) {
     const s = new Sculpture(context);
     const { mood, random } = context;
-    const glassMat = new THREE.MeshPhysicalMaterial({ color: '#dcecf0', transparent: true, opacity: 0.34, roughness: 0.04, side: THREE.DoubleSide });
+    const glassMat = new THREE.MeshPhysicalMaterial({ color: { clear: '#dcecf0', smoke: '#7e8993', rose: '#e5acb8', amber: '#d4ac6f' }[a.glassTint], transparent: true, opacity: 0.34 + a.coldness * 0.14, roughness: 0.04 + a.coldness * 0.2, side: THREE.DoubleSide });
     const rimMat = new THREE.MeshStandardMaterial({ color: '#f2fbfd', roughness: 0.05, transparent: true, opacity: 0.75 });
     const tint = new THREE.Color(DRINK_TINT[a.drink]);
     const drinkMat = new THREE.MeshStandardMaterial({ color: tint, roughness: 0.08, emissive: tint, emissiveIntensity: a.drink === 'espresso' ? 0 : mix(0.12, 0.32, mood.cheer) });
@@ -105,8 +111,14 @@ export default defineThing({
       const g = new THREE.Group();
       g.add(lathe([[0, 0], [0.036, 0], [0.036, 0.003], [0.008, 0.007], [0.004, 0.014], ...bowl], glassMat));
       // A solid stem and a bright rim so the glass holds its outline against pale paper.
-      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.0038, 0.0038, bottom - 0.01, 8), rimMat);
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.0038, 0.0038, bottom - 0.01, a.stem === 'faceted' ? 4 : 12), rimMat);
       stem.position.y = bottom / 2 + 0.004;
+      if (a.stem === 'knop') {
+        const knop = new THREE.Mesh(new THREE.SphereGeometry(0.009, 14, 10), glassMat); knop.position.y = bottom * 0.48; knop.scale.y = 0.8; g.add(knop);
+      } else if (a.stem === 'twist') {
+        const pts = Array.from({ length: 45 }, (_v, i) => { const t = i / 44; return new THREE.Vector3(Math.cos(t * Math.PI * 7) * 0.004, 0.012 + t * (bottom - 0.016), Math.sin(t * Math.PI * 7) * 0.004); });
+        g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 64, 0.0014, 5, false), rimMat));
+      }
       const rimR = bowl[bowl.length - 1][0];
       const rim = new THREE.Mesh(new THREE.TorusGeometry(rimR, 0.0013, 6, 48), a.glass === 'margarita' ? new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1 }) : rimMat);
       if (a.glass === 'margarita') rim.scale.z = 2.4;
@@ -114,6 +126,33 @@ export default defineThing({
       const foot = new THREE.Mesh(new THREE.TorusGeometry(0.0355, 0.0012, 6, 40), rimMat);
       foot.rotation.x = Math.PI / 2; foot.position.y = 0.002;
       g.add(stem, rim, foot);
+      const line = (points: THREE.Vector3[], radius = 0.0005) => { const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 20, radius, 4, false), rimMat); g.add(m); };
+      if (a.cutting === 'bands') for (const f of [0.35, 0.58, 0.8]) {
+        const y = mix(bottom, top, f), band = new THREE.Mesh(new THREE.TorusGeometry(radiusAt(bowl, y) + 0.0006, 0.0006, 5, 36), rimMat); band.rotation.x = Math.PI / 2; band.position.y = y; g.add(band);
+      } else if (a.cutting !== 'smooth') for (let k = 0; k < 16; k++) {
+        for (const turn of (a.cutting === 'diamonds' ? [-0.65, 0.65] : [0])) {
+          line(Array.from({ length: 12 }, (_v, i) => { const f = 0.2 + i / 11 * 0.7, y = mix(bottom, top, f), t = k / 16 * Math.PI * 2 + f * turn, r = radiusAt(bowl, y) + 0.0005; return new THREE.Vector3(Math.cos(t) * r, y, Math.sin(t) * r); }));
+        }
+      }
+      if (a.coldness > 0.08) {
+        const droplet = new THREE.MeshStandardMaterial({ color: '#e4f5f6', roughness: 0.08, transparent: true, opacity: 0.7 });
+        for (let k = 0; k < Math.round(a.coldness * 44); k++) {
+          const y = mix(bottom + 0.012, top - 0.006, random()), t = random() * Math.PI * 2, r = radiusAt(bowl, y) + 0.0006;
+          const bead = new THREE.Mesh(new THREE.SphereGeometry(0.0011, 6, 4), droplet); bead.position.set(Math.cos(t) * r, y, Math.sin(t) * r); bead.scale.y = 1 + a.coldness * 2 * random(); g.add(bead);
+        }
+      }
+      if (a.charm !== 'none') {
+        const wire = new THREE.MeshStandardMaterial({ color: a.charm === 'star' ? '#cba956' : '#bcc6ca', metalness: 0.85, roughness: 0.3 });
+        const loop = new THREE.Mesh(new THREE.TorusGeometry(0.007, 0.0006, 5, 20), wire); loop.rotation.x = Math.PI / 2; loop.position.y = 0.019; g.add(loop);
+        const link = new THREE.Mesh(new THREE.TorusGeometry(0.002, 0.0005, 4, 12), wire); link.position.set(0.007, 0.017, 0); g.add(link);
+        if (a.charm === 'bead') { const bead = new THREE.Mesh(new THREE.SphereGeometry(0.0038, 10, 8), new THREE.MeshStandardMaterial({ color: '#3889ad', roughness: 0.2 })); bead.position.set(0.007, 0.012, 0); g.add(bead); }
+        else {
+          const shape = new THREE.Shape();
+          if (a.charm === 'heart') { shape.moveTo(0, -0.005); shape.bezierCurveTo(-0.01, 0.001, -0.005, 0.008, 0, 0.004); shape.bezierCurveTo(0.005, 0.008, 0.01, 0.001, 0, -0.005); }
+          else for (let k = 0; k < 10; k++) { const t = k / 10 * Math.PI * 2 + Math.PI / 2, r = k % 2 ? 0.0025 : 0.0055; if (k) shape.lineTo(Math.cos(t) * r, Math.sin(t) * r); else shape.moveTo(Math.cos(t) * r, Math.sin(t) * r); }
+          shape.closePath(); const charm = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: 0.0008, bevelEnabled: false }), a.charm === 'star' ? wire : new THREE.MeshStandardMaterial({ color: '#a52b3b', roughness: 0.4 })); charm.position.set(0.007, 0.01, 0); g.add(charm);
+        }
+      }
 
       const level = bottom + (top - bottom) * mix(0.1, 0.9, fill);
       const steps = 10;
@@ -176,10 +215,11 @@ export default defineThing({
 
       if (lips && a.lipstick !== 'none') {
         const colour = LIP_TINT[a.lipstick];
-        const smear = mood.wear;
+        const smear = a.impression === 'dragged' ? 0.92 : mood.wear * 0.25;
         const map = texture(128, 96, (c) => {
           c.clearRect(0, 0, 128, 96);
           c.fillStyle = colour;
+          c.globalAlpha = a.impression === 'light' ? 0.45 : 1;
           // An upper and a lower lip, broken by creases.
           c.beginPath(); c.moveTo(8, 44); c.quadraticCurveTo(40, 2, 64, 22); c.quadraticCurveTo(88, 2, 120, 44); c.quadraticCurveTo(64, 34, 8, 44); c.fill();
           c.beginPath(); c.moveTo(12, 52); c.quadraticCurveTo(64, 44, 116, 52); c.quadraticCurveTo(64, 110, 12, 52); c.fill();
@@ -192,9 +232,10 @@ export default defineThing({
         const rTop = radiusAt(bowl, top) + 0.0009, rLow = radiusAt(bowl, top - height) + 0.0009;
         const arc = 0.042 / rTop;
         const angle = (random() < 0.5 ? -1 : 1) * mix(0.55, 0.95, random());
-        const print = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rLow, height, 14, 1, true, angle - arc / 2, arc), new THREE.MeshStandardMaterial({ map, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 0.6 }));
+        const print = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rLow, height, 14, 1, true, angle - arc / 2, arc), new THREE.MeshStandardMaterial({ map, alphaTest: a.impression === 'light' ? 0.1 : 0.4, transparent: a.impression === 'light', side: THREE.DoubleSide, roughness: 0.6 }));
         print.position.y = top - height / 2 + 0.001;
         g.add(print);
+        if (a.impression === 'double') { const second = print.clone(); second.rotation.y = arc * 1.15; g.add(second); }
       }
       return g;
     };

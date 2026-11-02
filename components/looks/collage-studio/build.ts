@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type Palette as PicturePalette, type PaletteRole, type RGB as Paint, choice, clamp01, defineLook, mix, rekey, rekeyOne, score, seeded } from '@conjure/kit';
 
 /**
  * Collage studio: the frame rebuilt as a mixed-media collage.
@@ -192,6 +192,52 @@ const CRAYONS: Record<Palette, string[]> = {
   primary: ['#d8262c', '#1d4ea8', '#f5c800'],
 };
 
+/**
+ * Under the picture's palette the free sets turn to its colours, keeping their design: riso's
+ * fluorescent ink on the ink and its shadow-carrying blue on the second; vintage's faded inks as one
+ * family on the ink with olive on the second; neon's loud papers split between ink and second under
+ * a fixed black; mono's lone accent on the ink. Black, white and grey stay; the scene's own colours
+ * stay the scene's; primary keeps its Bauhaus primaries; push pins stay their shop colours. The
+ * circled marker answers in the second colour. i = ink, s = second, - = fixed, per colour in order.
+ */
+const SET_ROLES: Partial<Record<Palette, { inks: string; stocks: string; crayons: string }>> = {
+  riso: { inks: 'si', stocks: 'isis--', crayons: 'is' },
+  vintage: { inks: 'iii', stocks: 'iiis-ii', crayons: 'isi' },
+  neon: { inks: '-is', stocks: 'isi-is', crayons: 'isi' },
+  mono: { inks: '-', stocks: '-----', crayons: '--i' },
+};
+const ROLE_OF: Record<string, PaletteRole | undefined> = { i: 'ink', s: 'second' };
+const toPaint = (c: RGB): Paint => [Math.round(c[0] * 255), Math.round(c[1] * 255), Math.round(c[2] * 255)];
+const fromPaint = (c: Paint): RGB => [c[0] / 255, c[1] / 255, c[2] / 255];
+const paintHexOf = (c: Paint) => `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+function keyedList(list: RGB[], pattern: string, picture: PicturePalette): RGB[] {
+  const out = rekey(Object.fromEntries(list.map((c, i) => [i, toPaint(c)])), picture, Object.fromEntries(list.map((_, i) => [i, ROLE_OF[pattern[i]]])));
+  return list.map((c, i) => (ROLE_OF[pattern[i]] ? fromPaint(out[i]) : c));
+}
+/** The same ink, printed in another colour: screen angle, darkness and process kept. */
+function reinked(source: Ink, colour: RGB): Ink {
+  const y = luma(...colour);
+  const chroma: RGB = [colour[0] - y, colour[1] - y, colour[2] - y];
+  const length = Math.hypot(...chroma);
+  return { ...source, colour, chroma: length > 0.05 ? (chroma.map((c) => c / length) as RGB) : null };
+}
+function tableIn(key: Palette, picture: PicturePalette | undefined) {
+  const plain = { inks: INK_SETS[key], stocks: STOCKS[key], crayons: CRAYONS[key], accentStock: hex('#d12a2a'), accentInks: RED_INKS, marker: (colour: string) => colour };
+  if (!picture) return plain;
+  const marker = (colour: string) => paintHexOf(rekeyOne(toPaint(hex(colour)), picture, 'second'));
+  const roles = SET_ROLES[key];
+  if (!roles) return { ...plain, marker };
+  const inkColours = keyedList(INK_SETS[key].map((i) => i.colour), roles.inks, picture);
+  return {
+    inks: INK_SETS[key].map((i, k) => (ROLE_OF[roles.inks[k]] ? reinked(i, inkColours[k]) : i)),
+    stocks: keyedList(STOCKS[key], roles.stocks, picture),
+    crayons: keyedList(CRAYONS[key].map(hex), roles.crayons, picture).map((c, k) => (ROLE_OF[roles.crayons[k]] ? paintHexOf(toPaint(c)) : CRAYONS[key][k])),
+    accentStock: fromPaint(rekeyOne(toPaint(hex('#d12a2a')), picture, 'ink')),
+    accentInks: [reinked(RED_INKS[0], fromPaint(rekeyOne(toPaint(RED_INKS[0].colour), picture, 'ink')))],
+    marker,
+  };
+}
+
 interface Piece {
   id: number;
   strip: boolean;
@@ -266,17 +312,17 @@ export default defineLook({
       staples: 'Stapled on, quick and careless.',
       unfixed: 'Not fixed at all: just laid in place, lifting and shifting, with deep shadows.',
     }),
-    inks: choice('What inks and papers were on the table?', {
+    inks: choice('What inks and papers were on the table? Their colours come from the picture\u2019s palette.', {
       true: "The scene's own colours in every medium.",
-      riso: 'Risograph inks: fluorescent pink and blue only, overprinted.',
-      vintage: 'Old magazines: faded sepia, dusty reds, mustard and yellowed paper.',
-      neon: 'Acid green, hot pink and yellow papers and inks, loud and clubby.',
-      mono: 'Black and white only: photocopies, pencil and black paper, with the main subject alone in red.',
+      riso: 'Risograph inks: two fluorescent inks only, one light and one deep, overprinted.',
+      vintage: 'Old magazines: faded, dusty, sun-bleached inks and papers on yellowed stock.',
+      neon: 'Loud fluorescent papers and inks under black, clashing and clubby.',
+      mono: 'Black and white only: photocopies, pencil and black paper, with the main subject alone in one strong colour.',
       primary: 'Red, blue and yellow papers and inks under black: a Bauhaus poster.',
     }),
     marks: choice('What did the collagist add by hand at the end?', {
       nothing: 'Nothing: the pieces speak for themselves.',
-      circled: 'The main subject ringed in red marker, with an arrow pointing at it.',
+      circled: 'The main subject ringed in bright marker, with an arrow pointing at it.',
       scribbles: 'Crayon scribbles rubbed in under every piece, as shadows and emphasis.',
       numbers: 'A numbered sticker on every piece, like an inventory or an exploded diagram.',
       coffee: 'A coffee ring and a thumbprint: it sat on the desk a long time.',
@@ -299,6 +345,7 @@ export default defineLook({
     const seed = Math.floor(rng() * 1e6);
     const scratch = new Float32Array(n);
     const palette = a.inks as Palette;
+    const table = tableIn(palette, context.palette);
     let checkpoints = 0;
     const pause = async () => {
       signal.throwIfAborted();
@@ -479,7 +526,7 @@ export default defineLook({
       const base = capture.baseColors[pieceId] ?? [128, 128, 128];
       const baseRgb: RGB = [base[0] / 255, base[1] / 255, base[2] / 255];
       const accent = palette === 'mono' && pieceId === heroId;
-      const stock = accent ? hex('#d12a2a') : nearestStock(saturated(baseRgb, palette === 'true' ? 1.5 : 1.2), STOCKS[palette]);
+      const stock = accent ? table.accentStock : nearestStock(saturated(baseRgb, palette === 'true' ? 1.5 : 1.2), table.stocks);
       const margin = { scalpel: 1.2, scissors: 5 + rng() * 2, loose: 12 + rng() * 7, torn: 6 + rng() * 4, rectangles: 10 + rng() * 6 }[cut];
       const amp = { scalpel: 0, scissors: 2.8, loose: 3.2, torn: 7 * (1 + mood.wear * 0.5), rectangles: 1.2 }[cut] * (1.3 - care * 0.6);
       const angle = cut === 'scalpel' ? 0 : (rng() - 0.5) * 2 * jitterRotation * (strip ? 0.3 : 1);
@@ -513,7 +560,7 @@ export default defineLook({
         accent,
         period: 4.2 + rng() * 1.4,
         sheen: rng(),
-        inks: accent ? RED_INKS : INK_SETS[palette],
+        inks: accent ? table.accentInks : table.inks,
         doubtful,
         hero: pieceId === heroId,
         count: counts[pieceId],
@@ -794,7 +841,7 @@ export default defineLook({
       if (pc.doubtful && a.fixing !== 'pins') pin(topX, topY + 3, PIN_COLOURS[Math.floor(rng() * PIN_COLOURS.length)]);
     }
     let markNote = 'no marks';
-    const crayons = CRAYONS[palette];
+    const crayons = table.crayons;
     const hero = things.find((pc) => pc.hero);
     if (a.marks === 'circled' && hero) {
       const pad = 16 + hero.margin;
@@ -809,7 +856,7 @@ export default defineLook({
         const wobble = 1 + valueNoise(Math.cos(t) * 2 + 5, Math.sin(t) * 2 + 5, seed + 9) * 0.06 + (i / 78) * 0.04;
         ring.push([cx + Math.cos(t) * rx * wobble, cy + Math.sin(t) * ry * wobble]);
       }
-      const red = palette === 'vintage' ? '#a8453a' : '#d9252a';
+      const red = table.marker(palette === 'vintage' ? '#a8453a' : '#d9252a');
       marker(ring, red, 4.5, 0.85);
       // The arrow comes in from the emptiest corner.
       const corners: [number, number][] = [[40, 40], [size - 40, 40], [40, size - 40], [size - 40, size - 40]];

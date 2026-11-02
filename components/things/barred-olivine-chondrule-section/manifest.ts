@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Barred olivine chondrule section", "summary": "Parallel crystal bars cross a rounded chondrule and meet a continuous peripheral shell; bar geometry must remain distinct from porphyritic grains. A schematic barred-olivine section with parallel skeletal crystals connected to a peripheral shell; real inter-bar mesostasis and exposed cuts.", "scales": ["macro", "tabletop"]});

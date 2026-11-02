@@ -58,6 +58,48 @@ function handLabel(kind: Exclude<keyof typeof LABELS, 'none'>, wear: number, til
 
 export default defineThing({
   questions: {
+    proportions: choice('What proportions does the conical flask have?', {
+      standard: 'A familiar medium-height conical laboratory flask.',
+      squat: 'A broad low flask with a compact neck.',
+      slender: 'A narrow tall flask with a long tapered shoulder.',
+      large: 'A generously proportioned heavy flask.',
+    }),
+    graduations: choice('How is the flask graduated?', {
+      plain: 'Unmarked glass with no graduation lines.',
+      sparse: 'Four broad white graduation marks.',
+      fine: 'A ladder of fine short and long marks.',
+      numbered: 'Three clear numbered volume lines.',
+    }),
+    deposit: choice('What solid material is visible through the liquid?', {
+      none: 'A clear solution without solid material.',
+      crystals: 'A few large angular crystals settle at the bottom.',
+      granules: 'A shallow heap of coarse rounded granules.',
+      stirbar: 'A small white magnetic stirring bar rests on the base.',
+    }),
+    jacket: choice('What protective jacket surrounds the lower flask?', {
+      bare: 'The conical glass is uncovered.',
+      wire: 'An open wire carrier supports the flask without obscuring it.',
+      sleeve: 'A low felt sleeve cushions the wide base.',
+      basket: 'A woven carrier with open ribs surrounds the bottom half.',
+    }),
+    neck: choice('What detail distinguishes the neck?', {
+      plain: 'A simple smooth glass neck.',
+      rings: 'Three raised reinforcing glass rings.',
+      collar: 'A narrow metal identification collar below the lip.',
+      band: 'A red painted identification band around the neck.',
+    }),
+    accessory: choice('What additional preparation item lies nearby?', {
+      none: 'No additional preparation item.',
+      funnelpaper: 'Two folded filter papers wait on the bench.',
+      tags: 'Small numbered sample tags are stacked nearby.',
+      brush: 'A small narrow cleaning brush lies beside the flask.',
+    }),
+    station: choice('What is beneath the flask and its loose pieces?', {
+      bare: 'A bare work surface.',
+      tile: 'A square white ceramic laboratory tile.',
+      tray: 'A shallow enamel drip tray.',
+      stirrer: 'A compact magnetic stirrer with a front control knob.',
+    }),
     colour: choice('What colour is the liquid?', COLOURS),
     state: choice('What is the liquid doing right now?', {
       calm: 'Perfectly still, waiting.',
@@ -88,7 +130,7 @@ export default defineThing({
     const s = new Sculpture(context);
     const { mood, random } = context;
     const tint = TINT[a.colour];
-    const liquid = s.material(tint, { roughness: 0.15, emissive: tint, emissiveIntensity: a.glow ? 0.45 : 0.08, transparent: a.colour === 'clear', opacity: a.colour === 'clear' ? 0.75 : 1 });
+    const liquid = s.material(tint, { roughness: 0.15, emissive: tint, emissiveIntensity: a.glow ? 0.45 : 0.08, transparent: a.colour === 'clear' || a.deposit !== 'none', opacity: a.deposit !== 'none' ? 0.58 : a.colour === 'clear' ? 0.75 : 1, depthWrite: a.deposit === 'none' });
     const glass = new THREE.MeshPhysicalMaterial({ color: '#d8eef2', transparent: true, opacity: 0.17, roughness: 0.04, depthWrite: false, side: THREE.DoubleSide });
     const rimMat = s.material('#eaf5f6', { roughness: 0.1 });
     const flask = new THREE.Group();
@@ -107,11 +149,37 @@ export default defineThing({
     if (!spilled) add(s.lathe([[0, 0.005], [R - 0.008, 0.005], [R - 0.003, yS], [radiusAt(level), level], [0, level]], liquid));
     // Graduation marks, as every school flask has.
     const white = s.material('#f5f5ee', { roughness: 0.6 });
-    for (let i = 0; i < 4; i++) {
-      const y = 0.035 + i * 0.022;
+    const marks = { plain: 0, sparse: 4, fine: 10, numbered: 3 }[a.graduations];
+    for (let i = 0; i < marks; i++) {
+      const y = 0.03 + i * 0.08 / Math.max(1, marks - 1);
       const mark = add(s.box([i % 2 ? 0.012 : 0.02, 0.0014, 0.0008], [-0.012, y, radiusAt(y) * 0.97 + 0.004], white));
       mark.rotation.y = -0.25; mark.position.x = -radiusAt(y) * 0.45; mark.position.z = radiusAt(y) * 0.92 + 0.003;
+      if (a.graduations === 'numbered') {
+        const numeral = add(s.label(String(50 + i * 50), 0.017, 0.008, [radiusAt(y) * 0.3, y, radiusAt(y) * 0.95 + 0.004], '#f6f4e9', '#66848b'));
+        numeral.rotation.x = -Math.atan((R - r) / (yN - yS));
+      }
     }
+    if (!spilled && a.deposit !== 'none') {
+      const solid = s.material(a.deposit === 'stirbar' ? '#eeeadd' : new THREE.Color(tint).lerp(new THREE.Color('#ddd6bb'), 0.5), { roughness: 0.55 });
+      if (a.deposit === 'stirbar') add(s.rod([-0.022, 0.009, 0], [0.022, 0.009, 0], 0.0038, solid));
+      else for (let i = 0; i < (a.deposit === 'crystals' ? 9 : 28); i++) {
+        const angle = random() * Math.PI * 2, rr = Math.sqrt(random()) * (R - 0.016), radius = a.deposit === 'crystals' ? 0.005 + random() * 0.005 : 0.0025 + random() * 0.002;
+        if (a.deposit === 'crystals') add(s.mesh(new THREE.OctahedronGeometry(radius), solid, [Math.cos(angle) * rr, 0.005 + radius, Math.sin(angle) * rr])).rotation.y = random() * Math.PI;
+        else add(s.ball([radius, radius, radius], [Math.cos(angle) * rr, 0.005 + radius, Math.sin(angle) * rr], solid, 8));
+      }
+    }
+    const jacket = s.material(a.jacket === 'basket' ? '#aa8253' : a.jacket === 'sleeve' ? '#657b76' : '#8b9695', { metalness: a.jacket === 'wire' ? 0.7 : 0, roughness: 0.7 });
+    if (a.jacket === 'sleeve') add(s.lathe([[R + 0.001, 0.002], [R + 0.002, 0.013], [radiusAt(0.045) + 0.006, 0.045], [radiusAt(0.045) + 0.004, 0.045], [R, 0.013]], jacket));
+    if (a.jacket === 'wire' || a.jacket === 'basket') {
+      const n = a.jacket === 'wire' ? 6 : 12, high = a.jacket === 'wire' ? 0.072 : 0.061;
+      for (let i = 0; i < n; i++) {
+        const angle = i * Math.PI * 2 / n;
+        add(s.rod([Math.cos(angle) * (R + 0.003), 0.005, Math.sin(angle) * (R + 0.003)], [Math.cos(angle) * (radiusAt(high) + 0.006), high, Math.sin(angle) * (radiusAt(high) + 0.006)], 0.0013, jacket));
+      }
+      for (let y = 0.012; y <= high; y += a.jacket === 'basket' ? 0.011 : 0.03) add(s.ring(radiusAt(y) + 0.005, 0.0013, [0, y, 0], jacket)).rotation.x = Math.PI / 2;
+    }
+    if (a.neck === 'rings') for (let i = 0; i < 3; i++) add(s.ring(r + 0.001, 0.0017, [0, yN + 0.011 + i * 0.009, 0], rimMat)).rotation.x = Math.PI / 2;
+    if (a.neck === 'collar' || a.neck === 'band') add(s.mesh(new THREE.CylinderGeometry(r + 0.001, r + 0.001, 0.009, 24, 1, true), s.material(a.neck === 'collar' ? '#afa384' : '#a3483c', { metalness: a.neck === 'collar' ? 0.65 : 0, side: THREE.DoubleSide }), [0, yT - 0.017, 0]));
     if (mood.wear > 0.45) add(s.ring(radiusAt(level + 0.012) + 0.0015, 0.0012, [0, level + 0.012, 0], s.material('#8d7f62', { roughness: 1 }))).rotation.x = Math.PI / 2;
 
     if (a.label !== 'none') {
@@ -187,6 +255,9 @@ export default defineThing({
       if (thrown) { s.root.add(f); f.rotation.z = 1.25; f.rotation.y = random() * 3; } else flask.add(f);
     }
 
+    const proportions = { standard: [1, 1], squat: [1.2, 0.82], slender: [0.8, 1.22], large: [1.16, 1.13] }[a.proportions];
+    flask.scale.set(proportions[0], proportions[1], proportions[0]);
+
     if (spilled) {
       const slope = Math.atan((R - r) / (yN - yS));
       flask.rotation.z = -(Math.PI / 2 - slope);
@@ -194,6 +265,7 @@ export default defineThing({
       flask.updateMatrixWorld(true);
       const box = new THREE.Box3().setFromObject(flask);
       flask.position.y = -box.min.y;
+      flask.updateMatrixWorld(true);
       const mouth = new THREE.Vector3(0, yT, 0).applyMatrix4(flask.matrixWorld);
       const amount = mix(0.6, 1.3, a.fill);
       for (let i = 0; i < 7; i++) {
@@ -219,6 +291,40 @@ export default defineThing({
       s.box([0.012, 0.0012, 0.03], [bx - 0.018, 0.003, 0.057], steel).rotation.y = -0.85;
       const heap = s.lathe([[0, 0.014], [0.008, 0.011], [0.017, 0.004], [0.024, 0]], s.material(new THREE.Color(tint).lerp(new THREE.Color('#f2f0e6'), 0.55), { roughness: 1 }), [bx - 0.03, 0, 0.085]);
       heap.scale.z = 0.8;
+    }
+
+    if (a.accessory === 'funnelpaper') for (let i = 0; i < 2; i++) {
+      const cone = s.mesh(new THREE.ConeGeometry(0.025, 0.012, 20, 1, true), s.material('#e9e3cf', { side: THREE.DoubleSide }), [-0.13 + i * 0.035, 0.006, -0.09]);
+      cone.rotation.y = i;
+    }
+    if (a.accessory === 'tags') for (let i = 0; i < 3; i++) {
+      s.box([0.046, 0.001, 0.024], [-0.13 + i * 0.006, 0.0005 + i * 0.001, -0.09 + i * 0.004], s.material('#d8c993'));
+      const text = s.label(String(7 + i), 0.025, 0.014, [-0.13 + i * 0.006, 0.0011 + i * 0.001, -0.09 + i * 0.004], '#3d4b50', '#d8c993'); text.rotation.x = -Math.PI / 2;
+    }
+    if (a.accessory === 'brush') {
+      const wire = s.material('#abb6b7', { metalness: 0.7 });
+      s.rod([-0.18, 0.008, -0.11], [-0.045, 0.008, -0.11], 0.0012, wire);
+      for (let i = 0; i < 7; i++) s.cylinder(0.008, 0.008, 0.0025, [-0.075 + i * 0.005, 0.008, -0.11], s.material('#d9d1b6'), 10).rotation.z = Math.PI / 2;
+      s.ring(0.008, 0.0012, [-0.183, 0.008, -0.11], wire).rotation.x = Math.PI / 2;
+    }
+    if (a.station !== 'bare') {
+      const baseHeight = a.station === 'stirrer' ? 0.035 : a.station === 'tray' ? 0.005 : 0.007;
+      const assembly = new THREE.Group(); for (const child of [...s.root.children]) assembly.add(child);
+      assembly.position.y = baseHeight; s.root.add(assembly);
+      s.root.updateMatrixWorld(true);
+      const bounds = new THREE.Box3().setFromObject(assembly), width = Math.max(0.28, bounds.max.x - bounds.min.x + 0.025), depth = Math.max(0.25, bounds.max.z - bounds.min.z + 0.025), cx = (bounds.max.x + bounds.min.x) / 2, cz = (bounds.max.z + bounds.min.z) / 2;
+      const enamel = s.material(a.station === 'stirrer' ? '#70817e' : '#e5e3d8', { roughness: 0.45 });
+      s.box([width, baseHeight, depth], [cx, baseHeight / 2, cz], enamel);
+      if (a.station === 'tray') {
+        for (const side of [-1, 1]) {
+          s.box([0.004, 0.017, depth], [cx + side * width / 2, 0.012, cz], enamel);
+          s.box([width, 0.017, 0.004], [cx, 0.012, cz + side * depth / 2], enamel);
+        }
+      }
+      if (a.station === 'stirrer') {
+        s.cylinder(0.009, 0.009, 0.006, [cx + 0.055, 0.017, cz + depth / 2 + 0.004], s.material('#2b3b3e'), 18).rotation.x = Math.PI / 2;
+        s.label('STIR', 0.04, 0.012, [cx - 0.035, 0.018, cz + depth / 2 + 0.0007], '#e7e6d6', '#70817e');
+      }
     }
 
     const speed = mix(0.4, 2.2, mood.energy);

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Microfluidic micropillar sieving array", "summary": "Rows of attached pillars obstruct a real trench; varied spacings and stagger form recognizable flow corridors and trapping sites. An enlarged sieve-chip model with attached pillars, actual open flow corridors and geometrically constrained particle contacts; microfluidic filtration and retained specimens.", "scales": ["macro", "tabletop"]});

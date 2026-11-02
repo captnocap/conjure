@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Grain boundary triple junction", "summary": "Three differently oriented crystalline grain slabs meet along a true three-way boundary with relief and a cut face. A magnified materials-science model with solid branches, actual open interdendritic spaces and clearly identified teaching sections.", "scales": ["macro", "tabletop"]});

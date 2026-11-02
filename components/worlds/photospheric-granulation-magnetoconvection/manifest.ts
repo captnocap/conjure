@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Photospheric granulation magnetoconvection", "summary": "A fixed tessellated granule surface includes depressed intergranular lanes, one exposed convective cell and a small magnetic concentration. A fixed solar-surface teaching relief with actual depressed lanes and an exposed upflow model; all elevated field and flow traces are explicit schematic references, not a fluid simulation.", "scales": ["planetary", "macro"]});

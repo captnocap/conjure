@@ -1,4 +1,4 @@
-import { choice, defineLook, noul, score } from '@conjure/kit';
+import { choice, defineLook, noul, rekey, score } from '@conjure/kit';
 
 /**
  * A coordinate network (Fourier features into a small multilayer perceptron) is fitted to the
@@ -56,7 +56,7 @@ export default defineLook({
     palette: choice('How is the dreamed colour treated?', {
       learned: 'As learned: soft, slightly muddy, drifting.',
       vivid: 'Saturation pushed up until it glows.',
-      duotone: 'Reduced to two inks, light and dark.',
+      duotone: 'Reduced to two inks: a dark ink on a pale ground.',
       posterised: 'Snapped to a few flat levels.',
     }),
   },
@@ -204,7 +204,11 @@ export default defineLook({
 
     const pixels = new Uint8ClampedArray(size * size * 4);
     const fidelity = clamp01(a.fidelity);
-    const inkColour = [26, 24, 30];
+    // Duotone prints its dark ink and pale ground in the picture's palette, with the inked outlines in the same ink.
+    const duo = context.palette && a.palette === 'duotone'
+      ? rekey({ dark: [31, 26, 56], light: [240, 224, 235], line: [26, 24, 30] }, context.palette, { dark: 'ink', light: 'ground', line: 'ink' })
+      : undefined;
+    const inkColour = duo ? duo.line : [26, 24, 30];
     for (let y = 0; y < size; y++) {
       if (y % 48 === 0) await pause();
       for (let x = 0; x < size; x++) {
@@ -217,7 +221,8 @@ export default defineLook({
           r = Math.round(r * 4) / 4; g = Math.round(g * 4) / 4; b = Math.round(b * 4) / 4;
         } else if (a.palette === 'duotone') {
           const tone = r * 0.3 + g * 0.59 + b * 0.11;
-          r = 0.12 + tone * 0.82; g = 0.1 + tone * 0.78; b = 0.22 + tone * 0.7;
+          if (duo) [r, g, b] = [0, 1, 2].map((i) => (duo.dark[i] + tone * (duo.light[i] - duo.dark[i])) / 255);
+          else { r = 0.12 + tone * 0.82; g = 0.1 + tone * 0.78; b = 0.22 + tone * 0.7; }
         }
         // The real frame shows through by fidelity, with the dream filling in flatter areas.
         const real = [color[p] / 255, color[p + 1] / 255, color[p + 2] / 255];

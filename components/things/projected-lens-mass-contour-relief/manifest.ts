@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Projected lens mass contour relief", "summary": "A raised continuous mass surface contains concentric or asymmetric contours, genuine saddle gaps and optional satellite peaks. An explicitly diagrammatic thin-lens teaching model; curves and image multiplicity follow its stated mathematical mapping.", "scales": ["tabletop", "cosmic"]});

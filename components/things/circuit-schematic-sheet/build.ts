@@ -13,6 +13,31 @@ const STYLES = {
 
 export default defineThing({
   questions: {
+    stages: score('How many valve stages does the drawing follow?', ['A simple two-stage circuit', 'Three or four linked stages', 'Five tightly packed stages']),
+    resistorForm: choice('How are resistors drawn?', {
+      zigzag: 'Angular zigzag symbols.', rectangle: 'Open rectangular symbols with wires at either end.',
+      filled: 'Solid dark rectangular bodies.', vintage: 'Long narrow rectangles with a small central value mark.',
+    }),
+    route: choice('Which route has been traced over the diagram?', {
+      none: 'Only the printed wiring and local fault marks.', signal: 'A translucent line follows the signal from left to right.',
+      supply: 'The upper supply rail and its downward feeds are highlighted.', return: 'The lower return rail and ground connection are traced.',
+    }),
+    grid: choice('What drafting guides surround the circuit?', {
+      plain: 'Plain paper without guides.', squares: 'A faint square engineering grid.',
+      dots: 'A field of small drafting dots.', zones: 'A numbered border divided into drawing zones.',
+    }),
+    revision: choice('How is the latest revision recorded?', {
+      none: 'No revision mark.', strip: 'A pasted revision strip along the lower margin.',
+      stamp: 'A rectangular checked stamp in the upper margin.', correction: 'A pale correction patch with a red replacement value.',
+    }),
+    stack: choice('What is underneath the drawing?', {
+      single: 'The one loose sheet.', offsets: 'Three staggered sheets with visible corners.',
+      pad: 'A thick ruled pad with a dark glued top edge.', board: 'A rigid drafting board with the sheet clipped at the top.',
+    }),
+    reference: choice('What small reference accompanies the circuit?', {
+      none: 'No separate reference.', voltages: 'A voltage checklist beside the sheet.',
+      pins: 'A circular valve pinout card.', values: 'A small colour-band reference strip.',
+    }),
     drawing: choice('What kind of drawing is it?', {
       schematic: 'A crisp printed schematic: black lines on white paper, valves, resistors and coils.',
       blueprint: 'A blueprint: white lines on deep blue with a title block in the corner.',
@@ -64,6 +89,11 @@ export default defineThing({
     canvas.width = CW; canvas.height = CH;
     const ctx = canvas.getContext('2d')!;
     ctx.fillStyle = st.paper; ctx.fillRect(0, 0, CW, CH);
+    ctx.save(); ctx.strokeStyle = a.drawing === 'blueprint' ? 'rgba(245,250,255,.2)' : 'rgba(80,115,145,.18)'; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = 1;
+    if (a.grid === 'squares') { for (let x=25;x<CW;x+=32) { ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,CH);ctx.stroke(); } for (let y=25;y<CH;y+=32) { ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(CW,y);ctx.stroke(); } }
+    if (a.grid === 'dots') for (let x=25;x<CW;x+=26) for (let y=25;y<CH;y+=26) { ctx.beginPath();ctx.arc(x,y,1.6,0,Math.PI*2);ctx.fill(); }
+    if (a.grid === 'zones') { ctx.strokeRect(8,8,CW-16,CH-16);ctx.font='bold 12px monospace'; for(let i=1;i<=8;i++){const x=i*CW/9;ctx.fillText(String(i),x,19);ctx.fillText(String(i),x,CH-9);ctx.beginPath();ctx.moveTo(x,8);ctx.lineTo(x,30);ctx.moveTo(x,CH-8);ctx.lineTo(x,CH-30);ctx.stroke();} }
+    ctx.restore();
     if (hand) { ctx.strokeStyle = 'rgba(80,120,170,0.45)'; ctx.lineWidth = 1.5; for (let y = 60; y < CH; y += 34) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CW, y); ctx.stroke(); } ctx.strokeStyle = 'rgba(200,60,60,0.5)'; ctx.beginPath(); ctx.moveTo(90, 0); ctx.lineTo(90, CH); ctx.stroke(); }
     const j = () => (hand ? (random() - 0.5) * 7 : 0);
     ctx.strokeStyle = st.ink; ctx.fillStyle = st.ink; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -74,13 +104,20 @@ export default defineThing({
     const text = (t: string, x: number, y: number, size = 17) => { ctx.font = `${hand ? 'italic ' : 'bold '}${size}px monospace`; ctx.fillText(t, x + j(), y + j()); };
     const resistor = (x: number, y1: number, y2: number, label: string) => {
       const mid = (y1 + y2) / 2, pts = [x, y1, x, mid - 30];
+      if (a.resistorForm !== 'zigzag') {
+        line(x,y1,x,mid-28);line(x,mid+28,x,y2);
+        const width=a.resistorForm==='vintage'?12:20;
+        if(a.resistorForm==='filled')ctx.fillRect(x-width/2,mid-28,width,56);else ctx.strokeRect(x-width/2,mid-28,width,56);
+        if(a.resistorForm==='vintage')line(x-9,mid,x+9,mid);
+        text(label,x+16,mid+6,15);return;
+      }
       for (let i = 0; i < 6; i++) pts.push(x + (i % 2 ? -10 : 10), mid - 25 + i * 10);
       pts.push(x, mid + 30, x, y2); line(...pts); text(label, x + 16, mid + 6, 15);
     };
     const cap = (x1: number, x2: number, y: number, label: string) => { const m = (x1 + x2) / 2; line(x1, y, m - 6, y); line(m - 6, y - 16, m - 6, y + 16); line(m + 6, y - 16, m + 6, y + 16); line(m + 6, y, x2, y); text(label, m - 12, y - 22, 15); };
     const ground = (x: number, y: number) => { line(x, y, x, y + 12); line(x - 16, y + 12, x + 16, y + 12); line(x - 10, y + 19, x + 10, y + 19); line(x - 4, y + 26, x + 4, y + 26); };
     const left = hand ? 120 : 70, right = a.drawing === 'manual' ? CW * 0.7 : CW - 70, top = 90, bottom = CH - 110, mid = (top + bottom) / 2;
-    const stages = hand ? 2 : 3 + (random() < 0.5 ? 1 : 0);
+    const stages = 2 + Math.round(a.stages * 3);
     const span = (right - left - 160) / stages;
     line(left + 40, top, right - 60, top); text('HT+', right - 56, top + 6);
     line(left + 40, bottom, right - 60, bottom);
@@ -91,7 +128,7 @@ export default defineThing({
     line(left, mid + 36, left, bottom);
     const nodes: [number, number][] = [];
     for (let i = 0; i < stages; i++) {
-      const x = left + 110 + span * (i + 0.5), r = 46;
+      const x = left + 110 + span * (i + 0.5), r = Math.min(46,span*.33);
       ctx.beginPath(); ctx.arc(x + j(), mid + j(), r, 0, 7); ctx.stroke();
       line(x - 24, mid - 22, x + 24, mid - 22); line(x, mid - 22, x, top + 110);
       ctx.setLineDash([9, 7]); line(x - 26, mid, x + 26, mid); ctx.setLineDash([]);
@@ -126,6 +163,23 @@ export default defineThing({
       ctx.strokeRect(tx, 80, CW - tx - 40, CH - 150);
       for (let i = 0; i < 15; i++) { const y = 110 + i * ((CH - 190) / 15); line(tx, y + 8, CW - 40, y + 8); text(`${i < 9 ? 'R' : 'C'}${i + 1}  ${['47k', '1M', '220', '0.1', '470k', '22k', '8mF'][Math.floor(random() * 7)]}`, tx + 12, y, 15); }
     } else text('rx  front end ??', 110, 50, 24);
+    // Transparent highlighter follows the wiring instead of covering the diagram.
+    if(a.route!=='none') {
+      ctx.save();ctx.globalAlpha=.3;ctx.strokeStyle=a.drawing==='blueprint'?'#fff178':a.route==='supply'?'#e88346':a.route==='return'?'#62a0da':'#d6be28';ctx.lineWidth=18;ctx.lineJoin='round';ctx.beginPath();
+      const ry=a.route==='supply'?top:a.route==='return'?bottom:top+110;
+      ctx.moveTo(left+40,ry);ctx.lineTo(right-60,ry);
+      if(a.route==='supply')for(let i=0;i<stages;i++){const x=left+110+span*(i+.5);ctx.moveTo(x,top);ctx.lineTo(x,top+110);}
+      if(a.route==='signal'){ctx.moveTo(left,mid-60);ctx.lineTo(left+70,mid-60);ctx.lineTo(left+70,ry);}
+      if(a.route==='return'){ctx.moveTo(left+60,bottom);ctx.lineTo(left+60,bottom+28);}
+      ctx.stroke();ctx.restore();
+    }
+    if(a.revision!=='none') {
+      ctx.save();ctx.textAlign='left';ctx.font='bold 19px monospace';
+      if(a.revision==='strip'){ctx.fillStyle='#f4e1ab';ctx.fillRect(35,CH-61,310,38);ctx.fillStyle='#593d27';ctx.fillText('REV B — R4 / C2 CHECKED',45,CH-36);}
+      if(a.revision==='stamp'){ctx.strokeStyle=ctx.fillStyle=a.drawing==='blueprint'?'#f0d9bd':'#9b3a34';ctx.lineWidth=3;ctx.strokeRect(310,31,215,38);ctx.fillText('CHECKED • REV 3',322,57);}
+      if(a.revision==='correction'){ctx.fillStyle='#f5efdc';ctx.fillRect(left+62,mid+80,139,43);ctx.fillStyle='#bc3226';ctx.fillText('R2 → 220k',left+72,mid+108);}
+      ctx.restore();
+    }
     // Fold shading.
     const creaseXs = a.folds > 0.66 ? [0.25, 0.5, 0.75] : a.folds > 0.2 ? [0.5] : [];
     const creaseZs = a.folds > 0.45 ? [0.5] : [];
@@ -281,6 +335,29 @@ export default defineThing({
       m.scale.setScalar((0.007 + t * 0.014) * (1 - t * 0.3));
     });
     drift(0);
+    // Raise the complete drawing and its resting tools together onto the paper stack.
+    const stackH={single:0,offsets:.003,pad:.012,board:.018}[a.stack];
+    if(stackH) {
+      for(const child of s.root.children)child.position.y+=stackH;
+      const support=s.material(a.stack==='board'?'#a17e50':'#e9e1cd',{roughness:.9});
+      if(a.stack==='offsets')for(let i=0;i<3;i++){const page=s.box([W,.001,D],[.006*(i-1),.0005+i*.001,.004*(i-1)],support);page.rotation.y=sheet.rotation.y+(i-1)*.025;}
+      else {const base=s.box([W+.018,stackH,D+.018],[0,stackH/2,0],support);base.rotation.y=sheet.rotation.y;}
+      if(a.stack==='pad')s.box([W+.018,.006,.014],[0,stackH-.002,-D/2],s.material('#383d43'));
+      if(a.stack==='board') {
+        const clip=s.material('#939b9f',{metalness:.85,roughness:.3});
+        s.box([.075,.007,.025],[0,stackH+.004,-D/2+.004],clip);
+        s.ring(.014,.002,[0,stackH+.006,-D/2-.013],clip).rotation.x=-Math.PI/2;
+      }
+    }
+    if(a.reference!=='none') {
+      const rc=document.createElement('canvas');rc.width=256;rc.height=160;const r=rc.getContext('2d')!;
+      r.fillStyle='#f3e8cb';r.fillRect(0,0,256,160);r.strokeStyle=r.fillStyle='#313b42';r.lineWidth=3;r.font='bold 19px monospace';
+      if(a.reference==='pins'){r.fillText('VALVE BASE',25,26);r.beginPath();r.arc(128,94,43,0,Math.PI*2);r.stroke();for(let i=0;i<8;i++){const t=i*Math.PI/4;const x=128+Math.sin(t)*35,y=94+Math.cos(t)*35;r.beginPath();r.arc(x,y,4,0,7);r.fill();}}
+      if(a.reference==='voltages'){r.fillText('TEST POINTS',20,26);for(let i=0;i<4;i++){r.strokeRect(20,42+i*27,13,13);r.fillText(['HT  250 V','V1   92 V','V2  108 V','H    6.3 V'][i],45,55+i*27);}}
+      if(a.reference==='values'){r.fillText('BAND VALUES',20,26);const colours=['#38281c','#b33522','#dd9632','#d8c746','#468461','#557aa2'];for(let i=0;i<6;i++){r.fillStyle=colours[i];r.fillRect(20+i*36,48,24,70);r.fillStyle='#313b42';r.fillText(String(i+1),24+i*36,145);}}
+      const rt=new THREE.CanvasTexture(rc);rt.colorSpace=THREE.SRGBColorSpace;
+      const card=s.mesh(new THREE.PlaneGeometry(.13,.081),new THREE.MeshStandardMaterial({map:rt,roughness:.9,side:THREE.DoubleSide}),[-W*.18,.0015,D/2+.055]);card.rotation.set(-Math.PI/2,0,-.07);
+    }
     return s.finish({ update: puffs.length ? (_dt, time) => drift(time) : undefined });
   },
 });

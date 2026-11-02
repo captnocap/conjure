@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Bow shock standoff profile comparator", "summary": "Two supported radial bow sections show different apex distances and flank curvature with a common source reference and true sectional edges. Two finite radial bow sections compare apex distance and flank shape against aligned source markers. The common axis and actual ribbon edges make a geometric teaching comparator, not two independently solved flow states.", "scales": ["cosmic", "tabletop"]});

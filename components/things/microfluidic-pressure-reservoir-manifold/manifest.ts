@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Microfluidic pressure reservoir manifold", "summary": "Fitted reservoirs, leak-tight port blocks and physically connected tubing feed one supported manifold with a service section. An enlarged reservoir and tubing manifold teaching assembly with physically connected fittings, supported clamps and actual service cuts; pressure-driven microfluidic experiments.", "scales": ["macro", "tabletop"]});

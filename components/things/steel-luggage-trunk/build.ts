@@ -48,6 +48,14 @@ export default defineThing({
       medium: 'A proper trunk for one person.',
       large: 'A huge family trunk that takes two to lift.',
     }),
+    cornerFinish: choice('How are the body corners protected?', { plain: 'The original brass corner caps.', iron: 'Long dark iron angle plates.', rivets: 'Brass plates with large rivets.', leather: 'Brown leather corner patches with stitches.' }),
+    handleForm: choice('What handles are fitted at the ends?', { rings: 'Hinged semicircular iron handles.', leather: 'Curved leather strap handles.', squared: 'Squared wire carrying handles.', rope: 'Knotted rope replacements.' }),
+    hinges: choice('What hinges carry the lid?', { small: 'Two short strap hinges.', broad: 'Two broad hinge plates.', piano: 'A long continuous piano hinge.', triple: 'Three narrow brass hinges.' }),
+    lidRibs: choice('What additional pressed ribs are on the outer lid?', { plain: 'The original edge ribs.', crosswise: 'Three narrow crosswise ribs.', centre: 'Two long central ribs.', diamond: 'A shallow diamond-shaped strengthening rib.' }),
+    edgeBinding: choice('What finishes the body’s lower edge?', { plain: 'Plain painted steel.', iron: 'A broad dark iron band.', brass: 'A narrow bright brass strip.', studs: 'A line of closely spaced metal studs.' }),
+    labelHolder: choice('What holder is fixed to the back?', { none: 'No label holder.', brass: 'A framed brass address window.', canvas: 'A canvas document pocket.', wire: 'A rectangular wire luggage-card holder.' }),
+    lidStay: choice('If open, what supports the raised lid?', { straps: 'Two plain fabric retaining straps.', chain: 'Two short linked chains.', rods: 'A folding iron stay on each side.', one: 'A single leather strap on the right.' }),
+    sidePocket: choice('What is attached to the lower end of the trunk?', { none: 'No attached storage.', pouch: 'A small buckled leather pouch.', mesh: 'A shallow mesh pocket.', brackets: 'Two empty metal bottle brackets.' }),
   },
 
   build(a, context) {
@@ -127,8 +135,10 @@ export default defineThing({
     for (const z of [-1, 1]) s.box([W + 0.01, 0.02 * k, 0.014], [0, HB - 0.012 * k, z * (D / 2 + 0.004)], edge);
     // End handles.
     for (const x of [-1, 1]) {
-      const handle = s.ring(0.07 * k, 0.009 * k, [x * (W / 2 + 0.012), HB * 0.62, 0], iron, Math.PI);
-      handle.rotation.set(0, Math.PI / 2, 0); handle.rotation.z = Math.PI; handle.rotation.x = x * 0.5;
+      const hx=x*(W/2+.012),hy=HB*.62;
+      if(a.handleForm==='rings'){const handle=s.ring(.07*k,.009*k,[hx,hy,0],iron,Math.PI);handle.rotation.set(0,Math.PI/2,0);handle.rotation.z=Math.PI;handle.rotation.x=x*.5;}
+      else if(a.handleForm==='squared')s.tube([[hx,hy,-.07*k],[hx+x*.055,hy-.05*k,-.07*k],[hx+x*.055,hy-.05*k,.07*k],[hx,hy,.07*k]],.008*k,iron);
+      else{s.tube([[hx,hy,-.07*k],[hx+x*.06,hy-.065*k,0],[hx,hy,.07*k]],a.handleForm==='rope'?.012*k:.016*k,a.handleForm==='rope'?ropeMaterial:s.material('#865c39'));if(a.handleForm==='rope')for(const z of[-.07,.07])s.ball([.019*k,.019*k,.019*k],[hx,hy,z*k],ropeMaterial,8);}
       s.box([0.012, 0.03 * k, 0.2 * k], [x * (W / 2 + 0.006), HB * 0.64, 0], iron);
     }
 
@@ -198,7 +208,7 @@ export default defineThing({
     if (a.state === 'open') {
       for (let col = 0; col < 3; col++) {
         const n = 2 + Math.floor(random() * 3);
-        for (let i = 0; i < n; i++) s.box([W * 0.27, HB * 0.2, D * 0.74], [(col - 1) * W * 0.3, 0.03 + HB * 0.2 * (i + 0.5), rnd(-0.01, 0.01)], s.material(pick(cloths), { roughness: 1 }));
+        for (let i = 0; i < n; i++) s.box([W * 0.27, HB * 0.2, D * 0.74], [(col - 1) * W * 0.3, wall+.004+HB*.2*(i+.5), rnd(-0.01, 0.01)], s.material(pick(cloths), { roughness: 1 }));
       }
     } else if (a.state === 'burst') {
       for (let i = 0; i < 7; i++) {
@@ -209,7 +219,7 @@ export default defineThing({
       const trail = (x: number, colour: string, reach: number) => {
         const path = new THREE.CatmullRomCurve3([new THREE.Vector3(x, HB * 0.9, 0.05), new THREE.Vector3(x + 0.02, HB + 0.03, D / 2 + 0.01), new THREE.Vector3(x + 0.05, HB * 0.4, D / 2 + 0.05), new THREE.Vector3(x + 0.1, 0.012, D / 2 + 0.12), new THREE.Vector3(x + reach, 0.012, D / 2 + 0.3 * k + Math.abs(reach))]);
         const geometry = new THREE.TubeGeometry(path, 30, 0.05 * k, 6);
-        geometry.scale(1, 1, 1);
+        const positions=geometry.getAttribute('position');for(let n=0;n<positions.count;n++)positions.setY(n,Math.max(.001,positions.getY(n)));positions.needsUpdate=true;geometry.computeVertexNormals();
         const mesh = s.mesh(geometry, s.material(colour, { roughness: 1 }));
         mesh.scale.set(1, 1, 1);
       };
@@ -223,7 +233,7 @@ export default defineThing({
     // ---- the pile ----------------------------------------------------------
     const level = a.piled < 0.17 ? 0 : a.piled < 0.42 ? 1 : a.piled < 0.78 ? 2 : 3;
     // Shut, things ride on the lid; open, they wait on the ground beside it.
-    const px = shut ? 0 : W / 2 + 0.34, py = shut ? top + (a.rope === 'cross' ? rr * 4 : 0.006) : 0, pz = shut ? 0 : 0;
+    const px = shut ? 0 : W / 2 + 0.34, py = shut ? top+(a.rope==='cross'?rr*4:a.rope==='once'?rr*2:.002) : 0, pz = shut ? 0 : 0;
     const stripeTexture = () => {
       const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 64;
       const ctx = canvas.getContext('2d')!;
@@ -264,6 +274,39 @@ export default defineThing({
     if (mood.density > 0.4 || a.lettering === 'number') {
       const tag = s.box([0.07 * k, 0.11 * k, 0.003], [W / 2 + 0.03, HB * 0.36, 0.06], s.material('#e9d7a0', { roughness: 0.9 }));
       tag.rotation.set(0.1, Math.PI / 2 - 0.3, rnd(-0.3, 0.3));
+    }
+
+    if(a.cornerFinish!=='plain')for(const side of[-1,1])for(const face of[-1,1]){
+      const mat=a.cornerFinish==='leather'?s.material('#8c6544'):a.cornerFinish==='iron'?iron:brass,x=side*(W/2-.035*k),z=face*(D/2+.012);
+      s.box([.07*k,HB*.8,.012],[x,HB*.4,z],mat);
+      if(a.cornerFinish==='rivets')for(const y of[.05,.18])s.ball([.009,.009,.006],[x,y*k,z+face*.008],brass,6);
+      if(a.cornerFinish==='leather')for(let i=0;i<6;i++)s.box([.008,.003,.003],[x,HB*.1+i*HB*.11,z+face*.008],ropeMaterial);
+    }
+    const hn=a.hinges==='piano'?1:a.hinges==='triple'?3:2;
+    for(let i=0;i<hn;i++){const x=hn===1?0:(i/(hn-1)-.5)*W*.65,w=a.hinges==='piano'?W*.9:a.hinges==='broad'?.13*k:.06*k;s.box([w,.075*k,.018],[x,HB,-D/2-.014],a.hinges==='triple'?brass:iron);s.cylinder(.015*k,.015*k,w,[x,HB,-D/2-.02],iron,10).rotation.z=Math.PI/2;}
+    if(a.lidRibs==='crosswise')for(const z of[.2,.5,.8])lid.add(s.box([W*.82,.012,D*.035],[0,HL+.012,D*z],edge));
+    else if(a.lidRibs==='centre')for(const x of[-.16,.16])lid.add(s.box([.025*k,.012,D*.92],[W*x,HL+.012,D/2],edge));
+    else if(a.lidRibs==='diamond')lid.add(s.tube([[0,HL+.012,D*.08],[W*.34,HL+.012,D/2],[0,HL+.012,D*.92],[-W*.34,HL+.012,D/2],[0,HL+.012,D*.08]],.009*k,edge));
+    if(a.edgeBinding!=='plain')for(const z of[-1,1]){
+      const mat=a.edgeBinding==='brass'?brass:iron;s.box([W,.04*k,.012],[0,.035*k,z*(D/2+.014)],mat);
+      if(a.edgeBinding==='studs')for(let i=0;i<16;i++)s.ball([.006*k,.006*k,.006*k],[-W*.45+i*W*.9/15,.035*k,z*(D/2+.024)],brass,6);
+    }
+    if(a.labelHolder!=='none'){
+      const w=.24*k,h=.13*k,z=-D/2-.025,y=HB*.5;
+      if(a.labelHolder==='canvas')s.box([w,h,.018],[0,y,z],s.material('#b2a082'));
+      else{for(const dx of[-w/2,w/2])s.rod([dx,y-h/2,z],[dx,y+h/2,z],.005*k,a.labelHolder==='brass'?brass:iron);for(const dy of[-h/2,h/2])s.rod([-w/2,y+dy,z],[w/2,y+dy,z],.005*k,a.labelHolder==='brass'?brass:iron);}
+      const card=s.label('BOMBAY',w*.85,h*.65,[0,y,z-.01],'#333a30','#ded3b4');card.rotation.y=Math.PI;
+    }
+    if(!shut)for(const side of(a.lidStay==='one'?[1]:[-1,1])){
+      const x=side*(W/2-.025),start=new THREE.Vector3(x,HB-.025,D*.15),end=new THREE.Vector3(x,0,D*.72).applyEuler(lid.rotation).add(lid.position);
+      if(a.lidStay==='chain'){for(let i=0;i<11;i++){const p=start.clone().lerp(end,i/10);const ring=s.ring(.012*k,.003*k,[p.x,p.y,p.z],iron);ring.rotation.y=i%2?Math.PI/2:0;}}
+      else s.rod(start.toArray() as [number,number,number],end.toArray() as [number,number,number],a.lidStay==='rods'?.006*k:.009*k,a.lidStay==='rods'?iron:ropeMaterial);
+    }
+    if(a.sidePocket!=='none'){
+      const x=-W/2-.025,y=HB*.3;
+      if(a.sidePocket==='pouch'){s.box([.05,.12*k,.2*k],[x-.025,y,0],s.material('#795336'));s.box([.012,.1*k,.025*k],[x-.058,y,0],brass);}
+      else if(a.sidePocket==='mesh'){for(let i=0;i<6;i++)s.rod([x-.045,y-.05*k,-.09*k+i*.036*k],[x-.045,y+.05*k,-.09*k+i*.036*k],.003,iron);for(const dy of[-.05,0,.05])s.rod([x-.045,y+dy*k,-.09*k],[x-.045,y+dy*k,.09*k],.003,iron);for(const z of[-.09,.09])s.rod([x,y-.05*k,z*k],[x-.045,y-.05*k,z*k],.004,iron);}
+      else for(const z of[-.07,.07]){const ring=s.ring(.035*k,.006*k,[x-.04,y,z*k],iron);ring.rotation.x=Math.PI/2;s.rod([x,y,z*k],[x-.04,y,z*k],.006*k,iron);}
     }
 
     const thing = s.finish();

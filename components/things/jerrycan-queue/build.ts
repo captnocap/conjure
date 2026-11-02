@@ -33,6 +33,28 @@ function lettering(text: string, w: number, h: number, ink: string, paper: strin
 export default defineThing({
   questions: {
     length: score('How long is the line?', ['Three cans', 'Half a dozen', 'A dozen', 'Twenty and still growing, curling round the corner']),
+    queueShape: choice('What course does the queue follow?', {
+      curve: 'A loose curve curling away from the tap.', straight: 'One long straight line.',
+      elbow: 'A line that turns through a right-angle corner.', zigzag: 'A shallow zigzag across the waiting ground.',
+    }),
+    canSize: score('How large are the containers?', ['Small household containers', 'Ordinary carrying cans', 'Large heavy water cans']),
+    spacing: score('How tightly do the containers stand?', ['Almost touching', 'A little space between handles', 'Wide patient gaps']),
+    capStyle: choice('What kind of caps do the jerrycans carry?', {
+      mixed: 'A mixture of caps and open mouths.', screw: 'Broad dark screw caps on every can.',
+      tether: 'Caps held on by short tether loops.', metal: 'Small dull metal caps with a raised gripping bar.',
+    }),
+    ribs: choice('What moulded reinforcement shows on the broad faces?', {
+      cross: 'A raised straight cross.', diagonal: 'Two diagonal ribs make an X.',
+      horizontal: 'Four close horizontal reinforcing ribs.', plain: 'Smooth unreinforced faces.',
+    }),
+    queueMarks: choice('What marks the waiting positions?', {
+      none: 'No marks on the ground.', circles: 'Pale chalk rings mark the can positions.',
+      tiles: 'Small pale square markers stand beside each place.', bricks: 'One low brick marks each waiting position.',
+    }),
+    waitingKit: choice('What filling equipment waits beside the tap or drum?', {
+      none: 'No extra equipment.', funnel: 'A wide funnel rests upright in a little rack.',
+      measure: 'A tall measuring jug stands on a low platform.', bucket: 'A spare bucket and a short handled dipper wait nearby.',
+    }),
     colours: choice('What colours are the cans?', {
       yellow: 'All yellow cooking-oil kegs, a single bright stripe.',
       mixed: 'Yellow and blue alternating by chance.',
@@ -91,23 +113,26 @@ export default defineThing({
     const capMat = s.material('#1e1e20'), capRed = s.material('#c8322a');
     const grime = s.material('#6a5a44', { roughness: 1 });
 
-    const count = Math.round(mix(3, 20, a.length));
+    const count = Math.round(mix(3, 20, a.length)), canScale = mix(.8, 1.2, a.canSize);
     // The line runs back from the tap and curls toward the viewer.
     let x = 0.55, z = 0, heading = Math.PI;
     const spots: { at: P; turn: number }[] = [];
     const bend = count > 7 ? 1 / mix(3.2, 2.0, a.length) : 0.04;
     for (let i = 0; i < count; i++) {
-      const step = 0.36 + random() * 0.07;
+      const step = (.34 + random() * .04) * canScale + mix(.025, .19, a.spacing);
       x += Math.cos(heading) * step;
       z += Math.sin(heading) * step;
       spots.push({ at: [x + (random() - 0.5) * 0.05, 0, z + (random() - 0.5) * 0.06], turn: -heading + Math.PI / 2 + (random() - 0.5) * 0.5 });
-      heading -= step * bend * (0.7 + random() * 0.6);
+      if (a.queueShape === 'curve') heading -= step * bend * (0.7 + random() * 0.6);
+      else if (a.queueShape === 'elbow' && i === Math.floor(count / 2)) heading -= Math.PI / 2;
+      else if (a.queueShape === 'zigzag') heading = Math.PI + ((i % 6) < 3 ? .4 : -.4);
     }
     const upsetIndex = count < 3 ? -1 : a.upset === 'jumper' ? 1 : Math.min(count - 1, 1 + Math.floor(random() * (count - 1)));
     const nameIndex = Math.min(count - 1, upsetIndex === 0 ? 1 : 0 + (count > 4 ? Math.floor(random() * 3) : 0));
     const handles: (THREE.Vector3 | null)[] = [];
     const otherChance = a.others === 'only' ? 0 : a.others === 'buckets' ? 0.22 : 0.32;
 
+    let firstMouth:THREE.Vector3|null=null;
     spots.forEach((spot, index) => {
       const [sx, , sz] = spot.at;
       if (a.upset === 'gap' && index === upsetIndex) {
@@ -142,19 +167,26 @@ export default defineThing({
         }
         return;
       }
-      const scale = 1.15 * (special ? 1 : random() < 0.2 ? 0.74 : random() < 0.15 ? 1.12 : 1);
+      const scale = canScale * 1.15 * (special ? 1 : random() < 0.2 ? 0.74 : random() < 0.15 ? 1.12 : 1);
       const colour = pick(palettes);
       const can = new THREE.Group();
       const body = new THREE.Mesh(canGeometry, plastic(colour));
       body.castShadow = body.receiveShadow = true;
       can.add(body);
-      const capOn = random() > 0.2 + mood.wear * 0.25;
-      if (capOn) can.add(s.cylinder(0.026, 0.026, 0.035, [0.045, 0.4, 0], random() > 0.75 ? capRed : capMat, 10));
+      const capOn = !(a.waiting==='trickle'&&index===0)&&(a.capStyle!=='mixed'||random()>.2+mood.wear*.25);
+      if (capOn) {
+        const material = a.capStyle === 'metal' ? s.material('#999d98', {metalness:.6}) : random() > .75 ? capRed : capMat;
+        can.add(s.cylinder(a.capStyle === 'screw' ? .032 : .026, .026, .035, [.045, .4, 0], material, 12));
+        if (a.capStyle === 'metal') can.add(s.box([.055,.012,.016],[.045,.423,0],material));
+        if (a.capStyle === 'screw') for(let i=0;i<8;i++){const t=i*Math.PI/4;can.add(s.rod([.045+Math.cos(t)*.032,.387,Math.sin(t)*.032],[.045+Math.cos(t)*.032,.413,Math.sin(t)*.032],.003,capMat));}
+        if (a.capStyle === 'tether') can.add(s.tube([[.045,.42,.025],[.09,.37,.06],[.07,.31,.08],[.02,.34,.07]],.006,capMat));
+      }
       else can.add(s.cylinder(0.02, 0.02, 0.02, [0.045, 0.392, 0], s.material('#101012'), 10));
       // Moulded cross on the big faces, grime at the foot.
       for (const side of [-1, 1]) {
-        can.add(s.box([0.15, 0.012, 0.004], [0, 0.17, side * 0.078], plastic(colour)));
-        can.add(s.box([0.012, 0.15, 0.004], [0, 0.17, side * 0.078], plastic(colour)));
+        if(a.ribs==='cross'){can.add(s.box([.15,.012,.004],[0,.17,side*.078],plastic(colour)));can.add(s.box([.012,.15,.004],[0,.17,side*.078],plastic(colour)));}
+        else if(a.ribs==='diagonal')for(const sign of[-1,1])can.add(s.rod([-.08,.17-sign*.075,side*.078],[.08,.17+sign*.075,side*.078],.007,plastic(colour)));
+        else if(a.ribs==='horizontal')for(let j=0;j<4;j++)can.add(s.box([.17,.009,.005],[0,.105+j*.043,side*.078],plastic(colour)));
       }
       if (mood.wear > 0.3) can.add(s.box([0.252, 0.03 + mood.wear * 0.06, 0.158], [0, 0.03 + mood.wear * 0.02, 0], grime));
       if (index === nameIndex && a.name !== 'none') {
@@ -186,8 +218,16 @@ export default defineThing({
       }
       s.root.add(can);
       can.updateMatrixWorld(true);
+      can.position.y-=new THREE.Box3().setFromObject(can,true).min.y;can.updateMatrixWorld(true);
+      if(index===0)firstMouth=can.localToWorld(new THREE.Vector3(.045,.4,0));
       handles.push(tieable ? can.localToWorld(new THREE.Vector3(-0.045, 0.345, 0)) : null);
     });
+
+    if(a.queueMarks!=='none')for(const spot of spots){const [x,,z]=spot.at;
+      if(a.queueMarks==='circles'){const ring=s.ring(.2*canScale,.008,[x,.009,z],s.material('#d7d0b9'));ring.rotation.x=Math.PI/2;ring.castShadow=false;}
+      else if(a.queueMarks==='tiles')s.box([.15,.025,.15],[x,.0125,z+.28*canScale],s.material('#d0c7ad'));
+      else s.box([.19,.065,.09],[x,.0325,z+.28*canScale],s.material('#a87054'));
+    }
 
     // Cord from handle to handle.
     const cord = s.material(pick(['#c8322a', '#1e1e20', '#f4f0e0', '#2c8a56']));
@@ -219,20 +259,20 @@ export default defineThing({
     const metal = s.material('#7d8386', { metalness: 0.6, roughness: 0.5 });
     const tx = 0.62;
     if (a.waiting === 'dry' || a.waiting === 'trickle') {
-      s.box([0.7, 0.07, 0.6], [tx - 0.2, 0.035, 0], s.material('#a39f94'));
+      s.box([.32,.07,.4],[tx+.05,.035,0], s.material('#a39f94'));
       s.box([0.2, 0.9, 0.2], [tx + 0.05, 0.45, 0], s.material('#b3afa2'));
-      s.rod([tx + 0.05, 0.8, 0], [tx - 0.2, 0.8, 0], 0.022, metal);
-      s.rod([tx - 0.2, 0.8, 0], [tx - 0.24, 0.72, 0], 0.02, metal);
+      const mouth=firstMouth as THREE.Vector3|null,spout:P=a.waiting==='trickle'&&mouth?[mouth.x,.72,mouth.z]:[tx-.24,.72,0];
+      s.rod([tx+.05,.8,0],[spout[0],.8,spout[2]],.022,metal);s.rod([spout[0],.8,spout[2]],spout,.02,metal);
       s.box([0.03, 0.02, 0.1], [tx - 0.14, 0.835, 0], s.material('#c8322a'));
       const wet = s.material('#6a8a9a', { roughness: 0.1 });
       if (a.waiting === 'trickle') {
-        s.rod([tx - 0.24, 0.71, 0], [tx - 0.25, 0.4, 0], 0.006, s.material('#bfe0f0', { roughness: 0.1, emissive: '#bfe0f0', emissiveIntensity: 0.3 }));
-        const puddle = s.cylinder(0.42, 0.42, 0.004, [tx - 0.3, 0.073, 0.05], wet, 18);
+        s.rod(spout,mouth?mouth.toArray() as P:[tx-.25,.4,0],.006, s.material('#bfe0f0', { roughness: 0.1, emissive: '#bfe0f0', emissiveIntensity: 0.3 }));
+        const puddle = s.cylinder(0.42, 0.42, 0.004, [tx-.3,.003,.05], wet, 18);
         puddle.scale.z = 0.6;
         const run2 = s.cylinder(0.3, 0.3, 0.004, [tx - 0.1, 0.002, 0.5], wet, 14);
         run2.scale.x = 0.5;
       } else {
-        s.ring(0.12, 0.02, [tx - 0.25, 0.072, 0], s.material('#8a8274'), Math.PI * 2).rotation.x = Math.PI / 2;
+        s.ring(0.12, 0.02, [tx-.25,.021,0], s.material('#8a8274'), Math.PI * 2).rotation.x = Math.PI / 2;
       }
     }
     if (a.waiting === 'hose') {
@@ -254,6 +294,21 @@ export default defineThing({
       const stain = s.cylinder(0.5, 0.5, 0.003, [tx - 0.05, 0.002, 0.05], s.material('#3a3630', { roughness: 0.3 }), 16);
       stain.scale.z = 0.8;
     }
+    if(a.waitingKit!=='none'){
+      const x=1.45,z=.55,wood=s.material('#947b55'),pale=s.material('#d2c7a9');
+      if(a.waitingKit==='funnel'){
+        s.box([.4,.06,.35],[x,.03,z],wood);for(const dx of[-.15,.15])s.rod([x+dx,.06,z],[x+dx,.5,z],.018,metal);s.ring(.17,.014,[x,.49,z],metal).rotateX(Math.PI/2);
+        s.lathe([[.035,0],[.035,.16],[.18,.37],[.165,.37],[.025,.16],[.025,0]],metal,[x,.14,z]);
+      }else if(a.waitingKit==='measure'){
+        s.box([.35,.06,.35],[x,.03,z],wood);s.lathe([[0,0],[.105,0],[.13,.33],[.115,.34],[.09,.025],[0,.025]],pale,[x,.06,z]);
+        for(let i=0;i<5;i++)s.box([.07,.006,.006],[x,.12+i*.045,z+.12],metal);
+        s.tube([[x+.1,.33,z],[x+.21,.34,z],[x+.21,.14,z],[x+.1,.13,z]],.014,metal);
+      }else{
+        s.lathe([[0,0],[.12,0],[.17,.29],[.155,.29],[.105,.025],[0,.025]],pale,[x,0,z]);s.ring(.17,.012,[x,.29,z],metal,Math.PI);
+        s.lathe([[0,0],[.06,0],[.08,.1],[.068,.1],[.05,.014],[0,.014]],metal,[x+.3,0,z]);s.rod([x+.35,.08,z],[x+.58,.15,z],.014,wood);
+      }
+    }
+
     // Footprints of the people who are not here.
     const prints = Math.round(mood.density * 10);
     for (let i = 0; i < prints; i++) {

@@ -89,6 +89,12 @@ export default defineThing({
     }),
     twists: noul('Is there a tin of filled paper twists ready to hand over?'),
     balance: noul('Is there a brass balance scale on the counter?'),
+    riser: choice('How are the back-row spice vessels supported?', {flat:'Both rows sit on one flat counter.',step:'The back row stands on one low wooden riser.',high:'A taller rear riser lifts the back bowls.',peaks:'Individual riser blocks grow higher toward the ends.'}),
+    mound: choice('How are the intact spice mounds shaped?', {cone:'Smooth sharply pointed cones.',fluted:'Vertical flutes run from base to tip.',steps:'Several narrow terraces climb each mound.',round:'Rounded domes replace the pointed cones.'}),
+    labels: choice('How are the measured portions marked?', {cards:'Small cream weight cards on thin stakes.',slate:'Dark chalk slates lean on the front rim.',metal:'Small engraved metal number tags.',none:'No labels, only the colours of the spices.'}),
+    scooper: choice('What kind of scoop is being used?', {narrow:'A narrow half-round metal scoop.',wide:'A broad deep metal scoop.',flat:'A flat-sided rectangular scoop.',wooden:'A carved wooden scoop with a short handle.'}),
+    edging: choice('How is the counter edge protected?', {rail:'A narrow brass rail on short supports.',scallop:'A carved scalloped wooden apron.',corners:'Metal guards cover the counter corners.',plain:'A plain thick wooden edge.'}),
+    stock: choice('What supplies stand beside the stall?', {sacks:'Two tied reserve spice sacks.',tins:'Lidded metal storage canisters.',weights:'A shallow case of weighing weights.',packets:'A stack of folded paper bags and a spool of string.'}),
   },
 
   build(a, context) {
@@ -105,7 +111,13 @@ export default defineThing({
     s.box([width, topY - 0.05, deep], [cx, (topY - 0.05) / 2, 0], s.material({ tile: '#d8d2c0', cloth: '#b7a384', wood: '#5a3820', crates: '#8d7146' }[a.counter]));
     s.mesh(new THREE.PlaneGeometry(width, topY - 0.05), new THREE.MeshStandardMaterial({ map: front(a.counter, random), roughness: 0.75 }), [cx, (topY - 0.05) / 2, deep / 2 + 0.003]);
     s.box([width + 0.08, 0.05, deep + 0.08], [cx, topY - 0.025, 0], wood);
-    s.box([run, 0.14, 0.36], [0, topY + 0.07, -0.22], wood);
+    const rise=(i:number)=>a.riser==='flat'?0:a.riser==='high'?.27:a.riser==='peaks'?.12+Math.abs(i-(n-1)/2)*.055:.14;
+    for(let i=0;i<n;i++){const h=rise(i);if(h>0)s.box([pitch,h,.36],[(i-(n-1)/2)*pitch,topY+h/2,-.22],wood);}
+    const edging=s.material('#c4a15d',{metalness:.65,roughness:.35});
+    if(a.edging==='rail'){for(let i=0;i<5;i++)s.rod([cx-width*.45+i*width*.225,topY,deep*.53],[cx-width*.45+i*width*.225,topY+.09,deep*.53],.008,edging);s.rod([cx-width*.48,topY+.09,deep*.53],[cx+width*.48,topY+.09,deep*.53],.009,edging);}
+    if(a.edging==='scallop')for(let i=0;i<Math.ceil(width/.12);i++)s.ball([.07,.07,.018],[x0+.05+i*.12,topY-.075,deep/2+.025],wood,12);
+    if(a.edging==='corners')for(const x of[x0-.03,x1+.03])for(const z of[-deep/2-.02,deep/2+.02])s.box([.065,.11,.065],[x,topY-.045,z],edging);
+    if(a.edging==='plain')s.box([width+.09,.045,.03],[cx,topY-.02,deep/2+.055],wood);
 
     const palette = PALETTES[a.palette].slice().sort(() => random() - 0.5);
     const rimR = { brass: 0.15, basket: 0.155, sack: 0.15, tin: 0.145 }[a.vessel];
@@ -117,6 +129,7 @@ export default defineThing({
       tin: s.material('#b3b8b8', { metalness: 0.7, roughness: 0.45, side: THREE.DoubleSide }),
     }[a.vessel];
     const vessel = (x: number, y: number, z: number) => {
+      const bottom=a.vessel==='brass'?.05:a.vessel==='basket'?.11:a.vessel==='sack'?.1:.12;s.cylinder(bottom,bottom,.006,[x,y+.003,z],vesselPaint,24);
       if (a.vessel === 'brass') s.lathe([[0.05, 0], [0.075, 0.012], [0.13, 0.05], [rimR, rimH], [rimR + 0.012, rimH]], vesselPaint, [x, y, z]);
       else if (a.vessel === 'basket') {
         s.lathe([[0.11, 0], [0.12, 0.004], [rimR, rimH]], vesselPaint, [x, y, z]);
@@ -129,22 +142,22 @@ export default defineThing({
     const steel = s.material('#c8ccce', { metalness: 0.85, roughness: 0.3, side: THREE.DoubleSide });
     const scoop = (x: number, y: number, z: number, tilt: number, turn: number) => {
       const group = new THREE.Group();
-      const pan = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.026, 0.1, 10, 1, true, 0, Math.PI), steel);
-      pan.rotation.z = Math.PI / 2;
+      const radius=a.scooper==='wide'?.049:a.scooper==='wooden'?.04:.034;const pan = new THREE.Mesh(a.scooper==='flat'?new THREE.BoxGeometry(.07,.012,.1):new THREE.CylinderGeometry(radius,radius*.76,.1,12,1,true,0,Math.PI),a.scooper==='wooden'?wood:steel);
+      pan.rotation.z = a.scooper==='flat'?0:Math.PI/2;
       const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.011, 0.11, 8), wood);
       handle.rotation.z = Math.PI / 2; handle.position.x = 0.1;
       pan.castShadow = handle.castShadow = true;
-      group.add(pan, handle);
+      group.add(pan, handle);if(a.scooper==='flat'){for(const zz of[-.044,.044]){const side=new THREE.Mesh(new THREE.BoxGeometry(.07,.035,.008),steel);side.position.set(0,.02,zz);group.add(side);}}
       group.position.set(x, y, z);
       group.rotation.set(0, turn, tilt);
-      s.root.add(group);
+      s.root.add(group);if(Math.abs(tilt)<.01){group.updateMatrixWorld(true);group.position.y+=topY-new THREE.Box3().setFromObject(group,true).min.y;}
     };
 
     const tall = mix(0.16, 0.56, a.height);
     const flawed = Math.floor(random() * n);
     for (let row = 0; row < 2; row++) for (let i = 0; i < n; i++) {
       const x = (i - (n - 1) / 2) * pitch + (random() - 0.5) * 0.02;
-      const z = row ? -0.22 : 0.2, y = topY + (row ? 0.14 : 0);
+      const z = row ? -0.22 : 0.2, y = topY + (row ? rise(i) : 0);
       const colour = palette[(i + row * 3) % palette.length];
       const powder = s.material(colour, { roughness: 1, emissive: colour, emissiveIntensity: mix(0.1, 0.3, mood.cheer) });
       vessel(x, y, z);
@@ -168,9 +181,11 @@ export default defineThing({
           s.ball([0.05, 0.01, 0.04], [x + 0.1, topY + 0.004, z + 0.17], powder, 10);
         }
       } else {
-        s.lathe([[r, 0], [r * 0.5, h * 0.52], [r * 0.12, h * 0.9], [r * 0.05, h * 0.97], [0, h]], powder, [x, base, z]);
+        const profile:[number,number][]=a.mound==='round'?[[r,0],[r*.96,h*.22],[r*.8,h*.56],[r*.48,h*.85],[0,h]]:a.mound==='steps'?Array.from({length:6},(_,k)=>[[r*(1-k/6),h*k/6],[r*(1-k/6),h*(k+.65)/6]] as [number,number][]).flat().concat([[0,h]]):[[r,0],[r*.5,h*.52],[r*.12,h*.9],[r*.05,h*.97],[0,h]];
+        const mound=s.lathe(profile,powder,[x,base,z]);if(a.mound==='fluted'){const pos=mound.geometry.getAttribute('position');for(let j=0;j<pos.count;j++){const t=Math.atan2(pos.getZ(j),pos.getX(j)),k=1+.08*Math.cos(t*10);pos.setX(j,pos.getX(j)*k);pos.setZ(j,pos.getZ(j)*k);}pos.needsUpdate=true;mound.geometry.computeVertexNormals();}
       }
     }
+    if(a.labels!=='none')for(let i=0;i<n;i++){const x=(i-(n-1)/2)*pitch,z=deep/2+.03;if(a.labels==='cards'){s.rod([x,topY,z],[x,topY+.18,z],.004,wood);s.label(`${100+i*50} g`,.15,.07,[x,topY+.17,z+.004],'#34352c','#e5dfc9');}else if(a.labels==='slate'){const sign=s.label(`${100+i*50} g`,.14,.085,[x,topY+.044,z+.015],'#eee8d2','#3d4845');sign.rotation.x=-.2;s.box([.15,.03,.055],[x,topY+.015,z-.01],wood);}else{s.box([.12,.055,.008],[x,topY-.035,z+.014],edging);s.label(String(i+1),.07,.04,[x,topY-.034,z+.02],'#463c29','#c4a15d');}}
     if (a.state !== 'scooped') scoop((random() - 0.5) * run * 0.6, topY + 0.03, 0.4, 0, random() * 2 - 1);
 
     if (a.twists) {
@@ -231,6 +246,11 @@ export default defineThing({
       cloth.rotation.x = Math.atan2(drop, span);
       if (a.shade === 'awning') s.mesh(new THREE.PlaneGeometry(hw * 2 + 0.1, 0.16), new THREE.MeshStandardMaterial({ map: texture, roughness: 0.9, side: THREE.DoubleSide }), [cx, 1.92, deep / 2 + 0.42]);
     }
+    const sx=x1+.26,sz=.27,canvas=s.material('#b49a70');
+    if(a.stock==='sacks')for(let i=0;i<2;i++){const x=sx+i*.22,z=sz-i*.32;s.lathe([[0,0],[.105,0],[.14,.07],[.13,.22],[.06,.3],[.03,.32],[0,.33]],canvas,[x,0,z]);s.ring(.055,.012,[x,.29,z],wood).rotateX(Math.PI/2);}
+    if(a.stock==='tins')for(let i=0;i<2;i++){const x=sx,z=sz-i*.3,h=.24+i*.09;s.cylinder(.105,.105,h,[x,h/2,z],steel,24);s.cylinder(.112,.112,.025,[x,h+.0125,z],edging,24);s.box([.09,.07,.009],[x,h*.6,z+.107],wood);}
+    if(a.stock==='weights'){s.box([.34,.045,.24],[sx,.0225,sz],wood);for(let i=0;i<4;i++){const x=sx-.11+(i%2)*.12,z=sz-.06+Math.floor(i/2)*.12,r=.025+i*.006;s.cylinder(r,r*1.1,.055,[x,.0725,z],edging,12);s.ring(r*.5,.005,[x,.11,z],edging);}}
+    if(a.stock==='packets'){for(let i=0;i<12;i++)s.box([.26,.006,.2],[sx,.003+i*.006,sz],s.material('#d8c8a6'));s.cylinder(.055,.055,.12,[sx,.06,sz-.24],wood,16);for(let i=0;i<10;i++)s.ring(.057,.004,[sx,.012+i*.01,sz-.24],canvas).rotateX(Math.PI/2);}
     return s.finish();
   },
 });

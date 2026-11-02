@@ -9,7 +9,7 @@ export default defineLook({questions:{
  story:choice('What has happened at the threshold?',{invited:'A thin pale path leads toward every open door.',bricked:'Some doors end abruptly in a brick wall.',ajar:'The door leaves hang at an impossible slant.',leaking:'Tiny rooms leak out of the bottom of each doorway.'}),
  depth:score('How long are the corridors?', ['Two nested thresholds','Four impossible passages','Seven shrinking frames']),
  gaps:score('How many interstitial spaces have opened?',['Three large doors','Five scattered thresholds','Nine doors and little further gaps']),
- pigment:choice('What is the threshold made from?',{bone:'Old ivory plaster and charcoal corridors.',rust:'Rusted steel and tobacco walls.',ink:'Cold grey blue plaster and black ink.',acid:'Green sickroom paint and sallow light.'})
+ pigment:choice('What is the threshold made from?',{bone:'Pale old plaster and soft dark corridors.',rust:'Deep toned walls, heavy shadow, hot edges.',ink:'Cold, quiet, even plaster and deep line.',acid:'Sickroom sourness and sharp vivid light.'})
 },async apply(c,a,context,signal){
  const t=prepare(c,context,signal,a.pigment),{g,p,source,boxes}=t,r=context.random,m=context.mood,wanted=3+Math.round(a.gaps*6);
  const candidates:{x:number;y:number;w:number;h:number;q:number}[]=[];

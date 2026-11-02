@@ -38,6 +38,12 @@ function labelTexture(kind: 'black' | 'cream' | 'gold' | 'tape', wear: number, r
 
 export default defineThing({
   questions: {
+    glassForm: choice('What shape is the tumbler?', { standard: 'A standard gently flared rocks glass.', straight: 'A straight-sided tumbler.', wide: 'A broad low tumbler.', tall: 'A taller narrow tumbler.' }),
+    cutting: choice('How is the glass decorated?', { diamonds: 'Cut diamonds around the lower half.', ribs: 'Long fine vertical ribs.', flutes: 'Broad shallow lower flutes.', plain: 'Plain smooth glass.' }),
+    iceFinish: choice('How clear is the ice?', { clear: 'Clear polished ice.', frosted: 'White frosted ice.', cloudy: 'Cloudy pale blue ice.', cracked: 'Clear ice with fine white fracture lines.' }),
+    garnish: choice('What garnish is set beside the drink?', { lemon: 'A curl of lemon peel.', orange: 'A round orange slice.', cherry: 'A red cherry with its stem.', none: 'No garnish.' }),
+    neckMark: choice('What decorates the bottle neck?', { seal: 'A small round wax seal.', string: 'A tied string bow.', tag: 'A paper neck tag on a cord.', band: 'A narrow engraved metal collar.' }),
+    coaster: choice('What coaster accompanies the tumbler?', { cork: 'A thick round cork coaster.', slate: 'A thin square slate coaster.', tin: 'A shallow round metal coaster.', felt: 'A soft dark green felt coaster.' }),
     fill: score('How much is in the glass?', ['Drained, only a film left', 'One finger', 'A generous double', 'Poured to the brim by a shaking hand']),
     ice: choice('What is in the glass with it?', {
       neat: 'Nothing, served neat.',
@@ -69,25 +75,27 @@ export default defineThing({
     const tint = SPIRIT_TINT[a.spirit];
     const liquor = new THREE.MeshStandardMaterial({ color: tint, emissive: tint, emissiveIntensity: mix(0.25, 0.6, mood.warmth), roughness: 0.15 });
     const crystal = new THREE.MeshPhysicalMaterial({ color: '#dfeaec', transparent: true, opacity: 0.4, roughness: 0.06 + mood.wear * 0.25, flatShading: true, clearcoat: 1, side: THREE.DoubleSide });
-    const iceMaterial = new THREE.MeshPhysicalMaterial({ color: '#f2fafc', transparent: true, opacity: 0.8, roughness: 0.2, emissive: '#bfd8e0', emissiveIntensity: 0.25 });
+    const iceMaterial = new THREE.MeshPhysicalMaterial({ color: a.iceFinish==='cloudy'?'#cbdfe5':'#f2fafc', transparent: true, opacity: a.iceFinish==='frosted'?1:a.iceFinish==='cloudy'?.92:.76, roughness: a.iceFinish==='frosted'?.75:.2, emissive: '#bfd8e0', emissiveIntensity: 0.25 });
+    if(a.iceFinish==='cracked'){const canvas=document.createElement('canvas');canvas.width=canvas.height=128;const ctx=canvas.getContext('2d')!;ctx.fillStyle='#d8edf0';ctx.fillRect(0,0,128,128);ctx.strokeStyle='#ffffff';ctx.lineWidth=2;for(let i=0;i<8;i++){const x=random()*128,y=random()*128;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+20-random()*40,y+30);ctx.lineTo(x-10,y+50);ctx.stroke();}iceMaterial.map=new THREE.CanvasTexture(canvas);iceMaterial.map.colorSpace=THREE.SRGBColorSpace;}
     const melt = mix(0.75, 0.3, 1 - mood.warmth * 0.7);
     const add = (parent: THREE.Object3D, mesh: THREE.Object3D) => { parent.add(mesh); return mesh; };
 
     // A tumbler in its own group so it can be tipped.
     const tumbler = (fill: number, ice: typeof a.ice, tipped: boolean) => {
       const glass = new THREE.Group();
-      const RB = 0.034, RT = 0.04, TALL = 0.088, BASE = 0.016;
+      const [RB,RT,TALL]= {standard:[.034,.04,.088],straight:[.037,.038,.088],wide:[.041,.047,.071],tall:[.031,.035,.112]}[a.glassForm], BASE=.016;
       const profile = [[0, 0], [RB, 0], [RB + 0.001, BASE], [RT, TALL], [RT - 0.003, TALL], [RB - 0.002, BASE], [0, BASE]].map(([x, y]) => new THREE.Vector2(x, y));
-      add(glass, s.mesh(new THREE.LatheGeometry(profile, 12), crystal));
+      add(glass, s.mesh(new THREE.LatheGeometry(profile, a.cutting==='plain'?32:12), crystal));
       // Cut diamonds round the lower half.
       const cut = new THREE.MeshStandardMaterial({ color: '#f4fbfc', roughness: 0.1, emissive: '#cfe3e6', emissiveIntensity: 0.3 });
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < (a.cutting==='diamonds'?12:0); i++) {
         const angle = (i + 0.5) / 12 * Math.PI * 2, r = RB + 0.0022;
         const facet = s.box([0.011, 0.03, 0.0012], [Math.sin(angle) * r, 0.036, Math.cos(angle) * r], cut);
         facet.rotation.set(0.07, angle, Math.PI / 4, 'YXZ');
         facet.scale.set(0.6, 0.6, 1);
         add(glass, facet);
       }
+      if(a.cutting==='ribs'||a.cutting==='flutes')for(let i=0;i<(a.cutting==='ribs'?18:10);i++){const t=i*Math.PI*2/(a.cutting==='ribs'?18:10),height=a.cutting==='ribs'?TALL*.78:TALL*.45,rad=RB+(RT-RB)*.45;const rib=s.rod([Math.sin(t)*rad,BASE,Math.cos(t)*rad],[Math.sin(t)*(rad+.002),BASE+height,Math.cos(t)*(rad+.002)],a.cutting==='ribs'?.0009:.0022,cut);add(glass,rib);}
       const level = BASE + mix(0.002, TALL - BASE - 0.004, fill);
       if (!tipped) {
         const rAt = (y: number) => mix(RB - 0.002, RT - 0.003, (y - BASE) / (TALL - BASE)) - 0.0008;
@@ -190,6 +198,10 @@ export default defineThing({
         if (a.bottle === 'round') inBottle(s.cylinder(neckR * 1.25, neckR * 1.15, 0.05, [0, neckTop - 0.03, 0], s.material('#9c1f1c', { roughness: 0.35 }), 14));
       }
     }
+    const neckY=neckTop-.028;
+    if(a.neckMark==='band'){inBottle(s.cylinder(neckR*1.08,neckR*1.08,.012,[0,neckY,0],s.material('#ba9b51',{metalness:.8,roughness:.4}),20));}
+    else if(a.neckMark==='seal'){const seal=inBottle(s.cylinder(.011,.011,.004,[0,neckY,neckR+.002],s.material('#8c2931'),14));seal.rotation.x=Math.PI/2;}
+    else{const thread=s.material('#c0ab7b');const hoop=s.ring(neckR*1.08,.001,[0,neckY,0],thread);hoop.rotation.x=Math.PI/2;bottle.add(hoop);if(a.neckMark==='tag'){bottle.add(s.rod([0,neckY,neckR],[0,neckY-.024,neckR+.009],.0008,thread));const tag=s.label('RESERVE',.029,.018,[0,neckY-.031,neckR+.01],'#473d2b','#e6d9b7');bottle.add(tag);}else for(const side of [-1,1])bottle.add(s.tube([[0,neckY,neckR+.002],[side*.012,neckY+.006,neckR+.003],[side*.02,neckY-.002,neckR+.004],[0,neckY,neckR+.002],[side*.015,neckY-.024,neckR+.005]],.001,thread));}
     // Cap, cork or stopper: on the bottle, or tossed aside.
     const off = a.scene === 'open' || fallen;
     const capGroup = new THREE.Group();
@@ -230,6 +242,16 @@ export default defineThing({
       bottle.position.set(-0.06, 0, -0.03);
       bottle.rotation.y = mix(-0.35, 0.35, random());
     }
+    // The tumbler rests on its coaster; in the spill scene the coaster remains beside it.
+    const coasterY=a.coaster==='cork'?.005:a.coaster==='tin'?.003:.002,cx=tipped?main.position.x-.065:main.position.x,cz=tipped?main.position.z-.06:main.position.z;
+    const coasterPaint=s.material({cork:'#a87c47',slate:'#555d60',tin:'#bcc0bc',felt:'#355e45'}[a.coaster],{roughness:a.coaster==='tin'?.3:.9,metalness:a.coaster==='tin'?.65:0});
+    if(a.coaster==='slate')s.box([.106,coasterY,.106],[cx,coasterY/2,cz],coasterPaint);else s.cylinder(.055,.055,coasterY,[cx,coasterY/2,cz],coasterPaint,32);
+    if(a.coaster==='tin'){const rim=s.ring(.053,.0015,[cx,coasterY+.001,cz],coasterPaint);rim.rotation.x=Math.PI/2;}
+    if(!tipped)main.position.y+=coasterY;
+    if(a.garnish==='lemon'){s.tube([[.16,.003,.09],[.175,.006,.083],[.184,.009,.098],[.174,.006,.11],[.16,.003,.104]],.003,s.material('#d9b72c'));}
+    if(a.garnish==='orange'){s.cylinder(.026,.026,.004,[.17,.002,.105],s.material('#d77a24'),24);s.cylinder(.022,.022,.0008,[.17,.0044,.105],s.material('#f3bb62'),24);for(let i=0;i<8;i++){const t=i*Math.PI/4;s.rod([.17,.0049,.105],[.17+Math.cos(t)*.021,.0049,.105+Math.sin(t)*.021],.0005,s.material('#f5ddb1'));}}
+    if(a.garnish==='cherry'){s.ball([.009,.009,.009],[.17,.009,.105],s.material('#aa2730',{roughness:.3}),14);s.tube([[.17,.017,.105],[.174,.03,.106],[.18,.033,.107]],.0008,s.material('#596936'));}
+    for(const item of [main,...(off?[capGroup]:[])]){item.updateMatrixWorld(true);const support=item===main&&!tipped?coasterY:0;item.position.y+=support-new THREE.Box3().setFromObject(item,true).min.y;}
     return s.finish();
   },
 });

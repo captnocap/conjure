@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Bottle-glass canal city", "summary": "A miniature canal neighbourhood built inside cutaway glass bottles, with neck galleries, towpaths and bridges spanning a connected waterway. Messages in bottles, tiny waterfront homes, a quiet glass city and journeys through a collected landscape.", "scales": ["tabletop", "room"]});

@@ -1,0 +1,24 @@
+import * as THREE from 'three';
+import { Sculpture, choice, score, noul, defineThing, figure } from '@conjure/kit';
+const questions = {
+  form: choice("What paddle shape is used?", {"round": "A broad round wooden paddle.", "square": "A square board with rounded-looking corners.", "oval": "An elongated oval paddle.", "metal": "A thin metal loading blade.", "small": "A narrow turning peel."}),
+  state: choice("What is on the peel?", {"empty": "A clean empty peel.", "round": "A round proofed loaf.", "batard": "An elongated oval loaf.", "pair": "Two small rolls.", "baked": "A finished dark crusted loaf."}),
+  detail: choice("What is the handle made from?", {"ash": "Pale ash wood.", "oak": "Warm oak.", "dark": "Dark seasoned timber.", "paint": "A green painted upper grip.", "wrap": "A pale cord-wrapped grip."}),
+  support: choice("How is it resting?", {"flat": "Flat on a low work board.", "lean": "A low cradle for loaded bread, or a leaning cradle when empty.", "rack": "A mid-height loading rest, or an upright rack when empty.", "bench": "Across two small work trestles.", "wall": "A raised loading rest, or a tall display stand when empty."}),
+  extra: choice("What is beside the peel?", {"flour": "A small flour bowl.", "cloth": "A folded baker’s cloth.", "scraper": "A metal dough scraper.", "brush": "A small flour brush.", "none": "Only the loaded peel."}),
+  mark: choice("How is the blade marked?", {"flour": "A pale dusting patch.", "ring": "A concentric flour ring.", "initial": "A small baker’s initial.", "score": "Three shallow guide lines.", "plain": "Unmarked wood."}),
+  extent: score("How long is the peel handle?", ["A short garden-oven peel", "A comfortable oven reach", "A long communal-oven peel"]),
+  load: score("How broad is the loading paddle?", ["A single small loaf", "A broad household loaf", "A generous batch paddle"]),
+  closed: noul("Is a hanging loop fitted to the handle end?"),
+};
+export default defineThing({
+  questions,
+  build(a, context) {
+    const s = new Sculpture(context), { random, mood } = context;
+    const f = Object.keys(questions.form.options).indexOf(a.form), t = Object.keys(questions.state.options).indexOf(a.state), d = Object.keys(questions.detail.options).indexOf(a.detail), u = Object.keys(questions.support.options).indexOf(a.support), e = Object.keys(questions.extra.options).indexOf(a.extra), m = Object.keys(questions.mark.options).indexOf(a.mark);
+    const wood = s.material('#a47c4e'), pale = s.material('#e0d2ac'), metal = s.material('#8f9995', { metalness: 0.7, roughness: 0.35 }), dark = s.material('#3d443c'), green = s.material('#667e50');
+    const colors = ['#a64d39', '#497e70', '#d4af55', '#59778c', '#b47b8c'];
+
+    const L=.8+a.extent*1.2,R=.17+a.load*.13,mat=s.material(['#c5ae7c','#b29264','#7b684c','#81906b','#b9aa86'][d]),g=new THREE.Group(),blade=f===3?metal:wood;g.add(s.rod([0,.018,0],[0,.018,L],f===4?.012:.018,mat));if(f===1)g.add(s.box([R*2,.025,R*2],[0,.012,-R*.7],blade));else g.add(s.cylinder(R,R,.025,[0,.012,-R*.65],blade,32));if(f===2)g.children[g.children.length-1].scale.z=1.35;if(f===4)g.children[g.children.length-1].scale.x=.6;if(t!==0){const count=t===3?2:1;for(let i=0;i<count;i++){const x=(i-(count-1)/2)*R*.75;g.add(s.ball([t===2?R*.55:R*.65,R*.32,t===2?R*.95:R*.65],[x,.025+R*.3,-R*.65],s.material(t===4?'#927047':'#c6b17d'),20));for(let j=0;j<3;j++)g.add(s.rod([x-R*.3,.025+R*.58,-R*.65+(j-1)*R*.3],[x+R*.3,.025+R*.58,-R*.65+(j-1)*R*.3],.004,pale));}}if(m===0)g.add(s.cylinder(R*.75,R*.75,.002,[0,.027,-R*.65],pale,24));if(m===1)g.add(s.ring(R*.7,.004,[0,.029,-R*.65],pale).rotateX(Math.PI/2));if(m===2)g.add(s.label('B',.07,.08,[R*.65,.029,-R*.5]).rotateX(-Math.PI/2));if(m===3)for(const x of [-.04,0,.04])g.add(s.rod([x,.029,-R*.9],[x,.029,-R*.35],.002,dark));if(d===4)for(let i=0;i<12;i++)g.add(s.ring(.021,.003,[0,.018,L-.03-i*.012],pale));if(a.closed)g.add(s.ring(.035,.005,[0,.018,L+.02],pale).rotateX(Math.PI/2));if(u===0){g.position.y=.03;s.box([R*2.5,.03,L+R*2],[0,.015,L*.35],wood);}else if(u===3||t!==0){g.position.y=u===3?.6:u===1?.25:u===2?.4:.5;const bh=g.position.y;for(const z of [0,L*.7]){s.box([R*2.2,.04,.1],[0,bh-.02,z],wood);for(const x of [-R*.8,R*.8])s.rod([x,0,z],[x,bh-.04,z],.025,wood);}}else{g.rotation.x=-1.3;g.position.y=R+.06;g.position.z=-R*.3;s.box([R*2.6,.04,.55],[0,.02,0],wood);for(const x of [-R*.65,R*.65])s.rod([x,0,0],[x,L*.65,0],.02,wood);s.rod([-R*.65,L*.6,0],[R*.65,L*.6,0],.02,wood);if(u===2)s.box([R*2,.1,.2],[0,.09,0],wood);if(u===4)s.box([R*1.7,L*.8,.025],[0,L*.4,-.08],wood);}s.root.add(g);const ex=R*1.8;if(e===0)s.lathe([[.04,0],[.08,.06],[.07,.06],[.03,.01]],pale,[ex,0,0]);if(e===1)s.box([.22,.025,.2],[ex,.013,0],pale);if(e===2){s.box([.13,.003,.1],[ex,.004,0],metal);s.rod([ex-.06,.018,-.05],[ex+.06,.018,-.05],.012,wood);}if(e===3){s.box([.12,.02,.07],[ex,.045,0],wood);s.box([.12,.025,.07],[ex,.018,0],pale);}return s.finish();
+  },
+});

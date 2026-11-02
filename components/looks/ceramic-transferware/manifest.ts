@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Ceramic transferware',summary:'A fine engraved picture transferred beneath glaze on a plate or tile, framed by patterned rims, soft ceramic relief and optional age crackle. Cobalt tableware, commemorative platters and detailed printed ceramic scenes.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'craft'});

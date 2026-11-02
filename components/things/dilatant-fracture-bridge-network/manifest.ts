@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Dilatant fracture bridge network", "summary": "A branching set of open voids passes around attached grain bridges in an exposed sheared rock coupon. An exposed structural-geology teaching specimen with matching fault surfaces, connected mineral growth and physically cut sections.", "scales": ["tabletop", "macro"]});

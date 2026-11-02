@@ -1,0 +1,1481 @@
+{
+  "started": "2026-10-30T13:31:29.701Z",
+  "base": "http://127.0.0.1:3400",
+  "options": {
+    "materials": false,
+    "styles": true,
+    "finishes": false,
+    "scenes": [
+      "tabletop",
+      "room",
+      "topology"
+    ],
+    "only": [
+      "naturalist-plate",
+      "surface-dots"
+    ],
+    "images": [],
+    "lifecycle": true,
+    "geometry": true,
+    "timeout": 120000,
+    "out": "/home/siah/Documents/Codex/2026-10-30/task/evidence/anchor-scenes"
+  },
+  "scenes": [
+    {
+      "name": "tabletop",
+      "fixture": {
+        "name": "tabletop",
+        "fixture": {
+          "world": "worlds/worktable",
+          "cast": [
+            "things/teapot",
+            "things/crystal-geode"
+          ],
+          "idea": "a teapot and a mineral on a worktable"
+        },
+        "reports": [
+          {
+            "id": "worlds/worktable",
+            "milliseconds": 2,
+            "error": null
+          },
+          {
+            "id": "things/teapot",
+            "milliseconds": 14,
+            "error": null
+          },
+          {
+            "id": "things/crystal-geode",
+            "milliseconds": 14,
+            "error": null
+          }
+        ],
+        "identities": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "topology": null,
+        "materialEvidence": null,
+        "camera": "orthographic",
+        "geometry": {
+          "source": "conjure",
+          "meshes": 172,
+          "triangles": 10980
+        },
+        "problems": []
+      },
+      "lifecycle": [
+        {
+          "check": "pre-aborted signal",
+          "passed": true,
+          "detail": "Rejected before drawing.",
+          "milliseconds": 166
+        },
+        {
+          "check": "in-flight worker cancellation",
+          "passed": true,
+          "detail": "Canceled a directional-color solve; next render follows.",
+          "milliseconds": 23
+        },
+        {
+          "check": "style switch and deterministic replay",
+          "passed": true,
+          "detail": "cd9a9bc8 → 23e53468 → cd9a9bc8",
+          "milliseconds": 4503
+        },
+        {
+          "check": "real look selector and Stage.develop",
+          "passed": true,
+          "detail": "84 studies present in base and overlay; Stage returned 2073600 bytes.",
+          "milliseconds": 2582
+        },
+        {
+          "check": "capture preservation",
+          "passed": true,
+          "detail": "84e0bdef",
+          "milliseconds": 55
+        }
+      ],
+      "geometry": [
+        {
+          "id": "surface-dots",
+          "passed": true,
+          "original": "f6e5ca42",
+          "changed": "c2fdfc36",
+          "changedFraction": 0.026782407407407408,
+          "milliseconds": 1522
+        }
+      ],
+      "renders": [
+        {
+          "scene": "tabletop",
+          "id": "naturalist-plate",
+          "started": "2026-10-30T13:31:42.237Z",
+          "finished": "2026-10-30T13:31:44.753Z",
+          "milliseconds": 2514,
+          "problems": [],
+          "hash": "f63b63e6",
+          "variance": 77.85767004953232,
+          "changed": 1,
+          "colors": 777,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "surface-dots",
+          "started": "2026-10-30T13:31:44.759Z",
+          "finished": "2026-10-30T13:31:46.465Z",
+          "milliseconds": 1705,
+          "problems": [],
+          "hash": "f6e5ca42",
+          "variance": 123.52646801652736,
+          "changed": 0.9999903549382716,
+          "colors": 1153,
+          "opaque": 1
+        }
+      ],
+      "teardown": {
+        "problems": []
+      }
+    },
+    {
+      "name": "room",
+      "fixture": {
+        "name": "room",
+        "fixture": {
+          "world": "worlds/tiled-room",
+          "cast": [
+            "things/market-shelf",
+            "things/desk-lamp"
+          ],
+          "idea": "a stocked shelf and a lamp in a tiled room"
+        },
+        "reports": [
+          {
+            "id": "worlds/tiled-room",
+            "milliseconds": 2,
+            "error": null
+          },
+          {
+            "id": "things/market-shelf",
+            "milliseconds": 7,
+            "error": null
+          },
+          {
+            "id": "things/desk-lamp",
+            "milliseconds": 7,
+            "error": null
+          }
+        ],
+        "identities": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "topology": null,
+        "materialEvidence": null,
+        "camera": "orthographic",
+        "geometry": {
+          "source": "conjure",
+          "meshes": 145,
+          "triangles": 2514
+        },
+        "problems": []
+      },
+      "lifecycle": [
+        {
+          "check": "pre-aborted signal",
+          "passed": true,
+          "detail": "Rejected before drawing.",
+          "milliseconds": 13
+        },
+        {
+          "check": "in-flight worker cancellation",
+          "passed": true,
+          "detail": "Canceled a directional-color solve; next render follows.",
+          "milliseconds": 26
+        },
+        {
+          "check": "style switch and deterministic replay",
+          "passed": true,
+          "detail": "e0942f93 → 4e1283b4 → e0942f93",
+          "milliseconds": 4458
+        },
+        {
+          "check": "real look selector and Stage.develop",
+          "passed": true,
+          "detail": "84 studies present in base and overlay; Stage returned 2073600 bytes.",
+          "milliseconds": 2500
+        },
+        {
+          "check": "capture preservation",
+          "passed": true,
+          "detail": "84f1d05a",
+          "milliseconds": 45
+        }
+      ],
+      "geometry": [
+        {
+          "id": "surface-dots",
+          "passed": true,
+          "original": "9d3b378e",
+          "changed": "b6590f70",
+          "changedFraction": 0.1437692901234568,
+          "milliseconds": 1692
+        }
+      ],
+      "renders": [
+        {
+          "scene": "room",
+          "id": "naturalist-plate",
+          "started": "2026-10-30T13:31:56.184Z",
+          "finished": "2026-10-30T13:31:58.988Z",
+          "milliseconds": 2803,
+          "problems": [],
+          "hash": "3a15c148",
+          "variance": 778.886983346667,
+          "changed": 0.999994212962963,
+          "colors": 1740,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "surface-dots",
+          "started": "2026-10-30T13:31:59.004Z",
+          "finished": "2026-10-30T13:32:00.782Z",
+          "milliseconds": 1777,
+          "problems": [],
+          "hash": "9d3b378e",
+          "variance": 717.1273861827722,
+          "changed": 0.9999440586419753,
+          "colors": 1258,
+          "opaque": 1
+        }
+      ],
+      "teardown": {
+        "problems": []
+      }
+    },
+    {
+      "name": "topology",
+      "fixture": {
+        "name": "topology",
+        "fixture": {
+          "world": "worlds/plinth",
+          "cast": [
+            "things/found-atelier-topology"
+          ],
+          "idea": "a closed multi-material box beside an open cylindrical sheet and a paper plane"
+        },
+        "reports": [
+          {
+            "id": "worlds/plinth",
+            "milliseconds": 1,
+            "error": null
+          },
+          {
+            "id": "things/found-atelier-topology",
+            "milliseconds": 1,
+            "error": null
+          }
+        ],
+        "identities": [
+          1,
+          2,
+          3
+        ],
+        "topology": [
+          {
+            "bodyId": "2:0",
+            "owner": 3,
+            "groups": 6,
+            "triangles": 12,
+            "boundaryEdges": 0,
+            "nonManifoldEdges": 0
+          },
+          {
+            "bodyId": "3:0",
+            "owner": 3,
+            "groups": 1,
+            "triangles": 48,
+            "boundaryEdges": 48,
+            "nonManifoldEdges": 0
+          },
+          {
+            "bodyId": "4:0",
+            "owner": 3,
+            "groups": 1,
+            "triangles": 2,
+            "boundaryEdges": 4,
+            "nonManifoldEdges": 0
+          }
+        ],
+        "materialEvidence": {
+          "problems": [],
+          "materialPixels": 66682,
+          "pigments": 5,
+          "matchedBoxPigments": [
+            0,
+            2,
+            4
+          ],
+          "transmissionValues": [
+            0,
+            255
+          ],
+          "profiles": [
+            3,
+            5,
+            7,
+            9,
+            10
+          ],
+          "boxProfiles": [
+            {
+              "pigment": 2,
+              "tokens": [
+                5
+              ]
+            },
+            {
+              "pigment": 0,
+              "tokens": [
+                3
+              ]
+            },
+            {
+              "pigment": 4,
+              "tokens": [
+                7
+              ]
+            }
+          ]
+        },
+        "camera": "orthographic",
+        "geometry": {
+          "source": "conjure",
+          "meshes": 10,
+          "triangles": 76
+        },
+        "problems": []
+      },
+      "lifecycle": [
+        {
+          "check": "pre-aborted signal",
+          "passed": true,
+          "detail": "Rejected before drawing.",
+          "milliseconds": 1
+        },
+        {
+          "check": "in-flight worker cancellation",
+          "passed": true,
+          "detail": "Canceled a directional-color solve; next render follows.",
+          "milliseconds": 11
+        },
+        {
+          "check": "style switch and deterministic replay",
+          "passed": true,
+          "detail": "7e4960c9 → 0e790ce0 → 7e4960c9",
+          "milliseconds": 11571
+        },
+        {
+          "check": "real look selector and Stage.develop",
+          "passed": true,
+          "detail": "84 studies present in base and overlay; Stage returned 2073600 bytes.",
+          "milliseconds": 6882
+        },
+        {
+          "check": "capture preservation",
+          "passed": true,
+          "detail": "58425bc9",
+          "milliseconds": 32
+        }
+      ],
+      "geometry": [
+        {
+          "id": "surface-dots",
+          "passed": true,
+          "original": "1eb79a33",
+          "changed": "b0433651",
+          "changedFraction": 0.15275462962962963,
+          "milliseconds": 7220
+        }
+      ],
+      "renders": [
+        {
+          "scene": "topology",
+          "id": "naturalist-plate",
+          "started": "2026-10-30T13:32:22.857Z",
+          "finished": "2026-10-30T13:32:30.640Z",
+          "milliseconds": 7782,
+          "problems": [],
+          "hash": "86963299",
+          "variance": 844.1609156037957,
+          "changed": 1,
+          "colors": 1616,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "surface-dots",
+          "started": "2026-10-30T13:32:30.648Z",
+          "finished": "2026-10-30T13:32:36.699Z",
+          "milliseconds": 6050,
+          "problems": [],
+          "hash": "1eb79a33",
+          "variance": 804.3493114523662,
+          "changed": 0.999988425925926,
+          "colors": 1165,
+          "opaque": 1
+        }
+      ],
+      "teardown": {
+        "problems": []
+      },
+      "captureSlots": {
+        "milliseconds": 2646,
+        "problems": [],
+        "evidence": {
+          "owner": 200,
+          "slots": [
+            "excluded-first-glow",
+            "later-opaque-front",
+            "backside-map-alpha-0.30",
+            "double-sided-uv1-green-alpha",
+            "vertex-alpha",
+            "culled-frontside",
+            "double-sided-transmission"
+          ],
+          "admittedGroups": 6,
+          "masks": {
+            "identity": {
+              "pixels": 85536,
+              "mismatch": 0
+            },
+            "depth": {
+              "pixels": 85536,
+              "mismatch": 0
+            },
+            "normal": {
+              "pixels": 85536,
+              "mismatch": 0
+            },
+            "diffuse": {
+              "pixels": 85536,
+              "mismatch": 0
+            },
+            "material": {
+              "pixels": 85536,
+              "mismatch": 0
+            },
+            "albedo": {
+              "pixels": 85536,
+              "mismatch": 0
+            },
+            "transmission": {
+              "pixels": 85536,
+              "mismatch": 0
+            }
+          },
+          "probes": [
+            {
+              "slot": 0,
+              "name": "excluded-first-glow",
+              "samples": [
+                {
+                  "u": 0.25,
+                  "x": 67,
+                  "y": 189,
+                  "expected": false,
+                  "present": false,
+                  "identity": 0,
+                  "transmission": 0,
+                  "albedo": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "u": 0.75,
+                  "x": 130,
+                  "y": 189,
+                  "expected": false,
+                  "present": false,
+                  "identity": 0,
+                  "transmission": 0,
+                  "albedo": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                }
+              ]
+            },
+            {
+              "slot": 1,
+              "name": "later-opaque-front",
+              "samples": [
+                {
+                  "u": 0.25,
+                  "x": 233,
+                  "y": 189,
+                  "expected": true,
+                  "present": true,
+                  "identity": 200,
+                  "transmission": 0,
+                  "albedo": [
+                    31,
+                    122,
+                    52,
+                    255
+                  ]
+                },
+                {
+                  "u": 0.75,
+                  "x": 296,
+                  "y": 189,
+                  "expected": true,
+                  "present": true,
+                  "identity": 200,
+                  "transmission": 0,
+                  "albedo": [
+                    31,
+                    122,
+                    52,
+                    255
+                  ]
+                }
+              ]
+            },
+            {
+              "slot": 2,
+              "name": "backside-map-alpha-0.30",
+              "samples": [
+                {
+                  "u": 0.25,
+                  "x": 398,
+                  "y": 189,
+                  "expected": true,
+                  "present": true,
+                  "identity": 200,
+                  "transmission": 0,
+                  "albedo": [
+                    31,
+                    76,
+                    164,
+                    77
+                  ]
+                },
+                {
+                  "u": 0.75,
+                  "x": 461,
+                  "y": 189,
+                  "expected": false,
+                  "present": false,
+                  "identity": 0,
+                  "transmission": 0,
+                  "albedo": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                }
+              ]
+            },
+            {
+              "slot": 3,
+              "name": "double-sided-uv1-green-alpha",
+              "samples": [
+                {
+                  "u": 0.25,
+                  "x": 564,
+                  "y": 189,
+                  "expected": false,
+                  "present": false,
+                  "identity": 0,
+                  "transmission": 0,
+                  "albedo": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "u": 0.75,
+                  "x": 627,
+                  "y": 189,
+                  "expected": true,
+                  "present": true,
+                  "identity": 200,
+                  "transmission": 0,
+                  "albedo": [
+                    159,
+                    48,
+                    93,
+                    102
+                  ]
+                }
+              ]
+            },
+            {
+              "slot": 4,
+              "name": "vertex-alpha",
+              "samples": [
+                {
+                  "u": 0.25,
+                  "x": 67,
+                  "y": 495,
+                  "expected": false,
+                  "present": false,
+                  "identity": 0,
+                  "transmission": 0,
+                  "albedo": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "u": 0.75,
+                  "x": 130,
+                  "y": 495,
+                  "expected": true,
+                  "present": true,
+                  "identity": 200,
+                  "transmission": 0,
+                  "albedo": [
+                    159,
+                    76,
+                    23,
+                    76
+                  ]
+                }
+              ]
+            },
+            {
+              "slot": 5,
+              "name": "culled-frontside",
+              "samples": [
+                {
+                  "u": 0.25,
+                  "x": 233,
+                  "y": 495,
+                  "expected": false,
+                  "present": false,
+                  "identity": 0,
+                  "transmission": 0,
+                  "albedo": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "u": 0.75,
+                  "x": 296,
+                  "y": 495,
+                  "expected": false,
+                  "present": false,
+                  "identity": 0,
+                  "transmission": 0,
+                  "albedo": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                }
+              ]
+            },
+            {
+              "slot": 6,
+              "name": "double-sided-transmission",
+              "samples": [
+                {
+                  "u": 0.25,
+                  "x": 398,
+                  "y": 495,
+                  "expected": true,
+                  "present": true,
+                  "identity": 200,
+                  "transmission": 166,
+                  "albedo": [
+                    84,
+                    51,
+                    168,
+                    255
+                  ]
+                },
+                {
+                  "u": 0.75,
+                  "x": 461,
+                  "y": 495,
+                  "expected": true,
+                  "present": true,
+                  "identity": 200,
+                  "transmission": 166,
+                  "albedo": [
+                    84,
+                    51,
+                    168,
+                    255
+                  ]
+                }
+              ]
+            }
+          ],
+          "sourceMaterialsRestored": true
+        }
+      }
+    }
+  ],
+  "blockedRequests": [],
+  "pageErrors": [],
+  "requestFailures": [],
+  "httpErrors": [],
+  "workerEvents": [
+    {
+      "at": "2026-10-30T13:31:35.119Z",
+      "event": "created",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "lifecycle",
+        "token": "run-1793367094899-lifecycle",
+        "started": "2026-10-30T13:31:34.899Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:37.954Z",
+      "event": "closed",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "lifecycle",
+        "token": "run-1793367094899-lifecycle",
+        "started": "2026-10-30T13:31:34.899Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:38.031Z",
+      "event": "created",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "lifecycle",
+        "token": "run-1793367094899-lifecycle",
+        "started": "2026-10-30T13:31:34.899Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:39.455Z",
+      "event": "closed",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "lifecycle",
+        "token": "run-1793367094899-lifecycle",
+        "started": "2026-10-30T13:31:34.899Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:39.617Z",
+      "event": "created",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "lifecycle",
+        "token": "run-1793367094899-lifecycle",
+        "started": "2026-10-30T13:31:34.899Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:42.126Z",
+      "event": "closed",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "lifecycle",
+        "token": "run-1793367094899-lifecycle",
+        "started": "2026-10-30T13:31:34.899Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:42.272Z",
+      "event": "created",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "render",
+        "argument": "naturalist-plate",
+        "token": "run-1793367102236-render",
+        "started": "2026-10-30T13:31:42.236Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:44.657Z",
+      "event": "closed",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "render",
+        "argument": "naturalist-plate",
+        "token": "run-1793367102236-render",
+        "started": "2026-10-30T13:31:42.236Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:44.784Z",
+      "event": "created",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "render",
+        "argument": "surface-dots",
+        "token": "run-1793367104759-render",
+        "started": "2026-10-30T13:31:44.759Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:46.373Z",
+      "event": "closed",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "render",
+        "argument": "surface-dots",
+        "token": "run-1793367104759-render",
+        "started": "2026-10-30T13:31:44.759Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:46.724Z",
+      "event": "created",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "geometrySensitivity",
+        "argument": [
+          "surface-dots"
+        ],
+        "token": "run-1793367106649-geometrySensitivity",
+        "started": "2026-10-30T13:31:46.649Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:48.126Z",
+      "event": "closed",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "geometrySensitivity",
+        "argument": [
+          "surface-dots"
+        ],
+        "token": "run-1793367106649-geometrySensitivity",
+        "started": "2026-10-30T13:31:46.649Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:49.212Z",
+      "event": "created",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "lifecycle",
+        "token": "run-1793367109129-lifecycle",
+        "started": "2026-10-30T13:31:49.129Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:51.857Z",
+      "event": "closed",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "lifecycle",
+        "token": "run-1793367109129-lifecycle",
+        "started": "2026-10-30T13:31:49.129Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:51.921Z",
+      "event": "created",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "lifecycle",
+        "token": "run-1793367109129-lifecycle",
+        "started": "2026-10-30T13:31:49.129Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:53.499Z",
+      "event": "closed",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "lifecycle",
+        "token": "run-1793367109129-lifecycle",
+        "started": "2026-10-30T13:31:49.129Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:53.653Z",
+      "event": "created",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "lifecycle",
+        "token": "run-1793367109129-lifecycle",
+        "started": "2026-10-30T13:31:49.129Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:56.115Z",
+      "event": "closed",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "lifecycle",
+        "token": "run-1793367109129-lifecycle",
+        "started": "2026-10-30T13:31:49.129Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:56.209Z",
+      "event": "created",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "render",
+        "argument": "naturalist-plate",
+        "token": "run-1793367116183-render",
+        "started": "2026-10-30T13:31:56.183Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:58.914Z",
+      "event": "closed",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "render",
+        "argument": "naturalist-plate",
+        "token": "run-1793367116183-render",
+        "started": "2026-10-30T13:31:56.183Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:31:59.047Z",
+      "event": "created",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "render",
+        "argument": "surface-dots",
+        "token": "run-1793367119001-render",
+        "started": "2026-10-30T13:31:59.001Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:32:00.693Z",
+      "event": "closed",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "render",
+        "argument": "surface-dots",
+        "token": "run-1793367119001-render",
+        "started": "2026-10-30T13:31:59.001Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:32:00.983Z",
+      "event": "created",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "geometrySensitivity",
+        "argument": [
+          "surface-dots"
+        ],
+        "token": "run-1793367120922-geometrySensitivity",
+        "started": "2026-10-30T13:32:00.922Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:32:02.578Z",
+      "event": "closed",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "geometrySensitivity",
+        "argument": [
+          "surface-dots"
+        ],
+        "token": "run-1793367120922-geometrySensitivity",
+        "started": "2026-10-30T13:32:00.922Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:32:04.406Z",
+      "event": "created",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "lifecycle",
+        "token": "run-1793367124348-lifecycle",
+        "started": "2026-10-30T13:32:04.348Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:32:10.859Z",
+      "event": "closed",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "lifecycle",
+        "token": "run-1793367124348-lifecycle",
+        "started": "2026-10-30T13:32:04.348Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:32:10.909Z",
+      "event": "created",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "lifecycle",
+        "token": "run-1793367124348-lifecycle",
+        "started": "2026-10-30T13:32:04.348Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:32:15.817Z",
+      "event": "closed",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "lifecycle",
+        "token": "run-1793367124348-lifecycle",
+        "started": "2026-10-30T13:32:04.348Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:32:15.947Z",
+      "event": "created",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "lifecycle",
+        "token": "run-1793367124348-lifecycle",
+        "started": "2026-10-30T13:32:04.348Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:32:22.785Z",
+      "event": "closed",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "lifecycle",
+        "token": "run-1793367124348-lifecycle",
+        "started": "2026-10-30T13:32:04.348Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:32:22.883Z",
+      "event": "created",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "render",
+        "argument": "naturalist-plate",
+        "token": "run-1793367142856-render",
+        "started": "2026-10-30T13:32:22.856Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:32:30.583Z",
+      "event": "closed",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "render",
+        "argument": "naturalist-plate",
+        "token": "run-1793367142856-render",
+        "started": "2026-10-30T13:32:22.856Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:32:30.677Z",
+      "event": "created",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "render",
+        "argument": "surface-dots",
+        "token": "run-1793367150647-render",
+        "started": "2026-10-30T13:32:30.647Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:32:36.613Z",
+      "event": "closed",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "render",
+        "argument": "surface-dots",
+        "token": "run-1793367150647-render",
+        "started": "2026-10-30T13:32:30.647Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:32:40.680Z",
+      "event": "created",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "geometrySensitivity",
+        "argument": [
+          "surface-dots"
+        ],
+        "token": "run-1793367159994-geometrySensitivity",
+        "started": "2026-10-30T13:32:39.994Z"
+      }
+    },
+    {
+      "at": "2026-10-30T13:32:47.184Z",
+      "event": "closed",
+      "url": "http://127.0.0.1:3400/atelier/contact-worker.js",
+      "operation": {
+        "method": "geometrySensitivity",
+        "argument": [
+          "surface-dots"
+        ],
+        "token": "run-1793367159994-geometrySensitivity",
+        "started": "2026-10-30T13:32:39.994Z"
+      }
+    }
+  ],
+  "completed": true,
+  "catalogue": [
+    {
+      "id": "riso",
+      "name": "Risograph"
+    },
+    {
+      "id": "woodcut",
+      "name": "Woodcut"
+    },
+    {
+      "id": "stipple",
+      "name": "Stipple"
+    },
+    {
+      "id": "loom",
+      "name": "Woven field"
+    },
+    {
+      "id": "optical",
+      "name": "Optical relief"
+    },
+    {
+      "id": "cyanotype",
+      "name": "Cyanotype"
+    },
+    {
+      "id": "contours",
+      "name": "Contour atlas"
+    },
+    {
+      "id": "frottage",
+      "name": "Frottage"
+    },
+    {
+      "id": "cutpaper",
+      "name": "Cut paper"
+    },
+    {
+      "id": "reticulum",
+      "name": "Reticulum"
+    },
+    {
+      "id": "luminous",
+      "name": "Luminous field"
+    },
+    {
+      "id": "scanner",
+      "name": "Data engraving"
+    },
+    {
+      "id": "depth",
+      "name": "Depth etching"
+    },
+    {
+      "id": "embroidery",
+      "name": "Surface embroidery"
+    },
+    {
+      "id": "wash",
+      "name": "Pigment wash"
+    },
+    {
+      "id": "architectural",
+      "name": "Architectural plate"
+    },
+    {
+      "id": "interference",
+      "name": "Moiré interference"
+    },
+    {
+      "id": "photogram",
+      "name": "Photogram"
+    },
+    {
+      "id": "glass",
+      "name": "Leaded glass"
+    },
+    {
+      "id": "transfer",
+      "name": "Solvent transfer"
+    },
+    {
+      "id": "volume",
+      "name": "Luminous volume"
+    },
+    {
+      "id": "surface-dots",
+      "name": "Surface pointillism"
+    },
+    {
+      "id": "mezzotint",
+      "name": "Mezzotint"
+    },
+    {
+      "id": "impasto",
+      "name": "Impasto relief"
+    },
+    {
+      "id": "reaction",
+      "name": "Reactive cells"
+    },
+    {
+      "id": "marbling",
+      "name": "Marbled float"
+    },
+    {
+      "id": "sections",
+      "name": "Sectional volume"
+    },
+    {
+      "id": "crackle",
+      "name": "Crackle glaze"
+    },
+    {
+      "id": "oilspot",
+      "name": "Oil-spot glaze"
+    },
+    {
+      "id": "sabattier",
+      "name": "Sabattier print"
+    },
+    {
+      "id": "relief",
+      "name": "Schiacciato"
+    },
+    {
+      "id": "interlace",
+      "name": "Optical interlace"
+    },
+    {
+      "id": "voxels",
+      "name": "Surface Blocks"
+    },
+    {
+      "id": "spectral",
+      "name": "Spectral coating"
+    },
+    {
+      "id": "cel",
+      "name": "Clean cel"
+    },
+    {
+      "id": "clear-line",
+      "name": "Ligne claire"
+    },
+    {
+      "id": "brush-cel",
+      "name": "Bold ink"
+    },
+    {
+      "id": "comic-dots",
+      "name": "Comic shadows"
+    },
+    {
+      "id": "expressive-ink",
+      "name": "Expressive ink"
+    },
+    {
+      "id": "ink-bloom",
+      "name": "Wash bloom"
+    },
+    {
+      "id": "ink-scrape",
+      "name": "Scraped ink"
+    },
+    {
+      "id": "ink-storm",
+      "name": "Edge storm"
+    },
+    {
+      "id": "game-obra",
+      "name": "Obra Dinn / one bit"
+    },
+    {
+      "id": "game-disco",
+      "name": "Disco / drybrush"
+    },
+    {
+      "id": "game-okami",
+      "name": "Okami / brushwash"
+    },
+    {
+      "id": "game-sable",
+      "name": "Sable / schematics"
+    },
+    {
+      "id": "game-hylics",
+      "name": "Hylics / clay pixels"
+    },
+    {
+      "id": "game-windwaker",
+      "name": "Wind Waker / inlays"
+    },
+    {
+      "id": "game-persona",
+      "name": "Persona / cutouts"
+    },
+    {
+      "id": "game-inside",
+      "name": "INSIDE / backlight"
+    },
+    {
+      "id": "game-mirrorsedge",
+      "name": "Mirror’s Edge / high key"
+    },
+    {
+      "id": "game-viewfinder",
+      "name": "Viewfinder / photo"
+    },
+    {
+      "id": "surface-hatching",
+      "name": "Curvature hatching"
+    },
+    {
+      "id": "resonant-sand",
+      "name": "Resonant sand"
+    },
+    {
+      "id": "contour-pools",
+      "name": "Contour pools"
+    },
+    {
+      "id": "hooked-pen",
+      "name": "Hooked pen"
+    },
+    {
+      "id": "naturalist-plate",
+      "name": "Naturalist plate"
+    },
+    {
+      "id": "electric-contour",
+      "name": "Electric contours"
+    },
+    {
+      "id": "cut-print",
+      "name": "Cut-print nocturne"
+    },
+    {
+      "id": "knife-paint",
+      "name": "Layered knife paint"
+    },
+    {
+      "id": "wax-resist",
+      "name": "Wax-resist dye"
+    },
+    {
+      "id": "directed-tesserae",
+      "name": "Directed tesserae"
+    },
+    {
+      "id": "continuous-thread",
+      "name": "Continuous thread"
+    },
+    {
+      "id": "quilled-paper",
+      "name": "Upright paper"
+    },
+    {
+      "id": "lifted-emulsion",
+      "name": "Lifted emulsion"
+    },
+    {
+      "id": "color-woodblock",
+      "name": "Color woodblock"
+    },
+    {
+      "id": "typed-contours",
+      "name": "Typed contours"
+    },
+    {
+      "id": "faceted-planes",
+      "name": "Faceted planes"
+    },
+    {
+      "id": "curved-paint",
+      "name": "Curved paint"
+    },
+    {
+      "id": "translucent-tape",
+      "name": "Translucent tape"
+    },
+    {
+      "id": "thickness-exposure",
+      "name": "Thickness exposure"
+    },
+    {
+      "id": "copy-feedback",
+      "name": "Repeated-copy feedback"
+    },
+    {
+      "id": "section-ribs",
+      "name": "Section ribs"
+    },
+    {
+      "id": "prismatic-exposure",
+      "name": "Prismatic exposure"
+    },
+    {
+      "id": "rank-streaks",
+      "name": "Pixel sorting"
+    },
+    {
+      "id": "pixel-clusters",
+      "name": "Pixel clusters"
+    },
+    {
+      "id": "finite-lenses",
+      "name": "Finite lenses"
+    },
+    {
+      "id": "chromatic-shadows",
+      "name": "Chromatic shadows"
+    },
+    {
+      "id": "single-cutaway",
+      "name": "Single cutaway"
+    },
+    {
+      "id": "wholetoning",
+      "name": "Wholetoning"
+    },
+    {
+      "id": "tone-illustration",
+      "name": "Tone illustration"
+    },
+    {
+      "id": "triangle-stack",
+      "name": "Triangle stack"
+    },
+    {
+      "id": "directional-color",
+      "name": "Directional color"
+    },
+    {
+      "id": "interior-lattice",
+      "name": "Interior lattice"
+    }
+  ],
+  "finished": "2026-10-30T13:32:47.958Z",
+  "failures": 0
+}

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Gear-tooth market stall", "summary": "A toothed brass gear carries a tiny market stall with a supported canopy, display counter and neatly stocked trays. A village built inside clockwork, useful scraps traded for small luxuries and ordinary commerce between the notes.", "scales": ["tabletop", "room"]});

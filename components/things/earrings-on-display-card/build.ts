@@ -36,6 +36,42 @@ export default defineThing({
       gun: 'A piercing gun hanging in a holster on the base, ready for the free piercing.',
       jar: 'A jar of lollipops on the base for brave customers.',
     }),
+    height: choice('How many tiers of earrings does the display carry?', {
+      low: 'Three low tiers for a counter beside a cashier.',
+      regular: 'The usual four to six tiers of cards.',
+      tall: 'Eight tiers make a tall densely hung rotating tower.',
+      step: 'Five widely separated tiers display long dangling jewellery.',
+    }),
+    card: choice('What shape are the individual jewellery cards?', {
+      rectangle: 'Simple squared-off rectangular backing cards.',
+      arch: 'Cards with rounded arched tops like small windows.',
+      circle: 'Round medallion cards hanging from a hole at the top.',
+      tag: 'Price-tag cards with clipped upper corners.',
+    }),
+    pairing: choice('What is left on the cards that still hang on the stand?', {
+      pairs: 'Each card carries a matching pair.',
+      singles: 'One earring per card: lost partners and sample pieces.',
+      mismatch: 'Deliberately mismatched colours make playful pairs.',
+      samples: 'One side displays jewellery, the other carries a small sample label.',
+    }),
+    guarding: choice('How is the stock protected?', {
+      open: 'Open pegs and cards, ready to touch.',
+      hood: 'A transparent cylindrical dust hood covers the jewellery.',
+      bars: 'Slim vertical brass guard rods protect each side.',
+      sealed: 'A clear square display case with a small lock keeps the stock behind glass.',
+    }),
+    packing: choice('What packaging waits at the foot of the display?', {
+      none: 'No packaging around the foot.',
+      bags: 'A small standing bundle of paper gift bags.',
+      boxes: 'Two tiny jewellery boxes, one open with a padded insert.',
+      pouches: 'Three soft little drawstring pouches laid on the base.',
+    }),
+    movement: choice('What state is the rotating display in?', {
+      free: 'The tower spins slowly on its pedestal.',
+      stopped: 'The tower is held still for someone choosing a pair.',
+      swinging: 'The tower sways gently back and forth after a touch.',
+      seized: 'A little wedge jams the base and prevents it turning.',
+    }),
   },
 
   build(a, context) {
@@ -50,8 +86,8 @@ export default defineThing({
     const dark = s.material('#1d1d21');
     const faces = { square: 4, wings: 3, hex: 6 }[a.tower];
     const cols = { square: 3, wings: 2, hex: 2 }[a.tower];
-    const rows = a.price === 'boutique' ? 4 : 6;
-    const cw = 0.05, ch = 0.068, pitchX = 0.062, pitchY = a.price === 'boutique' ? 0.115 : 0.082;
+    const rows = a.height === 'low' ? 3 : a.height === 'tall' ? 8 : a.height === 'step' ? 5 : a.price === 'boutique' ? 4 : 6;
+    const cw = 0.05, ch = 0.068, pitchX = 0.062, pitchY = a.height === 'step' ? 0.13 : a.price === 'boutique' ? 0.115 : 0.082;
     const faceW = cols * pitchX + 0.012;
     const R = a.tower === 'wings' ? 0 : faceW / 2 / Math.tan(Math.PI / faces);
     const y0 = 0.1, colH = rows * pitchY + 0.03;
@@ -116,9 +152,13 @@ export default defineThing({
         const kind = Math.floor(random() * stock.length);
         const colour = stock[kind].colours[Math.floor(random() * stock[kind].colours.length)];
         const sc = a.era === 'nineties' ? 0.55 + random() * 0.6 : 0.9 + random() * 0.2;
-        for (const dx of [-0.011, 0.011]) {
+        for (const dx of a.pairing === 'singles' || a.pairing === 'samples' ? [-0.011] : [-0.011, 0.011]) {
           const local = new THREE.Matrix4().compose(new THREE.Vector3(dx, -ch / 2 + 0.002 - (a.era === 'nineties' ? sc * 0.004 : 0), 0.004), q.identity(), new THREE.Vector3(sc, sc, sc));
-          items[kind].push({ m: new THREE.Matrix4().copy(faceMatrix).multiply(pivot).multiply(local), c: colour });
+          items[kind].push({ m: new THREE.Matrix4().copy(faceMatrix).multiply(pivot).multiply(local), c: a.pairing === 'mismatch' && dx > 0 ? stock[kind].colours[(stock[kind].colours.indexOf(colour) + 1) % stock[kind].colours.length] : colour });
+        }
+        if (a.pairing === 'samples') {
+          const stamp = add(s.box([0.016, 0.009, 0.002], [0, 0, 0], trim));
+          stamp.applyMatrix4(new THREE.Matrix4().copy(faceMatrix).multiply(pivot).multiply(new THREE.Matrix4().makeTranslation(0.012, -ch / 2, 0.004)));
         }
       }
     }
@@ -129,7 +169,27 @@ export default defineThing({
       mesh.castShadow = mesh.receiveShadow = true;
       spin.add(mesh);
     };
-    instanced(new THREE.BoxGeometry(cw, ch, 0.0015), s.material(cardColour, { roughness: 0.8 }), cards.map((m) => ({ m })));
+    let cardGeometry: THREE.BufferGeometry;
+    if (a.card === 'rectangle') cardGeometry = new THREE.BoxGeometry(cw, ch, 0.0015);
+    else {
+      const shape = new THREE.Shape();
+      if (a.card === 'circle') {
+        shape.absellipse(0, 0, cw * 0.52, ch * 0.5, 0, Math.PI * 2, false, 0);
+      } else {
+        shape.moveTo(-cw / 2, -ch / 2); shape.lineTo(cw / 2, -ch / 2);
+        if (a.card === 'arch') {
+          shape.lineTo(cw / 2, ch / 2 - cw / 2);
+          shape.absarc(0, ch / 2 - cw / 2, cw / 2, 0, Math.PI, false);
+        } else {
+          shape.lineTo(cw / 2, ch / 2 - 0.012); shape.lineTo(cw / 2 - 0.012, ch / 2);
+          shape.lineTo(-cw / 2 + 0.012, ch / 2); shape.lineTo(-cw / 2, ch / 2 - 0.012);
+        }
+        shape.closePath();
+      }
+      cardGeometry = new THREE.ExtrudeGeometry(shape, { depth: 0.0015, bevelEnabled: false, curveSegments: 10 });
+      cardGeometry.translate(0, 0, -0.00075);
+    }
+    instanced(cardGeometry, s.material(cardColour, { roughness: 0.8 }), cards.map((m) => ({ m })));
     stock.forEach((st, i) => instanced(st.geo, st.mat, items[i]));
     for (const g of [tri, disc, hoop, gem, cross, drop, pearl]) if (!stock.some((st) => st.geo === g)) g.dispose();
     add(s.scatter(new THREE.SphereGeometry(0.0035, 6, 5), trim, pegs));
@@ -182,7 +242,54 @@ export default defineThing({
       }
     }
 
-    const speed = mix(0, 0.9, mood.energy);
-    return s.finish({ update: (dt) => { spin.rotation.y += dt * speed; } });
+    if (a.guarding !== 'open') {
+      const guardR = Math.max(0.2, capR + 0.035);
+      const clear = new THREE.MeshPhysicalMaterial({ color: '#cce4e5', transparent: true, opacity: 0.13, roughness: 0.1, depthWrite: false });
+      const guardTop = y0 + colH + 0.022;
+      if (a.guarding === 'sealed') s.box([guardR * 2 + 0.02, 0.015, guardR * 2 + 0.02], [0, 0.012, 0], trim);
+      else s.cylinder(guardR + 0.007, guardR + 0.007, 0.015, [0, 0.012, 0], trim, 32);
+      if (a.guarding === 'hood') {
+        s.cylinder(guardR, guardR, guardTop - 0.02, [0, (guardTop + 0.02) / 2, 0], clear, 32);
+        s.cylinder(guardR, guardR, 0.008, [0, guardTop, 0], clear, 32);
+      } else if (a.guarding === 'bars') {
+        for (let i = 0; i < faces; i++) {
+          const angle = i / faces * Math.PI * 2;
+          s.rod([Math.cos(angle) * guardR, 0.02, Math.sin(angle) * guardR], [Math.cos(angle) * guardR, guardTop, Math.sin(angle) * guardR], 0.0035, trim);
+        }
+        s.mesh(new THREE.TorusGeometry(guardR, 0.0035, 6, 32), trim, [0, guardTop, 0]).rotation.x = Math.PI / 2;
+      } else {
+        for (const side of [-1, 1]) {
+          s.box([guardR * 2, guardTop - 0.02, 0.004], [0, (guardTop + 0.02) / 2, side * guardR], clear);
+          s.box([0.004, guardTop - 0.02, guardR * 2], [side * guardR, (guardTop + 0.02) / 2, 0], clear);
+          for (const back of [-1, 1]) s.rod([side * guardR, 0.02, back * guardR], [side * guardR, guardTop, back * guardR], 0.004, trim);
+        }
+        s.box([guardR * 2, 0.004, guardR * 2], [0, y0 + colH + 0.02, 0], clear);
+        s.box([0.014, 0.021, 0.008], [0.03, y0 + 0.08, guardR + 0.006], trim);
+      }
+    }
+    if (a.packing === 'bags') {
+      const kraft = s.material('#caad80');
+      for (let i = 0; i < 3; i++) {
+        const x = -0.22 + i * 0.025, z = 0.06 + i * 0.012;
+        s.box([0.065, 0.085, 0.025], [x, 0.043, z], kraft);
+        s.tube([[x - 0.018, 0.08, z], [x - 0.018, 0.108, z], [x + 0.018, 0.108, z], [x + 0.018, 0.08, z]], 0.0018, trim);
+      }
+    } else if (a.packing === 'boxes') {
+      const velvet = s.material('#67233f');
+      s.box([0.09, 0.028, 0.07], [-0.2, 0.014, 0.08], body);
+      s.box([0.08, 0.006, 0.06], [-0.2, 0.032, 0.08], velvet);
+      s.box([0.09, 0.01, 0.07], [-0.2, 0.061, 0.035], body).rotation.x = -1.1;
+      s.box([0.06, 0.028, 0.06], [-0.15, 0.014, -0.05], body);
+    } else if (a.packing === 'pouches') {
+      for (let i = 0; i < 3; i++) {
+        const x = -0.21 + i * 0.035, z = 0.06 - i * 0.034;
+        s.ball([0.035, 0.012, 0.045], [x, 0.012, z], s.material(['#6e3844', '#496f66', '#c7a574'][i]), 12);
+        s.rod([x - 0.025, 0.02, z - 0.03], [x + 0.025, 0.02, z - 0.03], 0.0018, trim);
+      }
+    }
+    if (a.movement === 'seized') s.box([0.035, 0.018, 0.025], [0.05, 0.063, 0], s.material('#ae7f45')).rotation.z = 0.25;
+    const speed = a.movement === 'free' ? mix(0, 0.9, mood.energy) : 0;
+    const rest = spin.rotation.y;
+    return s.finish({ update: (dt, time) => { if (a.movement === 'swinging') spin.rotation.y = rest + Math.sin(time * 0.8) * (0.05 + mood.energy * 0.16); else spin.rotation.y += dt * speed; } });
   },
 });

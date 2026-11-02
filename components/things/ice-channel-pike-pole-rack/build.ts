@@ -1,0 +1,30 @@
+import * as THREE from 'three';
+import { Sculpture, choice, score, noul, diorama, defineThing, defineWorld, figure } from '@conjure/kit';
+export default defineThing({
+  questions: {
+    rack: choice("What rack carries the poles?", {"upright": "A broad upright storage rack.", "aFrame": "A two-sided leaning A frame.", "low": "A low horizontal tool cradle.", "wall": "A narrow post rack with upper hooks."}),
+    poles: choice("How many poles are stored?", {"pair": "Two long pike poles.", "four": "Four mixed working poles.", "six": "Six closely spaced poles.", "one": "A single heavy guiding pole."}),
+    heads: choice("What working heads are fitted?", {"spike": "Straight sharp iron pikes.", "hook": "Curved pulling hooks and spikes.", "fork": "Two-pronged cake guiding forks.", "mixed": "A mixture of pushing and pulling heads."}),
+    shaft: choice("How are the shafts formed?", {"straight": "Long straight round timber poles.", "taper": "Tapered shafts with thicker hand grips.", "joint": "Two-piece shafts with iron collars.", "octagon": "Heavy squared and rounded working shafts."}),
+    tip: choice("How are idle tips protected?", {"bare": "Exposed working tips.", "caps": "Small fitted wooden tip caps.", "box": "Heads rest in a separate shallow box.", "strip": "A broad protective guard rail covers the points."}),
+    base: choice("What floor supports the rack?", {"planks": "A small plank landing deck.", "runners": "Two low skid runners.", "stone": "A single stone foundation slab.", "ice": "A clear ice patch under the rack."}),
+    grips: choice("How are handles marked?", {"rope": "Short rope-wrapped grip sections.", "rings": "Three broad dark grip rings.", "plain": "Plain smooth wooden handles.", "knob": "Rounded end knobs."}),
+    bracing: choice("How is the rack braced?", {"cross": "Diagonal crossing braces.", "corner": "Short triangular corner braces.", "feet": "Long flat projecting feet.", "ties": "Low iron tie bars."}),
+    extra: choice("What extra tool is present?", {"chisel": "A wide ice chisel.", "rake": "A small ice-chip rake.", "measure": "A graduated ice-thickness rod.", "none": "No extra tool."}),
+    state: choice("What is happening at the rack?", {"stored": "All poles are stored in order.", "used": "One pole lies beside the rack.", "wet": "A shallow drip tray collects melt.", "repair": "One detached head lies on the deck."}),
+    length: score("How long are the pike poles?", ["Short landing poles", "Long channel-guiding poles", "Very long lake-working poles"])
+  },
+  build(a,context){
+ const s=new Sculpture(context),wood=s.material('#9b805a'),light=s.material('#c2ac83'),iron=s.material('#52696c',{metalness:.42}),dark=s.material('#405557'),stone=s.material('#adb9b1'),snow=s.material('#e6ebe0'),ice=s.material('#bed5ce',{roughness:.28}),rope=s.material('#a79370'),water=s.material('#80aaa8',{transparent:true,opacity:.6,depthWrite:false});
+
+ const L=1.7+a.length*1.1,N=a.poles==='pair'?2:a.poles==='four'?4:a.poles==='six'?6:1,W=Math.max(.65,N*.18),B=a.base==='planks'?.06:a.base==='stone'?.08:.05,H=L*.65;const bm=a.base==='ice'?ice:a.base==='stone'?stone:wood;if(a.base==='runners')for(const x of [-W*.4,W*.4])s.box([.1,B,.8],[x,B/2,0],wood);else s.box([W+.4,B,.8],[0,B/2,0],bm);
+ if(a.rack==='low'){for(const x of [-L*.32,L*.32]){s.box([.1,.3,.6],[x,B+.15,0],wood);s.box([.12,.08,.7],[x,B+.34,0],wood);}}else{for(const x of [-W/2,W/2]){s.rod([x,B,.25],[x,H+B,a.rack==='aFrame'?0:-.1],.035,wood);if(a.rack==='aFrame')s.rod([x,B,-.3],[x,H+B,0],.035,wood);else s.box([.18,.06,.7],[x,B+.03,0],wood);}for(const y of [B+.2,H+B])s.rod([-W/2,y,0],[W/2,y,0],.03,wood);if(a.bracing==='cross')for(const dir of [-1,1])s.rod([dir*W/2,B+.1,-.1],[-dir*W/2,H+B-.1,-.1],.018,wood);if(a.bracing==='corner')for(const x of [-W/2,W/2])s.rod([x,B+.1,.3],[x,B+.5,0],.02,wood);if(a.bracing==='ties')s.rod([-W/2,B+.08,.25],[W/2,B+.08,.25],.012,iron);if(a.bracing==='feet')for(const x of [-W/2,W/2])s.box([.12,.05,1],[x,B+.025,0],wood);}
+ const makePole=(j:number,loose=false)=>{const g=new THREE.Group();s.root.add(g);const prior=s.root.children.slice(),len=L*(.9+j*.025),head=a.heads==='mixed'?['spike','hook','fork'][j%3]:a.heads; s.cylinder(a.shaft==='taper'?.017:.022,.026,len,[0,len/2,0],wood,a.shaft==='octagon'?8:16);if(a.shaft==='joint')s.cylinder(.028,.028,.12,[0,len*.5,0],iron,16);const gy=len*.3;if(a.grips==='knob')s.ball([.045,.06,.045],[0,.04,0],wood,12);if(a.grips==='rings'||a.grips==='rope')for(let k=0;k<(a.grips==='rope'?10:3);k++)s.cylinder(.028,.028,.012,[0,gy+k*.015,0],a.grips==='rope'?rope:dark,12);
+ s.cylinder(.028,.025,.2,[0,len-.05,0],iron,12);s.rod([0,len,0],[0,len+.16,0],.012,iron);if(head==='hook')s.tube([[0,len-.04,0],[.12,len+.02,0],[.1,len+.13,0]],.016,iron);if(head==='fork')for(const x of [-.08,.08])s.tube([[0,len-.07,0],[x,len+.02,0],[x,len+.2,0]],.012,iron);if(a.tip==='caps')s.box([.12,.2,.08],[0,len+.1,0],light);for(const o of s.root.children.slice())if(!prior.includes(o))g.add(o);
+ if(loose){g.rotation.z=-Math.PI/2;g.position.set(-len/2,.05,.65);}else if(a.rack==='low'){g.rotation.z=-Math.PI/2;g.position.set(-len/2,B+.4,-.25+j*.1);}else{g.position.set((j-(N-1)/2)*.17,B,.15);g.rotation.x=-.08;}return g;};for(let j=0;j<N;j++)makePole(j,a.state==='used'&&j===N-1);
+ if(a.tip==='box'){s.box([W+.1,.04,.4],[0,B+.02,.15],wood);for(const x of [-W/2,W/2])s.box([.035,.25,.4],[x,B+.125,.15],wood);}if(a.tip==='strip'&&a.rack!=='low')s.rod([-W/2,L+B+.1,.3],[W/2,L+B+.1,.3],.05,wood);if(a.tip==='strip'&&a.rack!=='low')for(const x of [-W/2,W/2])s.rod([x,B,0],[x,L+B+.1,.3],.02,wood);
+ if(a.extra!=='none'){const x=W/2+.18;s.rod([x,.03,-.3],[x,.03,.65],.022,wood);if(a.extra==='chisel')s.box([.15,.025,.2],[x,.03,.72],iron);if(a.extra==='rake'){s.rod([x-.18,.03,.72],[x+.18,.03,.72],.015,iron);for(let j=0;j<6;j++)s.rod([x-.15+j*.06,.03,.72],[x-.15+j*.06,.03,.85],.009,iron);}if(a.extra==='measure')for(let j=0;j<8;j++)s.box([.05,.004,.008],[x,.056,-.25+j*.1],dark);}
+ if(a.state==='wet')s.box([W+.2,.025,.35],[0,.0125,.58],iron);if(a.state==='repair'){s.rod([-.15,.025,.6],[.15,.025,.6],.02,iron);s.rod([.15,.025,.6],[.15,.025,.75],.014,iron);}
+return s.finish();
+  },
+});

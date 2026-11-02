@@ -15,6 +15,13 @@ function paint(width: number, height: number, draw: (g: CanvasRenderingContext2D
 
 export default defineThing({
   questions: {
+    crossarm: choice('How are the upper crossarms constructed?', { channel: 'Galvanized channels with downward flanges.', timber: 'Weathered rectangular timber beams with bolted plates.', angle: 'Twin steel angles with open space between them.', lattice: 'A shallow triangulated steel truss.' }),
+    insulator: choice('What profile do the line insulators have?', { stacked: 'Three broad porcelain sheds.', spool: 'A deep-waisted porcelain spool.', bell: 'A single broad bell with a narrow top.', polymer: 'Six thin polymer weather sheds.' }),
+    conduit: choice('How do protected service cables descend?', { none: 'No extra down-lead conduit.', single: 'One galvanized conduit with saddle clips.', twin: 'Two slim parallel conduit runs.', ribbed: 'A black corrugated conduit in steel clamps.' }),
+    junction: choice('What enclosure is strapped below the cable rack?', { none: 'No enclosure.', square: 'A compact square junction box with a latched lid.', tall: 'A tall telecom cabinet with ventilation slots.', pair: 'Two narrow splice cases strapped side by side.' }),
+    lashings: choice('How are the lower cable bundles secured?', { straps: 'Short flat galvanized straps.', ties: 'Black ties with short projecting tails.', coils: 'A close spiral wire lashing.', comb: 'A four-slot cable comb on a bracket.' }),
+    anchor: choice('How is the pole braced at ground level?', { none: 'No guy wire.', single: 'One steel guy with a yellow protective sleeve.', twin: 'Two diverging guys with yellow sleeves.', strut: 'A rigid diagonal steel brace on an anchor shoe.' }),
+    guard: choice('What protective marking wraps the lower pole?', { diagonal: 'Diagonal yellow and black hazard bands.', horizontal: 'Horizontal yellow and black rings.', reflectors: 'A black sleeve with three yellow reflective panels.', ribbed: 'A ribbed black impact sleeve with a yellow top band.' }),
     transformers: choice('How many transformers hang on the pole?', {
       none: 'None: only wires pass through.',
       one: 'One grey drum on a bracket.',
@@ -83,7 +90,8 @@ export default defineThing({
 
     // A wire sags between two ends; anything may ask where it is at a given x.
     const SPAN = 3.1;
-    const wires: { y: number; z: number; sag: number }[] = [];
+    type Wire = { y: number; z: number; sag: number; path: THREE.CatmullRomCurve3 };
+    const wires: Wire[] = [];
     const run = (y: number, z: number, sag: number, thickness: number, material: THREE.Material = cable, lift = 0) => {
       const points: Point[] = [];
       for (let i = 0; i <= 8; i++) {
@@ -93,20 +101,36 @@ export default defineThing({
       }
       const path = new THREE.CatmullRomCurve3(points.map((point) => new THREE.Vector3(...point)));
       s.mesh(new THREE.TubeGeometry(path, 40, thickness, 5), material);
-      wires.push({ y, z, sag });
+      wires.push({ y, z, sag, path });
     };
-    const wireY = (wire: { y: number; sag: number }, x: number) => wire.y - wire.sag * Math.sin(Math.min(1, Math.abs(x) / SPAN) * Math.PI / 2) * 1.5;
+    const wirePoint = (wire: Wire, x: number): Point => {
+      let lo=0, hi=1;
+      for(let i=0;i<24;i++){const mid=(lo+hi)/2;if(wire.path.getPoint(mid).x<x)lo=mid;else hi=mid;}
+      const p=wire.path.getPoint((lo+hi)/2);return [p.x,p.y,p.z];
+    };
 
     // High-voltage arms with insulators and three thin lines each.
     const sagBase = mix(0.12, 0.3, mood.wear);
     const arms = [HEIGHT - 0.35, HEIGHT - 1.05];
-    const birdWires: { y: number; z: number; sag: number }[] = [];
+    const birdWires: Wire[] = [];
     arms.forEach((y, level) => {
-      s.box([0.09, 0.09, 1.9], [0, y, 0], steel);
+      if(a.crossarm==='timber') {
+        s.box([.13,.12,1.9],[0,y,0],s.material('#736455',{roughness:.95}));
+        for(const z of [-.6,.6]) {s.box([.145,.1,.1],[0,y,z],steel);s.cylinder(.017,.017,.14,[0,y,z],steel,6);}
+      } else if(a.crossarm==='channel') {
+        s.box([.15,.025,1.9],[0,y+.0325,0],steel);
+        for(const x of [-.0625,.0625])s.box([.025,.09,1.9],[x,y,0],steel);
+      } else if(a.crossarm==='angle') {
+        for(const x of [-.07,.07]){s.box([.025,.12,1.9],[x,y-.015,0],steel);s.box([.065,.025,1.9],[x*.75,y+.0325,0],steel);}
+      } else {
+        for(const dy of [-.16,.035])s.box([.085,.025,1.9],[0,y+dy,0],steel);
+        for(let j=0;j<8;j++)s.rod([0,y+(j%2?-.16:.035),-.95+j*.2375],[0,y+(j%2?.035:-.16),-.95+(j+1)*.2375],.014,steel);
+      }
       s.rod([0, y - 0.45, 0.12], [0, y, 0.7], 0.014, steel);
       s.rod([0, y - 0.45, -0.12], [0, y, -0.7], 0.014, steel);
       for (const z of [-0.82, level ? 0.3 : -0.25, 0.82]) {
-        s.lathe([[0.02, 0], [0.05, 0.02], [0.03, 0.05], [0.055, 0.08], [0.03, 0.11], [0.05, 0.14], [0.015, 0.17]], porcelain, [0, y + 0.045, z]);
+        const profile: [number,number][] = a.insulator==='spool'?[[.02,0],[.065,.015],[.065,.035],[.027,.055],[.027,.12],[.065,.14],[.065,.16],[.015,.175]]:a.insulator==='bell'?[[.02,0],[.075,.025],[.068,.06],[.04,.08],[.026,.15],[.015,.175]]:a.insulator==='polymer'?Array.from({length:25},(_,k):[number,number]=>[k===24?.015:(k%4===1?.055:.022),k*.175/24]):[[.02,0],[.05,.02],[.03,.05],[.055,.08],[.03,.11],[.05,.14],[.015,.175]];
+        s.lathe(profile,a.insulator==='polymer'?s.material('#786e63',{roughness:.65}):porcelain,[0,y+.045,z]);
         const before = wires.length;
         run(y + 0.22, z, sagBase * mix(0.8, 1.2, random()), 0.015);
         birdWires.push(wires[before]);
@@ -143,14 +167,26 @@ export default defineThing({
       const y = low - 0.95 - i * mix(0.28, 0.2, mess) + (random() - 0.5) * 0.1, z = (i % 2 ? -1 : 1) * (radiusAt(y) + 0.05 + random() * 0.08);
       s.ring(radiusAt(y) + 0.01, 0.012, [0, y, 0], steel).rotation.x = Math.PI / 2;
       run(y, z, sagBase * mix(1.5, 3.4, mess) * mix(0.7, 1.3, random()), mix(0.016, 0.034, random()), cable, (random() - 0.5) * mess * 1.2);
+      // The fastening follows the actual curved conductor.
+      const current=wires[wires.length-1];
+      for(const x of [-.32,.32]) {
+        const p=wirePoint(current,x);
+        if(a.lashings==='straps')s.box([.055,.065,.016],p,steel);
+        else if(a.lashings==='ties'){const r=s.ring(.037,.006,p,cable);r.rotation.y=Math.PI/2;s.rod([p[0],p[1]-.02,p[2]],[p[0],p[1]-.11,p[2]+.02],.004,cable);}
+        else if(a.lashings==='coils')for(let j=-3;j<=3;j++){const q=wirePoint(current,x+j*.017);s.ring(.037,.004,q,steel).rotation.y=Math.PI/2;}
+        else {s.box([.05,.02,.16],[p[0],p[1]-.04,p[2]],steel);for(let j=0;j<4;j++)s.box([.05,.07,.012],[p[0],p[1]-.01,p[2]-.07+j*.047],steel);}
+      }
       // Splice closures and coiled slack hang off the fat ones.
       if (random() < 0.3 + mess * 0.5) {
         const side = random() > 0.5 ? 1 : -1, x = side * mix(0.5, 1.5, random()), wire = wires[wires.length - 1];
-        s.cylinder(0.07, 0.07, 0.5, [x, wireY(wire, x) - 0.09, z], s.material('#26272b', { roughness: 0.5 }), 12).rotation.z = Math.PI / 2;
+        const wp=wirePoint(wire,x);
+        for(const dx of [-.17,.17]){const q=wirePoint(wire,x+dx);s.rod(q,[x+dx,wp[1]-.09,wp[2]],.012,steel);}
+        s.cylinder(0.07, 0.07, 0.5, [x, wp[1] - 0.09, wp[2]], s.material('#26272b', { roughness: 0.5 }), 12).rotation.z = Math.PI / 2;
       }
       if (random() < mess * 0.7) {
         const side = random() > 0.5 ? 1 : -1, x = side * mix(0.4, 1.2, random()), wire = wires[wires.length - 1];
-        const loop = s.ring(mix(0.16, 0.28, random()), 0.014, [x, wireY(wire, x) - 0.22, z], cable);
+        const wp=wirePoint(wire,x),lr=mix(.16,.28,random());
+        const loop = s.ring(lr, 0.014, [x, wp[1] - lr*1.3, wp[2]], cable);
         loop.rotation.y = Math.PI / 2 + (random() - 0.5) * 0.5; loop.scale.y = 1.3;
       }
     }
@@ -173,15 +209,20 @@ export default defineThing({
       b.ball([size * 0.33, size * 0.33, size * 0.36], [0, size * 0.92, size * 0.55], feather, 10);
       b.cylinder(0.001, size * 0.1, size * 0.34, [0, size * 0.9, size * 0.98], s.material(bodyTone === '#1c1c20' ? '#2a2a2e' : '#d8a23a'), 6).rotation.x = Math.PI / 2;
       b.box([size * 0.4, size * 0.06, size * 0.8], [0, size * 0.42, -size * 1.05], feather).rotation.x = 0.3;
+      const feet=s.material('#4a4033',{roughness:.8});
+      for(const dx of [-1,1]){
+        b.rod([dx*size*.2,0,0],[dx*size*.2,size*.23,0],size*.035,feet);
+        for(const dz of [-1,1])b.rod([dx*size*.2,0,0],[dx*size*.2+size*.08,-size*.025,dz*size*.18],size*.025,feet);
+      }
       b.root.position.set(...at);
       b.root.rotation.y = (random() > 0.5 ? 0 : Math.PI) + (random() - 0.5) * 0.6;
       s.root.add(b.root);
       bobbers.push(b.root);
     };
     const perch = () => birdWires[Math.floor(random() * birdWires.length)];
-    if (a.birds === 'crow') { const wire = perch(), x = (random() > 0.5 ? 1 : -1) * mix(0.8, 2.4, random()); bird(0.3, '#1c1c20', [x, wireY(wire, x), wire.z]); }
-    if (a.birds === 'sparrows') { const wire = perch(), start = mix(-2.6, 0.3, random()), n = 5 + Math.floor(random() * 6); for (let i = 0; i < n; i++) { const x = start + i * mix(0.2, 0.36, random()); if (Math.abs(x) > 0.25) bird(0.1, random() > 0.5 ? '#8a6a48' : '#a8845a', [x, wireY(wire, x), wire.z]); } }
-    if (a.birds === 'pigeons') for (let i = 0; i < 3 + Math.floor(random() * 3); i++) { const wire = perch(), x = (random() - 0.5) * 5; if (Math.abs(x) > 0.3) bird(0.19, ['#8d939c', '#b9bcc2', '#6f7480'][Math.floor(random() * 3)], [x, wireY(wire, x), wire.z]); }
+    if (a.birds === 'crow') { const wire = perch(), x = (random() > 0.5 ? 1 : -1) * mix(0.8, 2.4, random()); bird(0.3, '#1c1c20', wirePoint(wire, x)); }
+    if (a.birds === 'sparrows') { const wire = perch(), start = mix(-2.6, 0.3, random()), n = 5 + Math.floor(random() * 6); for (let i = 0; i < n; i++) { const x = start + i * mix(0.2, 0.36, random()); if (Math.abs(x) > 0.25) bird(0.1, random() > 0.5 ? '#8a6a48' : '#a8845a', wirePoint(wire, x)); } }
+    if (a.birds === 'pigeons') for (let i = 0; i < 3 + Math.floor(random() * 3); i++) { const wire = perch(), x = (random() - 0.5) * 5; if (Math.abs(x) > 0.3) bird(0.19, ['#8d939c', '#b9bcc2', '#6f7480'][Math.floor(random() * 3)], wirePoint(wire, x)); }
 
     // Street lamp, brighter the further the hour is from noon.
     const dusk = Math.abs(mood.daylight - 0.5) * 2;
@@ -207,6 +248,25 @@ export default defineThing({
       m.box([0.84, 0.03, 0.2], [0, 0.41, 0.08], orange);
       m.root.position.set(-0.6, y + 0.1, 0.36); m.root.rotation.set(tilt, turn, 0);
       s.root.add(m.root);
+    }
+
+    // Down-leads and enclosures sit on saddles that meet the tapered pole.
+    if(a.conduit!=='none')for(let i=0;i<(a.conduit==='twin'?2:1);i++) {
+      const x=a.conduit==='twin'?(i-.5)*.08:.06;
+      const start:Point=[x,.12,-radiusAt(.12)-.035],end:Point=[x,low-.4,-radiusAt(low-.4)-.035];
+      s.rod(start,end,a.conduit==='ribbed'?.035:.025,a.conduit==='ribbed'?cable:steel);
+      for(let y=.3;y<low-.4;y+=a.conduit==='ribbed'?.06:.85){const z=-radiusAt(y)-.035;if(a.conduit==='ribbed')s.ring(.037,.005,[x,y,z],cable).rotation.x=Math.PI/2;else s.box([.1,.035,.08],[x,y,z+.02],steel);}
+    }
+    if(a.junction!=='none') {
+      const n=a.junction==='pair'?2:1,h=a.junction==='tall'?.78:.44,w=a.junction==='pair'?.19:.38,y=3.35;
+      for(const dy of [-h*.35,h*.35])s.ring(radiusAt(y+dy)+.015,.012,[0,y+dy,0],steel).rotation.x=Math.PI/2;
+      for(let i=0;i<n;i++){
+        const x=(i-(n-1)/2)*.22,z=-radiusAt(y)-.11;
+        s.box([w,h,.22],[x,y,z],drum);s.box([w*.91,h*.93,.018],[x,y,z-.119],steel);
+        s.box([.03,.09,.035],[x+w*.3,y,z-.14],cable);
+        if(a.junction==='tall')for(let j=0;j<6;j++)s.box([w*.65,.016,.014],[x,y-.15+j*.045,z-.135],cable);
+        s.tube([[x,y+h/2,z],[x,y+h/2+.17,z],[0,low-.65,-radiusAt(low-.65)]],.014,cable);
+      }
     }
 
     // Paper wrapped around the pole at eye level.
@@ -276,7 +336,14 @@ export default defineThing({
     }
 
     // Yellow and black guard wrap, then whatever is at the foot.
-    wrap(paint(128, 128, (g, w, h) => { g.fillStyle = fadeTo('#f2c81e'); g.fillRect(0, 0, w, h); g.fillStyle = '#1d1d22'; for (let i = -4; i < 8; i++) { g.beginPath(); g.moveTo(i * 32, h); g.lineTo(i * 32 + 16, h); g.lineTo(i * 32 + 16 + h, 0); g.lineTo(i * 32 + h, 0); g.fill(); } }), 0.62, 1.0, Math.PI * 2, 0);
+    wrap(paint(128,128,(g,w,h)=>{
+      g.fillStyle=a.guard==='reflectors'||a.guard==='ribbed'?'#242526':fadeTo('#f2c81e');g.fillRect(0,0,w,h);g.fillStyle='#1d1d22';
+      if(a.guard==='diagonal')for(let i=-4;i<8;i++){g.beginPath();g.moveTo(i*32,h);g.lineTo(i*32+16,h);g.lineTo(i*32+16+h,0);g.lineTo(i*32+h,0);g.fill();}
+      if(a.guard==='horizontal')for(let y=0;y<h;y+=32)g.fillRect(0,y,w,16);
+      if(a.guard==='reflectors'){g.fillStyle='#f4df53';for(let i=0;i<3;i++)g.fillRect(i*w/3+6,15,w/3-12,h-30);}
+      if(a.guard==='ribbed'){g.fillStyle='#f2c81e';g.fillRect(0,0,w,15);}
+    }),.62,1,Math.PI*2);
+    if(a.guard==='ribbed')for(let y=.17;y<1.06;y+=.085)s.ring(radiusAt(y)+.009,.012,[0,y,0],cable).rotation.x=Math.PI/2;
     if (a.foot === 'cone') {
       const cx = 0.5 + random() * 0.3, cz = 0.35 + random() * 0.3, lean = random() > 0.7;
       const c = new Sculpture(context);
@@ -284,6 +351,7 @@ export default defineThing({
       c.cylinder(0.025, 0.14, 0.62, [0, 0.34, 0], s.material('#e8541e', { roughness: 0.5 }), 16);
       c.cylinder(0.071, 0.095, 0.11, [0, 0.36, 0], s.material('#f4f4f0'), 16);
       c.root.position.set(cx, lean ? 0.16 : 0, cz); if (lean) c.root.rotation.set(0, random() * 3, Math.PI / 2 - 0.22);
+      c.root.updateMatrixWorld(true);c.root.position.y-=new THREE.Box3().setFromObject(c.root,true).min.y;
       s.root.add(c.root);
     } else if (a.foot === 'rubbish') {
       const bags = 4 + Math.floor(random() * 3 + mood.density * 4);
@@ -300,7 +368,7 @@ export default defineThing({
       for (let i = 0; i < 2 + Math.floor(random() * 3); i++) { const angle = random() * Math.PI * 2, reach = 0.3 + random() * 0.2, h = 0.14 + random() * 0.1; s.rod([Math.sin(angle) * reach, 0, Math.cos(angle) * reach], [Math.sin(angle) * reach, h, Math.cos(angle) * reach], 0.004, s.material('#7a9a48')); s.ball([0.03, 0.015, 0.03], [Math.sin(angle) * reach, h, Math.cos(angle) * reach], s.material('#f2d21e', { emissive: '#8a7a08', emissiveIntensity: 0.3 }), 8); }
     } else if (a.foot === 'flowers') {
       const fx = 0.06, fz = 0.3;
-      s.cylinder(0.035, 0.04, 0.2, [fx, 0.1, fz], new THREE.MeshStandardMaterial({ color: '#cfe6e0', transparent: true, opacity: 0.45, depthWrite: false }), 12);
+      s.lathe([[0,0],[.04,0],[.04,.12],[.022,.17],[.022,.2],[.017,.2],[.017,.17],[.034,.118],[.034,.008],[0,.008]],new THREE.MeshStandardMaterial({color:'#cfe6e0',transparent:true,opacity:.45,depthWrite:false,side:THREE.DoubleSide}),[fx,0,fz]);
       s.cylinder(0.034, 0.039, 0.09, [fx, 0.05, fz], s.material('#9fc8c8', { roughness: 0.1 }), 12);
       for (let i = 0; i < 5; i++) { const lean = (random() - 0.5) * 0.14, lz = (random() - 0.5) * 0.1, top = 0.36 + random() * 0.14; s.rod([fx, 0.04, fz], [fx + lean, top, fz + lz], 0.004, s.material('#4d7a3c')); s.ball([0.035, 0.03, 0.035], [fx + lean, top, fz + lz], s.material(['#f4f1e6', '#f2c62e', '#e889a8', '#f4f1e6'][i % 4], { roughness: 0.7 }), 8); }
       s.cylinder(0.026, 0.026, 0.105, [fx + 0.14, 0.0525, fz + 0.02], s.material('#6a4020', { metalness: 0.5, roughness: 0.35 }), 12);
@@ -308,11 +376,14 @@ export default defineThing({
       s.cylinder(0.03, 0.02, 0.012, [fx - 0.13, 0.006, fz + 0.04], s.material('#f4f1e6'), 10);
     }
 
-    // A guy wire with its yellow guard on some poles.
-    if (random() > 0.45) {
-      const side = random() > 0.5 ? 1 : -1;
-      s.rod([0, HEIGHT - 2.9, 0], [side * 0.3, 0, -2.2], 0.012, steel);
-      s.rod([side * 0.19, 1.9, -1.4], [side * 0.3, 0, -2.2], 0.035, s.material('#f2c81e', { roughness: 0.5 }));
+    // Protective sleeves are collinear with the actual anchor and top attachment.
+    if(a.anchor!=='none')for(const side of a.anchor==='twin'?[-1,1]:[1]) {
+      const top=new THREE.Vector3(0,HEIGHT-2.9,0),bottom=new THREE.Vector3(side*.7,.035,-2.2);
+      const material=a.anchor==='strut'?steel:cable;
+      s.rod(top.toArray() as Point,bottom.toArray() as Point,a.anchor==='strut'?.055:.012,material);
+      if(a.anchor!=='strut'){const sleeve=bottom.clone().lerp(top,1.9/(top.y-bottom.y));s.rod(bottom.toArray() as Point,sleeve.toArray() as Point,.035,s.material('#f2c81e',{roughness:.5}));}
+      s.box([.24,.05,.3],[bottom.x,.025,bottom.z],steel);
+      for(const dx of [-.07,.07])s.cylinder(.018,.018,.025,[bottom.x+dx,.06,bottom.z],steel,6);
     }
 
     const speed = mix(0.4, 3, mood.energy);

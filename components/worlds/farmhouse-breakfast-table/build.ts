@@ -25,6 +25,8 @@ const CHECK = { red: '#c8322c', blue: '#2f5fa8', green: '#3f8a4f', yellow: '#e0a
 
 export default defineWorld({
   questions: {
+    joinery: choice('How is the farmhouse table supported?',{turned:'Four stout turned wooden legs.',square:'Four plain square legs with a low stretcher.',trestle:'Two broad end trestles connected by a long central stretcher.',crossed:'Two crossed end frames with wedged joints.'}),
+    wallPiece: choice('What hangs beside the kitchen window?',{clock:'A round wooden kitchen clock with clear hour marks.',calendar:'A month calendar with several dates circled.',plates:'Three patterned decorative plates stacked on the wall.',shelf:'A small wall shelf holding three labelled tea tins.'}),
     cloth: choice('How is the table covered?', {
       full: 'A gingham cloth over the whole table, hanging at the edges.',
       runner: 'A gingham runner down the middle, bare scrubbed pine either side.',
@@ -171,9 +173,21 @@ export default defineWorld({
     // A cutlery drawer in the front apron.
     s.box([3.6, 0.72, 0.08], [2.2, -0.74, D / 2 - 0.55], woodDark);
     s.ball([0.17, 0.17, 0.13], [2.2, -0.74, D / 2 - 0.42], s.material('#f2efe6', { roughness: 0.3 }), 12);
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-      const leg = s.lathe([[0.36, 0], [0.4, -0.9], [0.3, -1.25], [0.44, -1.5], [0.42, -3.6], [0.3, -4.0], [0.36, -4.25], [0.24, -TH + 0.24], [0.3, -TH + 0.1], [0.24, -TH]].map(([r, y]) => [r, y + 0.0] as const).reverse(), wood, [sx * (W / 2 - 0.75), -0.24, sz * (D / 2 - 0.75)]);
-      leg.position.y = 0;
+    if(a.joinery==='turned')for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      s.lathe([[0.36,0],[0.4,-.9],[.3,-1.25],[.44,-1.5],[.42,-3.6],[.3,-4],[.36,-4.25],[.24,-TH+.24],[.3,-TH+.1],[.24,-TH]].map(([r,y])=>[r,y] as const).reverse(),wood,[sx*(W/2-.75),0,sz*(D/2-.75)]);
+    }
+    if(a.joinery==='square'){
+      for(const sx of [-1,1])for(const sz of [-1,1])s.box([.6,TH,.6],[sx*(W/2-.75),-TH/2,sz*(D/2-.75)],wood);
+      for(const sx of [-1,1])s.box([.28,.35,D-1.5],[sx*(W/2-.75),-TH+1.1,0],woodDark);
+      s.box([W-1.5,.35,.28],[0,-TH+1.1,0],woodDark);
+    }
+    if(a.joinery==='trestle'){
+      for(const sx of [-1,1]){const x=sx*(W/2-1.8);s.box([.72,TH-.5,1.4],[x,-(TH-.5)/2,0],wood);s.box([1.1,.5,D-2.2],[x,-TH+.25,0],wood);s.box([.85,.45,D-2.0],[x,-.7,0],wood);}
+      s.box([W-3.1,.55,.55],[0,-TH+1.4,0],woodDark);
+    }
+    if(a.joinery==='crossed'){
+      for(const sx of [-1,1]){const x=sx*(W/2-1.5);for(const sign of [-1,1])s.rod([x,-TH+.32,sign*(D/2-1.4)],[x,-.5,-sign*(D/2-1.4)],.31,wood);s.box([1.2,.5,.85],[x,-TH/2,0],woodDark);for(const z of [-D/2+1.4,D/2-1.4])s.box([.9,.32,1.1],[x,-TH+.16,z],wood);}
+      s.box([W-2.6,.42,.42],[0,-TH/2,0],woodDark);
     }
 
     // ---- Cloth -------------------------------------------------------------------------------
@@ -276,6 +290,26 @@ export default defineWorld({
     const pane = s.mesh(new THREE.PlaneGeometry(halfW * 2, Y1 - Y0), new THREE.MeshStandardMaterial({ color: '#eaf4f6', transparent: true, opacity: 0.1, roughness: 0.05, depthWrite: false }), [wx, (Y0 + Y1) / 2, WZ - 0.02]);
     pane.castShadow = pane.receiveShadow = false;
 
+    // A permanent domestic landmark beside the window.
+    const ornamentX=6.1,ornamentY=3.8,ornamentZ=WZ+.24;
+    if(a.wallPiece==='clock'){
+      const rim=s.cylinder(.92,.92,.14,[ornamentX,ornamentY,ornamentZ],woodDark,40);rim.rotation.x=Math.PI/2;
+      const face=canvasOf(256,256,(g)=>{g.fillStyle='#eee4c9';g.fillRect(0,0,256,256);g.strokeStyle='#394139';for(let i=0;i<12;i++){const t=i*Math.PI/6;g.lineWidth=i%3?3:6;g.beginPath();g.moveTo(128+Math.sin(t)*97,128-Math.cos(t)*97);g.lineTo(128+Math.sin(t)*112,128-Math.cos(t)*112);g.stroke();}const hour=mix(5.9,9.4,mood.daylight);for(const [t,len,width] of [[hour/12,58,7],[hour%1,88,4]]){g.lineWidth=width;g.beginPath();g.moveTo(128,128);g.lineTo(128+Math.sin(t*Math.PI*2)*len,128-Math.cos(t*Math.PI*2)*len);g.stroke();}});
+      s.mesh(new THREE.CircleGeometry(.82,40),new THREE.MeshStandardMaterial({map:textureOf(face),roughness:.65}),[ornamentX,ornamentY,ornamentZ+.075]);
+    }
+    if(a.wallPiece==='calendar'){
+      s.box([1.65,2.2,.06],[ornamentX,ornamentY,ornamentZ],s.material('#eee5cf'));
+      const page=canvasOf(256,320,(g)=>{g.fillStyle='#f4eedc';g.fillRect(0,0,256,320);g.fillStyle=check;g.fillRect(0,0,256,61);g.fillStyle='#fff9ec';g.font='bold 32px serif';g.textAlign='center';g.fillText('OCTOBER',128,43);g.font='18px sans-serif';g.fillStyle='#424b43';for(let i=0;i<31;i++){const x=25+(i%7)*34,y=98+Math.floor(i/7)*43;g.fillText(String(i+1),x,y);if(i===6||i===16||i===29){g.strokeStyle=check;g.lineWidth=2;g.beginPath();g.ellipse(x,y-6,13,15,0,0,Math.PI*2);g.stroke();}}});
+      s.mesh(new THREE.PlaneGeometry(1.6,2.14),new THREE.MeshStandardMaterial({map:textureOf(page),roughness:1}),[ornamentX,ornamentY,ornamentZ+.035]);
+    }
+    if(a.wallPiece==='plates')for(let i=0;i<3;i++){
+      const y=ornamentY+(i-1)*1.45;const plate=s.cylinder(.57,.5,.08,[ornamentX,y,ornamentZ],s.material('#e9e4cd'),32);plate.rotation.x=Math.PI/2;
+      s.ring(.48,.025,[ornamentX,y,ornamentZ+.055],s.material(check));for(let k=0;k<6;k++){const t=k*Math.PI/3;s.ball([.09,.05,.022],[ornamentX+Math.cos(t)*.23,y+Math.sin(t)*.23,ornamentZ+.06],s.material(check),10).rotation.z=t;}
+    }
+    if(a.wallPiece==='shelf'){
+      s.box([2.2,.14,.8],[ornamentX,ornamentY-.6,ornamentZ+.3],wood);for(const side of [-1,1])s.rod([ornamentX+side*.8,ornamentY-1.3,ornamentZ],[ornamentX+side*.8,ornamentY-.65,ornamentZ+.6],.06,woodDark);
+      for(let i=0;i<3;i++){const x=ornamentX+(i-1)*.65;const tint=['#6e8b75','#aa704d','#657e91'][i];s.cylinder(.25,.25,.65,[x,ornamentY-.2,ornamentZ+.35],s.material(tint),20);s.cylinder(.27,.27,.07,[x,ornamentY+.15,ornamentZ+.35],s.material('#c6b48a'),20);s.label(['TEA','SUGAR','COCOA'][i],.43,.16,[x,ornamentY-.2,ornamentZ+.605],'#ede8d8',tint);}
+    }
     // What the window looks out on.
     const sky = new THREE.Color().setHSL(mix(0.03, 0.57, Math.sin(mood.daylight * Math.PI)), 0.55, mix(0.78, 0.84, Math.sin(mood.daylight * Math.PI)));
     const viewCanvas = canvasOf(512, 384, (g, w, h) => {
@@ -399,30 +433,6 @@ export default defineWorld({
       const shells = ['#c98a5a', '#e8d5b8', '#f3efe6', '#b9d6cf'];
       for (let i = 0; i < 6; i++) s.ball([0.19, 0.25, 0.19], [sx0 + Math.sin(i * 1.05) * 0.38 * (i < 5 ? 1 : 0), sillY + 0.52 + (i === 5 ? 0.22 : 0), sillZ + Math.cos(i * 1.05) * 0.38 * (i < 5 ? 1 : 0)], s.material(shells[Math.floor(random() * shells.length)], { roughness: 0.6 }), 10).rotation.set(wobble(0.8), 0, wobble(0.8));
     }
-
-    // A clock and a calendar on the wall.
-    const hour = mix(5.9, 9.4, mood.daylight) + wobble(0.2);
-    const clockCanvas = canvasOf(256, 256, (g) => {
-      g.fillStyle = '#f6f1e2'; g.beginPath(); g.arc(128, 128, 126, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#1e1e22';
-      for (let i = 0; i < 12; i++) { g.save(); g.translate(128, 128); g.rotate((i / 12) * Math.PI * 2); g.fillRect(-4, -116, 8, i % 3 ? 16 : 30); g.restore(); }
-      const hand = (turn: number, len: number, wide: number) => { g.save(); g.translate(128, 128); g.rotate(turn * Math.PI * 2); g.fillRect(-wide / 2, -len, wide, len + 12); g.restore(); };
-      hand(hour / 12, 62, 10); hand(hour % 1, 100, 6);
-    });
-    const cx = wx + halfW + 2.3, cy = 5.0;
-    s.cylinder(1.0, 1.0, 0.22, [cx, cy, WZ + 0.26], s.material(mood.cheer > 0.5 ? '#c8322c' : '#3a3a40', { roughness: 0.4 }), 32).rotation.x = Math.PI / 2;
-    const dial = s.mesh(new THREE.CircleGeometry(0.88, 32), new THREE.MeshStandardMaterial({ map: textureOf(clockCanvas), roughness: 0.6 }), [cx, cy, WZ + 0.38]);
-    dial.castShadow = false;
-    const calendarCanvas = canvasOf(128, 192, (g) => {
-      g.fillStyle = '#f6f1e2'; g.fillRect(0, 0, 128, 192);
-      g.fillStyle = '#9cc08a'; g.fillRect(8, 8, 112, 76); g.fillStyle = '#dfeaf2'; g.fillRect(8, 8, 112, 40); g.fillStyle = '#c8504a'; g.fillRect(50, 34, 30, 30);
-      g.fillStyle = '#c8322c'; g.fillRect(8, 92, 112, 14);
-      g.fillStyle = '#44444a'; for (let r = 0; r < 5; r++) for (let c = 0; c < 7; c++) g.fillRect(12 + c * 16, 114 + r * 15, 8, 7);
-      g.strokeStyle = '#c8322c'; g.lineWidth = 3; g.beginPath(); g.arc(16 + Math.floor(random() * 7) * 16, 117 + Math.floor(random() * 5) * 15, 9, 0, Math.PI * 2); g.stroke();
-    });
-    const cal = s.mesh(new THREE.PlaneGeometry(1.5, 2.25), new THREE.MeshStandardMaterial({ map: textureOf(calendarCanvas), roughness: 0.9 }), [wx - halfW - 2.1, 4.6, WZ + 0.17]);
-    cal.rotation.z = wobble(0.04);
-    cal.castShadow = false;
 
     // ---- The chair ---------------------------------------------------------------------------
     const chair = new Sculpture(context);

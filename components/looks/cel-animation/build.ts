@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type Palette, type PaletteRole, choice, clamp01, defineLook, fromOklch, mix, oklch, paintRGB, rekey, rekeyOne, score, seeded } from '@conjure/kit';
 
 /**
  * A frame of traditional cel animation. The cast is painted on clear cels: every object is
@@ -33,6 +33,39 @@ const TIN: Triple[] = [
   [214, 170, 60], [50, 140, 135], [226, 110, 90], [120, 130, 60], [140, 190, 210], [110, 60, 95], [170, 80, 45], [238, 228, 200],
   [50, 50, 55], [235, 160, 170], [160, 210, 170], [190, 150, 100], [45, 60, 100], [150, 150, 145], [245, 220, 120], [150, 55, 50],
 ].map((c) => [c[0] / 255, c[1] / 255, c[2] / 255] as Triple);
+/**
+ * Under the idea's palette the gouache tin is re-mixed: its warm pots (mustard, coral, rust, pink,
+ * tan, butter, oxblood, plum, olive) turn onto the palette's ink and its cool ones (teal, sky, mint,
+ * navy) onto its second colour, each keeping part of its step from the others; cream, charcoal and grey stay.
+ * Shapes still snap to the pot they would have been, so the picture keeps its layout of colour.
+ * Derived paints (faithful, technicolor, pastel), the greys, and black and brown ink stay as made.
+ */
+const TIN_ROLES: Record<string, PaletteRole> = {
+  0: 'ink', 2: 'ink', 3: 'ink', 5: 'ink', 6: 'ink', 9: 'ink', 11: 'ink', 14: 'ink', 15: 'ink',
+  1: 'second', 4: 'second', 10: 'second', 12: 'second',
+};
+/** How much of each pot's hue step from its group survives: a tin stays close to its two colours. */
+const TIN_SPREAD = 0.45;
+const keyTin = (palette: Palette | undefined): Triple[] => {
+  if (!palette) return TIN;
+  const out = rekey(Object.fromEntries(TIN.map((c, i) => [i, [c[0] * 255, c[1] * 255, c[2] * 255] as const])), palette, TIN_ROLES);
+  return TIN.map((_, i) => {
+    let c = out[i];
+    const role = TIN_ROLES[i];
+    if (role) {
+      const [L, C, h] = oklch(c), target = oklch(paintRGB(palette[role]))[2];
+      const step = Math.atan2(Math.sin(h - target), Math.cos(h - target));
+      c = fromOklch(L, C, target + step * TIN_SPREAD);
+    }
+    return [c[0] / 255, c[1] / 255, c[2] / 255] as Triple;
+  });
+};
+const keyOne = (c: Triple, palette: Palette | undefined, role: PaletteRole): Triple => {
+  if (!palette) return c;
+  const out = rekeyOne([c[0] * 255, c[1] * 255, c[2] * 255], palette, role);
+  return [out[0] / 255, out[1] / 255, out[2] / 255];
+};
+
 /** The greys a black-and-white short was painted in. */
 const GREYS = [0.97, 0.8, 0.6, 0.4, 0.2, 0.07];
 
@@ -283,11 +316,11 @@ export default defineLook({
       television: 'A 1980s Saturday-morning cartoon: a clean even line, bright flat paint with simple shadows, a softly painted background. Toy commercials, cereal, after school, taped off the television.',
       feature: 'A 1990s animated feature film: a tapering brush line that swells in shadow, carefully modelled paint with shadows and highlights, a lush atmospheric background. Musicals, grand stories, the big screen.',
     }),
-    paint: choice('Which paints did the ink-and-paint department mix for the cels?', {
+    paint: choice('Which paints did the ink-and-paint department mix for the cels? A limited tin takes its colours from the picture\u2019s palette.', {
       faithful: "The scene's own colours as opaque cel paint: a touch brighter, cleaner and flatter than life.",
       technicolor: 'Saturated Technicolor: candy red, cobalt, emerald and gold at full strength (red-orange and teal two-strip colour on a 1930s short).',
       pastel: 'Soft pastel paints: chalky pinks, mints, butter yellow and lavender, nothing darker than a mid-tone, gentle and sleepy.',
-      limited: 'A limited mid-century gouache tin: mustard, teal, coral, olive, plum and cream, every shape snapped to the nearest pot.',
+      limited: 'A limited mid-century gouache tin: a dozen muted, chalky pots and a cream, every shape snapped to the nearest pot.',
       monochrome: 'Black-and-white paints in a handful of greys, as in a short made before colour, crisp and graphic.',
     }),
     tones: score('How many tones is each cel colour painted in?', [
@@ -473,14 +506,15 @@ export default defineLook({
       const hl = lum(hue) || 1;
       return [clamp01(mix(c[0], (hue[0] * l) / hl, 0.85)), clamp01(mix(c[1], (hue[1] * l) / hl, 0.85)), clamp01(mix(c[2], (hue[2] * l) / hl, 0.85))];
     };
+    const tin = answers.paint === 'limited' ? keyTin(context.palette) : TIN;
     const nearestTin = (c: readonly number[]) => {
-      let best = TIN[0], bestD = Infinity;
-      for (const pot of TIN) {
+      let best = 0, bestD = Infinity;
+      TIN.forEach((pot, i) => {
         const d = ((c[0] - pot[0]) * 0.3) ** 2 + ((c[1] - pot[1]) * 0.59) ** 2 + ((c[2] - pot[2]) * 0.11) ** 2
           + ((c[0] - pot[0]) ** 2 + (c[1] - pot[1]) ** 2 + (c[2] - pot[2]) ** 2) * 0.12;
-        if (d < bestD) { bestD = d; best = pot; }
-      }
-      return best;
+        if (d < bestD) { bestD = d; best = i; }
+      });
+      return tin[best];
     };
     const grey = (c: readonly number[]) => {
       const l = Math.pow(lum(c), 0.95);
@@ -519,7 +553,9 @@ export default defineLook({
     };
     const paintOf = palette.map((c) => mixPaint(c));
     // Shadow paint: the base colour multiplied by a cool violet (warm moods: a dusky rose).
-    const shadowMul: Triple = mono ? [0.6, 0.6, 0.6] : [mix(0.56, 0.74, mood.warmth), mix(0.55, 0.56, mood.warmth), mix(0.82, 0.6, mood.warmth)];
+    // Under the palette the limited tin's shadow tint takes its second colour.
+    const shadowMade: Triple = mono ? [0.6, 0.6, 0.6] : [mix(0.56, 0.74, mood.warmth), mix(0.55, 0.56, mood.warmth), mix(0.82, 0.6, mood.warmth)];
+    const shadowMul: Triple = answers.paint === 'limited' ? keyOne(shadowMade, context.palette, 'second') : shadowMade;
     const shadowLift = answers.paint === 'pastel' ? 0.3 : 0;
     const toneCount = Math.round(clamp01(answers.tones) * 4);
     const confidence = capture.confidence;
@@ -769,7 +805,7 @@ export default defineLook({
     const canvas = new Float32Array(count * 3);
     const lanes = new Float32Array(256);
     for (let i = 0; i < 256; i++) lanes[i] = random();
-    const paperTone: Triple = medium === 'watercolour' ? [0.975, 0.965, 0.935] : [0.93, 0.91, 0.86];
+    const paperTone: Triple = keyOne(medium === 'watercolour' ? [0.975, 0.965, 0.935] : [0.93, 0.91, 0.86], context.palette, 'ground');
     /** Lays one stroke into `target`: opaque paint mixes in, a glaze adds pigment density. */
     const stroke = (target: Float32Array, cx: number, cy: number, theta: number, colour: Triple, brush: Brush, own: number) => {
       const half = brush.length / 2, hw = brush.width / 2;

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Martian polar dust fan deposit", "summary": "A thin directional sediment fan has graded thickness, a pointed source and a widening distal margin embedded in a terrain patch. A directional Martian polar dust-fan teaching section with a real thin depositional layer and pointed source; wind-shaped spring deposits, seasonal ice and orbital surface interpretation.", "scales": ["planetary", "landscape", "macro"]});

@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind: 'world', title: "Chestnut roasting street corner", summary: "A small chestnut stall occupies a paved street corner, anchored by a fixed roasting hearth beneath a supported smoke hood. Paper-cone holders, raw stock and a serving ledge evoke an autumn walk interrupted by a warm handful of roasted nuts.", scales: ["street", "room", "tabletop"]});

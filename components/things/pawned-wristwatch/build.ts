@@ -17,7 +17,7 @@ const DIALS = {
 } as const;
 const DIAL_INK: Record<keyof typeof DIALS, [string, string]> = { white: ['#f3efe3', '#1b1b1e'], champagne: ['#e2c98a', '#3a2a12'], black: ['#18181b', '#eee6cf'], blue: ['#1d3566', '#f0ead8'] };
 
-function dialTexture(face: string, ink: string, hour: number, minute: number, square: boolean, cracked: boolean, random: () => number) {
+function dialTexture(face: string, ink: string, hour: number, minute: number, square: boolean, cracked: boolean, random: () => number, indices: string, hands: string, signature: string) {
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = 256;
   const ctx = canvas.getContext('2d')!;
@@ -25,15 +25,32 @@ function dialTexture(face: string, ink: string, hour: number, minute: number, sq
   ctx.translate(128, 128);
   ctx.fillStyle = ink; ctx.strokeStyle = ink; ctx.lineCap = 'round';
   for (let i = 0; i < 12; i++) {
-    ctx.save(); ctx.rotate(i / 12 * Math.PI * 2);
-    const far = square ? 112 : 108;
-    ctx.fillRect(i % 3 === 0 ? -6 : -3, -far, i % 3 === 0 ? 12 : 6, i % 3 === 0 ? 30 : 20);
+    ctx.save(); const angle = i / 12 * Math.PI * 2;
+    const far = square ? 100 : 96;
+    if (indices === 'arabic' || indices === 'roman') {
+      ctx.translate(Math.sin(angle) * far, -Math.cos(angle) * far);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = indices === 'roman' ? 'bold 21px serif' : 'bold 25px sans-serif';
+      ctx.fillText(indices === 'roman' ? ['XII','I','II','III','IV','V','VI','VII','VIII','IX','X','XI'][i] : String(i || 12), 0, 0);
+    } else {
+      ctx.rotate(angle);
+      if (indices === 'dots') { ctx.beginPath(); ctx.arc(0, -far, i % 3 === 0 ? 7 : 4, 0, Math.PI * 2); ctx.fill(); }
+      else ctx.fillRect(i % 3 === 0 ? -6 : -3, -far - 9, i % 3 === 0 ? 12 : 6, i % 3 === 0 ? 25 : 17);
+    }
     ctx.restore();
+  }
+  if (signature !== 'none') {
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = signature === 'script' ? 'italic 18px serif' : 'bold 13px sans-serif';
+    ctx.fillText({ script: 'Meridian', initials: 'J · M', wing: '— ◇ —' }[signature] ?? '', 0, -31);
   }
   ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 44, 22, 0, Math.PI * 2); ctx.stroke();
   const hand = (angle: number, length: number, width: number) => {
     ctx.save(); ctx.rotate(angle); ctx.lineWidth = width;
-    ctx.beginPath(); ctx.moveTo(0, 12); ctx.lineTo(0, -length); ctx.stroke(); ctx.restore();
+    if (hands === 'lance') {
+      ctx.beginPath(); ctx.moveTo(0, 12); ctx.lineTo(-width * .7, -length * .55); ctx.lineTo(0, -length); ctx.lineTo(width * .7, -length * .55); ctx.closePath(); ctx.fill();
+    } else if (hands === 'skeleton') {
+      ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-width / 2, 9); ctx.lineTo(-width / 2, -length + 12); ctx.lineTo(0, -length); ctx.lineTo(width / 2, -length + 12); ctx.lineTo(width / 2, 9); ctx.closePath(); ctx.stroke();
+    } else { ctx.lineWidth = hands === 'needle' ? 3 : width; ctx.beginPath(); ctx.moveTo(0, 12); ctx.lineTo(0, -length); ctx.stroke(); }
+    ctx.restore();
   };
   hand((hour % 12 + minute / 60) / 12 * Math.PI * 2, 54, 13);
   hand(minute / 60 * Math.PI * 2, 86, 9);
@@ -58,6 +75,12 @@ function dialTexture(face: string, ink: string, hour: number, minute: number, sq
 
 export default defineThing({
   questions: {
+    indices: choice('How are the hours marked?', { baton: 'Thick baton markers, doubled at the quarters.', arabic: 'Twelve clear Arabic numerals.', roman: 'Upright Roman numerals around the dial.', dots: 'Luminous dot markers with larger quarter dots.' }),
+    hands: choice('What shape are the main hands?', { baton: 'Broad straight baton hands.', needle: 'Thin needle hands.', lance: 'Pointed lance hands widening through the middle.', skeleton: 'Outlined hands with open centres.' }),
+    bezel: choice('How is the bezel worked?', { smooth: 'A plain smooth polished bezel.', coin: 'Closely cut coin-edge grooves.', fluted: 'Broad raised flutes around the case.', stones: 'A ring of pale inset stones.' }),
+    caseFinish: choice('What finish does the metal carry?', { polished: 'Bright polished metal.', brushed: 'Soft brushed metal.', blackened: 'Dark blackened metal with a restrained sheen.', rose: 'Warm rose-coloured plating.' }),
+    strapDetail: choice('What detail runs along the strap or bracelet?', { plain: 'Plain strap edges or a plain link bracelet.', twin: 'Two pale stitched edge lines, or two bright edge rows on a bracelet.', centre: 'A contrasting centre stripe or dark centre links.', ribbed: 'Closely spaced transverse ribs or deeply separated links.' }),
+    signature: choice('What signature is on the dial?', { none: 'An unsigned dial.', script: 'A small cursive Meridian signature.', initials: 'The initials J and M under twelve.', wing: 'A small winged lozenge emblem.' }),
     style: choice('What style of watch is it?', {
       dress: 'A thin round gold dress watch on a brown leather strap, a father\'s watch.',
       bracelet: 'A heavy gold watch on a gold link bracelet, flashy, a gambler\'s trophy.',
@@ -86,7 +109,8 @@ export default defineThing({
     const s = new Sculpture(context);
     const { mood, random } = context;
     const steel = a.style === 'field';
-    const metal = s.material(steel ? '#b9bec2' : '#e3b445', { metalness: 0.92, roughness: 0.22 + mood.wear * 0.3, emissive: steel ? '#20262a' : '#6a4708', emissiveIntensity: 0.4 });
+    const metalTone = a.caseFinish === 'blackened' ? '#34383d' : a.caseFinish === 'rose' ? '#cf927a' : steel ? '#b9bec2' : '#e3b445';
+    const metal = s.material(metalTone, { metalness: 0.92, roughness: (a.caseFinish === 'brushed' ? .55 : .22) + mood.wear * 0.25, emissive: metalTone, emissiveIntensity: 0.1 });
     const strapColour = { dress: '#6b3f22', bracelet: '#e3b445', tank: '#19171a', field: '#5d6440' }[a.style];
     const strapMaterial = a.style === 'bracelet' ? metal : s.material(strapColour, { roughness: 0.75 });
     const stitch = s.material(a.style === 'field' ? '#3f452c' : '#d9c7a0', { roughness: 0.9 });
@@ -102,15 +126,26 @@ export default defineThing({
     let second: THREE.Mesh | null = null;
     if (square) {
       part(s.box([WIDE * 2, TH, HALF * 2], [0, TH / 2, 0], metal));
-      const dial = part(s.mesh(new THREE.PlaneGeometry(WIDE * 2 - 0.005, HALF * 2 - 0.006), dialTexture(face, ink, hour, minute, true, a.stopped, random), [0, TH + 0.0003, 0]));
+      const dial = part(s.mesh(new THREE.PlaneGeometry(WIDE * 2 - 0.005, HALF * 2 - 0.006), dialTexture(face, ink, hour, minute, true, a.stopped, random, a.indices, a.hands, a.signature), [0, TH + 0.0003, 0]));
       dial.rotation.x = -Math.PI / 2; dial.castShadow = false;
       for (const x of [-1, 1]) part(s.box([0.003, 0.003, HALF * 2 + 0.01], [x * (WIDE - 0.0015), TH * 0.7, 0], metal));
     } else {
       part(s.cylinder(R, R * 0.92, TH, [0, TH / 2, 0], metal, 40));
       part(s.ring(R - 0.0015, 0.0018, [0, TH, 0], metal)).rotation.x = Math.PI / 2;
-      const dial = part(s.mesh(new THREE.CircleGeometry(R - 0.0028, 40), dialTexture(face, ink, hour, minute, false, a.stopped, random), [0, TH + 0.0004, 0]));
+      const dial = part(s.mesh(new THREE.CircleGeometry(R - 0.0028, 40), dialTexture(face, ink, hour, minute, false, a.stopped, random, a.indices, a.hands, a.signature), [0, TH + 0.0004, 0]));
       dial.rotation.x = -Math.PI / 2; dial.castShadow = false;
       for (const x of [-1, 1]) for (const z of [-1, 1]) part(s.box([0.004, TH * 0.6, 0.008], [x * (STRAP / 2 + 0.002), TH * 0.45, z * (R + 0.001)], metal));
+    }
+    if (a.bezel !== 'smooth') {
+      const n = a.bezel === 'coin' ? 48 : a.bezel === 'stones' ? 20 : 24;
+      const detail = a.bezel === 'stones' ? s.material('#e9f5f2', { metalness: .2, roughness: .08 }) : a.bezel === 'coin' ? s.material('#454340', { metalness: .8, roughness: .6 }) : metal;
+      for (let i = 0; i < n; i++) {
+        const t = i / n * Math.PI * 2;
+        let x = Math.sin(t) * (R - .0014), z = Math.cos(t) * (R - .0014);
+        if (square) { const reach = 1 / Math.max(Math.abs(Math.sin(t)), Math.abs(Math.cos(t))); x = Math.sin(t) * reach * (WIDE - .001); z = Math.cos(t) * reach * (HALF - .001); }
+        if (a.bezel === 'stones') part(s.ball([.0013,.0011,.0013], [x,TH+.0008,z], detail, 6));
+        else { const cut = part(s.box([a.bezel === 'coin' ? .00045 : .0012,.0012,.0026], [x,TH+.0001,z], detail)); cut.rotation.y = t; }
+      }
     }
     part(s.cylinder(0.003, 0.003, 0.005, [WIDE + 0.002, TH / 2, 0], metal, 10)).rotation.z = Math.PI / 2;
     second = part(s.box([0.0006, 0.0004, (square ? WIDE : R) * 0.8], [0, TH + 0.0012, 0], s.material('#b3262b')));
@@ -130,6 +165,12 @@ export default defineThing({
         const piece = s.box([STRAP * taper, links ? 0.0032 : 0.0026, length / count * (links ? 0.82 : 1.12)], [0, p.y, p.x], strapMaterial);
         piece.rotation.x = -Math.atan2(tangent.y, tangent.x);
         into.add(piece);
+        const stripe = a.strapDetail === 'centre' ? s.material('#242c35', { roughness: .6, metalness: links ? .7 : 0 }) : stitch;
+        if (a.strapDetail === 'twin') for (const edge of [-1, 1]) {
+          const mark = new THREE.Mesh(new THREE.BoxGeometry(.0007,.0003,length/count*.62), stripe); mark.position.set(edge*STRAP*taper*.4,links ? .0018 : .0014,0); piece.add(mark);
+        }
+        if (a.strapDetail === 'centre') { const mark = new THREE.Mesh(new THREE.BoxGeometry(STRAP*.28,.0004,length/count*.88), stripe); mark.position.y = links ? .0022 : .0015; piece.add(mark); }
+        if (a.strapDetail === 'ribbed') { const mark = new THREE.Mesh(new THREE.BoxGeometry(STRAP*taper*.9,.0007,.0008), links ? metal : stitch); mark.position.y = links ? .0021 : .0014; piece.add(mark); }
         if (links) {
           const centre = s.box([STRAP * 0.36, 0.0038, length / count * 0.95], [0, p.y, p.x], metal);
           centre.rotation.x = piece.rotation.x;
@@ -141,10 +182,13 @@ export default defineThing({
         }
       }
     };
-    const buckle = (into: THREE.Object3D, z: number, y: number, tilt: number) => {
+    const buckle = (into: THREE.Object3D, curve: THREE.Curve<THREE.Vector2>, at: number, offset: number) => {
+      const p = curve.getPointAt(at), tangent = curve.getTangentAt(at).normalize();
+      const z=p.x+tangent.x*offset,y=p.y+tangent.y*offset;
       const frame = s.ring(STRAP * 0.55, 0.0011, [0, y, z], metal);
-      frame.rotation.x = Math.PI / 2 + tilt; frame.scale.set(1, 0.62, 1);
+      frame.rotation.x = Math.PI / 2 - Math.atan2(tangent.y,tangent.x); frame.scale.set(1, 0.62, 1);
       into.add(frame);
+      into.add(s.rod([0,p.y-tangent.y*.003,p.x-tangent.x*.003],[0,y+tangent.y*.006,z+tangent.x*.006],.0006,metal));
     };
     const V = (z: number, y: number) => new THREE.Vector2(z, y);
 
@@ -158,7 +202,7 @@ export default defineThing({
       watch.position.set(0, cy + Math.sin(at) * (RY + 0.001), Math.cos(at) * (RZ + 0.001));
       watch.rotation.x = Math.PI / 2 - Math.atan2(Math.sin(at) * RZ, Math.cos(at) * RY);
       rig.add(watch);
-      buckle(rig, -RZ * 0.75, cy - RY * 0.72, -0.9);
+      buckle(rig, loop as unknown as THREE.Curve<THREE.Vector2>, .62, 0);
       rig.rotation.y = mix(-0.5, 0.5, random());
     } else {
       rig.add(watch);
@@ -168,8 +212,9 @@ export default defineThing({
       far.rotation.y = (random() - 0.5) * 0.5; near.rotation.y += (random() - 0.5) * 0.5;
       rig.add(far, near);
       strap(far, new THREE.SplineCurve([V(0, TH * 0.4), V(-0.02, 0.0025), V(-0.05, 0.002), V(-0.072, 0.012 * curl), V(-0.078, 0.034 * curl), V(-0.064, 0.05 * curl)]) as unknown as THREE.Curve<THREE.Vector2>, true);
-      strap(near, new THREE.SplineCurve([V(0, TH * 0.4), V(-0.02, 0.0025), V(-0.04, 0.002), V(-0.058, 0.009 * curl), V(-0.066, 0.024 * curl)]) as unknown as THREE.Curve<THREE.Vector2>, false);
-      buckle(near, -0.069, 0.03 * curl, 0.2);
+      const nearCurve = new THREE.SplineCurve([V(0, TH * 0.4), V(-0.02, 0.0025), V(-0.04, 0.002), V(-0.058, 0.009 * curl), V(-0.066, 0.024 * curl)]);
+      strap(near, nearCurve, false);
+      buckle(near, nearCurve, 1, .004);
       if (a.pose === 'tossed') {
         // Half on its side, propped on the crown and the curled strap.
         rig.rotation.z = mix(0.75, 1.1, random());
@@ -178,7 +223,7 @@ export default defineThing({
       } else rig.rotation.y = mix(-0.6, 0.6, random());
     }
     rig.updateMatrixWorld(true);
-    const box = new THREE.Box3().setFromObject(rig);
+    const box = new THREE.Box3().setFromObject(rig, true);
     rig.position.y -= box.min.y;
 
     // What else was put on the table.

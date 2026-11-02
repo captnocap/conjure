@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Sarcomere contractile bundle", "summary": "Interdigitated thick and thin filaments span two Z-disks, with visible overlap changes across contraction. A magnified neuromuscular teaching specimen: the meeting of nerve and muscle, movement, signal release and cellular organization.", "scales": ["macro", "tabletop"]});

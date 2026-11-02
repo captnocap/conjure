@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Directional solidification sample holder", "summary": "A supported transparent section cell passes between a heater ring and cold block with a connected translation rod. A magnified materials-science model with solid branches, actual open interdendritic spaces and clearly identified teaching sections.", "scales": ["macro", "tabletop"]});

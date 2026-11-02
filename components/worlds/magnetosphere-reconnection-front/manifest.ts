@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Magnetosphere reconnection front", "summary": "An open-cut planetary magnetosphere with a compressed bow facing the wind and long split tail. Strong non-emissive field curves, faint boundary sheets, small planet anchor, open specimen slots. Field-line topology changes rather than recoloured planets.", "scales": ["planetary", "cosmic"]});

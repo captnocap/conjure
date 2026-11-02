@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Motile cilium nine plus two axoneme section", "summary": "Nine peripheral doublet microtubules surround a central pair within a real membrane sleeve; section choices expose the arrangement. A schematic motile airway axoneme fixes nine shared-wall peripheral doublets around two central singlets. Missing or shortened elements are explicit model cuts, not alternative normal axonemal counts.", "scales": ["macro", "tabletop"]});

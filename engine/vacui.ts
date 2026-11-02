@@ -1,8 +1,10 @@
 import type { Capture, QuestionSet } from '../kit/contract';
+import { type Palette, rekey } from '../kit/palette';
 import { choice, noul, score } from '../kit/questions';
 import { hashText, seeded } from '../kit/random';
 import { distanceTransform } from '../kit/sdf';
 import { morph } from './accent';
+import { DOODLE_SETS, type DoodleSet, doodleAt, doodleTurn, hashPair } from './doodles';
 import { printInks } from './otherworld';
 
 /**
@@ -11,13 +13,14 @@ import { printInks } from './otherworld';
  * to grow out of the subject instead of sitting behind it. Three layers of structure, after
  * cellular graphite drawings: warped noise for the landforms (soft light and dark regions), Voronoi
  * cells for the micro texture, and comb-like tubules where light meets dark. The shading belongs to
- * the regions; the cell walls stay crisp on top. Colours come from the print itself.
+ * the regions; the cell walls stay crisp on top. Colours come from the print itself, or from an ink
+ * re-keyed to the idea's palette.
  */
 export const VACUI_FILLS = {
   tissue: 'Living tissue: rows of cells grow out from every outline like plant tissue under a microscope, with comb-like tubules where light meets dark.',
   terrain: 'Terrain from above: the cells swell into broad landforms and winding riverbeds, a map of a world that is also a cell.',
   lace: 'Lace and coral: a fine porous mesh of tiny cells, densest where it meets the subject, lightly shaded.',
-  glyphs: 'Doodled machinery: every cell holds a tiny drawn thing, circuit blocks, rings, ladders, hatching and glyphs, packed like a notebook from another world.',
+  glyphs: 'Doodles: every cell holds a tiny drawn thing (machinery, hieroglyphs, letters, body parts, furniture, buildings, nature, gems, flowers, sacred geometry, contours, fractals or fungi, chosen next), packed like a notebook from another world.',
 } as const;
 export type VacuiFill = keyof typeof VACUI_FILLS;
 
@@ -39,7 +42,7 @@ export type VacuiForm = keyof typeof VACUI_FORMS;
 export const VACUI_INKS = {
   print: 'The print\u2019s own colours, so the growth belongs to the medium.',
   graphite: 'Graphite on pale paper: soft pencil shading with crisp white walls, like a patient drawing.',
-  blacklight: 'Fluorescent lines glowing under ultraviolet light: hot pink and violet on deep indigo, like a drawing under a blacklight.',
+  blacklight: 'Fluorescent lines glowing under ultraviolet light: the palette\u2019s ink and second colour burning on a deep field of its ground, like a drawing under a blacklight.',
 } as const;
 export type VacuiInk = keyof typeof VACUI_INKS;
 
@@ -52,6 +55,7 @@ export const VACUI_QUESTIONS = {
   vacuiForm: choice('Seen from across the room, what larger form does all that small detail make?', VACUI_FORMS),
   vacuiInk: choice('In which inks is the growth drawn?', VACUI_INKS),
   vacuiDrip: noul('Do the dark forms in the growth drip and run downward, like wet paint?'),
+  vacuiDoodles: choice('If every cell holds a tiny drawn thing, what are the things drawn? Pick what the idea would doodle in its margins.', DOODLE_SETS),
 } satisfies QuestionSet;
 
 export const VACUI_NAMES: readonly string[] = Object.keys(VACUI_QUESTIONS);
@@ -65,6 +69,8 @@ export interface Vacui {
   form?: VacuiForm;
   ink?: VacuiInk;
   drip?: boolean;
+  /** What the glyph fill's cells draw; absent in plans made before the themed sets existed: machinery. */
+  doodles?: DoodleSet;
 }
 
 const oneOf = <T extends string>(options: Readonly<Record<T, string>>, value: unknown, fallback: T): T =>
@@ -78,6 +84,7 @@ export function vacuiOf(answers: Record<string, string | number | boolean>): Vac
     form: oneOf(VACUI_FORMS, answers.vacuiForm, 'land'),
     ink: oneOf(VACUI_INKS, answers.vacuiInk, 'print'),
     drip: answers.vacuiDrip === true,
+    doodles: oneOf(DOODLE_SETS, answers.vacuiDoodles, 'machinery'),
   };
 }
 
@@ -102,12 +109,6 @@ const CHARACTER: Record<VacuiFill, Character> = {
   glyphs: { base: 15, most: 42, growth: 0.07, warp: 26, landform: 200, contrast: 0.85, tubule: 0.5, wall: 0.5 },
 };
 
-/** A repeatable 0–1 number for a pair of integers. */
-function hashPair(a: number, b: number) {
-  let h = Math.imul(a ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(b + 0x632be5ab, 0xc2b2ae35);
-  h ^= h >>> 15; h = Math.imul(h, 0x2c1b3c6d); h ^= h >>> 12;
-  return (h >>> 0) / 4294967296;
-}
 
 const ellipse = (u: number, v: number, cx: number, cy: number, rx: number, ry: number) => ((u - cx) / rx) ** 2 + ((v - cy) / ry) ** 2;
 const inside = (e: number, edge = 0.15) => 1 - smoothstep(1 - edge, 1 + edge, e);
@@ -148,38 +149,15 @@ function formAt(form: VacuiForm, u: number, v: number): { dark: number; weight: 
   return { dark: 0.5, weight: 0 };
 }
 
-/** Distance in pixels to the nearest stroke of a cell's doodle, in the cell's own turned frame. */
-function doodle(cell: number, a: number, b: number, r: number): number {
-  const kind = Math.floor(hashPair(cell, 7) * 8);
-  switch (kind) {
-    case 0: { const d = Math.hypot(a, b); return Math.min(Math.abs(d - 0.5 * r), Math.max(0, d - 0.12 * r)); }
-    case 1: return Math.min(Math.abs(Math.max(Math.abs(a), Math.abs(b)) - 0.45 * r), Math.abs(b) < 0.45 * r && Math.abs(a) < 0.45 * r ? Math.abs(a - 0.15 * r) : Infinity);
-    case 2: {
-      if (Math.abs(b) > 0.6 * r) return Infinity;
-      const rail = Math.abs(Math.abs(a) - 0.2 * r), step = 0.24 * r;
-      const rung = Math.abs(a) < 0.2 * r ? Math.abs(b - Math.round(b / step) * step) : Infinity;
-      return Math.min(rail, rung);
-    }
-    case 3: { if (Math.max(Math.abs(a), Math.abs(b)) > 0.5 * r) return Infinity; const step = 0.2 * r; return Math.abs(a - Math.round(a / step) * step); }
-    case 4: case 5: {
-      // A glyph: three pen strokes between points the cell chose.
-      let best = Infinity;
-      const point = (k: number): [number, number] => [(hashPair(cell, 10 + k * 2) - 0.5) * r * 1.1, (hashPair(cell, 11 + k * 2) - 0.5) * r * 1.1];
-      for (let k = 0; k < 3; k++) {
-        const [x0, y0] = point(k), [x1, y1] = point(k + 1);
-        const dx = x1 - x0, dy = y1 - y0, t = clamp01(((a - x0) * dx + (b - y0) * dy) / (dx * dx + dy * dy || 1));
-        best = Math.min(best, Math.hypot(a - x0 - dx * t, b - y0 - dy * t));
-      }
-      return best;
-    }
-    case 6: { const step = 0.32 * r; if (Math.max(Math.abs(a), Math.abs(b)) > 0.5 * r) return Infinity; return Math.max(0, Math.hypot(a - Math.round(a / step) * step, b - Math.round(b / step) * step) - 0.07 * r); }
-    default: return Infinity;
-  }
-}
-
-const INKS: Record<Exclude<VacuiInk, 'print'>, { base: RGB; paper: RGB; ink: RGB; line: RGB; dark: RGB }> = {
+type Inks = { base: RGB; paper: RGB; ink: RGB; line: RGB; dark: RGB };
+const INKS: Record<Exclude<VacuiInk, 'print'>, Inks> = {
   graphite: { base: [214, 210, 202], paper: [241, 238, 230], ink: [42, 42, 46], line: [251, 250, 246], dark: [52, 52, 56] },
   blacklight: { base: [58, 30, 168], paper: [123, 77, 255], ink: [12, 5, 50], line: [255, 157, 230], dark: [255, 120, 214] },
+};
+/** Graphite keeps its pencil and only tints its paper; the blacklight glows in the palette. */
+const ROLES: Record<Exclude<VacuiInk, 'print'>, Partial<Record<keyof Inks, 'ink' | 'ground' | 'second'>>> = {
+  graphite: { base: 'ground', paper: 'ground' },
+  blacklight: { base: 'ground', paper: 'ground', ink: 'ground', line: 'ink', dark: 'second' },
 };
 
 type RGB = readonly [number, number, number];
@@ -262,7 +240,7 @@ function nearestSeeds(size: number, xs: Float32Array, ys: Float32Array, count: n
  * Fill the print's dead space. Repeatable for a seed. `phase` (0–1) slides the landforms round a
  * closed path, so the frames of a loop make the tissue drift and come back to where it began.
  */
-export function applyVacui(pixels: Uint8ClampedArray, capture: Capture, vacui: Vacui, seed: number, phase = 0): { pixels: Uint8ClampedArray; note: string } {
+export function applyVacui(pixels: Uint8ClampedArray, capture: Capture, vacui: Vacui, seed: number, phase = 0, palette?: Palette): { pixels: Uint8ClampedArray; note: string } {
   const size = capture.size, count = size * size;
   const out = new Uint8ClampedArray(pixels);
   const id = (index: number) => capture.identity[index * 4];
@@ -394,12 +372,12 @@ export function applyVacui(pixels: Uint8ClampedArray, capture: Capture, vacui: V
 
   // 5. Draw: regions shaded across whole landforms, pillowed cells, crisp walls, and any doodles.
   const own = printInks(pixels, count);
-  const chosen = vacui.ink && vacui.ink !== 'print' ? INKS[vacui.ink] : null;
+  const chosen = vacui.ink && vacui.ink !== 'print' ? rekey(INKS[vacui.ink], palette, ROLES[vacui.ink]) : null;
   const ink = chosen?.ink ?? own.ink, paper = chosen?.paper ?? own.paper;
   const light: RGB = chosen?.line ?? [paper[0] + (255 - paper[0]) * 0.35, paper[1] + (255 - paper[1]) * 0.35, paper[2] + (255 - paper[2]) * 0.35];
   // Pen marks on light ground are dark, on dark ground light; under a blacklight they always glow.
   const pen: RGB = chosen?.dark ?? [ink[0] * 0.8 + paper[0] * 0.2, ink[1] * 0.8 + paper[1] * 0.2, ink[2] * 0.8 + paper[2] * 0.2];
-  const glowing = vacui.ink === 'blacklight', doodled = vacui.fill === 'glyphs';
+  const glowing = vacui.ink === 'blacklight', doodled = vacui.fill === 'glyphs', doodles = vacui.doodles ?? 'machinery';
   const halfWall = character.wall;
   for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
     const i = y * size + x;
@@ -437,10 +415,10 @@ export function applyVacui(pixels: Uint8ClampedArray, capture: Capture, vacui: V
       if (slope > 1e-4) line = Math.max(line, clamp01(1.4 - Math.abs(macro[i] - 0.62) / slope) * (form === 'land' ? 0.55 : 0.95));
     }
     if (doodled && shade < 0.82) {
-      const turn = hashPair(mine, 99) * Math.PI, cos = Math.cos(turn), sin = Math.sin(turn);
+      const turn = doodleTurn(doodles, mine), cos = Math.cos(turn), sin = Math.sin(turn);
       const ax = px - xs[mine], ay = py - ys[mine];
       const reachOf = Math.max(2.5, spacing[mine] * 0.5);
-      line = Math.max(line, clamp01(0.65 + 0.02 * reachOf + 0.5 - doodle(mine, ax * cos + ay * sin, -ax * sin + ay * cos, reachOf)) * (1 - wall * 0.3));
+      line = Math.max(line, clamp01(0.65 + 0.02 * reachOf + 0.5 - doodleAt(doodles, mine, ax * cos + ay * sin, -ax * sin + ay * cos, reachOf)) * (1 - wall * 0.3));
     }
     const lit = glowing ? 1 : smoothstep(0.28, 0.5, shade);
     const stroke: RGB = [pen[0] + (light[0] - pen[0]) * lit, pen[1] + (light[1] - pen[1]) * lit, pen[2] + (light[2] - pen[2]) * lit];
@@ -462,5 +440,6 @@ export function applyVacui(pixels: Uint8ClampedArray, capture: Capture, vacui: V
   const grainNote = { hug: 'finest against the subject', halo: 'a halo of fine detail far out', even: 'one even grain' }[vacui.grain];
   const formNote = { land: '', skull: ', making a vast skull from afar', eye: ', making one vast eye from afar' }[form];
   const inkNote = { print: '', graphite: ' in graphite', blacklight: ' under blacklight' }[vacui.ink ?? 'print'];
-  return { pixels: out, note: `Dead space: ${vacui.fill} grows through ${share}% of the picture in ${seeds} cells${inkNote}, ${grainNote}${formNote}${vacui.drip ? ', dripping' : ''}` };
+  const fillNote = doodled ? `glyphs of ${DOODLE_SETS[doodles].slice(0, DOODLE_SETS[doodles].indexOf(':')).toLowerCase()}` : vacui.fill;
+  return { pixels: out, note: `Dead space: ${fillNote} grows through ${share}% of the picture in ${seeds} cells${inkNote}, ${grainNote}${formNote}${vacui.drip ? ', dripping' : ''}` };
 }

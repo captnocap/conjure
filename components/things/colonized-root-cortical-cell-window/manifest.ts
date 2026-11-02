@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Colonized root cortical cell window", "summary": "An open polygonal cortical cell shows a shared boundary and internal fungal occupancy, with the tissue and fungal routes separated. A magnified teaching section for hidden processes, careful observation and scientific discovery.", "scales": ["macro", "tabletop"]});

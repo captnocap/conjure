@@ -35,6 +35,14 @@ export default defineThing({
       second: 'A customer has hung her own little pocket scale beside it to check.',
       coins: 'A dish of coins and a folded note sits beneath, the sale just done.',
     }),
+    graduations: choice('How finely is the dial divided?', { coarse: 'Twenty bold divisions.', standard: 'Fifty fine divisions.', fine: 'One hundred hairline divisions.', paired: 'Two concentric scales in black and red.' }),
+    pointer: choice('What shape is the pointer?', { straight: 'A straight red bar.', arrow: 'A broad triangular pointer.', counterweight: 'A thin pointer with a round counterweight.', fork: 'A split forked pointer.' }),
+    bezelStyle: choice('How is the dial face protected?', { round: 'A plain rounded metal bezel.', screws: 'A bezel held by four screws.', guard: 'Two curved guard bars across the face.', hood: 'A small metal rain hood over the upper rim.' }),
+    caseBack: choice('What is on the back of the scale case?', { plain: 'A smooth back.', ribs: 'Radial reinforcing ribs.', plate: 'A bolted rectangular service cover.', vents: 'Two rows of narrow ventilation slots.' }),
+    zeroAdjust: choice('Where is the zero adjustment?', { hidden: 'Hidden inside the casing.', top: 'A knurled screw above the case.', side: 'A large side thumbwheel.', below: 'A little wing nut under the dial.' }),
+    suspension: choice('How is the scale suspended?', { chain: 'Alternating oval chain links.', doubled: 'Two narrow chains side by side.', shackle: 'One solid elongated shackle.', cord: 'A loop of braided cord.' }),
+    checkWeights: choice('What calibration weights are kept below?', { none: 'No weights are out.', pair: 'Two small cylindrical brass weights.', set: 'Four weights in a wooden tray.', stone: 'One old iron test weight with a lifting ring.' }),
+    bagStore: choice('Where are spare shopping bags kept?', { none: 'No spare bags.', roll: 'A roll on a freestanding dispenser.', hooks: 'A small rack with three folded bags.', box: 'A shallow open carton of folded paper bags.' }),
   },
 
   build(a, context) {
@@ -103,8 +111,10 @@ export default defineThing({
     };
     const link = new THREE.TorusGeometry(0.017, 0.0045, 5, 10);
     const chain = (y0: number, y1: number, parent: THREE.Object3D = hung) => {
+      if(a.suspension==='shackle'){for(const x of[-.025,.025])rod([x,y0,0],[x,y1,0],.007,steel,parent);rod([-.025,y0,0],[.025,y0,0],.007,steel,parent);rod([-.025,y1,0],[.025,y1,0],.007,steel,parent);return;}
+      if(a.suspension==='cord'){for(const x of[-.012,.012])rod([0,y0,0],[x,(y0+y1)/2,0],.005,s.material('#c1a36d'),parent);for(const x of[-.012,.012])rod([x,(y0+y1)/2,0],[0,y1,0],.005,s.material('#c1a36d'),parent);return;}
       const n = Math.max(2, Math.round((y0 - y1) / 0.03));
-      for (let i = 0; i < n; i++) { const m = add(link, iron, [0, mix(y0, y1, (i + 0.5) / n), 0], [0.75, 1, 1], parent); m.rotation.y = i % 2 ? Math.PI / 2 : 0; }
+      for (const x of a.suspension==='doubled'?[-.015,.015]:[0])for (let i = 0; i < n; i++) { const m = add(link, iron, [x, mix(y0, y1, (i + 0.5) / n), 0], [0.75, 1, 1], parent); m.rotation.y = i % 2 ? Math.PI / 2 : 0; }
     };
     chain(-0.02, -0.2);
 
@@ -124,12 +134,14 @@ export default defineThing({
       for (let i = 0; i < mood.wear * 60 + (a.dial === 'brass' || a.dial === 'green' ? 25 : 0); i++) { ctx.fillStyle = `rgba(120,90,40,${random() * 0.14})`; ctx.beginPath(); ctx.arc(random() * 256, random() * 256, 4 + random() * 22, 0, 7); ctx.fill(); }
       ctx.strokeStyle = ctx.fillStyle = style.ink; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(128, 128, 118, 0, 7); ctx.stroke();
-      for (let i = 0; i < 50; i++) {
-        const t = (i / 50) * Math.PI * 2 - Math.PI / 2, major = i % 5 === 0;
+      const divisions=a.graduations==='coarse'?20:a.graduations==='fine'?100:50;
+      for (let i = 0; i < divisions; i++) {
+        const t = (i / divisions) * Math.PI * 2 - Math.PI / 2, major = i % (divisions/10) === 0;
         ctx.lineWidth = major ? 5 : 2;
         ctx.beginPath(); ctx.moveTo(128 + Math.cos(t) * 116, 128 + Math.sin(t) * 116); ctx.lineTo(128 + Math.cos(t) * (major ? 94 : 104), 128 + Math.sin(t) * (major ? 94 : 104)); ctx.stroke();
-        if (major) { ctx.font = `900 ${a.dial === 'blue' ? 28 : 22}px sans-serif`; ctx.fillText(String(i / 5), 128 + Math.cos(t) * 74, 128 + Math.sin(t) * 74); }
+        if (major) { ctx.font = `900 ${a.dial === 'blue' ? 28 : 22}px sans-serif`; ctx.fillText(String(i / (divisions/10)), 128 + Math.cos(t) * 74, 128 + Math.sin(t) * 74); }
       }
+      if(a.graduations==='paired'){ctx.strokeStyle='#a82a25';ctx.lineWidth=2;for(let k=0;k<40;k++){const t=k/40*Math.PI*2;ctx.beginPath();ctx.moveTo(128+Math.cos(t)*62,128+Math.sin(t)*62);ctx.lineTo(128+Math.cos(t)*54,128+Math.sin(t)*54);ctx.stroke();}}
       ctx.font = '900 15px sans-serif'; ctx.fillText(a.dial === 'brass' ? 'CATTY' : 'KG', 128, 172);
       if (a.dial === 'green') { ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(40, 60); ctx.lineTo(120, 130); ctx.lineTo(110, 210); ctx.moveTo(120, 130); ctx.lineTo(200, 150); ctx.stroke(); }
     }
@@ -272,6 +284,51 @@ export default defineThing({
       dish.castShadow = true;
       for (let i = 0; i < 6; i++) s.cylinder(0.016, 0.016, 0.004, [0.2 + (random() - 0.5) * 0.09, 0.038 + i * 0.003, 0.25 + (random() - 0.5) * 0.09], s.material(pick(['#c9a03a', '#b9bcc0']), { metalness: 0.8, roughness: 0.3 }), 10);
       s.box([0.09, 0.006, 0.045], [0.2, 0.05, 0.25], s.material('#7fa68a', { roughness: 0.8 })).rotation.y = 0.5;
+    }
+
+    const trim=s.material('#b29153',{metalness:.6,roughness:.4});
+    if(a.bezelStyle==='screws')for(let i=0;i<4;i++){const t=i*Math.PI/2+Math.PI/4;add(new THREE.CylinderGeometry(.009,.009,.01,8),iron,[Math.cos(t)*.17,Math.sin(t)*.17,.06],[1,1,1],dial).rotation.x=Math.PI/2;}
+    else if(a.bezelStyle==='guard')for(const side of[-1,1])rod([side*.09,-.16,.063],[side*.09,.16,.063],.008,steel,dial);
+    else if(a.bezelStyle==='hood') {
+      add(new THREE.CylinderGeometry(.21,.21,.13,28,1,true,Math.PI*.28,Math.PI*.44),steel,[0,0,0],[1,1,1],dial).rotation.set(Math.PI/2,0,Math.PI/2);
+    }
+    if(a.caseBack==='ribs')for(let i=0;i<8;i++){const t=i*Math.PI/4;rod([Math.cos(t)*.05,Math.sin(t)*.05,-.052],[Math.cos(t)*.16,Math.sin(t)*.16,-.052],.006,bodyMaterial,dial);}
+    else if(a.caseBack==='plate') {
+      add(new THREE.BoxGeometry(.15,.12,.013),steel,[0,0,-.055],[1,1,1],dial);
+      for(const x of[-.065,.065])for(const y of[-.05,.05])add(new THREE.SphereGeometry(.007,8,6),iron,[x,y,-.064],[1,1,1],dial);
+    } else if(a.caseBack==='vents')for(const x of[-.055,.055])for(let i=0;i<5;i++)add(new THREE.BoxGeometry(.06,.008,.006),iron,[x,-.06+i*.03,-.05],[1,1,1],dial);
+    if(a.zeroAdjust==='top'){add(new THREE.CylinderGeometry(.02,.02,.04,12),trim,[.07,DR+.015,0],[1,1,1],dial);}
+    else if(a.zeroAdjust==='side'){rod([DR,0,0],[DR+.035,0,0],.007,steel,dial);add(new THREE.CylinderGeometry(.03,.03,.018,12),trim,[DR+.04,0,0],[1,1,1],dial).rotation.z=Math.PI/2;}
+    else if(a.zeroAdjust==='below'){rod([0,-DR-.02,.015],[0,-DR-.06,.015],.005,steel,dial);add(new THREE.BoxGeometry(.075,.014,.016),trim,[0,-DR-.045,.015],[1,1,1],dial);}
+    if(a.pointer==='arrow')add(new THREE.ConeGeometry(.026,.07,3),s.material(style.hand),[0,.125,0],[1,1,.2],needle);
+    else if(a.pointer==='counterweight')add(new THREE.SphereGeometry(.024,12,8),s.material(style.hand),[0,-.045,0],[1,1,.2],needle);
+    else if(a.pointer==='fork')for(const side of[-1,1])rod([0,.045,0],[side*.025,.145,0],.005,s.material(style.hand),needle);
+    if(a.checkWeights!=='none') {
+      const wx=.63,wz=.15;
+      if(a.checkWeights==='set')s.box([.32,.035,.22],[wx,.0175,wz],s.material('#956d43'));
+      const n=a.checkWeights==='pair'?2:a.checkWeights==='set'?4:1;
+      for(let i=0;i<n;i++) {
+        const r=a.checkWeights==='stone'?.075:.022+i*.007, h=a.checkWeights==='stone'?.14:.045+i*.02;
+        const x=wx+(i-(n-1)/2)*.075, y=a.checkWeights==='set'?.035:0;
+        s.cylinder(r,r,h,[x,y+h/2,wz],a.checkWeights==='stone'?iron:trim,16);
+        if(a.checkWeights==='stone')s.ring(.035,.009,[x,y+h+.028,wz],iron);
+        else s.cylinder(r*.45,r*.45,.015,[x,y+h+.0075,wz],trim,12);
+      }
+    }
+    if(a.bagStore!=='none') {
+      const bx=.65,bz=-.3,bag=s.material('#c85343'),paper=s.material('#c7ae7e');
+      if(a.bagStore==='box') {
+        s.box([.32,.025,.22],[bx,.0125,bz],paper);
+        for(const x of[-.15,.15])s.box([.02,.16,.22],[bx+x,.08,bz],paper);
+        for(const z of[-.1,.1])s.box([.3,.16,.02],[bx,.08,bz+z],paper);
+        for(let i=0;i<6;i++)s.box([.24,.12,.012],[bx,.085,bz-.07+i*.025],s.material(i%2?'#dfca9d':'#baa071'));
+      } else {
+        s.box([.35,.025,.22],[bx,.0125,bz],iron);
+        for(const x of[-.14,.14])s.rod([bx+x,.025,bz],[bx+x,.48,bz],.012,steel);
+        s.rod([bx-.14,.48,bz],[bx+.14,.48,bz],.014,steel);
+        if(a.bagStore==='roll')s.cylinder(.07,.07,.23,[bx,.48,bz],bag,20).rotation.z=Math.PI/2;
+        else for(let i=0;i<3;i++){const x=bx+(i-1)*.08;s.ring(.017,.003,[x,.47,bz],steel);s.box([.065,.19,.012],[x,.36,bz],bag);}
+      }
     }
 
     const energy = mood.energy;

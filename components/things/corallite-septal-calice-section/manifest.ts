@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Corallite septal calice section", "summary": "An actual hollow calice with radial septa, wall and basal skeletal floor; sector cuts expose the radial construction. An Acropora-inspired schematic calice section, with hexameral septal stages and explicit specimen cuts; reef building, skeletal growth and microscopy.", "scales": ["macro", "tabletop"]});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Shrinkage pore interdendritic cavity", "summary": "An irregular hollow pore sits between connected solid arms with visible inward-facing walls and narrowed necks. A magnified materials-science model with solid branches, actual open interdendritic spaces and clearly identified teaching sections.", "scales": ["macro", "tabletop"]});

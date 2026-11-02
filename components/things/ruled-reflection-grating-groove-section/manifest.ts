@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Ruled reflection grating groove section", "summary": "A finite reflection grating exposes genuine sawtooth groove cross-sections with a supported backing and an optional cut edge. The enlarged sawtooth facets and backing are actual solid geometry, with clipped edges rather than painted rules. This is a structural grating specimen; the model does not claim a wavelength scale or calculated diffraction efficiency.", "scales": ["macro", "tabletop"]});

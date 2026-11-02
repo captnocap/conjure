@@ -36,6 +36,13 @@ export default defineThing({
       grate: 'A round iron tree-grate pattern set in the pavement.',
       cobbles: 'A ring of small cobbles.',
     }),
+    pedestalBands: choice('What encircles the pedestal panels?', { plain: 'Plain panel edges.', collars: 'Two narrow metal collars.', beads: 'A row of small beads below the basin.', wreaths: 'Small cast wreaths on alternate faces.' }),
+    domeRibs: choice('What follows the curve of the dome?', { scales: 'The original scales alone.', four: 'Four raised ribs.', eight: 'Eight fine ribs.', petals: 'Four broad looped petal outlines.' }),
+    basinLip: choice('How is the basin lip ornamented?', { plain: 'A plain rounded lip.', beaded: 'A continuous ring of small beads.', scalloped: 'Eight small scallop ornaments.', banded: 'Two fine bright bands.' }),
+    outlet: choice('What hardware sits at the water outlet?', { plain: 'A short plain nozzle.', rose: 'A small perforated rose.', collar: 'A flared bell-shaped collar.', cross: 'A nozzle held in a four-armed cross.' }),
+    drainGrille: choice('What lies at the foot on the street side?', { none: 'No separate drain.', bars: 'A rectangular barred drain.', round: 'A small round radial drain.', slots: 'A narrow line of drainage slots.' }),
+    maintenancePlate: choice('What marks the lower pedestal?', { none: 'No maintenance plate.', enamel: 'A little pale enamel service plate.', brass: 'A brass maker’s plaque.', latch: 'A hinged inspection door and latch.' }),
+    nearbyVessel: choice('What waits beside the fountain?', { none: 'No vessel.', pail: 'A galvanized pail.', can: 'A green watering can.', bowl: 'A low stoneware drinking bowl.' }),
   },
 
   build(a, context) {
@@ -55,15 +62,15 @@ export default defineThing({
     if (a.pad === 'stone') lathe([[0, 0.07], [0.82, 0.07], [0.86, 0.0]], s.material('#b7b1a2', { roughness: 0.95 }), 8, Math.PI / 8);
     else if (a.pad === 'grate') {
       const dark = s.material('#3a3d3c', { metalness: 0.5 });
-      for (const r of [0.5, 0.68, 0.86]) s.ring(r, 0.025, [0, 0.02, 0], dark).rotation.x = Math.PI / 2;
-      for (let i = 0; i < 12; i++) { const t = i * Math.PI / 6; s.rod([Math.sin(t) * 0.5, 0.02, Math.cos(t) * 0.5], [Math.sin(t) * 0.86, 0.02, Math.cos(t) * 0.86], 0.02, dark); }
+      for (const r of [0.5, 0.68, 0.86]) s.ring(r, 0.025, [0, 0.025, 0], dark).rotation.x = Math.PI / 2;
+      for (let i = 0; i < 12; i++) { const t = i * Math.PI / 6; s.rod([Math.sin(t) * 0.5, 0.025, Math.cos(t) * 0.5], [Math.sin(t) * 0.86, 0.025, Math.cos(t) * 0.86], 0.02, dark); }
     } else {
       const tones = ['#8d8a82', '#a09a8e', '#77756f', '#958c7c'];
       const stones = [];
       for (let ring = 0; ring < 2; ring++)
         for (let i = 0; i < 16 + ring * 6; i++) {
           const t = (i + random() * 0.3) * Math.PI * 2 / (16 + ring * 6), r = 0.6 + ring * 0.2;
-          stones.push({ at: [Math.sin(t) * r, 0.0, Math.cos(t) * r] as [number, number, number], size: 0.085 + random() * 0.015, color: tones[Math.floor(random() * 4)] });
+          const size=.085+random()*.015;stones.push({at:[Math.sin(t)*r,size*.45,Math.cos(t)*r] as [number,number,number],size,color:tones[Math.floor(random()*4)]});
         }
       s.scatter(new THREE.SphereGeometry(1, 8, 6).scale(1, 0.45, 1), s.material('#ffffff', { roughness: 0.95 }), stones);
     }
@@ -190,6 +197,37 @@ export default defineThing({
       s.ball([0.045, 0.02, 0.06], [x, 1.215, z], wool, 10).rotation.y = spot;
       s.ball([0.018, 0.016, 0.03], [x + Math.cos(spot) * 0.045, 1.215, z - Math.sin(spot) * 0.045], wool, 8);
       s.cylinder(0.04, 0.04, 0.02, [x * 1.1, 1.205, z * 1.1], s.material('#f1ece0', { roughness: 1 }), 10);
+    }
+
+    if(a.pedestalBands==='collars')for(const y of[.38,.83])s.ring(.375,.012,[0,y,0],gold).rotation.x=Math.PI/2;
+    else if(a.pedestalBands==='beads')for(let i=0;i<24;i++){const t=i*Math.PI/12;s.ball([.021,.021,.021],[Math.sin(t)*.43,.91,Math.cos(t)*.43],gold,6);}
+    else if(a.pedestalBands==='wreaths')for(let i=0;i<4;i++){const t=i*Math.PI/2;const ring=s.ring(.065,.012,[Math.sin(t)*.375,.6,Math.cos(t)*.375],gold);ring.rotation.y=t;}
+    if(a.domeRibs!=='scales')for(let i=0;i<(a.domeRibs==='eight'?8:4);i++){
+      const t=i*Math.PI*2/(a.domeRibs==='eight'?8:4),at=(r:number,y:number,angle=t):[number,number,number]=>[Math.sin(angle)*r,top+y,Math.cos(angle)*r];
+      if(a.domeRibs==='petals')s.tube([at(.44,.11),at(.34,.31,t-.2),at(.1,.5),at(.34,.31,t+.2),at(.44,.11)],.012,gold);
+      else s.tube([at(.44,.11),at(.4,.22),at(.3,.36),at(.18,.46),at(.1,.5)],a.domeRibs==='four'?.018:.01,gold);
+    }
+    if(a.basinLip==='beaded')for(let i=0;i<32;i++){const t=i*Math.PI/16;s.ball([.014,.014,.014],[Math.sin(t)*.495,1.2,Math.cos(t)*.495],gold,6);}
+    else if(a.basinLip==='banded')for(const y of[1.17,1.2])s.ring(.501,.007,[0,y,0],gold).rotation.x=Math.PI/2;
+    else if(a.basinLip==='scalloped')for(let i=0;i<8;i++){const t=i*Math.PI/4;const arc=s.ring(.04,.008,[Math.sin(t)*.5,1.16,Math.cos(t)*.5],gold,Math.PI);arc.rotation.y=t;arc.rotation.z=Math.PI;}
+    if(a.outlet==='plain')s.cylinder(.025,.025,.045,[0,top-.04,0],gold,12);
+    else if(a.outlet==='rose'){s.cylinder(.055,.055,.025,[0,top-.0325,0],gold,16);for(let i=0;i<6;i++){const t=i*Math.PI/3;s.cylinder(.006,.006,.005,[Math.sin(t)*.035,top-.0475,Math.cos(t)*.035],s.material('#27352e'),6);}}
+    else if(a.outlet==='collar')s.cylinder(.025,.07,.07,[0,top-.055,0],gold,16);
+    else{for(let i=0;i<4;i++){const t=i*Math.PI/2;s.rod([0,top-.065,0],[Math.sin(t)*.15,top-.02,Math.cos(t)*.15],.012,gold);}s.cylinder(.03,.03,.04,[0,top-.07,0],gold,12);}
+    const drain=s.material('#454d48',{metalness:.5});
+    if(a.drainGrille==='bars'){s.box([.4,.012,.25],[0,.006,1.03],drain);for(let i=0;i<9;i++)s.box([.018,.003,.21],[-.16+i*.04,.0135,1.03],s.material('#252b29'));}
+    else if(a.drainGrille==='round'){s.cylinder(.19,.19,.012,[0,.006,1.03],drain,24);for(let i=0;i<10;i++){const t=i*Math.PI/5;s.rod([Math.sin(t)*.04,.014,1.03+Math.cos(t)*.04],[Math.sin(t)*.17,.014,1.03+Math.cos(t)*.17],.006,s.material('#242b27'));}}
+    else if(a.drainGrille==='slots')for(let i=0;i<10;i++)s.box([.032,.012,.16],[-.27+i*.06,.006,1.03],drain);
+    if(a.maintenancePlate==='enamel')s.label('EAU  17',.18,.09,[0,.21,.451],'#2c4d3d','#e1dfd1');
+    else if(a.maintenancePlate==='brass'){s.box([.21,.1,.013],[0,.21,.451],s.material('#b59a53',{metalness:.6}));s.label('WALLACE',.17,.065,[0,.21,.459],'#4b4631','#b59a53');}
+    else if(a.maintenancePlate==='latch'){s.box([.23,.18,.015],[0,.23,.447],iron);for(const x of[-.1,.1])s.box([.02,.13,.018],[x,.23,.46],gold);s.box([.035,.05,.022],[.07,.23,.47],gold);}
+    if(a.nearbyVessel!=='none'){
+      const x=-1.04,z=.2,metal=s.material(a.nearbyVessel==='can'?'#426b51':'#a9b3b4',{metalness:.5,roughness:.45});
+      if(a.nearbyVessel==='bowl')s.lathe([[0,0],[.13,0],[.2,.05],[.21,.09],[.18,.09],[.12,.025],[0,.025]],s.material('#b4a284'),[x,0,z]);
+      else{s.lathe([[0,0],[.11,0],[.14,.28]],metal,[x,0,z]);s.ring(.14,.008,[x,.28,z],metal).rotation.x=Math.PI/2;
+        if(a.nearbyVessel==='pail')s.ring(.14,.006,[x,.28,z],metal,Math.PI);
+        else{s.tube([[x+.1,.04,z],[x+.24,.12,z],[x+.37,.3,z]],.022,metal);s.ball([.045,.025,.045],[x+.37,.3,z],metal,10);s.tube([[x-.1,.06,z],[x-.22,.09,z],[x-.22,.24,z],[x-.1,.26,z]],.014,metal);s.cylinder(.13,.13,.015,[x,.28,z],metal,16);}
+      }
     }
 
     const energy = mix(0.3, 1.6, mood.energy), phase = random() * 6;

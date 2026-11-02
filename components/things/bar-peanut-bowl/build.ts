@@ -14,6 +14,12 @@ interface Piece { at: THREE.Vector3; turn: THREE.Euler; size: number; colour?: s
 
 export default defineThing({
   questions: {
+    foot: choice('How does the bowl sit on the bar?', { flat: 'Flat on its base.', ring: 'On a low circular foot.', pedestal: 'On a small turned pedestal.', feet: 'On three little round feet.' }),
+    edging: choice('What trims the rim?', { plain: 'A plain edge.', brass: 'A narrow brass band.', beads: 'A bead-like raised border.', dark: 'A broad dark rim stripe.' }),
+    seasoning: score('How much coarse salt is visible?', ['No visible salt', 'A few crystals', 'A generous sprinkle', 'Crystals caught all over the heap']),
+    roast: score('How toasted is the snack?', ['Pale and lightly cooked', 'Golden', 'Well browned', 'Dark at the edges']),
+    liner: choice('Is there a paper liner?', { house: 'The usual bowl: checked paper only in the diner basket.', white: 'Plain white paper folded up at the sides.', news: 'Printed paper with narrow columns of type.', stripe: 'A striped wax-paper liner.' }),
+    utensil: choice('What serving tool has been left beside it?', { none: 'No tool.', scoop: 'A little metal scoop.', tongs: 'Small spring tongs.', spoon: 'A short wooden serving spoon.' }),
     snack: choice('What is in the bowl?', SNACKS),
     bowl: choice('What kind of bowl is it?', {
       wood: 'A turned dark wooden bowl.',
@@ -83,7 +89,7 @@ export default defineThing({
       pieces.forEach((piece, i) => {
         m.compose(piece.at, q.setFromEuler(piece.turn), sc.setScalar(spec.size * piece.size));
         mesh.setMatrixAt(i, m);
-        mesh.setColorAt(i, colour.set(piece.colour ?? spec.colours[Math.floor(random() * spec.colours.length)]).lerp(new THREE.Color('#6d5d48'), mood.wear * 0.2));
+        mesh.setColorAt(i, colour.set(piece.colour ?? spec.colours[Math.floor(random() * spec.colours.length)]).lerp(new THREE.Color('#684527'), a.roast * 0.42).lerp(new THREE.Color('#6d5d48'), mood.wear * 0.2));
       });
       mesh.castShadow = mesh.receiveShadow = true;
       s.root.add(mesh);
@@ -116,6 +122,7 @@ export default defineThing({
       const oval = s.lathe([[0, 0], [0.06, 0], [0.064, 0.004], [0.092, 0.042], [0.097, 0.044], [0.09, 0.04], [0.06, 0.005], [0, 0.004]], plastic);
       oval.scale.set(1.3, 1, 0.95);
       for (let i = 0; i < 26; i++) { const t = i / 26 * Math.PI * 2; s.rod([Math.cos(t) * 0.064 * 1.3, 0.006, Math.sin(t) * 0.064 * 0.95], [Math.cos(t) * 0.093 * 1.3, 0.042, Math.sin(t) * 0.093 * 0.95], 0.0035, plastic); }
+      if (a.liner === 'house') {
       const canvas = document.createElement('canvas'); canvas.width = canvas.height = 128;
       const c = canvas.getContext('2d')!;
       c.fillStyle = '#f6f2e6'; c.fillRect(0, 0, 128, 128);
@@ -126,7 +133,34 @@ export default defineThing({
       const liner = s.lathe([[0, 0.0055], [0.058, 0.0065], [0.086, 0.04], [0.1, 0.05]], paper);
       liner.scale.set(1.3, 1, 0.95);
       for (let i = 0; i < 4; i++) { const corner = s.mesh(new THREE.PlaneGeometry(0.07, 0.07), paper, [Math.cos(i * 1.57 + 0.6) * 0.115, 0.05, Math.sin(i * 1.57 + 0.6) * 0.085]); corner.rotation.set(-Math.PI / 2 + 0.5 * Math.sin(i * 1.57 + 0.6), i, 0.4 * Math.cos(i * 1.57 + 0.6)); }
+      }
       rim = 0.082; lip = 0.042; floor = 0.007; inner = 0.058;
+    }
+
+    const lift = { flat: 0, ring: 0.009, pedestal: 0.035, feet: 0.012 }[a.foot];
+    for (const child of s.root.children) child.position.y += lift;
+    if (lift) {
+      const footMat = s.material(a.bowl === 'wood' ? '#634129' : a.bowl === 'ramekin' ? '#e6e2d6' : '#797e7a', { roughness: 0.45 });
+      if (a.foot === 'ring') s.lathe([[0.028, 0], [0.043, 0], [0.043, lift], [0.028, lift], [0.028, 0]], footMat);
+      else if (a.foot === 'pedestal') s.lathe([[0, 0], [0.045, 0], [0.045, 0.005], [0.018, 0.012], [0.016, 0.026], [0.038, lift], [0, lift]], footMat);
+      else for (let k = 0; k < 3; k++) { const t = k / 3 * Math.PI * 2; s.ball([0.009, 0.007, 0.009], [Math.cos(t) * 0.032, 0.006, Math.sin(t) * 0.032], footMat, 10); }
+    }
+    floor += lift; lip += lift;
+    const oval = a.bowl === 'basket' ? 1.3 : 1;
+    if (a.edging !== 'plain') {
+      const edgeMat = s.material(a.edging === 'brass' ? '#c5a151' : a.edging === 'dark' ? '#34372f' : '#c5b896', { metalness: a.edging === 'brass' ? 0.7 : 0, roughness: 0.4 });
+      if (a.edging === 'beads') for (let k = 0; k < 40; k++) { const t = k / 40 * Math.PI * 2; s.ball([0.003, 0.003, 0.003], [Math.cos(t) * (rim + 0.003) * oval, lip, Math.sin(t) * (rim + 0.003)], edgeMat, 6); }
+      else { const edge = s.ring(rim + 0.003, a.edging === 'dark' ? 0.0038 : 0.0018, [0, lip, 0], edgeMat); edge.rotation.x = Math.PI / 2; edge.scale.x = oval; }
+    }
+    if (a.liner !== 'house') {
+      const canvas = document.createElement('canvas'); canvas.width = canvas.height = 128;
+      const c = canvas.getContext('2d')!; c.fillStyle = a.liner === 'news' ? '#ddd3ba' : '#f2ecdf'; c.fillRect(0, 0, 128, 128);
+      if (a.liner === 'news') { c.fillStyle = '#706b5b'; for (let y = 8; y < 128; y += 6) for (let col = 0; col < 3; col++) c.fillRect(4 + col * 43, y, 28 + ((y + col) % 7), 1.5); }
+      if (a.liner === 'stripe') { c.fillStyle = '#b34b46'; for (let x = 0; x < 128; x += 16) c.fillRect(x, 0, 5, 128); }
+      const map = new THREE.CanvasTexture(canvas); map.colorSpace = THREE.SRGBColorSpace;
+      const paper = new THREE.MeshStandardMaterial({ map, roughness: 1, side: THREE.DoubleSide });
+      const lining = s.lathe([[0, floor + 0.0007], [inner * 0.85, floor + 0.001], [rim * 0.96, lip - 0.002], [rim + 0.006, lip + 0.005]], paper); lining.scale.x = oval;
+      for (const t of [0.5, 2.4, 4.2]) { const flap = s.box([0.025, 0.0006, 0.024], [Math.cos(t) * (rim + 0.003) * oval, lip + 0.003, Math.sin(t) * (rim + 0.003)], paper); flap.rotation.set(0.15 * Math.sin(t), -t, 0.18 * Math.cos(t)); }
     }
 
     // The heap: a dome that sinks as the bowl is picked over.
@@ -147,6 +181,10 @@ export default defineThing({
       heap.push({ at: new THREE.Vector3(Math.cos(t) * r * stretch, y, Math.sin(t) * r), turn: tumble(0.35), size: mix(0.8, 1.2, random()) });
     }
     lay(kind, heap);
+    if (a.seasoning > 0.03) {
+      const grains = heap.filter((_p, i) => i % 3 === 0).slice(0, Math.round(a.seasoning * 90)).map(p => ({ at: [p.at.x, p.at.y + kind.size * 0.38, p.at.z] as const, size: 0.0008 + random() * 0.0006 }));
+      s.scatter(new THREE.BoxGeometry(1, 1, 1), s.material('#f6f2db', { roughness: 0.65 }), grains);
+    }
     // A darker bed under the heap so the pile reads solid from above.
     const bed = s.cylinder(spread * 0.96, spread * 0.8, Math.max(0.002, edge - floor), [0, floor + Math.max(0.002, edge - floor) / 2, 0], new THREE.MeshStandardMaterial({ color: new THREE.Color(kind.colours[0]).multiplyScalar(0.62), roughness: 1 }), 24);
     bed.scale.x = stretch; bed.castShadow = false;
@@ -203,6 +241,17 @@ export default defineThing({
       lay(debris, husks);
     }
 
+    if (a.utensil !== 'none') {
+      const ux = reach + 0.055, uz = -0.025;
+      const mat = s.material(a.utensil === 'spoon' ? '#987344' : '#b9c1c1', { metalness: a.utensil === 'spoon' ? 0 : 0.8, roughness: 0.4 });
+      if (a.utensil === 'tongs') {
+        s.tube([[ux - 0.013, 0.004, uz + 0.05], [ux - 0.009, 0.01, uz - 0.04], [ux, 0.012, uz - 0.047], [ux + 0.009, 0.01, uz - 0.04], [ux + 0.013, 0.004, uz + 0.05]], 0.0025, mat);
+        for (const x of [-0.013, 0.013]) s.box([0.014, 0.003, 0.018], [ux + x, 0.003, uz + 0.047], mat);
+      } else {
+        s.rod([ux, 0.004, uz - 0.055], [ux, 0.007, uz + 0.013], 0.0035, mat);
+        const scoop = s.mesh(new THREE.SphereGeometry(1, 18, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), new THREE.MeshStandardMaterial({ color: a.utensil === 'spoon' ? '#987344' : '#b9c1c1', metalness: a.utensil === 'spoon' ? 0 : 0.8, roughness: 0.4, side: THREE.DoubleSide }), [ux, 0.013, uz + 0.025]); scoop.scale.set(a.utensil === 'scoop' ? 0.025 : 0.016, a.utensil === 'scoop' ? 0.013 : 0.008, 0.027);
+      }
+    }
     return s.finish();
   },
 });

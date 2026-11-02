@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Diatom rimoportula labiate process model", "summary": "A verified labiate process has a real opening and internal lip pair attached to a finite valve patch. An enlarged comparative labiate process with opposing internal lips and an actual bore through a finite valve patch. The enlarged teaching section keeps internal and external sides explicit.", "scales": ["macro", "tabletop"]});

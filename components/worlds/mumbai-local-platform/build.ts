@@ -65,6 +65,13 @@ export default defineWorld({
       standing: 'One stands at the far platform across the tracks.',
       departed: 'One has just left: red tail lamps shrinking into the rain.',
     }),
+    gutter: choice('How is the canopy drained?', { plain: 'The existing plain edge.', trough: 'A long open gutter under the eave.', pipes: 'A gutter with three downpipes.', hoppers: 'Broad rain hoppers and downpipes at three columns.' }),
+    cableTray: choice('What carries wiring beneath the canopy?', { bare: 'No exposed cable tray.', ladder: 'A narrow ladder tray along the inner columns.', trunk: 'A closed grey service trunk.', bundles: 'Three separate dark cable bundles.' }),
+    columnBands: choice('How are the lower columns marked?', { plain: 'Plain painted columns.', pale: 'Broad pale bands at shoulder height.', hazard: 'Black and yellow warning bands.', red: 'Two red identification bands.' }),
+    disposal: choice('What waste containers stand against the inner side?', { none: 'No extra bins.', pair: 'Paired green and blue cylindrical bins.', cage: 'An open wire basket for paper.', lidded: 'A large square metal bin with a lid.' }),
+    waterStation: choice('What drinking-water fitting is on the inner side?', { none: 'No separate drinking point.', taps: 'Three taps over a low stone trough.', cooler: 'A tall stainless cooler over a small drip tray.', jug: 'An earthen water pot on a masonry stand.' }),
+    serviceCabinet: choice('What railway equipment stands by the rear columns?', { none: 'No separate cabinet.', electrical: 'A tall grey electrical cupboard.', hose: 'A red hose reel cabinet.', tools: 'A low locked maintenance chest.' }),
+    edgeMarkers: choice('What marks the platform edge beyond the yellow line?', { plain: 'The original yellow line alone.', studs: 'A row of pale tactile studs.', slabs: 'A narrow band of ribbed edge slabs.', numbers: 'Numbered carriage-position plates.' }),
   },
 
   build(a, context) {
@@ -609,6 +616,50 @@ export default defineWorld({
       s.scatter(new THREE.SphereGeometry(0.045, 6, 4), s.material('#ffffff'), beads);
     }
 
+    const serviceMetal=s.material('#929d99',{metalness:.55,roughness:.5});
+    if(a.gutter!=='plain'){
+      s.box([.3,.08,roofStart-roofEnd],[colR+.46,eave-.05,(roofStart+roofEnd)/2],serviceMetal);
+      for(const z of[7,-5,-17])if(a.gutter==='pipes'||a.gutter==='hoppers'){
+        const x=colR+.43;s.rod([x,.05,z],[x,eave-.06,z],.055,serviceMetal);for(const y of[.8,2.3,3.7])s.box([.15,.07,.12],[x,y,z],iron);
+        if(a.gutter==='hoppers')s.cylinder(.19,.065,.3,[x,eave-.2,z],serviceMetal,4).rotation.y=Math.PI/4;
+      }
+    }
+    if(a.cableTray!=='bare'){
+      const x=colL+.42,y=eave-.43,z=(roofStart+roofEnd)/2,len=roofStart-roofEnd;
+      if(a.cableTray==='trunk')s.box([.22,.12,len],[x,y,z],serviceMetal);
+      else if(a.cableTray==='bundles')for(const dx of[-.07,0,.07])s.rod([x+dx,y,roofStart],[x+dx,y,roofEnd],.024,iron);
+      else{for(const dx of[-.12,.12])s.box([.018,.06,len],[x+dx,y,z],serviceMetal);for(let i=0;i<40;i++)s.box([.26,.02,.025],[x,y-.02,roofEnd+i*len/39],serviceMetal);}
+      for(const z of frames)strut([colL,eave-.43,z],[x+.13,eave-.43,z],.03);
+    }
+    if(a.columnBands!=='plain')for(const z of frames)for(const x of[colL,colR]){
+      if(a.columnBands==='pale')s.box([.22,.32,.22],[x,1.4,z],s.material('#dcd5ba'));
+      else if(a.columnBands==='red')for(const y of[1.2,1.55])s.box([.22,.09,.22],[x,y,z],s.material('#a84335'));
+      else for(let i=0;i<4;i++)s.box([.22,.075,.22],[x,1.2+i*.075,z],s.material(i%2?'#d3ad31':'#303832'));
+    }
+    if(a.disposal!=='none'){
+      const x=-3.8,z=-4;
+      if(a.disposal==='pair')for(const dz of[-.32,.32]){s.cylinder(.22,.19,.7,[x,.35,z+dz],s.material(dz<0?'#3b7962':'#46758f'),18);s.ring(.22,.02,[x,.7,z+dz],iron).rotation.x=Math.PI/2;}
+      else if(a.disposal==='lidded'){s.box([.6,.8,.6],[x,.4,z],serviceMetal);s.box([.64,.04,.64],[x,.82,z],iron);s.box([.18,.04,.05],[x,.86,z],serviceMetal);}
+      else{for(const y of[.03,.35,.68])s.ring(.25,.014,[x,y,z],iron).rotation.x=Math.PI/2;for(let i=0;i<12;i++){const t=i*Math.PI/6;s.rod([x+Math.sin(t)*.25,.03,z+Math.cos(t)*.25],[x+Math.sin(t)*.25,.68,z+Math.cos(t)*.25],.008,iron);}s.cylinder(.25,.25,.02,[x,.01,z],iron,16);}
+    }
+    if(a.waterStation!=='none'){
+      const x=-3.9,z=-10;
+      if(a.waterStation==='taps'){s.box([.5,.38,1.5],[x,.19,z],s.material('#b1aa96'));s.box([.35,.02,1.35],[x,.39,z],serviceMetal);for(const dz of[-.5,0,.5]){s.rod([x-.18,.38,z+dz],[x-.18,.9,z+dz],.025,serviceMetal);s.tube([[x-.18,.9,z+dz],[x+.05,.9,z+dz],[x+.05,.82,z+dz]],.018,serviceMetal);}}
+      else if(a.waterStation==='cooler'){s.box([.6,1.2,.7],[x,.6,z],serviceMetal);s.box([.18,.08,.06],[x+.33,.9,z],iron);s.box([.3,.04,.5],[x+.43,.7,z],serviceMetal);for(const dz of[-.2,.2])strut([x+.29,.45,z+dz],[x+.55,.68,z+dz],.02);}
+      else{s.box([.52,.55,.52],[x,.275,z],s.material('#aa9e83'));s.lathe([[.12,0],[.25,.1],[.28,.32],[.16,.5],[.1,.54]],s.material('#ac7752'),[x,.55,z]);s.cylinder(.13,.13,.025,[x,1.1025,z],s.material('#8f6749'),16);}
+    }
+    if(a.serviceCabinet!=='none'){
+      const x=-3.8,z=-16,h=a.serviceCabinet==='tools'?.6:1.65,w=a.serviceCabinet==='tools'?1.2:.8,mat=a.serviceCabinet==='hose'?s.material('#a64739'):serviceMetal;
+      s.box([.55,h,w],[x,h/2,z],mat);s.box([.012,h-.1,w-.08],[x+.282,h/2,z],iron);
+      if(a.serviceCabinet==='hose'){const ring=s.ring(.35,.05,[x+.3,.9,z],mat);ring.rotation.y=Math.PI/2;s.rod([x+.32,.9,z-.3],[x+.32,.9,z+.3],.025,serviceMetal);}
+      else{s.box([.025,.13,.04],[x+.3,h*.55,z+w*.3],serviceMetal);if(a.serviceCabinet==='electrical')for(let i=0;i<6;i++)s.box([.02,.015,.55],[x+.3,.28+i*.045,z],serviceMetal);}
+    }
+    if(a.edgeMarkers!=='plain'){
+      if(a.edgeMarkers==='studs'){const studs:{at:V3;size:number}[]=[];for(let i=0;i<120;i++)for(const x of[XE-.15,XE-.25])studs.push({at:[x,.007,roofEnd+i*(roofStart-roofEnd)/119],size:1});s.scatter(new THREE.SphereGeometry(.018,6,4).scale(1,.4,1),s.material('#d0c7aa'),studs);}
+      else if(a.edgeMarkers==='slabs')for(let i=0;i<40;i++){const z=roofEnd+(i+.5)*(roofStart-roofEnd)/40;s.box([.32,.008,.92],[XE-.2,.004,z],s.material(i%2?'#c2bba4':'#aba58f'));}
+      else for(let i=0;i<6;i++){const plate=s.label(String(i+1),.4,.3,[XE-.25,.008,roofStart-3-i*6],'#242b27','#ddd4b3');plate.rotation.x=-Math.PI/2;}
+    }
+
     // ---- commit the ironwork ----------------------------------------------
     {
       const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), iron, struts.length);
@@ -693,7 +744,7 @@ export default defineWorld({
           trackFree = false;
           const scale = Math.min(1, 7.5 / radius, 5.6 / height);
           item.holder.scale.setScalar(scale);
-          item.holder.position.set(tracks[0], PIT + 0.02, -5.5 - radius * scale * 0.55);
+          item.holder.position.set(tracks[0], PIT, -5.5 - radius * scale * 0.55);
           item.holder.rotation.y = -Math.PI / 2;
           item.holder.updateMatrixWorld(true);
           continue;

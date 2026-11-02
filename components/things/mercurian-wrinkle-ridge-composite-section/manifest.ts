@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Mercurian wrinkle ridge composite section", "summary": "A broad low arch carries a narrower superposed ridge, with closed asymmetric flanks and a real side cut. A broad low arch and narrower superposed ridge form one continuous closed terrain surface. Real side cuts expose the composite relief; the subsurface layers are explicitly an explanatory model rather than a recovered stratigraphy.", "scales": ["planetary", "landscape", "tabletop"]});

@@ -60,6 +60,42 @@ export default defineThing({
       brush: 'A wire test-tube brush.',
       holder: 'A wooden test-tube holder, the clothes-peg kind.',
     }),
+    vessels: choice('What proportions do the tubes have?', {
+      standard: 'Long ordinary laboratory test tubes.',
+      narrow: 'Tall fine tubes for very small comparisons.',
+      wide: 'Wide boiling tubes with a substantial rolled rim.',
+      short: 'Short specimen tubes barely taller than the rack.',
+    }),
+    graduations: choice('What measuring marks are visible on the glass?', {
+      plain: 'Clear unmarked glass.',
+      ticks: 'Fine white ticks climb one side of each tube.',
+      numbers: 'A few numbered marks accompany the graduations.',
+      bands: 'Three coloured measuring bands circle each tube.',
+    }),
+    deposit: choice('What is settling inside the filled tubes?', {
+      clear: 'No visible sediment or precipitate.',
+      sediment: 'A compact pale layer has settled at each rounded bottom.',
+      flocs: 'Soft suspended flecks gather in the lower liquid.',
+      crystals: 'A few distinct little crystals grow at the bottom.',
+    }),
+    frame: choice('What extra structure supports the rack?', {
+      open: 'The usual open-sided frame.',
+      braces: 'Diagonal braces stiffen both ends.',
+      drip: 'A shallow tray below the base catches the drips.',
+      handle: 'A high carrying handle rises above the row of tubes.',
+    }),
+    screen: choice('What stands behind the tubes to help compare their colours?', {
+      none: 'No comparison background.',
+      white: 'A plain white card makes the liquid colours clear.',
+      dark: 'A dark card emphasises pale precipitates.',
+      chart: 'A card of numbered colour swatches accompanies the series.',
+    }),
+    transport: choice('How is the set prepared for storage or travel?', {
+      bench: 'It is open and in use on the bench.',
+      strap: 'A narrow carrying strap is buckled around the rack ends.',
+      cover: 'A clear protective hood stands over the rack.',
+      crate: 'A low slatted wooden crate surrounds the base.',
+    }),
   },
 
   build(a, context) {
@@ -82,7 +118,7 @@ export default defineThing({
     s.box([L, 0.009, depth - 0.006], [0, railY, 0], wood);
     for (const x of [-1, 1]) for (const z of [-1, 1]) s.cylinder(0.0035, 0.0035, 0.002, [x * (L / 2 + 0.0105), railY, z * depth * 0.3], dark, 8).rotation.z = Math.PI / 2;
 
-    const R = 0.0095, len = 0.15, y0 = 0.014;
+    const R = a.vessels === 'narrow' ? 0.0065 : a.vessels === 'wide' ? 0.012 : 0.0095, len = a.vessels === 'narrow' ? 0.19 : a.vessels === 'short' ? 0.11 : 0.15, y0 = 0.014;
     const order = Array.from({ length: n }, (_u, i) => i);
     // Shuffle a share of the series according to the mess.
     for (let i = 0; i < Math.round(mess * n * 0.8); i++) {
@@ -98,10 +134,20 @@ export default defineThing({
       put(s.mesh(new THREE.SphereGeometry(R, 16, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), glass, [0, R, 0]));
       put(s.ring(R + 0.0012, 0.0014, [0, len, 0], rimMat)).rotation.x = Math.PI / 2;
       if (colour && level > 0.02) {
-        const paint = s.material(colour, { roughness: 0.2, emissive: colour, emissiveIntensity: 0.18 });
+        const paint = s.material(colour, { roughness: 0.2, emissive: colour, emissiveIntensity: 0.18, transparent: a.deposit !== 'clear', opacity: a.deposit === 'clear' ? 1 : 0.68, depthWrite: a.deposit === 'clear' });
         const top = len * level;
         put(s.cylinder(R - 0.0018, R - 0.0018, top - R, [0, R + (top - R) / 2, 0], paint, 14));
         put(s.ball([R - 0.0018, R - 0.0018, R - 0.0018], [0, R, 0], paint, 14));
+      }
+      if (a.graduations !== 'plain') {
+        const ink = s.material(a.graduations === 'bands' ? '#bb5b3f' : '#f4f1dc');
+        if (a.graduations === 'bands') for (let i = 1; i <= 3; i++) { const band = put(s.ring(R + 0.0005, 0.0006, [0, len * (0.25 + i * 0.16), 0], ink)); band.rotation.x = Math.PI / 2; }
+        else for (let i = 1; i < 8; i++) { const h = len * (0.18 + i * 0.09); put(s.box([i % 2 ? R * 0.45 : R * 0.8, 0.0008, 0.0007], [R * 0.16, h, R + 0.0002], ink)); if (a.graduations === 'numbers' && i % 2 === 0) put(s.label(String(i), 0.005, 0.007, [-R * 0.35, h, R + 0.0008], '#49616a', '#edf1dc')); }
+      }
+      if (colour && level > 0.02 && a.deposit !== 'clear') {
+        const solid = s.material(a.deposit === 'crystals' ? '#d2e9e9' : '#e7dfc6', { roughness: a.deposit === 'crystals' ? 0.25 : 0.9 });
+        if (a.deposit === 'sediment') put(s.ball([R * 0.72, R * 0.53, R * 0.72], [0, R * 0.82, 0], solid, 12));
+        else for (let i = 0; i < 4; i++) { const angle = i * 2.1; const h = R + i * (a.deposit === 'flocs' ? len * Math.min(level, 0.4) / 10 : R * 0.22); const object = a.deposit === 'crystals' ? s.mesh(new THREE.OctahedronGeometry(R * 0.28, 0), solid, [Math.cos(angle) * R * 0.35, h, Math.sin(angle) * R * 0.35]) : s.ball([R * 0.3, R * 0.18, R * 0.26], [Math.cos(angle) * R * 0.35, h, Math.sin(angle) * R * 0.35], solid, 8); put(object); }
       }
       if (cracked) {
         const line = s.material('#f7fbfb', { roughness: 0.3 });
@@ -112,7 +158,7 @@ export default defineThing({
           y = y2; t = t2;
         }
       }
-      if (corked) put(s.cylinder(0.0105, 0.008, 0.016, [0, len + 0.002, 0], cork, 12));
+      if (corked) put(s.cylinder(R + 0.001, R - 0.0015, 0.016, [0, len + 0.002, 0], cork, 12));
       if (sticker) {
         const tag = put(s.box([0.011, 0.014, 0.0006], [0, len * 0.84, R + 0.0005], s.material('#f7f3e6', { roughness: 0.9 })));
         tag.rotation.z = (random() - 0.5) * 0.3 * (0.3 + mess);
@@ -123,7 +169,7 @@ export default defineThing({
       const row = Math.floor(i / perRow), col = i % perRow;
       const x = (col - (perRow - 1) / 2) * pitch, z = rows === 2 ? (row === 0 ? 0.024 : -0.024) : 0;
       // Hole in the top rail and dimple in the base.
-      s.cylinder(0.0125, 0.0125, 0.0095, [x, railY + 0.0004, z], dark, 14);
+      s.cylinder(R + 0.003, R + 0.003, 0.0095, [x, railY + 0.0004, z], dark, 14);
       const t = n > 1 ? order[i] / (n - 1) : 0;
       const colour = a.series === 'flame' ? new THREE.Color(STOPS.flame[(order[i] + Math.floor(random() * 2 * mess)) % STOPS.flame.length]) : ramp(STOPS[a.series], t);
       const isFlaw = i === flawAt;
@@ -173,6 +219,39 @@ export default defineThing({
       }
     }
     if (mood.wear > 0.5) for (let k = 0; k < 5; k++) s.cylinder(0.006 + random() * 0.008, 0.006, 0.0008, [(random() - 0.5) * L * 0.9, 0.0124, (random() - 0.5) * depth * 0.7], dark, 10);
+
+    if (a.frame === 'braces') for (const side of [-1, 1]) s.rod([side * (L / 2 + 0.011), 0.014, -depth * 0.4], [side * (L / 2 + 0.011), 0.099, depth * 0.4], 0.003, dark);
+    if (a.frame === 'drip') {
+      for (const side of [-1, 1]) { s.box([L + 0.06, 0.014, 0.004], [0, 0.007, side * (depth / 2 + 0.02)], dark); s.box([0.004, 0.014, depth + 0.04], [side * (L / 2 + 0.028), 0.007, 0], dark); }
+      s.box([L + 0.06, 0.002, depth + 0.04], [0, 0.001, 0], dark);
+    }
+    if (a.frame === 'handle') s.tube([[-L / 2 - 0.004, 0.06, 0], [-L / 2 - 0.004, len + 0.05, 0], [0, len + 0.06, 0], [L / 2 + 0.004, len + 0.05, 0], [L / 2 + 0.004, 0.06, 0]], 0.005, wood);
+    if (a.screen !== 'none') {
+      const z = -depth / 2 - 0.018, h = len + 0.025;
+      const board = s.material(a.screen === 'dark' ? '#33484b' : '#eee9da');
+      s.box([L, h, 0.003], [0, h / 2 + 0.012, z], board);
+      for (const side of [-1, 1]) s.rod([side * L * 0.38, 0.01, z - 0.018], [side * L * 0.38, h * 0.7, z], 0.003, wood);
+      if (a.screen === 'chart') for (let i = 0; i < perRow; i++) {
+        const x = (i - (perRow - 1) / 2) * pitch;
+        s.box([pitch * 0.68, 0.019, 0.001], [x, h - 0.015, z + 0.002], s.material(ramp(STOPS[a.series], i / Math.max(1, perRow - 1))));
+        s.label(String(i + 1), 0.014, 0.012, [x, h - 0.035, z + 0.003], '#273d42', '#eee9da');
+      }
+    }
+    if (a.transport === 'strap') for (const side of [-1, 1]) {
+      const leather = s.material('#9c7045'), x = side * (L / 2 + 0.004);
+      for (const z of [-1, 1]) s.box([0.008, 0.104, 0.002], [x, 0.052, z * (depth / 2 + 0.007)], leather);
+      for (const y of [0.001, 0.104]) s.box([0.008, 0.002, depth + 0.016], [x, y, 0], leather);
+      s.box([0.012, 0.018, 0.004], [x, 0.065, depth / 2 + 0.009], s.material('#b7ae85', { metalness: 0.6 }));
+    }
+    if (a.transport === 'cover') {
+      const h = len + y0 + 0.026, clear = s.material('#d1e3e5', { transparent: true, opacity: 0.1, depthWrite: false });
+      for (const side of [-1, 1]) { s.box([L + 0.038, h, 0.002], [0, h / 2, side * (depth / 2 + 0.016)], clear); s.box([0.002, h, depth + 0.032], [side * (L / 2 + 0.019), h / 2, 0], clear); }
+      s.box([L + 0.04, 0.002, depth + 0.034], [0, h + 0.001, 0], clear);
+    }
+    if (a.transport === 'crate') {
+      for (const side of [-1, 1]) for (let i = 0; i < 3; i++) s.box([L + 0.05, 0.014, 0.005], [0, 0.01 + i * 0.022, side * (depth / 2 + 0.02)], wood);
+      for (const side of [-1, 1]) for (const z of [-1, 1]) s.box([0.008, 0.073, 0.009], [side * (L / 2 + 0.025), 0.0365, z * (depth / 2 + 0.02)], dark);
+    }
 
     const zb = -(depth / 2 + 0.04), clear = s.material('#e2f2f4', { roughness: 0.08 });
     const span = Math.min(L * 0.4, 0.07);

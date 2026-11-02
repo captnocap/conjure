@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Leaf canopy reading desk", "summary": "A broad veined leaf shades a tiny reading desk on branch legs, with a supported book cradle, fitted drawers and a seat sized to the desk. Reading outside, private study, a rain-free page and a little room beneath a leaf.", "scales": ["tabletop", "room", "macro"]});

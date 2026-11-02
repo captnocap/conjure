@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Motile airway cilia epithelial ridge", "summary": "A fixed epithelial tissue ridge bears anchored motile cilia and a cut basal-body region, retaining the tissue and ciliary field in every cast. A fixed ciliary field and genuine goblet outlet remain above sectioned epithelial cells in every cast. Basal bodies and rootlets occupy exposed tissue windows; beat phases, molecular sizes and secretory detail are schematic.", "scales": ["macro", "tabletop"]});

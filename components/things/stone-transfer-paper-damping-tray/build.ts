@@ -1,0 +1,30 @@
+import * as THREE from 'three';
+import { Sculpture, choice, score, noul, diorama, defineThing, defineWorld, figure } from '@conjure/kit';
+export default defineThing({
+  questions: {
+    tray: choice("What tray is used?", {"wood": "A rectangular timber tray.", "metal": "A thin folded metal tray.", "stone": "A thick pale stone basin.", "double": "Two adjoining damping compartments."}),
+    mount: choice("Where does it stand?", {"board": "A low wooden board.", "bench": "A four-legged workbench.", "feet": "Four short square feet.", "sled": "Two long supporting runners."}),
+    papers: choice("How are the papers arranged?", {"stack": "A neat stack of transfer sheets.", "fan": "Several sheets fan outward.", "single": "One large wet transfer sheet.", "empty": "An empty tray."}),
+    screen: choice("What lifting screen is fitted?", {"mesh": "A fine crossed screen beneath the paper.", "slats": "Parallel narrow screen slats.", "frame": "A bare rectangular lifting frame.", "none": "No removable screen."}),
+    cover: choice("How is the tray covered?", {"open": "A lid stands upright at the back.", "closed": "The lid closes the tray.", "half": "A lid covers one compartment.", "off": "No lid is fitted."}),
+    cloth: choice("How is damp cloth arranged?", {"under": "A flat cloth below the paper.", "fold": "A cloth folded over the near edge.", "roll": "A rolled damp cloth at the side.", "none": "No cloth is visible."}),
+    weights: choice("What holds the sheets flat?", {"bars": "Two slender paper weights.", "blocks": "Four small corner blocks.", "disk": "A circular centre weight.", "none": "No weights are fitted."}),
+    drain: choice("What drain is fitted?", {"spout": "A short open spout.", "pipe": "A downturned drain pipe.", "plug": "A small plugged outlet.", "none": "Unbroken tray walls."}),
+    tools: choice("What damping tool is present?", {"brush": "A broad wetting brush.", "sponge": "A thick porous sponge block.", "bottle": "A small pouring bottle.", "none": "No tool rests on the rim."}),
+    state: choice("What transfer stage is visible?", {"fresh": "Clean blank transfer paper.", "drawn": "A geometric design on the top sheet.", "register": "Corner alignment marks on the paper.", "drying": "A wet sheet hangs over the tray edge."}),
+    width: score("How large is the tray?", ["Small proof tray", "Standard transfer tray", "Broad lithographic tray"])
+  },
+  build(a,context){
+ const s=new Sculpture(context),wood=s.material('#9b805b'),light=s.material('#c0a97d'),iron=s.material('#536b61',{metalness:.42}),dark=s.material('#3e4b42'),stone=s.material('#c4c3a6'),paper=s.material('#eee4c5',{side:THREE.DoubleSide}),leather=s.material('#78644b'),water=s.material('#93b6a7',{transparent:true,opacity:.5,depthWrite:false});
+
+ const W=.75+a.width*.65,D=.68,Y=a.mount==='bench'?.65:a.mount==='board'?.035:.13,H=.14,mat=a.tray==='metal'?iron:a.tray==='stone'?stone:wood;if(a.mount==='board')s.box([W+.15,.035,D+.25],[0,.0175,0],wood);else if(a.mount==='sled')for(const z of [-.25,.25])s.box([W+.15,Y,.08],[0,Y/2,z],wood);else for(const x of [-W*.4,W*.4])for(const z of [-.25,.25])s.box([.06,Y,.06],[x,Y/2,z],wood);
+ s.box([W,.04,D],[0,Y+.02,0],mat);for(const z of [-D/2,D/2])s.box([W,H,.03],[0,Y+H/2,z],mat);for(const x of [-W/2,W/2])s.box([.03,H,D],[x,Y+H/2,0],mat);if(a.tray==='double')s.box([.025,H,D],[0,Y+H/2,0],wood);s.box([W-.06,.006,D-.06],[0,Y+.055,0],water);
+ if(a.screen!=='none'){for(const x of [-W*.43,W*.43])s.box([.025,.025,D*.84],[x,Y+.072,0],wood);for(const z of [-D*.42,D*.42])s.box([W*.88,.025,.025],[0,Y+.072,z],wood);if(a.screen!=='frame')for(let j=0;j<13;j++)s.rod([-W*.4+j*W*.8/12,Y+.075,-D*.4],[-W*.4+j*W*.8/12,Y+.075,D*.4],a.screen==='slats'?.009:.003,iron);if(a.screen==='mesh')for(let j=0;j<9;j++)s.rod([-W*.4,Y+.078,-D*.4+j*D*.8/8],[W*.4,Y+.078,-D*.4+j*D*.8/8],.003,iron);}
+ if(a.cloth==='under'||a.cloth==='fold')s.box([W*.78,.012,D*.7],[0,Y+.09,0],paper);if(a.cloth==='fold')s.surface((u,v,p)=>p.set((u-.5)*W*.6,Y+.15-Math.max(0,v-.55)*.25,.05+v*.43),paper,{segments:[8,12]});if(a.cloth==='roll')s.cylinder(.05,.05,.3,[W*.35,Y+.19,0],paper,20).rotation.x=Math.PI/2;
+ if(a.papers!=='empty')for(let j=0;j<(a.papers==='single'?1:5);j++){const g=new THREE.Group();s.root.add(g);g.position.set(0,Y+.105+j*.006,0);g.rotation.y=a.papers==='fan'?(j-2)*.08:0;const m=new THREE.Mesh(new THREE.BoxGeometry(W*.68,.005,D*.64),paper);g.add(m);if(j===(a.papers==='single'?0:4)){if(a.state==='drawn'){const art=s.box([W*.32,.002,.12],[0,Y+.109+j*.006,0],dark);art.rotation.y=g.rotation.y;}if(a.state==='register')for(const x of [-W*.29,W*.29])for(const z of [-D*.25,D*.25])s.box([.04,.002,.01],[x,Y+.109+j*.006,z],dark);}}
+ if(a.state==='drying')s.surface((u,v,p)=>p.set((u-.5)*W*.55,Y+.15-Math.max(0,v-.45)*.3,.12+v*.35),paper,{segments:[6,12]});const weightBase=a.papers==='empty'?Y+(a.screen==='none'?.04:.085):Y+.1075+(a.papers==='single'?0:.024),py=weightBase+.0125;if(a.weights==='bars')for(const x of [-W*.25,W*.25])s.box([.035,.025,D*.55],[x,py,0],iron);if(a.weights==='blocks')for(const x of [-W*.3,W*.3])for(const z of [-D*.25,D*.25])s.box([.06,.04,.06],[x,weightBase+.02,z],stone);if(a.weights==='disk')s.cylinder(.1,.1,.025,[0,py,0],iron,24);
+ if(a.cover==='closed'||a.cover==='half')s.box([a.cover==='half'?W*.5:W+.05,.035,D+.05],[a.cover==='half'?-W*.25:0,Y+H+.02,0],wood);if(a.cover==='open'){s.box([W,.55,.035],[0,Y+H+.275,-D/2],wood);for(const x of [-W*.3,W*.3])s.rod([x,Y+H,-D*.1],[x,Y+H+.35,-D/2],.012,iron);}
+ if(a.drain!=='none'){if(a.drain==='plug')s.cylinder(.025,.025,.03,[W/2+.015,Y+.05,0],dark,16).rotation.z=Math.PI/2;else s.tube([[W/2,Y+.05,0],[W/2+.15,Y+.05,0],[W/2+.15,a.drain==='pipe'?Y-.05:Y+.05,0]],.022,iron);}if(a.tools==='brush'){s.box([.14,.035,.055],[W*.25,Y+H+.02,.34],dark);s.rod([W*.25+.07,Y+H+.02,.34],[W*.25+.22,Y+H+.02,.34],.012,wood);}if(a.tools==='sponge')s.box([.12,.07,.09],[-W*.25,Y+H+.035,.34],light);if(a.tools==='bottle')s.lathe([[.05,0],[.05,.12],[.025,.15],[.025,.2],[0,.2]],stone,[W*.25,Y+H,-.34]);
+return s.finish();
+  },
+});

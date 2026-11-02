@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Torsion fiber suspension head", "summary": "A fitted top clamp supports a continuous fine fiber through an exposed housing to a lower torsion joint. An enlarged torsion-suspension teaching head with continuous load paths from frame through clamp and fiber to the lower attachment; precision force experiments and alignment.", "scales": ["macro", "tabletop"]});

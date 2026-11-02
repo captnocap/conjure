@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Thimble rain tank", "summary": "An oversized sewing thimble becomes a raised rainwater tank, with dimpled sides, an open inlet and a connected tap. A pocket-sized water tower, saved rainfall, household engineering and the sound of one drop after another.", "scales": ["room", "street", "tabletop"]});

@@ -38,7 +38,7 @@ function mockModel(context: TestContext, judge: (id: string, brief: string) => n
   });
   return calls;
 }
-const askedIds = (call: RequestBody) => call.questions.map((question) => /\? (Thing \d+):/.exec(question.ask)![1].replace('Thing ', 'things/thing-'));
+const askedIds = (call: RequestBody) => call.questions.filter((question) => question.ask.startsWith('Would this belong')).map((question) => /\? (Thing \d+):/.exec(question.ask)![1].replace('Thing ', 'things/thing-'));
 
 test('only things at the setting scales are asked, then a shortlist is judged with the setting in view', async (context) => {
   const calls = mockModel(context);
@@ -52,6 +52,7 @@ test('only things at the setting scales are asked, then a shortlist is judged wi
   const shortlisted = askedIds(calls[1]);
   assert.ok(shortlisted.length <= SHORTLIST && shortlisted.length > 0);
   assert.match(calls[1].brief, /The setting is Apartment kitchen: A small kitchen at night\./);
+  assert.equal(calls[1].questions.filter((question) => question.ask.startsWith('Is this what the idea is about')).length, shortlisted.length, 'the shortlist is also asked which thing the idea is about');
   assert.ok(calls[1].brief.length <= MAX_BRIEF_CHARACTERS);
   const floorOf = Math.min(...shortlisted.map(ideaOnly));
   for (const thing of roomThings) if (!shortlisted.includes(thing.id)) assert.ok(ideaOnly(thing.id) <= floorOf || ideaOnly(thing.id) < BELONGS_FLOOR);

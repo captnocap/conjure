@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Porphyritic olivine chondrule section", "summary": "A rounded chondrule contains separated faceted olivine grains in an actual enclosed mesostasis volume. A schematic porphyritic olivine chondrule with faceted grains occupying real mesostasis volumes; meteorite petrography and early Solar System textures.", "scales": ["macro", "tabletop"]});

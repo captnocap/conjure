@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Scintillator calorimeter layer stack", "summary": "Alternating absorber slabs and thin active layers form a stepped cutaway block with attached readout fibers. A beam-transport engineering specimen with a clear vacuum aperture, connected mechanisms and an exposed service view.", "scales": ["tabletop", "room"]});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Budding corallite parent daughter pair", "summary": "Connected skeletal cups share an actual budding neck or boundary based on a specified budding mode. A schematic extratentacular budding study informed by Montipora canal development; daughter calices, connected skeleton and colony growth.", "scales": ["macro", "tabletop"]});

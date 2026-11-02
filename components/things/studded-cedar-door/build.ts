@@ -134,6 +134,13 @@ export default defineThing({
       white: 'Whitewash.',
       dado: 'Whitewash with a blue-painted lower band.',
     }),
+    carving: choice('How is the cedar panel carved?', {stars:'Raised rectangular panels with nested geometric stars.',arches:'Tall arched panels with an inner border.',diamonds:'A chain of deeply outlined lozenge panels.',plain:'Plain narrow vertical cedar boards.'}),
+    hinges: choice('What hinge straps cross each leaf?', {spear:'Narrow iron straps ending in spear points.',broad:'Broad rectangular straps with three rivets.',scroll:'Slender straps ending in curled scrolls.',short:'Short plain hinge plates beside the jamb.'}),
+    knocker: choice('What is the main door knocker?', {hand:'A hand-shaped brass knocker.',ring:'A large iron ring on a square plate.',bar:'A horizontal turned brass pull between two mounts.',plate:'A small hammered plate with a hanging teardrop pull.'}),
+    threshold: choice('How is the threshold finished?', {stone:'A single worn stone sill.',tile:'Small glazed tiles set into the top of the sill.',wood:'A dark timber sill with two iron straps.',marble:'A pale marble sill with a narrow dark nosing.'}),
+    eave: choice('What shelters the doorway?', {tiles:'A shallow roof of green curved tiles.',timber:'A cedar board canopy on brackets.',cornice:'A stepped plaster cornice with no canopy.',bare:'The decorated wall ends without an eave.'}),
+    plaque: choice('What is fixed beside the doorway?', {number:'A small numbered enamel address plaque.',rosette:'A carved circular stone rosette.',key:'A small hook holding one long iron key.',none:'The jamb has no plaque or ornament.'}),
+    guard: choice('What protects the bottom of each door leaf?', {bare:'Bare cedar to the bottom.',plate:'A broad dark metal kick plate.',corners:'Small metal corner plates.',rail:'A raised timber rail along the bottom.'}),
     step: choice('What is on the doorstep?', {
       nothing: 'Nothing.',
       slippers: 'A pair of yellow babouches left outside.',
@@ -173,19 +180,18 @@ export default defineThing({
     s.box([hw * 2 + 0.92, 0.06, 0.07], [0, top + 0.45, 0.02], trim);
     for (const x of [-1, 1]) s.box([0.06, top + 0.42, 0.07], [x * (hw + 0.43), (top + 0.42) / 2, 0.02], trim);
 
-    // Green-tiled eave on brackets.
-    const eaveY = top + 0.62;
-    const glaze = s.material('#2f8a5c', { roughness: 0.35 });
-    const beam = s.material('#5c3a22', { roughness: 0.9 });
-    const eave = s.box([hw * 2 + 1.3, 0.05, 0.6], [0, eaveY + 0.1, 0.24], glaze);
-    eave.rotation.x = 0.35;
-    for (let i = 0; i < 15; i++) {
-      const x = (i - 7) * ((hw * 2 + 1.24) / 15);
-      const ridge = s.cylinder(0.04, 0.045, 0.62, [x, eaveY + 0.13, 0.25], glaze, 8);
-      ridge.rotation.x = Math.PI / 2 + 0.35;
-    }
-    for (const x of [-1, -0.33, 0.33, 1]) s.rod([x * (hw + 0.5), eaveY - 0.22, 0], [x * (hw + 0.5), eaveY - 0.02, 0.42], 0.035, beam);
-    s.box([hw * 2 + 0.3, 0.1, 0.5], [0, 0.05, 0.12], s.material('#b9b0a0', { roughness: 0.9 }));
+    // A real projecting canopy or a shallow wall cornice, with supports at its underside.
+    const eaveY=top+.62,glaze=s.material('#2f8a5c',{roughness:.35}),beam=s.material('#5c3a22',{roughness:.9});
+    if(a.eave==='tiles'||a.eave==='timber'){
+      const eave=s.box([hw*2+1.3,.05,.6],[0,eaveY+.1,.24],a.eave==='tiles'?glaze:beam);eave.rotation.x=.35;
+      if(a.eave==='tiles')for(let i=0;i<15;i++){const x=(i-7)*((hw*2+1.24)/15);const ridge=s.cylinder(.04,.045,.62,[x,eaveY+.13,.25],glaze,8);ridge.rotation.x=Math.PI/2+.35;}
+      else for(let i=0;i<9;i++){const seam=s.box([.009,.008,.6],[(i-4)*.28,eaveY+.128,.24],s.material('#332215'));seam.rotation.x=.35;}
+      for(const x of[-1,-.33,.33,1]){s.rod([x*(hw+.5),eaveY-.22,0],[x*(hw+.5),eaveY+.005,.48],.035,beam);s.box([.065,.06,.5],[x*(hw+.5),eaveY+.06,.25],beam).rotation.x=.35;}
+    }else if(a.eave==='cornice')for(let i=0;i<3;i++)s.box([hw*2+1.12+i*.08,.075,.12+i*.08],[0,eaveY+i*.075,.04+i*.04],plaster);
+    const sill=s.material(a.threshold==='marble'?'#d9d6cb':a.threshold==='wood'?'#54402c':'#b9b0a0',{roughness:a.threshold==='marble'?.3:.85});s.box([hw*2+.3,.1,.5],[0,.05,.12],sill);
+    if(a.threshold==='tile'){for(let i=0;i<9;i++)s.box([.16,.008,.42],[(i-4)*.174,.104,.12],s.material(i%2?'#e7dfcc':'#276c63',{roughness:.35}));}
+    if(a.threshold==='wood')for(const x of[-.5,.5])s.box([.045,.008,.5],[x,.104,.12],s.material('#302d29',{metalness:.7}));
+    if(a.threshold==='marble')s.box([hw*2+.3,.025,.028],[0,.086,.365],s.material('#4d5656'));
 
     // What lies behind.
     const open = { locked: 0, shut: 0, ajar: 0.32, half: 0.95, wide: 1.5 }[a.state];
@@ -204,13 +210,14 @@ export default defineThing({
     g.fillStyle = tone(1); g.fillRect(0, 0, 256, 1024);
     for (let x = 0; x < 4; x++) { g.fillStyle = tone(0.9 + random() * 0.2); g.fillRect(x * 64, 0, 62, 1024); g.fillStyle = tone(0.55); g.fillRect(x * 64 + 62, 0, 2, 1024); }
     g.lineWidth = 5;
-    for (let i = 0; i < 4; i++) {
+    for (let i=0;i<(a.carving==='plain'?0:4);i++) {
       const y = 1024 - 60 - (i + 1) * 215;
       g.strokeStyle = tone(0.6); g.strokeRect(28, y, 200, 190);
       g.strokeStyle = tone(1.3); g.strokeRect(38, y + 10, 180, 170);
       g.save(); g.translate(128, y + 95); g.strokeStyle = tone(0.62);
-      for (let k = 0; k < 2; k++) { g.rotate(Math.PI / 4); g.strokeRect(-48, -48, 96, 96); }
-      g.beginPath(); g.arc(0, 0, 22, 0, 7); g.stroke();
+      if(a.carving==='stars'){for(let k=0;k<2;k++){g.rotate(Math.PI/4);g.strokeRect(-48,-48,96,96);}g.beginPath();g.arc(0,0,22,0,7);g.stroke();}
+      else if(a.carving==='diamonds'){for(const radius of[47,61]){g.beginPath();g.moveTo(0,-radius);g.lineTo(radius*.7,0);g.lineTo(0,radius);g.lineTo(-radius*.7,0);g.closePath();g.stroke();}}
+      else {for(const inset of[0,12]){g.beginPath();g.moveTo(-58+inset,65);g.lineTo(-58+inset,-5);g.arc(0,-5,58-inset,Math.PI,0);g.lineTo(58-inset,65);g.closePath();g.stroke();}}
       g.restore();
     }
     g.fillStyle = `rgba(60,45,30,${0.15 + mood.wear * 0.35})`; g.fillRect(0, 900, 256, 124);
@@ -241,10 +248,13 @@ export default defineThing({
       panel.castShadow = panel.receiveShadow = true;
       leaf.add(panel);
       const part = (mesh: THREE.Mesh) => { mesh.removeFromParent(); leaf.add(mesh); return mesh; };
-      for (const y of [0.38, 1.3, 2.12]) {
-        part(s.box([0.5, 0.07, 0.014], [-0.26, y, 0.077], iron));
-        part(s.mesh(new THREE.ConeGeometry(0.06, 0.12, 4).rotateZ(Math.PI / 2).scale(1, 1, 0.12), iron, [-0.56, y, 0.077]));
-      }
+      for(const y of[.38,1.3,2.12]){const short=a.hinges==='short',width=short?.16:.5;part(s.box([width,a.hinges==='broad'?.13:.065,.016],[-width/2-.01,y,.078],iron));part(s.cylinder(.018,.018,.15,[-.012,y,.04],iron,8));
+        if(a.hinges==='spear')part(s.mesh(new THREE.ConeGeometry(.06,.12,4).rotateZ(Math.PI/2).scale(1,1,.12),iron,[-.56,y,.078]));
+        if(a.hinges==='scroll'){const points=[];for(let i=0;i<=24;i++){const t=i/24*Math.PI*2.5,rr=.065*(1-i/32);points.push([-.49+Math.sin(t)*rr,y+Math.cos(t)*rr,.082] as [number,number,number]);}part(s.tube(points,.009,iron));}
+        if(a.hinges==='broad')for(const x of[-.08,-.25,-.43])part(s.ball([.018,.018,.012],[x,y,.092],brass,7));}
+      if(a.guard==='plate')part(s.box([hw-.035,.24,.012],[-hw/2,.15,.078],iron));
+      if(a.guard==='corners')for(const x of[-hw+.07,-.07])part(s.box([.12,.14,.012],[x,.09,.078],iron));
+      if(a.guard==='rail')part(s.box([hw-.025,.09,.035],[-hw/2,.09,.088],leafEdge));
       if (studs.length) {
         const mesh = new THREE.InstancedMesh(studShape, a.colour === 'black' ? brass : iron, studs.length);
         const matrix = new THREE.Matrix4();
@@ -253,7 +263,7 @@ export default defineThing({
         mesh.castShadow = true;
         leaf.add(mesh);
       }
-      if (side > 0) {
+      if (side>0&&a.knocker==='hand') {
         // Hand-of-Fatima knocker near the meeting edge.
         const kx = -hw + 0.15, ky = 1.42, kz = 0.085;
         part(s.cylinder(0.035, 0.035, 0.016, [kx, ky + 0.1, kz], brass, 12)).rotation.x = Math.PI / 2;
@@ -262,7 +272,7 @@ export default defineThing({
         part(s.rod([kx + 0.04, ky + 0.03, kz + 0.014], [kx + 0.075, ky - 0.03, kz + 0.016], 0.012, brass, 0.009));
         part(s.ball([0.03, 0.03, 0.03], [kx, ky - 0.15, kz + 0.02], brass, 10));
         part(s.cylinder(0.05, 0.05, 0.012, [kx, ky - 0.15, kz - 0.008], iron, 12)).rotation.x = Math.PI / 2;
-      } else part(s.ring(0.06, 0.012, [-hw + 0.15, 1.3, 0.09], iron));
+      }else if(side>0){const x=-hw+.15,y=1.4,z=.087;if(a.knocker==='ring'){part(s.box([.13,.16,.018],[x,y+.06,z],iron));part(s.ring(.08,.013,[x,y-.015,z+.035],iron));part(s.rod([x,y+.095,z],[x,y+.065,z+.04],.012,iron));}else if(a.knocker==='bar'){for(const xx of[x-.09,x+.09])part(s.rod([xx,y,z],[xx,y,z+.07],.014,brass));part(s.rod([x-.09,y,z+.07],[x+.09,y,z+.07],.022,brass));}else {part(s.ball([.07,.1,.013],[x,y,z],brass,14));part(s.ring(.045,.011,[x,y-.07,z+.025],iron)).scale.y=1.4;}}else part(s.ring(.06,.012,[-hw+.15,1.3,.09],iron));
       leaf.position.set(side * hw, 0.1, -0.2);
       leaf.scale.x = side;
       if (side < 0) leaf.rotation.y = open;
@@ -275,6 +285,9 @@ export default defineThing({
       s.ring(0.035, 0.009, [0.05, 1.04, -0.085], iron);
     }
 
+    if(a.plaque==='number'){s.box([.27,.17,.025],[1.29,2.15,.022],iron);s.label('27',.23,.13,[1.29,2.15,.037],'#f0e6ce','#285265');}
+    else if(a.plaque==='rosette'){s.cylinder(.12,.12,.025,[1.28,2.15,.024],plaster,20).rotation.x=Math.PI/2;for(let i=0;i<8;i++){const angle=i*Math.PI/4;s.ball([.025,.046,.016],[1.28+Math.sin(angle)*.065,2.15+Math.cos(angle)*.065,.048],trim,8).rotation.z=-angle;}}
+    else if(a.plaque==='key'){s.rod([1.29,2.29,.01],[1.29,2.29,.075],.009,iron);s.ring(.04,.008,[1.29,2.25,.071],iron);s.rod([1.29,2.21,.071],[1.29,2.04,.071],.009,iron);s.box([.06,.025,.018],[1.31,2.05,.071],iron);}
     if (a.step === 'slippers') {
       const yellow = s.material('#e8b81e', { roughness: 0.7 });
       for (const k of [0, 1]) {
@@ -291,9 +304,10 @@ export default defineThing({
         for (let k = 0; k < 7; k++) s.ball([0.05, 0.045, 0.05], [px + (random() - 0.5) * 0.3, 0.44 + random() * 0.14, 0.3 + (random() - 0.5) * 0.3], bloom, 8);
       }
     } else if (a.step === 'broom') {
-      const px = hw + 0.3;
+      const px=hw+.3,broomStart=s.root.children.length;
       s.rod([px + 0.12, 0.02, 0.3], [px, 1.25, 0.06], 0.016, s.material('#a8824a'));
       s.mesh(new THREE.ConeGeometry(0.13, 0.4, 10, 1, true), s.material('#c9b26a', { side: THREE.DoubleSide, roughness: 1 }), [px + 0.105, 0.2, 0.27]).rotation.set(-0.19, 0, -0.1);
+      const broom=new THREE.Group();for(const part of s.root.children.slice(broomStart))broom.add(part);s.root.add(broom);broom.updateMatrixWorld(true);broom.position.y-=new THREE.Box3().setFromObject(broom,true).min.y;
     }
     return s.finish({ footprint: 1.5 });
   },

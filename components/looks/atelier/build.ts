@@ -1,9 +1,8 @@
 import { choice, choiceFrom, defineLook, mix as blend, score } from '@conjure/kit';
 import { type AtelierLayer, type AtelierMix, applyMix, styles } from './atelier';
-import { UNSUITABLE } from './unsuitable';
+import { describeStudy } from './studies';
 
-const usable = styles.filter((style) => !(style.id in UNSUITABLE));
-const describe = (style: (typeof styles)[number]) => `${style.name} (${style.medium}). ${style.description}`;
+const describe = describeStudy;
 const NONE = 'none';
 
 const BLENDS = {
@@ -23,10 +22,10 @@ const AMOUNT = ['A trace', 'Light', 'Balanced', 'Strong', 'Dominant'] as const;
 
 export default defineLook({
   questions: {
-    base: choiceFrom('Which process draws the picture?', usable, (style) => style.id, describe),
+    base: choiceFrom('Which process draws the picture?', styles, (style) => style.id, describe),
     overlay: choice('Which second process is laid over it, if any?', {
       [NONE]: 'No second process: one clean treatment.',
-      ...Object.fromEntries(usable.map((style) => [style.id, describe(style)])),
+      ...Object.fromEntries(styles.map((style) => [style.id, describe(style)])),
     }),
     overlayBlend: choice('How does the second process combine with the first?', BLENDS),
     overlayWeight: score('How strongly does the second process show?', AMOUNT),

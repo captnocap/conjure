@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Bowman capsule urinary pole transition", "summary": "A finite capsule and urinary space join the initial tubule at a real continuous urinary pole. The capsule opens continuously into the initial tubule. Optional tuft reference loops sit on explicit display struts, distinct from anatomy; the enlarged wall, urinary space and apical surface form a teaching section.", "scales": ["macro", "tabletop"]});

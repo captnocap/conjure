@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Stellar wind wake shear roll model", "summary": "A rolled shear-interface ribbon remains continuously attached to the downstream bow wake; it is labeled a schematic instability geometry. Rolled finite interface ribbons remain attached to an upstream bow lip and downstream wake strip. This labeled instability geometry illustrates shear roll-up; curl counts and wavelengths are schematic shape controls.", "scales": ["cosmic", "tabletop"]});

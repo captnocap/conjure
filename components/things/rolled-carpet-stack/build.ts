@@ -19,7 +19,7 @@ const PALETTES = {
 } as const;
 type Palette = keyof typeof PALETTES;
 
-function weave(family: Family, palette: Palette, random: () => number, fade: number) {
+function weave(family: Family, palette: Palette, random: () => number, fade: number, selvedge:string, fringe:string) {
   const [ground, a, b, c, dark] = PALETTES[palette];
   const W = 256, H = 384;
   const canvas = document.createElement('canvas');
@@ -82,8 +82,9 @@ function weave(family: Family, palette: Palette, random: () => number, fade: num
     g.fillStyle = a;
     for (const x of [34, W - 34]) for (const y of [46, H - 46]) { g.beginPath(); g.moveTo(x, y); g.lineTo(x + (x < 128 ? 40 : -40), y); g.lineTo(x, y + (y < 192 ? 56 : -56)); g.fill(); }
   }
-  // Fringe at both ends.
-  for (const y of [0, H - 12]) {
+  if(selvedge==='bound'){g.fillStyle=dark;for(const x of[0,W-12])g.fillRect(x,0,12,H);}else if(selvedge==='double'){g.fillStyle=a;for(const x of[4,11,W-15,W-8])g.fillRect(x,0,3,H);}else if(selvedge==='stitched'){g.fillStyle='#efe6cf';for(const x of[5,W-8])for(let y=4;y<H;y+=11)g.fillRect(x,y,3,6);}
+  // A woven termination remains visible even when there are no loose warp ends.
+  for (const y of fringe==='none' ? [] : [0, H - 12]) {
     g.fillStyle = '#efe6cf'; g.fillRect(0, y, W, 12);
     g.fillStyle = '#9a8c6c';
     for (let x = 0; x < W; x += 6) g.fillRect(x, y, 2, 12);
@@ -123,6 +124,13 @@ export default defineThing({
       none: 'Nothing: every roll is piled flat on the ground.',
     }),
     tags: noul('Do paper price tags dangle from the rolls?'),
+    diameter: score('How tightly are the carpets rolled?', ['Slim tightly packed rolls', 'Ordinary hand rolls', 'Broad loose rolls with thick ends']),
+    ties: choice('How are the rolls secured?', {double:'Two narrow cords around each roll.',single:'One broad central fabric strap.',triple:'Three thin cords with knots.',none:'The carpets remain untied.'}),
+    fringe: choice('What finishes the ends of the open carpet?', {short:'Short closely spaced pale warp ends.',long:'Long loose warp fringes.',tassels:'Small knotted bunches at regular intervals.',none:'A clean woven end with no loose fringe.'}),
+    selvedge: choice('How are the long edges finished?', {plain:'Plain edges continuing the field pattern.',bound:'A broad contrasting woven binding.',double:'Two narrow parallel woven edge stripes.',stitched:'Small pale hand stitches along both edges.'}),
+    base: choice('What supports the horizontal stock?', {ground:'The rolls rest directly on the ground.',pallet:'A low slatted wooden pallet.',trestle:'A low display platform on two trestles.',shelf:'A shallow two-level wooden storage rack.'}),
+    display: choice('How does the open carpet lead into the display?', {forward:'Laid squarely forward from the stack.',left:'Angled out to the left.',right:'Angled out to the right.',diagonal:'Turned diagonally across the foreground.'}),
+    samples: choice('What lies beside the sample carpet?', {swatches:'Three small woven samples on a low board.',folded:'A neat stack of folded sample rugs.',comb:'A wooden wool comb and a loose yarn hank.',none:'The sample stands alone.'}),
   },
 
   build(a, context) {
@@ -133,7 +141,7 @@ export default defineThing({
     const cloth = (family: Family, palette: Palette) => {
       const key = family + palette;
       let found = cache.get(key);
-      if (!found) cache.set(key, found = new THREE.MeshStandardMaterial({ map: weave(family, palette, random, mood.wear), roughness: 1, side: THREE.DoubleSide }));
+      if (!found) cache.set(key, found = new THREE.MeshStandardMaterial({ map: weave(family, palette, random, mood.wear,a.selvedge,a.fringe), roughness: 1, side: THREE.DoubleSide }));
       return found;
     };
     const stock: THREE.MeshStandardMaterial[] = [cloth(a.family, a.palette)];
@@ -159,11 +167,12 @@ export default defineThing({
       const body = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, length, 18), [skin, end, end]);
       body.castShadow = body.receiveShadow = true;
       group.add(body);
-      for (const side of [-1, 1]) {
-        const tie = new THREE.Mesh(new THREE.TorusGeometry(radius * 1.01, 0.008, 5, 18), rope);
+      for (const side of a.ties==='none'?[]:a.ties==='single'?[0]:a.ties==='triple'?[-1,0,1]:[-1,1]) {
+        const tie = new THREE.Mesh(new THREE.TorusGeometry(radius+.005, a.ties==='single'?.018:.008, 5, 18), rope);
         tie.rotation.x = Math.PI / 2;
         tie.position.y = side * length * 0.3;
         group.add(tie);
+        if(a.ties==='triple'){const knot=new THREE.Mesh(new THREE.SphereGeometry(.017,7,5),rope);knot.position.set(0,side*length*.3,radius+.012);group.add(knot);}
       }
       if (a.tags && random() < 0.7) {
         const label = new THREE.Mesh(new THREE.PlaneGeometry(0.07, 0.11), tag);
@@ -174,31 +183,36 @@ export default defineThing({
       }
       group.position.copy(from).add(to).multiplyScalar(0.5);
       group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
-      s.root.add(group);
+      s.root.add(group);return group;
     };
 
     const total = Math.round(mix(2, 13, a.rolls) + mood.density * 2);
     const leaning = a.rest === 'none' ? 0 : Math.floor(total * 0.4);
     const piled = total - leaning;
-    const R = 0.16;
+    const R=mix(.11,.21,a.diameter),tieR=a.ties==='single'?.023:a.ties==='none'?0:.013,contactR=R+tieR,stockY=a.base==='ground'?0:a.base==='pallet'?.12:.48;
     let bottom = 1;
     while (bottom * (bottom + 1) / 2 < piled) bottom++;
     let placed = 0;
     for (let row = 0; row < bottom && placed < piled; row++) {
       const count = Math.min(bottom - row, piled - placed);
       for (let j = 0; j < count; j++, placed++) {
-        const z = -0.2 - bottom * R + (j - (count - 1) / 2) * R * 2.04, y = R + row * R * 1.76;
+        const z=-.2-bottom*contactR+(j-(bottom-row-1)/2)*contactR*2,y=stockY+contactR+row*contactR*Math.sqrt(3);
         const length = 1.5 + random() * 0.7, x = (random() - 0.5) * 0.3;
-        const skew = (random() - 0.5) * 0.08;
-        roll(new THREE.Vector3(x - length / 2, y, z - skew), new THREE.Vector3(x + length / 2, y, z + skew), R * mix(0.82, 1, random()), stock[Math.floor(random() * stock.length)]);
+        const skew=0;
+        roll(new THREE.Vector3(x - length / 2, y, z - skew), new THREE.Vector3(x + length / 2, y, z + skew), R, stock[Math.floor(random() * stock.length)]);
       }
     }
-    const backZ = -0.2 - bottom * R * 2 - 0.25;
+    const backZ=-.2-bottom*contactR*2-.25;
+    if(a.base!=='ground'){const wood=s.material('#795634'),depth=bottom*contactR*2+.12,centerZ=-.2-bottom*contactR,width=2.6;
+      if(a.base==='pallet'){for(const x of[-1.03,0,1.03])s.box([.14,.075,depth],[x,.0375,centerZ],wood);for(let i=0;i<7;i++)s.box([width,.045,depth/8],[0,.0975,centerZ-depth/2+(i+.5)*depth/7],wood);}
+      else {s.box([width,.05,depth],[0,stockY-.025,centerZ],wood);for(const x of[-1.08,1.08])for(const z of[centerZ-depth*.35,centerZ+depth*.35])s.box([.075,stockY-.05,.075],[x,(stockY-.05)/2,z],wood);for(const x of[-1.08,1.08])s.rod([x,.15,centerZ-depth*.35],[x,stockY-.08,centerZ+depth*.35],.025,wood);
+        if(a.base==='shelf'){s.box([width,.045,depth],[0,.075,centerZ],wood);for(let k=0;k<3;k++)s.box([.65,.075,depth*.72],[(k-1)*.77,.135,centerZ],stock[k]);}}
+    }
     if (a.rest === 'rail') {
       const wood = s.material('#6d4a2c', { roughness: 0.9 });
       for (const x of [-1.25, 1.25]) {
         s.box([0.08, 1.6, 0.08], [x, 0.8, backZ - 0.36], wood);
-        s.rod([x, 0.9, backZ - 0.36], [x, 0, backZ - 0.9], 0.03, wood);
+        s.rod([x, 0.9, backZ - 0.36], [x, .03, backZ - 0.9], 0.03, wood);
       }
       s.box([2.8, 0.07, 0.07], [0, 1.5, backZ - 0.33], wood);
     } else if (a.rest === 'wall') {
@@ -210,7 +224,7 @@ export default defineThing({
       const length = 1.75 + random() * 0.45;
       const base = new THREE.Vector3(x, 0, backZ + (random() - 0.5) * 0.06);
       const aim = new THREE.Vector3(x + (random() - 0.5) * 0.3, 1.5, backZ - 0.3 + R).sub(base).normalize();
-      roll(base, base.clone().addScaledVector(aim, length), R * mix(0.75, 1, random()), stock[Math.floor(random() * stock.length)]);
+      const upright=roll(base,base.clone().addScaledVector(aim,length),R*mix(.75,1,random()),stock[Math.floor(random()*stock.length)]);upright.updateMatrixWorld(true);upright.position.y-=new THREE.Box3().setFromObject(upright,true).min.y;
     }
 
     // The open carpet, gently rumpled, its far end still curled.
@@ -227,12 +241,14 @@ export default defineThing({
       mesh.rotation.y = turn;
       return mesh;
     };
-    const turn = (random() - 0.5) * 0.24, cz = 0.2 + l / 2;
+    const turn={forward:0,left:-.25,right:.25,diagonal:.48}[a.display]+(random()-.5)*.06,cz=.2+l/2;
     spread(w, l, stock[0], 0, cz, 0.004, turn);
     const tip = new THREE.Vector3(0, 0.09, -l / 2 + 0.06).applyAxisAngle(new THREE.Vector3(0, 1, 0), turn);
     const across = new THREE.Vector3(w / 2, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), turn);
     roll(new THREE.Vector3(0, 0, cz).add(tip).sub(across), new THREE.Vector3(0, 0, cz).add(tip).add(across), 0.085, stock[0]);
 
+    if(a.fringe!=='none'){const fringeMat=s.material('#ddd0ae'),length=a.fringe==='long'?.15:a.fringe==='tassels'?.1:.06,count=a.fringe==='tassels'?Math.round(w/.12):Math.round(w/.035);const local=(x:number,z:number)=>new THREE.Vector3(x,.009,z).applyAxisAngle(new THREE.Vector3(0,1,0),turn).add(new THREE.Vector3(0,0,cz));for(let i=0;i<count;i++){const x=mix(-w*.48,w*.48,i/Math.max(1,count-1)),from=local(x,l/2-.008),to=local(x+(random()-.5)*.015,l/2+length);s.rod(from.toArray(),to.toArray(),a.fringe==='tassels'?.007:.0025,fringeMat);if(a.fringe==='tassels')s.ball([.011,.007,.014],from.toArray(),fringeMat,6);}}
+    if(a.samples!=='none'){const x=-w/2-.47,z=cz+.2;if(a.samples==='swatches'){s.box([.65,.045,.48],[x,.0225,z],s.material('#86633c'));for(let i=0;i<3;i++)spread(.19,.34,stock[i+1],x+(i-1)*.2,z,.047,0);}else if(a.samples==='folded'){for(let i=0;i<4;i++)s.box([.48,.045,.38],[x,.0225+i*.045,z],stock[i+1]);}else{const wood=s.material('#9b794a');s.box([.39,.025,.075],[x,.014,z],wood);for(let i=0;i<9;i++)s.rod([x-.16+i*.04,.015,z+.025],[x-.16+i*.04,.015,z+.15],.007,wood);for(let k=0;k<5;k++){const hank=s.ring(.08+k*.004,.006,[x,.007+(k%2)*.006,z-.16],rope);hank.rotation.x=Math.PI/2;hank.scale.x=1.5;}}}
     if (a.open === 'tea') {
       const brass = s.material('#c99a3c', { metalness: 0.8, roughness: 0.3 });
       const tx = (random() - 0.5) * w * 0.3, tz = cz + (random() - 0.3) * l * 0.2;

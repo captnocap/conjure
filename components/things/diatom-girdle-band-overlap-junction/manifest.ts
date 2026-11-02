@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Diatom girdle band overlap junction", "summary": "Overlapping finite silica girdle bands preserve real stepped interfaces around an open frustule cylinder. Finite silica bands retain separate overlapping surfaces and real pores. The enlarged section is a comparative centric-girdle teaching model, with open band ends rather than a sealed stack of rings.", "scales": ["macro", "tabletop"]});

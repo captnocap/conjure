@@ -1,0 +1,27 @@
+import * as THREE from 'three';
+import { Sculpture, choice, score, noul, defineThing, figure } from '@conjure/kit';
+const questions = {
+  form: choice("What tray catches the honey?", {"steel": "A deep stainless steel uncapping tray.", "wood": "A timber tray with a metal liner.", "double": "A perforated upper tray above a honey pan.", "bucket": "A broad tray supported over a draining bucket.", "long": "A long narrow uncapping trough."}),
+  state: choice("What stage is the uncapping at?", {"whole": "A fully capped frame waits.", "half": "One half of the comb has been uncapped.", "scrape": "The last wax cappings are being scraped away.", "drain": "An uncapped frame rests to drain.", "clean": "The frame is removed and tools are clean."}),
+  detail: choice("What honey colour fills the comb?", {"pale": "Pale golden honey.", "amber": "Warm amber honey.", "dark": "Deep late-season honey.", "mixed": "Light and dark patches in one frame.", "wax": "A very pale new wax comb."}),
+  support: choice("How is the frame held over the tray?", {"bridge": "A wooden bridge across the tray.", "fork": "Two upright metal fork rests.", "slope": "A low sloping wooden cradle.", "post": "A central pivot post holds the top bar.", "flat": "The frame lies flat across two rails."}),
+  extra: choice("Which tool rests beside the work?", {"knife": "A long uncapping knife.", "fork": "A short toothed uncapping fork.", "roller": "A spiked uncapping roller.", "scraper": "A broad wax scraper.", "none": "No loose tool."}),
+  mark: choice("What identifies the harvest batch?", {"date": "A HARVEST DAY tray label.", "hive": "A HIVE 03 label.", "grade": "A small AMBER sample tag.", "stripe": "A blue stripe on the tray rim.", "plain": "Unmarked working equipment."}),
+  extent: score("How broad is the tray?", ["A small hobby harvest tray", "A household uncapping tray", "A large shared harvest tray"]),
+  load: score("How much wax has collected below?", ["Only a few crumbs", "A small mound of cappings", "A full tray of wax cappings"]),
+  closed: noul("Is a small lidded honey sample jar set beside it?"),
+};
+export default defineThing({
+  questions,
+  build(a, context) {
+    const s = new Sculpture(context), { random, mood } = context;
+    const f = Object.keys(questions.form.options).indexOf(a.form), t = Object.keys(questions.state.options).indexOf(a.state), d = Object.keys(questions.detail.options).indexOf(a.detail), u = Object.keys(questions.support.options).indexOf(a.support), e = Object.keys(questions.extra.options).indexOf(a.extra), m = Object.keys(questions.mark.options).indexOf(a.mark);
+    const wood = s.material('#a47c4e'), pale = s.material('#e0d2ac'), metal = s.material('#8f9995', { metalness: 0.7, roughness: 0.35 }), dark = s.material('#3d443c'), green = s.material('#667e50');
+    const colors = ['#a64d39', '#497e70', '#d4af55', '#59778c', '#b47b8c'];
+
+    const w=.55+a.extent*.35,dep=f===4?.38:.5,base=f===3?.32:.03,mat=f===1?wood:metal;s.box([w,.025,dep],[0,base,0],mat);for(const x of [-w/2,w/2])s.box([.018,.12,dep],[x,base+.06,0],mat);for(const z of [-dep/2,dep/2])s.box([w,.12,.018],[0,base+.06,z],mat);if(f===3)s.lathe([[.13,0],[.18,.3],[.17,.3],[.12,.02]],metal);if(f===2){for(const z of [-dep*.4,dep*.4])s.rod([-w*.45,base+.08,z],[w*.45,base+.08,z],.006,metal);for(let i=0;i<15;i++)s.rod([-w*.45+i*w*.9/14,base+.08,-dep*.4],[-w*.45+i*w*.9/14,base+.08,dep*.4],.002,metal);}
+    const wax=s.material('#d5c28c'),honey=s.material(['#c1a357','#b18a3e','#8e6b36','#ba9c58','#d7c58b'][d]),fy=base+.16,fw=w*.7,fh=.28,frame=new THREE.Group();if(t!==4){for(const x of [-fw/2,fw/2])frame.add(s.box([.018,fh,.025],[x,fh/2,0],wood));for(const y of [0,fh])frame.add(s.box([fw+.04,.018,.028],[0,y,0],wood));frame.add(s.box([fw-.025,fh-.025,.008],[0,fh/2,0],honey));for(let j=0;j<4;j++)for(let i=0;i<6;i++){const x=(i-2.5)*fw*.14,y=.035+j*.065;if(t===0||t===1&&i<3)frame.add(s.mesh(new THREE.CircleGeometry(.025,6),wax,[x,y,.007]));else frame.add(s.mesh(new THREE.TorusGeometry(.024,.002,3,6),d===3&&(i+j)%3===0?dark:wood,[x,y,.012]));}frame.position.y=u===4?base+.14:fy;frame.position.z=u===4?fh/2:0;frame.rotation.x=u===4?-Math.PI/2:u===2?-.45:0;s.root.add(frame);}
+    if(u===4)for(const x of [-fw*.45,fw*.45])s.rod([x,base+.12,-dep/2],[x,base+.12,dep/2],.012,wood);else{for(const x of [-fw*.4,fw*.4])s.rod([x,base,0],[x,fy+fh*.6,0],.012,u===1?metal:wood);s.rod([-w/2,fy,0],[w/2,fy,0],.015,wood);}if(u===3)s.rod([0,base,-.03],[0,fy+fh,-.03],.013,wood);
+    if(t!==4){s.box([w*.85,.005,dep*.7],[0,base+.017,0],honey);for(let i=0;i<5+Math.round(a.load*25);i++)s.ball([.016,.006,.012],[(random()-.5)*w*.75,base+.025,(random()-.5)*dep*.7],wax,8);}const tx=w/2+.12;if(e===0||e===3){s.box([e===0?.035:.1,.004,.2],[tx,.004,0],metal);s.rod([tx,.009,.09],[tx,.009,.21],.012,wood);}if(e===1){s.box([.07,.012,.06],[tx,.01,0],wood);for(let i=0;i<8;i++)s.rod([tx-.03+i*.009,.013,0],[tx-.03+i*.009,.013,-.1],.0015,metal);s.rod([tx,.01,.03],[tx,.01,.15],.01,wood);}if(e===2){s.cylinder(.028,.028,.1,[tx,.03,0],wood,16).rotation.z=Math.PI/2;for(let i=0;i<6;i++)s.rod([tx-.04+i*.016,.03,0],[tx-.04+i*.016,.065,0],.002,metal);s.rod([tx,.03,.02],[tx,.03,.15],.008,metal);}if(m<3)s.label(['HARVEST DAY','HIVE 03','AMBER'][m],w*.5,.05,[0,base+.07,dep/2+.011]);if(m===3)s.box([w,.02,.006],[0,base+.1,dep/2+.012],s.material('#63859a'));if(a.closed){s.cylinder(.045,.045,.08,[-w/2-.1,.04,0],honey,20);s.cylinder(.048,.048,.012,[-w/2-.1,.086,0],metal,20);}return s.finish();
+  },
+});

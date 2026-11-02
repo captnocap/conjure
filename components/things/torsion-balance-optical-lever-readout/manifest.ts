@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Torsion balance optical lever readout", "summary": "A small mirror attached to the suspended beam reflects an explicit diagrammatic ray toward a grounded detector scale. An optical-lever teaching assembly with a suspended mirror, grounded source and detector, and explicit rays obeying specular reflection; alignment geometry, not a quantitative sensitivity claim.", "scales": ["macro", "tabletop"]});

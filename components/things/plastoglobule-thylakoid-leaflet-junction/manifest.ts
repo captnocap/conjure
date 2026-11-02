@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Plastoglobule thylakoid leaflet junction", "summary": "A lipid droplet remains connected to the documented thylakoid leaflet at a narrow monolayer junction, shown schematically. The droplet coat joins only the stroma-facing leaflet while the opposite leaflet remains continuous beneath it. The exposed core is lipid, not an aqueous pore into the thylakoid lumen; this is an enlarged monolayer teaching section.", "scales": ["macro", "tabletop"]});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Teapot spout hillside town", "summary": "A hollow porcelain teapot has become a miniature hillside town, with terraced cottages, a great loop handle, fitted paths and a spout feeding the village watercourse. A whole neighbourhood borrowed from the tea tray, small journeys and everyday wonder.", "scales": ["tabletop", "room"]});

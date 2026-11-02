@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Sea ice brine channel network section", "summary": "A connected network of actual voids passes through a closed ice slab, with exposed main channels and lateral pockets. A schematic cut ice microstructure with real connected voids, based on micro-CT morphology; polar drainage, porosity and freezing.", "scales": ["macro", "tabletop"]});

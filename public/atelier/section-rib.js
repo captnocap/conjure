@@ -1,6 +1,7 @@
 import { getSectionRibBake, BAKED_SECTION_RIB_META } from './section-rib-bake.js';
 import { sourceGeometrySignature } from './section-rib-signature.js';
 import { matchesAcceptedSourceGeometry } from './accepted-source-reference.js';
+import { prepareConjureProxy, validateConjureProxyField, renderConjureProxy } from './conjure-proxies.js';
 
 export const SECTION_RIB = Object.freeze({ version: 1, model: 'section-rib-v1', supersample: 2, shadowSize: 2048, background: Object.freeze([229,231,222]), defaultStrength: .6 });
 const linear = x => x <= .04045 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4;
@@ -80,6 +81,7 @@ export function rasterSectionRibDepth(triangles, projected, size, tie, withOwner
 // Only the compact shading ownership and group radiometry survive preparation.
 // Every mutable input is validated and copied or reduced before returning.
 export function prepareSectionRib(snapshot, lighting, materialColor) {
+  if (snapshot?.source === 'conjure') return prepareConjureProxy(snapshot, lighting, materialColor, 'section-ribs');
   validateSectionRibGeometry(snapshot);validateCamera(snapshot);
   const light=copyLighting(lighting);
   const V=Array.from(snapshot.view),P=Array.from(snapshot.projection),size=snapshot.size;
@@ -122,6 +124,7 @@ export function prepareSectionRib(snapshot, lighting, materialColor) {
 
 const planKeys=['version','model','size','samples','groups','colors'];
 export function validateSectionRibField(plan) {
+  if (plan?.model === 'conjure-section-ribs-v1') return validateConjureProxyField(plan, 'section-ribs');
   const G=BAKED_SECTION_RIB_META.groupCount;
   if(!equalKeys(plan,planKeys)||plan.version!==1||plan.model!==SECTION_RIB.model||!sizeOK(plan.size)||
     !(plan.samples instanceof Uint16Array)||plan.samples.length!==4*plan.size*plan.size||
@@ -137,6 +140,7 @@ export function sectionRibContrast(strength) {
   return strength===.6?{ambient:.32,directScale:.68/4.5}:{ambient:Math.max(0,Math.min(1,.32+.8*(.6-strength))),directScale:(.68+.8*(strength-.6))/4.5};
 }
 export function renderSectionRib(plan,strength=.6) {
+  if (plan?.model === 'conjure-section-ribs-v1') return renderConjureProxy(plan, strength);
   const {ambient,directScale}=sectionRibContrast(strength);validateSectionRibField(plan);
   const {size,samples,groups,colors}=plan,G=groups.length/5,N=size*2,lookup=new Uint8Array((G*2+1)*3);
   lookup.set(SECTION_RIB.background);

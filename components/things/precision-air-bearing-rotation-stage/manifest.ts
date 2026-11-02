@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Precision air bearing rotation stage", "summary": "A hollow circular stage and exposed bearing feed paths carry a supported upper platform; sections show actual clearances. An enlarged air-bearing turntable teaching section with genuine annular gaps, supported feed and readout hardware, and explicit service spacers; air-film clearance is exaggerated for visibility.", "scales": ["macro", "tabletop"]});

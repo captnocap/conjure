@@ -1,4 +1,4 @@
-import type { Direction, Finish, Framing, Kind, Mood, QuestionSet, Scale } from '@conjure/kit';
+import type { Direction, Finish, Framing, Kind, Mood, Palette, QuestionSet, Scale } from '@conjure/kit';
 import { choice, hashText, score, seeded } from '@conjure/kit';
 import { type Entry, entriesOf, entryOf, loadBuilder } from './catalogue';
 import { type ConsultOptions, type Usage, type Verdict, consult, noUsage, stanceBrief } from './oracle';
@@ -6,7 +6,7 @@ import { type Forced, type Ruling, settle } from './settle';
 import { DesignDecisions, type DesignPlan } from './design';
 import { StyleDecisions } from './styles';
 import { BRIEF_BASE, HOUSE, HOUSE_NOTE, HOUSE_BRIEF, NO_DIRECTION, directed, directionOf, houseQuestion } from './art-direction';
-import { BELONGS_FLOOR, CastingDecisions, castName } from './casting';
+import { BELONGS_FLOOR, CastingDecisions, SUBJECT_FLOOR, castName } from './casting';
 import { FRAMING_QUESTIONS, adjustFraming, framingOf } from './framing';
 import { PRESENTATIONS, PRESENTATION_QUESTIONS, type Presentation, adjustMood, presentationOf } from './presentation';
 import { type SceneSoFar, sceneBrief } from './scene-brief';
@@ -17,6 +17,10 @@ import { OTHERWORLD_QUESTIONS, type Otherworld, otherworldOf } from './otherworl
 import { VACUI_QUESTIONS, type Vacui, vacuiOf } from './vacui';
 import { MOTION_QUESTIONS, type CameraMove, cameraMoveOf } from './motion';
 import { announce } from './activity';
+import { PAINT_COOLING, type Paint, paintOf, paintQuestionsFor } from './paint';
+import { PALETTE_QUESTIONS, paletteWords, settlePalette } from './palette';
+import { MATERIAL_COOLING, type Material, materialOf, materialQuestionsFor, materialWords } from './material';
+import { MATERIALIZE_QUESTIONS, type Materialize, materializeOf } from './materialize';
 import type { Relation } from '@conjure/kit';
 
 
@@ -78,6 +82,10 @@ export interface CastMember {
   answers: Record<string, string | number | boolean>;
   /** Where a supporting thing stands in relation to the hero. The hero has none. */
   relation?: Relation;
+  /** Colours the idea asked for, laid over what was built. Absent when it keeps its own. */
+  paint?: Paint;
+  /** What the idea said it is made of, dressed over what was built. Absent when it keeps its own surfaces. */
+  material?: Material;
 }
 
 /** Everything decided for one idea and one roll. Enough to build the scene without asking again. */
@@ -107,6 +115,10 @@ export interface Plan {
   otherworld?: Otherworld;
   /** How the print's dead space fills with micro-macro detail. Absent in plain studies and older plans. */
   vacui?: Vacui;
+  /** The print's own colours, which looks and finishing passes re-key their inks to. Absent in plain studies and older plans. */
+  palette?: Palette;
+  /** How far the surfaces of things show through the medium of the print. Absent in plain studies and older plans. */
+  materialize?: Materialize;
   /** How the camera moves if the print is recorded as a loop. */
   camera?: CameraMove;
   /** The direction the whole picture followed. Absent in plain studies and plans made before directions existed. */
@@ -242,11 +254,13 @@ export class Conjuring {
     if (!pending) {
       pending = loadBuilder(entry).then(async (builder) => {
         const questions = builder.questions;
-        const verdicts = Object.keys(questions).length
+        // Colour and material ride in the same request, so asking about them costs no extra round trip.
+        const asked = { ...(this.options.plain ? {} : { ...paintQuestionsFor(entry), ...materialQuestionsFor(entry) }), ...questions };
+        const verdicts = Object.keys(asked).length
           ? await consult(
               this.idea,
               sceneBrief(stanceBrief(directed(BRIEF_BASE, entry.kind === 'look' ? direction.brief : direction.note), this.options), entry, scene),
-              questions,
+              asked,
               this.usage,
               { ...this.options, about: `detail:${entry.id}` },
             )
@@ -270,7 +284,7 @@ export class Conjuring {
     // The finishing passes the direction brings ride in the routing request but each settles on its own
     // stream, so a direction without them leaves the routing draws as they were.
     const brings = (finish: Finish) => !this.options.plain && direction.finishes.includes(finish);
-    const finishes = this.options.plain ? {} : { ...(brings('otherworld') ? OTHERWORLD_QUESTIONS : {}), ...(brings('vacui') ? VACUI_QUESTIONS : {}), ...MOTION_QUESTIONS };
+    const finishes = this.options.plain ? {} : { ...(brings('otherworld') ? OTHERWORLD_QUESTIONS : {}), ...(brings('vacui') ? VACUI_QUESTIONS : {}), ...MOTION_QUESTIONS, ...PALETTE_QUESTIONS, ...MATERIALIZE_QUESTIONS };
     let routed_ = this.#routed.get(directionKey);
     if (!routed_) {
       routed_ = consult(this.idea, stanceBrief(directed(BRIEF_BASE, direction.brief), this.options), { ...routing, ...finishes }, this.usage, { ...this.options, about: 'scene' }).then((verdicts) => {
@@ -303,6 +317,13 @@ export class Conjuring {
     const otherworld = brings('otherworld') && pins.rift !== 'none' ? finish(OTHERWORLD_QUESTIONS, 'otherworld', otherworldOf) : undefined;
     const vacui = brings('vacui') && pins.vacui !== 'none' ? finish(VACUI_QUESTIONS, 'vacui', vacuiOf) : undefined;
     const camera = finish(MOTION_QUESTIONS, 'motion', cameraMoveOf);
+    // A replay of a picture made before palettes existed pins it off, so its looks keep their own inks.
+    const palette = this.options.plain || pins.palette === 'none' ? undefined
+      : settlePalette(verdicts, temperature, seed ^ hashText('palette'), rulings, pins, { roll, seed: hashText(`${this.idea}\u0000palette`) });
+    if (palette) announce({ type: 'decided', stage: 'palette', title: 'Palette', detail: paletteWords(palette) });
+    // A replay of a picture made before the materialize pass existed pins it off, so its surfaces print flat as they did.
+    const materialize = this.options.plain || pins.materialize === 'none' ? undefined : finish(MATERIALIZE_QUESTIONS, 'materialize', materializeOf);
+    if (materialize) announce({ type: 'decided', stage: 'materialize', title: 'Surfaces', detail: words('materialize') || `${Math.round(materialize.weight * 100)}% through the medium` });
     const styles = this.#stylesFor(directionKey, direction);
 
     const presentation = presentationOf(routed);
@@ -333,6 +354,7 @@ export class Conjuring {
     // Cast by how strongly each thing belongs, among those that exist at this world's scale.
     const forced = this.options.cast;
     const belonging = forced ? new Map<string, number>() : await this.#casting.belongs(worldEntry);
+    const subjects = forced ? new Map<string, number>() : await this.#casting.subjects(worldEntry);
     const eligible = this.#entries('thing')
       .filter((entry) => entry.scales.some((candidate) => worldEntry.scales.includes(candidate)))
       .map((entry) => ({ entry, belongs: belonging.get(entry.id) ?? 0.5 }));
@@ -357,7 +379,12 @@ export class Conjuring {
           // A pinned thing is cast first whatever its odds; a thing pinned out is never cast.
           const pinned = (candidate: { entry: Entry }) => pins[castName(candidate.entry.id)];
           const kept = ranked.filter((candidate) => pinned(candidate) === true);
-          const open = ranked.filter((candidate) => pinned(candidate) === undefined);
+          // The thing the idea is about leads the cast: "the Sydney Opera House" is the hero even where a bench belongs more.
+          const leader = [...ranked]
+            .filter((candidate) => pinned(candidate) === undefined && (subjects.get(candidate.entry.id) ?? 0) >= SUBJECT_FLOOR)
+            .sort((a, b) => (subjects.get(b.entry.id) ?? 0) - (subjects.get(a.entry.id) ?? 0))[0];
+          if (leader) kept.push(leader);
+          const open = ranked.filter((candidate) => pinned(candidate) === undefined && candidate !== leader);
           return [...kept, ...open.filter((candidate, position) => (position === 0 && !kept.length) || candidate.belongs >= BELONGS_FLOOR).slice(0, Math.max(0, wanted - kept.length))];
         })();
     const nearly = forced
@@ -368,7 +395,7 @@ export class Conjuring {
           .slice(0, 10)
           .map((candidate) => ({ id: candidate.entry.id, title: candidate.entry.title, belongs: candidate.belongs }));
 
-    announce({ type: 'decided', stage: 'casting', title: 'Cast', detail: forced ? `${chosen.length} chosen for the study` : `${chosen.length} of ${eligible.length} things at this scale`, items: chosen.map((member) => member.entry.title) });
+    announce({ type: 'decided', stage: 'casting', title: 'Cast', detail: forced ? `${chosen.length} cast as given` : `${chosen.length} of ${eligible.length} things at this scale`, items: chosen.map((member) => member.entry.title) });
     const scene: SceneSoFar = { world: worldEntry, cast: chosen.map((member) => member.entry), look: lookEntry };
     // One typed question per supporting thing: where it stands in relation to the hero.
     const hero = chosen[0]?.entry;
@@ -394,13 +421,28 @@ export class Conjuring {
         answers: settle(entry.id, questions, verdicts, temperature, seeded(seed ^ hashText(entry.id)), rulings, pins,
           entry.kind === 'look' ? { roll, seed: hashText(`${this.idea}\u0000${entry.id}`) } : undefined),
       };
+      // On its own stream and cooler than the details, so adding colour changed none of a roll's other draws.
+      const painting = this.options.plain ? {} : Object.fromEntries(Object.entries(paintQuestionsFor(entry)).filter(([name]) => !(name in questions)));
+      if (Object.keys(painting).length) {
+        const painted = settle(entry.id, painting, verdicts, temperature * PAINT_COOLING, seeded(seed ^ hashText(`${entry.id}:paint`)), rulings, pins);
+        const paint = paintOf(painted);
+        if (paint) member.paint = paint;
+        const trim = rulings.findLast((ruling) => ruling.owner === entry.id && ruling.name === 'paintTrim');
+        if (trim && trim.picked !== 'as-made' && !paint?.trim) trim.note = 'Not applied: a second colour is laid only beside a main colour.';
+      }
+      // Materials likewise: their own stream, drawn cool, so a stray few percent never dresses a thing in glitter.
+      const dressing = this.options.plain ? {} : Object.fromEntries(Object.entries(materialQuestionsFor(entry)).filter(([name]) => !(name in questions)));
+      if (Object.keys(dressing).length) {
+        const material = materialOf(settle(entry.id, dressing, verdicts, temperature * MATERIAL_COOLING, seeded(seed ^ hashText(`${entry.id}:material`)), rulings, pins));
+        if (material) member.material = material;
+      }
       if (entry.id in relationQuestions) {
         const question = relationQuestions[entry.id];
         member.relation = settle(entry.id, { relation: question }, { relation: related[entry.id] }, temperature, seeded(seed ^ hashText(`${entry.id}:relation`)), rulings, pins).relation as Relation;
       }
       // The feed hears the answers in words: the first few picks, then where the thing stands.
       const words = rulings
-        .filter((ruling) => ruling.owner === entry.id && ruling.name !== 'relation')
+        .filter((ruling) => ruling.owner === entry.id && ruling.name !== 'relation' && !(ruling.name in painting) && !(ruling.name in dressing))
         .map((ruling) => ruling.kind === 'noul' ? (ruling.picked === 'yes' ? ruling.name.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase() : '') : ruling.picked.replace(/^(worlds|looks|things)\//, '').split(/[:,(]/)[0].replace(/[-_]+/g, ' ').trim().toLowerCase())
         .filter(Boolean);
       const asked = Object.keys(questions).length;
@@ -409,6 +451,8 @@ export class Conjuring {
         detail: [
           words.length ? `${words.slice(0, 4).join(' · ')}${words.length > 4 ? ` · and ${words.length - 4} more` : ''}` : asked ? `${asked} question${asked === 1 ? '' : 's'} answered` : 'nothing to decide',
           member.relation && hero ? `${member.relation} ${hero.title.toLowerCase()}` : '',
+          member.paint ? `in ${Object.values(member.paint).filter((name, at, all) => all.indexOf(name) === at).join(' and ')}` : '',
+          member.material ? materialWords(member.material) : '',
         ].filter(Boolean).join(' · '),
       });
       return member;
@@ -431,7 +475,7 @@ export class Conjuring {
         });
       }
     }
-    const designed = this.#designFor(directionKey, direction).plan({ seed, temperature, rulings, forced: forcedFor(force, 'design'), mood, look: lookEntry?.title, roll }).then((plan) => {
+    const designed = this.#designFor(directionKey, direction).plan({ seed, temperature, rulings, forced: forcedFor(force, 'design'), mood, look: lookEntry?.title, roll, palette }).then((plan) => {
       announce({ type: 'decided', stage: 'composition', title: 'Vector sheets', detail: plan.notes.join(', ') || `${plan.layers.length} sheet${plan.layers.length === 1 ? '' : 's'}` });
       return plan;
     });
@@ -464,6 +508,8 @@ export class Conjuring {
       presentation: { ...presentation, index },
       ...(otherworld ? { otherworld } : {}),
       ...(vacui ? { vacui } : {}),
+      ...(palette ? { palette } : {}),
+      ...(materialize ? { materialize } : {}),
       ...(camera ? { camera } : {}),
       ...(directed_ ? { direction: { entry: directed_.entry, finishes: direction.finishes } } : {}),
       ...(accentLook && (region === 'hero' || region === 'detail')

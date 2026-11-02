@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Granular hopper arching throat model", "summary": "A transparent hopper has a real outlet and a labeled stable-contact arch of grains spanning the throat above an open discharge region. A real open throat is spanned by a geometrically contacting grain arch against inclined sidewalls. This labeled quasi-two-dimensional teaching snapshot solves neighbor and wall contacts; it does not claim a computed force balance or clogging probability.", "scales": ["macro", "tabletop"]});

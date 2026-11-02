@@ -3,6 +3,7 @@ import * as T from "./vendor/three.module.min.js";
 import { prepareSurfaceGeometry } from "./material-bake.js";
 import { materialVisibilityKey, createMaterialVisibility, apertureSegmentCuts } from "./material-visibility.js";
 import { apertureFloat32CPU } from "./perforated-shell-field.js";
+import { projectPerspectiveHatches, createPerspectiveHatchAtlas, exactPerspectiveHatchVisible, perspectiveHatchIntervals } from "./perspective-hatch-visibility.js";
 export const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 export const sub = (a, b) => a.map((v, i) => v - b[i]);
 export const add = (a, b) => a.map((v, i) => v + b[i]);
@@ -476,6 +477,9 @@ export function packSurfaceHatches(paths) {
 /** Projection only. Source paths remain immutable; Atelier uses orthographic views. */
 export function projectSurfaceHatches(source, view, projection, size) {
   if (source.version !== 1) throw new Error("Unsupported hatch source version");
+  const lens = projection.elements || projection;
+  if (Math.abs(lens[11]) >= 1e-12)
+    return projectPerspectiveHatches(source, view.elements || view, lens, size);
   const v = view.elements || view,
     p = projection.elements || projection,
     input = source.points,
@@ -521,7 +525,7 @@ export function createSurfaceHatching(solids, options = {}) {
   function prepareOnce() {
     if (!prepared) {
       const start = performance.now();
-      prepared = solids.map((mesh, i) => prepare(mesh, i + 1));
+      prepared = solids.map((mesh, i) => prepare(mesh, mesh.userData.captureId ?? i + 1));
       stats.preparations++;
       stats.prepareMS += performance.now() - start;
     }
@@ -538,7 +542,7 @@ export function createSurfaceHatching(solids, options = {}) {
     prepareOnce();
     const start = performance.now(),
       paths = prepared
-        .slice(1)
+        .filter(mesh => mesh.id !== 1)
         .flatMap((mesh) => trace(mesh, { ...options, seed }).paths),
       source = packSurfaceHatches(paths, prepared);
     stats.traceBuilds++;
@@ -622,6 +626,9 @@ export function createHatchVisibilityAtlas(
     meshes = [];
   for (const entry of prepared) meshes[entry.id - 1] = entry.mesh;
   const visibility = createMaterialVisibility(materialVisibility, meshes, view, projection, size);
+  const lens = projection.elements || projection;
+  if (Math.abs(lens[11]) >= 1e-12)
+    return createPerspectiveHatchAtlas(prepared, v, lens, size, tileSize, visibility);
   for (const mesh of prepared)
     for (const face of mesh.faces) {
       const n = face.normal,
@@ -655,6 +662,7 @@ export function createHatchVisibilityAtlas(
 }
 
 export function exactHatchVisible(atlas, x, y, z, owner, tolerance = 1e-4) {
+  if (atlas.perspective) return exactPerspectiveHatchVisible(atlas, x, y, z, owner, tolerance, apertureFloat32CPU);
   if (x < 0 || y < 0 || x >= atlas.size || y >= atlas.size) return false;
   if (atlas.visibility && !atlas.visibility.retained(owner, x, y, z)) return false;
   const candidates =
@@ -690,6 +698,7 @@ export function exactHatchVisible(atlas, x, y, z, owner, tolerance = 1e-4) {
  * This cannot bridge a thin occluder between later drawing samples.
  */
 export function visibleHatchSegmentIntervals(atlas, a, b, owner, tolerance = 1e-4) {
+  if (atlas.perspective) return perspectiveHatchIntervals(atlas, a, b, owner, tolerance, apertureFloat32CPU, apertureSegmentCuts);
   const dx = b[0] - a[0],
     dy = b[1] - a[1],
     dz = b[2] - a[2],
@@ -823,10 +832,6 @@ export function exactVisibleHatchRuns(
   atlas,
   { samplePixels = 0.7 } = {},
 ) {
-  if (!projected.orthographic)
-    throw new Error(
-      "Exact hatch atlas currently requires an orthographic capture",
-    );
   const points = [],
     depths = atlas.visibility ? [] : null,
     runs = [],
@@ -837,7 +842,7 @@ export function exactVisibleHatchRuns(
     const owner = projected.owners[path],
       family = projected.families[path];
     let runStart = -1;
-    let n = Math.imul(path + 1, 374761393) ^ Math.imul(owner, 668265263);
+    let n = Math.imul((projected.pathIds?.[path] ?? path) + 1, 374761393) ^ Math.imul(owner, 668265263);
     n = Math.imul(n ^ (n >>> 13), 1274126177);
     const rank = ((n ^ (n >>> 16)) >>> 0) / 4294967296;
     const flush = () => {
@@ -890,7 +895,8 @@ export function exactVisibleHatchRuns(
           )
             {
               points.push(x, y);
-              if (depths) depths.push(q[a + 2] + (q[b + 2] - q[a + 2]) * t);
+              if (depths) depths.push(projected.orthographic ? q[a + 2] + (q[b + 2] - q[a + 2]) * t
+                : 1 / ((1 - t) / q[a + 2] + t / q[b + 2]));
             }
           stats.visible++;
         }

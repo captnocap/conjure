@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Microfluidic y junction laminar streams", "summary": "Two inlet trenches merge into one outlet with separate adjacent fluid regions; the channel floor and walls are real geometry. An enlarged cut teaching chip with real connected channels; colored fluid volumes illustrate a possible state and are not an executed flow simulation.", "scales": ["macro", "tabletop"]});

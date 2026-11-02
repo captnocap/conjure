@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Spirit duplicator sheet',summary:'A softly transferred spirit-copy picture with violet or blue dye, variable roller pressure, ghost impressions and punched office paper. School worksheets, club newsletters, fading instructions and a picture passed from hand to hand.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'print'});

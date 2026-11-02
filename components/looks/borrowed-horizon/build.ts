@@ -9,7 +9,7 @@ export default defineLook({questions:{
  story:choice('What has happened to the borrowed distance?',{receding:'Each lower horizon is further away than the one above it.',flooded:'A dark reflective waterline doubles the little settlements.',excavated:'Thin strata expose older scenes under the newest one.',stitched:'The fissures are held shut with fine black stitches.'}),
  strata:score('How many horizons lie behind one another?',['Two broad horizons','Four strata of distance','Six narrow nested horizons']),
  relief:score('How forcefully does the distant land bend?',['Shallow sediment bands','Rolling impossible valleys','Tall angular mountain folds']),
- pigment:choice('What colours belong to the borrowed country?',{bone:'Dust coloured limestone and brown black.',rust:'Red mesas and pale clay with iron shadows.',ink:'Cold slate sea and blue grey horizons.',acid:'Sulphur hills and olive black marshes.'})
+ pigment:choice('What colours belong to the borrowed country?',{bone:'Pale dusty country under a soft dark line.',rust:'Deep toned land, heavy shadows and a hot accent.',ink:'Cold, quiet, even horizons in chalky tones.',acid:'Sour, sickly marshland with sharp vivid mid tones.'})
 },async apply(c,a,context,signal){
  const t=prepare(c,context,signal,a.pigment),{g,p,source,boxes}=t,r=context.random,m=context.mood,n=2+Math.round(a.strata*4);
  const rim=(x:number,y:number,w:number,h:number,j:number)=>{g.beginPath();g.moveTo(x,y+h*.45);for(let k=0;k<=20;k++){const u=k/20,edge=Math.sin(u*Math.PI);const jag=a.geography==='faults'?(k%2?.8:-.4)*h*.1:0;g.lineTo(x+w*u,y+h*.4-edge*h*(.3+a.relief*.28)+Math.sin(k*.8+j)*h*.04+jag);}for(let k=20;k>=0;k--){const u=k/20;g.lineTo(x+w*u,y+h*.45+Math.sin(u*Math.PI)*h*.55+Math.sin(k*.7+j)*h*.025);}g.closePath();};

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Umbrella rib pier", "summary": "A tiny landing stage is built from bent umbrella ribs, with timber decking, real piles and mooring fittings. Salvaged rain gear, improvised waterfronts, waiting for a small ferry and the sheltered edge of an enormous storm.", "scales": ["room", "street", "tabletop"]});

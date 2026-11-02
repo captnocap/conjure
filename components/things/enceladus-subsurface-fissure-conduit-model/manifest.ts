@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Enceladus subsurface fissure conduit model", "summary": "A labeled conceptual ice-shell section exposes a continuous widening conduit below a surface vent. A conceptual source-conduit teaching model informed by fissure-flow studies. The continuous passage and optional lateral openings are hypotheses; no directly observed deep reservoir or ocean chamber is claimed.", "scales": ["planetary", "landscape", "tabletop"]});

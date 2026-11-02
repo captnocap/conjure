@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type Palette as PicturePalette, type PaletteRole, choice, clamp01, defineLook, mix, oklch, fromOklch, paintIsMetal, paintRGB, rekey, score, seeded } from '@conjure/kit';
 
 /**
  * Illuminated gold: the frame is repainted the way a gilder and an illuminator would work it.
@@ -158,6 +158,41 @@ const PALETTES: Record<string, Palette> = {
   earth: { pigments: ['#a2482e', '#6f7f56', '#c79a48', '#5d4430', '#3e5466', '#b0716a'], white: '#ede3cd', grey: '#968c7a', ink: '#211812', field: ['#6f7f56', '#a2482e'], poster: ['#c6c4a4', '#e4d8b8', '#d9b693'], trim: ['#6f7f56', '#a2482e'] },
 };
 
+// ── The picture's palette ──────────────────────────────────────────────────────────────
+const bytesOf = (h: string) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)] as const;
+const hexOf = (c: readonly [number, number, number]) => `#${c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
+/**
+ * A box of colours re-keyed by role, each role's members re-keyed together (so they share one chroma
+ * ratio and one lift and keep their relative vividness and lightness) and then set squarely on the
+ * role's hue, so a wide box never throws a pigment onto a stray hue.
+ */
+function keyBox(colours: readonly string[], palette: PicturePalette, roles: readonly (PaletteRole | undefined)[]): string[] {
+  const keyed = rekey(Object.fromEntries(colours.map((c, k) => [k, bytesOf(c)])), palette, Object.fromEntries(roles.map((role, k) => [k, role])));
+  return colours.map((c, k) => {
+    const role = roles[k];
+    if (!role) return c;
+    const [L, C] = oklch(keyed[k]);
+    return hexOf(fromOklch(L, C, oklch(paintRGB(palette[role]))[2]));
+  });
+}
+/**
+ * The pigment box under the picture's palette: the lead pigment and every pigment nearer its hue become
+ * the ink, the second pigment and its neighbours the second colour; the painted diaper and the trim take
+ * ink and second, the poster sky second, ground and ink. Lead white, grey and the line ink stay, as do
+ * the leaf and the bole (see LEAVES and the apply step for metal palettes).
+ */
+function keyPalette(P: Palette, palette: PicturePalette | undefined): Palette {
+  if (!palette) return P;
+  const hueOf = (h: string) => oklch(bytesOf(h))[2];
+  const near = (h: number, to: number) => Math.abs(Math.atan2(Math.sin(h - to), Math.cos(h - to)));
+  const [lead, answer] = [hueOf(P.pigments[0]), hueOf(P.pigments[1])];
+  const roles = P.pigments.map((c, k): PaletteRole => k === 0 ? 'ink' : k === 1 ? 'second' : near(hueOf(c), lead) <= near(hueOf(c), answer) ? 'ink' : 'second');
+  const [f0, f1] = keyBox(P.field, palette, ['ink', 'second']);
+  const [p0, p1, p2] = keyBox(P.poster, palette, ['second', 'ground', 'ink']);
+  const [t0, t1] = keyBox(P.trim, palette, ['ink', 'second']);
+  return { ...P, pigments: keyBox(P.pigments, palette, roles), field: [f0, f1], poster: [p0, p1, p2], trim: [t0, t1] };
+}
+
 interface Leaf {
   lo: string;
   mid: string;
@@ -241,13 +276,13 @@ export default defineLook({
       purple: 'Imperial purple-dyed vellum, deep and dark, for a royal or sacred book.',
       poster: 'Smooth cream lithographic poster paper.',
     }),
-    palette: choice('Which pigments does the painter have?', {
-      lapis: 'Ultramarine, vermilion, verdigris green and rose: the classic Gothic jewel colours.',
-      courtly: 'Soft azure, rose pink, sage and pale ochre: a gentle courtly palette.',
-      jewel: 'Crimson, emerald, cobalt, orange and violet with black and white: rich Viennese jewel tones.',
-      muted: 'Sage, peach, dusty rose, ochre and teal: muted poster pastels.',
-      imperial: 'Purple, deep red, malachite and lapis: imperial and solemn.',
-      earth: 'Red earth, green earth, yellow ochre and umber: sober, rustic, Romanesque.',
+    palette: choice('What character have the painter\u2019s pigments? Their colours come from the picture\u2019s palette.', {
+      lapis: 'Deep, saturated mineral colours against a strong answering one: the classic Gothic jewel scheme.',
+      courtly: 'Soft, light, powdery colours: a gentle courtly palette.',
+      jewel: 'Rich, dense jewel tones with black and white: Viennese splendour.',
+      muted: 'Chalky, softened colours: muted poster pastels.',
+      imperial: 'Dark, deep, grave colours: imperial and solemn.',
+      earth: 'Sober, low, earthy colours: rustic, Romanesque.',
     }),
     leaf: choice('What metal is laid, and how is it finished?', {
       burnished: 'Yellow gold leaf burnished to a mirror: a bright raking glint and star sparkles.',
@@ -285,8 +320,12 @@ export default defineLook({
       };
     };
     const gothic = a.tradition === 'manuscript', klimt = a.tradition === 'klimt', nouveau = a.tradition === 'nouveau';
-    const P = PALETTES[a.palette] ?? PALETTES.lapis;
-    const leaf = LEAVES[a.leaf] ?? LEAVES.burnished;
+    const P = keyPalette(PALETTES[a.palette] ?? PALETTES.lapis, context.palette);
+    const designedLeaf = LEAVES[a.leaf] ?? LEAVES.burnished;
+    // Gold is the look's identity; only a palette whose ink is itself a metal re-keys the leaf.
+    const metalInk = context.palette && paintIsMetal(context.palette.ink) ? context.palette : undefined;
+    const keyedLeaf = metalInk ? keyBox([designedLeaf.lo, designedLeaf.mid, designedLeaf.hi, designedLeaf.glint], metalInk, ['ink', 'ink', 'ink', 'ink']) : undefined;
+    const leaf: Leaf = keyedLeaf ? { ...designedLeaf, lo: keyedLeaf[0], mid: keyedLeaf[1], hi: keyedLeaf[2], glint: keyedLeaf[3] } : designedLeaf;
     const page = PAGES[a.page] ?? PAGES.parchment;
     const amount = a.gold;
     const dens = mix(1.25, 0.8, mood.density);

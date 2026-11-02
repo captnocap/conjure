@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Photosystem two granal membrane array model", "summary": "Explicitly schematic photosystem-II supercomplex silhouettes occupy an actual appressed thylakoid membrane patch. Paired core and antenna silhouettes occupy real finite membrane openings. Larger extrinsic domains face each thylakoid lumen; the narrow gap between thylakoids is stromal. The simplified complexes are not atomic structures.", "scales": ["macro", "tabletop"]});

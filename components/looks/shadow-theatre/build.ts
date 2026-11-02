@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type Palette, type PaletteRole, choice, clamp01, defineLook, mix, rekey, score, seeded } from '@conjure/kit';
 
 /**
  * Shadow theatre: the frame played as a puppet show behind a lit screen.
@@ -269,6 +269,20 @@ const LAMPS = {
   moon: ['#eefaf5', '#a6dad0', '#4a8c90', '#10323c'],
 } as const;
 const RAMP_AT = [0, 0.5, 0.98, 1.5];
+/** The lamp is the picture's glow: its heart takes the palette ink and its falloff the ground (keeping each lamp's own depth). A bare bulb keeps its white heart. */
+const LAMP_ROLES: Record<string, (PaletteRole | undefined)[]> = { electric: [undefined, undefined, 'ground', 'ground'] };
+const LAMP_DEFAULT_ROLES: PaletteRole[] = ['ink', 'ink', 'ground', 'ground'];
+const to255 = (c: RGB) => [c[0] * 255, c[1] * 255, c[2] * 255] as const;
+const from255 = (c: readonly [number, number, number]): RGB => [c[0] / 255, c[1] / 255, c[2] / 255];
+/** Re-key a set of 0–1 colours to the palette, by index. */
+function rekeyList(colours: RGB[], palette: Palette | undefined, roles: (PaletteRole | undefined)[]): RGB[] {
+  if (!palette) return colours;
+  const set: Record<string, readonly [number, number, number]> = {};
+  const map: Record<string, PaletteRole | undefined> = {};
+  colours.forEach((c, i) => { set[i] = to255(c); map[i] = roles[i]; });
+  const out = rekey(set, palette, map);
+  return colours.map((c, i) => (roles[i] ? from255(out[i]) : c));
+}
 
 function ramp(stops: RGB[], t: number): RGB {
   if (t <= 0) return stops[0];
@@ -648,14 +662,14 @@ export default defineLook({
       film:
         'Silhouette film in the manner of 1920s cut-paper animation: solid black silhouettes with fine lace edges and pierced details on a softly graded coloured backdrop, inside a rounded film gate.',
     }),
-    lamp: choice('What colour is the light behind the screen?', {
-      oil: 'An oil lamp: honeyed amber at the heart falling to burnt orange and brown at the edges.',
-      candle: 'Candlelight: pale cream and soft honey, gentle and intimate.',
-      ember: 'A brazier or torch: fiery red-orange, smoky and dramatic.',
-      electric: 'A bare electric bulb: near-white and plain, a modern stage.',
-      jade: 'A green gel: pale jade light, for forests, spirits and the uncanny.',
-      rose: 'A rose gel: coral pink light, for love stories and sunsets.',
-      moon: 'A night gel: cool teal moonlight deepening to ink at the edges.',
+    lamp: choice('What character has the light behind the screen? Its colours come from the picture\u2019s palette.', {
+      oil: 'An oil lamp: a rich glowing heart falling to a deep, burnt dark at the edges.',
+      candle: 'Candlelight: pale and soft all over, gentle and intimate.',
+      ember: 'A brazier or torch: a fierce saturated glow, smoky and dramatic.',
+      electric: 'A bare electric bulb: near-white and plain, a modern stage; only its edges take a tint.',
+      jade: 'A gel: pale, even, uncanny light, for forests and spirits.',
+      rose: 'A soft gel: a gentle tinted wash deepening to a strong dusk at the edges.',
+      moon: 'A night gel: pale light deepening steeply to ink at the edges.',
     }),
     lampAt: choice('Where does the lamp hang?', {
       behind: 'Right behind the middle of the screen: a bright hotspot with a visible flame glow, the puppets haloed.',
@@ -714,6 +728,8 @@ export default defineLook({
       if (++checkpoints % 5 === 0) await new Promise<void>((resolve) => setTimeout(resolve, 0));
     };
     const trad = a.tradition as Tradition;
+    // The tradition's dyes are its identity; the scenery's soft tone and line answer in the palette's second colour.
+    const [softTint, softLine] = rekeyList([SOFT_TINTS[trad], SOFT_LINE[trad]], context.palette, ['second', 'second']);
     const film = trad === 'film';
     const wayang = trad === 'wayang';
     const karagoz = trad === 'karagoz';
@@ -1206,7 +1222,7 @@ export default defineLook({
           pc.t = film ? [g, g, g] : lerp3(pc.t, [1, 1, 1], ground ? 0.9 : 0.8);
           pc.paint = null;
         } else if (softScenery) {
-          const T = SOFT_TINTS[trad];
+          const T = softTint;
           const op = (ground ? 0.13 : 0.4) * mix(1.35, 0.65, y);
           pc.t = [1 - op * (1 - T[0]), 1 - op * (1 - T[1]), 1 - op * (1 - T[2])];
           pc.paint = null;
@@ -1559,7 +1575,7 @@ export default defineLook({
     }
 
     // ---- 8. The lamp behind the screen ---------------------------------------------------------
-    const stops = LAMPS[a.lamp].map(hex);
+    const stops = rekeyList(LAMPS[a.lamp].map(hex), context.palette, LAMP_ROLES[a.lamp] ?? LAMP_DEFAULT_ROLES);
     const tint: RGB = [mix(0.93, 1.06, mood.warmth), 1, mix(1.08, 0.88, mood.warmth)];
     let hx = 0.5;
     let hy = 0.45;
@@ -1834,7 +1850,7 @@ export default defineLook({
         if (scenery && !carvedScenery) {
           // Open-line or soft scenery: pale card, kept only by the strips along its outlines and seams.
           const lw = (lineScenery ? 1.7 : 1.5) * unit;
-          const ink: RGB = lineScenery ? (film ? [0.08, 0.08, 0.085] : wayang ? [0.16, 0.08, 0.04] : spec.outline) : SOFT_LINE[trad];
+          const ink: RGB = lineScenery ? (film ? [0.08, 0.08, 0.085] : wayang ? [0.16, 0.08, 0.04] : spec.outline) : softLine;
           const strength = lineScenery ? (id === 1 ? 0.8 : 0.92) : 0.75;
           // The floor's own seams (tiles, rugs, paving) are cut lighter than the walls' edges.
           const o = Math.max(cover(lw + 0.5 - ds), cover(lw * 0.62 + 0.5 - dp) * (id === 1 ? 0.5 : 0.85));

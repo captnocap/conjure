@@ -1,10 +1,14 @@
 import { renderCutaway } from './cutaway-core.js';
+import { prepareConjureProxy, renderConjureProxy } from './conjure-proxies.js';
 
 export function prepareCutawayFrame(frame) {
   if (frame.cutawayPlan) return frame.cutawayPlan.rgba;
   if (typeof frame.prepare !== 'function') throw Error('Single cutaway needs the frame preparation cache');
   return frame.prepare('single-cutaway', () => {
     const snapshot = frame.geometrySnapshot?.();
+    // The established cutaway worker protocol owns Uint8Array (rather than
+    // Uint8ClampedArray) bytes. Keep that exact contract on the dynamic path.
+    if (snapshot?.source === 'conjure') return new Uint8Array(renderConjureProxy(prepareConjureProxy(snapshot, frame.sectionRibLighting, frame.materialColor, 'single-cutaway')));
     if (snapshot?.size !== frame.w) throw Error('Single cutaway needs the original Garden geometry');
     const result = renderCutaway({ snapshot, shadowCamera: frame.cutawayShadowCamera,
       spectralLights: frame.spectralLights, baseColors: frame.cutawayBaseColors,

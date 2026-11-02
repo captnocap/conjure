@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Photogravure tissue print',summary:'Continuous photographic tones held in fine intaglio grain, printed in rich ink on damp paper with a soft plate mark. Quiet photographic portfolios, luminous architecture and finely graded archival impressions.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'print'});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Accelerator beam transport gallery", "summary": "A low beamline gallery with grounded instrument plinths, connected vacuum pipe along the rear edge, open cross sections and clear cast pads. A permanent supported beamline, focusing magnet and RF cavity define the gallery even when its three inspection pads are empty.", "scales": ["room", "street"]});

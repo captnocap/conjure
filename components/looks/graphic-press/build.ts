@@ -1,4 +1,4 @@
-import { choice, defineLook, score } from '@conjure/kit';
+import { type PaletteRole, type RGB, choice, defineLook, rekey, rekeyOne, score } from '@conjure/kit';
 
 const PALETTES = {
   harbour: ['#183b54', '#f0eada', '#d47843'],
@@ -9,6 +9,10 @@ const PALETTES = {
   neon: ['#18172d', '#ddd9ee', '#4ce3cd'],
 } as const;
 const rgb = (hex: string) => [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16));
+const triple = (hex: string) => rgb(hex) as unknown as RGB;
+/** Under the picture's palette the family's ink, paper and accent take its ink, ground and second; charcoal keeps its colourless ink. */
+const INK_ROLES: Record<string, PaletteRole> = { ink: 'ink', paper: 'ground', accent: 'second' };
+const ROLES: Record<string, Record<string, PaletteRole>> = { charcoal: { paper: 'ground', accent: 'second' } };
 const clamp = (n: number) => Math.max(0, Math.min(255, n));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -26,13 +30,13 @@ export default defineLook({
       pixel: 'A pixel illustration: deliberately stepped edges and a small ordered palette.',
       engraving: 'A copperplate engraving: fine contour strokes and dense cross-hatched shadows.',
     }),
-    palette: choice('Which family of inks suits the print?', {
-      harbour: 'Navy, ivory and rusty orange, like a harbour chart.',
-      forest: 'Pine green, soft cream and ochre, botanical and earthy.',
-      berry: 'Plum, pale rose and coral, intimate and playful.',
-      cobalt: 'Cobalt blue and vivid orange on warm white, bold and modern.',
+    palette: choice('What character has the family of inks that suits the print? Their colours come from the picture\u2019s palette.', {
+      harbour: 'A deep ink, an ivory paper and a warm weathered accent, like a harbour chart.',
+      forest: 'A dark quiet ink, a soft paper and an earthy accent, botanical and calm.',
+      berry: 'A dusky ink, a pale blushing paper and a soft bright accent, intimate and playful.',
+      cobalt: 'A strong saturated ink and a vivid answering accent on warm white, bold and modern.',
       charcoal: 'Charcoal, pale paper and muted stone, nearly monochrome.',
-      neon: 'Indigo, lavender and luminous mint, electric and nocturnal.',
+      neon: 'A near-black ink, a pale tinted paper and a luminous accent, electric and nocturnal.',
     }),
     contrast: score('How strongly should the print separate its light and dark areas?', ['Soft tonal transitions', 'Gentle', 'Crisp', 'Strong', 'Severe black and white masses']),
     grain: score('How much visible printing grain remains?', ['Perfectly clean', 'A trace', 'Fine paper grain', 'Rough ink', 'Heavy stippling']),
@@ -52,7 +56,7 @@ export default defineLook({
       cyan: 'A subtle cyan edge shifted to one side.', doubled: 'Two faint offset impressions, a slightly haunted image.',
     }),
     paper: choice('What kind of paper holds the picture?', {
-      white: 'Bright clean paper.', cream: 'Warm cream rag paper.',
+      white: 'Bright clean paper.', cream: 'Warm soft rag paper, faintly tinted.',
       slate: 'Dark slate paper, for a luminous picture.', tinted: 'Paper gently tinted with the accent ink.',
     }),
   },
@@ -61,9 +65,11 @@ export default defineLook({
     const { size, color, identity, normal } = capture;
     const pixels = new Uint8ClampedArray(size * size * 4);
     const [inkHex, paperHex, accentHex] = PALETTES[a.palette];
-    const ink = rgb(inkHex), accent = rgb(accentHex);
-    let paper = rgb(a.paper === 'white' ? '#faf9f0' : a.paper === 'cream' ? '#e9dfc6' : paperHex);
-    if (a.paper === 'slate') paper = rgb('#282b38');
+    const family = rekey({ ink: triple(inkHex), paper: triple(paperHex), accent: triple(accentHex) }, context.palette, ROLES[a.palette] ?? INK_ROLES);
+    const ink = [...family.ink], accent = [...family.accent];
+    // White paper stays white; the other stocks take the ground's tint.
+    let paper = a.paper === 'white' ? rgb('#faf9f0') : a.paper === 'cream' ? [...rekeyOne(triple('#e9dfc6'), context.palette, 'ground')] : [...family.paper];
+    if (a.paper === 'slate') paper = [...rekeyOne(triple('#282b38'), context.palette, 'ground')];
     if (a.paper === 'tinted') paper = paper.map((c, i) => lerp(c, accent[i], 0.2));
     const unit = { fine: 3, medium: 6, coarse: 10 }[a.detail];
     const pixelated = a.process === 'pixel';

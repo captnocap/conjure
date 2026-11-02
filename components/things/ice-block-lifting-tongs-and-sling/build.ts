@@ -1,0 +1,31 @@
+import * as THREE from 'three';
+import { Sculpture, choice, score, noul, diorama, defineThing, defineWorld, figure } from '@conjure/kit';
+export default defineThing({
+  questions: {
+    tongs: choice("What tong shape grips the cake?", {"cross": "Crossing scissor arms with hooked ends.", "bow": "Two tall bowed jaws.", "short": "Short wide lifting jaws.", "double": "Two paired sets of ice tongs."}),
+    cake: choice("What ice cake is held?", {"single": "One broad rectangular cake.", "narrow": "A tall narrow cake.", "split": "Two adjacent half cakes.", "empty": "The empty jaws hang open."}),
+    height: choice("Where is the load?", {"ground": "The ice rests on the floor.", "lift": "Ice hangs just above its cradle.", "high": "The cake is raised halfway up.", "rest": "The cake rests on a wooden pallet."}),
+    support: choice("What carries the lifting gear?", {"tripod": "A three-legged lifting tripod.", "gantry": "A squared timber handling gantry.", "fork": "A broad braced fork frame.", "sheer": "Two splayed sheer legs with a rear brace."}),
+    sling: choice("What lifting connection is used?", {"rope": "A doubled rope sling.", "chain": "Two narrow iron chain legs.", "bar": "A rigid crosswise lifting bar.", "net": "A low supporting cradle sling."}),
+    hoist: choice("What raises the sling?", {"pulley": "A large overhead pulley.", "block": "A paired block and tackle.", "crank": "A side mounted hand-crank winch.", "hook": "A plain fixed lifting hook."}),
+    jaw: choice("How do the jaws bite?", {"spike": "Long inward-pointing spikes.", "plate": "Broad toothed jaw plates.", "pair": "Paired short biting teeth.", "claw": "A curved lower holding claw."}),
+    bed: choice("What lies beneath the cake?", {"runners": "Two low timber runners.", "pallet": "A wide slatted pallet.", "tray": "A shallow draining tray.", "clear": "A bare hard landing surface."}),
+    drain: choice("How is meltwater handled?", {"channel": "A narrow side draining channel.", "bucket": "A collecting bucket beside the load.", "grate": "A small floor drain grate.", "none": "No separate drain fitting."}),
+    state: choice("What is the handling state?", {"ready": "The suspension rope is taut.", "release": "The jaws are spread beside the load.", "secured": "A strap crosses the ice cake.", "rope": "A spare hauling rope lies nearby."}),
+    size: score("How large is the lifting frame?", ["Small cake handling frame", "Standard landing lift", "Large store-loading lift"])
+  },
+  build(a,context){
+ const s=new Sculpture(context),wood=s.material('#9b805a'),light=s.material('#c2ac83'),iron=s.material('#52696c',{metalness:.42}),dark=s.material('#405557'),stone=s.material('#adb9b1'),snow=s.material('#e6ebe0'),ice=s.material('#bed5ce',{roughness:.28}),rope=s.material('#a79370'),water=s.material('#80aaa8',{transparent:true,opacity:.6,depthWrite:false});
+
+ const H=1.5+a.size*.6,R=.55+a.size*.12,cw=a.cake==='narrow'?.4:.75,ch=a.cake==='narrow'?.75:.45,cd=.55,base=a.bed==='pallet'?.1:a.bed==='runners'?.08:a.bed==='tray'?.045:0,Y=a.state==='release'?base:a.height==='high'?.55:a.height==='lift'?.2:a.height==='rest'?Math.max(.1,base):base;
+ const beam=H-.06;if(a.support==='tripod'||a.support==='sheer'){for(const x of [-R,R])s.rod([x,0,.35],[0,H,0],.045,wood);s.rod([0,0,-R],[0,H,0],.045,wood);}else{for(const x of [-R,R]){s.box([.1,H,.1],[x,H/2,0],wood);s.box([.3,.08,.7],[x,.04,0],wood);s.rod([x,0,.3],[x,H*.65,0],.035,wood);}s.box([R*2+.2,.12,.12],[0,beam,0],wood);if(a.support==='fork')for(const x of [-R,R])s.rod([x,H*.55,0],[0,beam,0],.035,wood);}
+ if(a.bed==='runners')for(const x of [-.3,.3])s.box([.08,.08,.85],[x,.04,0],wood);if(a.bed==='pallet')for(let j=0;j<6;j++)s.box([.12,.1,.8],[-.38+j*.15,.05,0],light);if(a.bed==='tray'){s.box([1,.025,.8],[0,.0125,0],iron);for(const x of [-.5,.5])s.box([.03,.07,.8],[x,.035,0],iron);}
+ if(a.cake!=='empty'){if(a.cake==='split')for(const x of [-.205,.205])s.box([.39,ch,cd],[x,Y+ch/2,0],ice);else s.box([cw,ch,cd],[0,Y+ch/2,0],ice);for(let j=0;j<3;j++)s.box([cw*.85,.008,.008],[0,Y+ch*.3+j*.1,cd/2+.002],snow);}
+ const spread=a.state==='release'?.18:0,jawX=cw/2+.035+spread,jawY=Y+ch*.45,pivotY=Y+ch+.25;for(const z of a.tongs==='double'?[-.2,.2]:[0]){for(const sign of [-1,1]){const x=jawX*sign,tx=(a.tongs==='cross'?-.18:.1)*sign;if(a.tongs==='bow')s.tube([[tx,pivotY,z],[x*1.2,pivotY-.1,z],[x,jawY,z]],.025,iron);else s.rod([tx,pivotY,z],[x,jawY,z],.025,iron);if(a.jaw==='claw')s.tube([[x,jawY,z],[x,jawY-.1,z],[x-sign*.15,jawY-.1,z]],.02,iron);else{for(const dz of a.jaw==='pair'?[-.035,.035]:[0])s.rod([x,jawY,z+dz],[x-sign*(a.jaw==='spike'?.16:.08),jawY-.025,z+dz],a.jaw==='plate'?.045:.018,iron);}}
+ s.rod([-.2,pivotY,z],[.2,pivotY,z],.018,iron);s.rod([0,pivotY-.08,z],[0,pivotY+.1,z],.018,iron);s.cylinder(.045,.045,.1,[0,pivotY-.08,z],iron,16).rotation.x=Math.PI/2;s.ring(.06,.013,[0,pivotY+.05,z],iron);s.rod([0,pivotY+.11,z],[0,H-.2,0],a.sling==='chain'?.009:.014,a.sling==='chain'?iron:rope);}
+ if(a.sling==='bar')s.rod([-.3,pivotY+.12,0],[.3,pivotY+.12,0],.025,iron);if(a.sling==='net')for(const z of [-.2,.2])s.tube([[-cw*.4,pivotY,z],[-cw*.55,Y-.01,z],[cw*.55,Y-.01,z],[cw*.4,pivotY,z]],.012,rope);
+ if(a.hoist!=='hook'){for(const y of a.hoist==='block'?[H-.15,H-.33]:[H-.15])s.cylinder(.09,.09,.05,[0,y,0],iron,20).rotation.x=Math.PI/2;s.tube([[0,H-.08,.04],[R*.8,H-.08,.04],[R*.8,.1,.04]],.012,rope);}if(a.hoist==='crank'){s.rod([a.support==='tripod'||a.support==='sheer'?R*(1-.7/H):R,.7,a.support==='tripod'||a.support==='sheer'?.35*(1-.7/H):0],[R,.7,0],.025,iron);s.cylinder(.12,.12,.15,[R,.7,0],iron,20).rotation.z=Math.PI/2;s.rod([R+.1,.7,0],[R+.1,.85,.07],.015,iron);s.rod([R+.1,.85,.07],[R+.22,.85,.07],.02,wood);}if(a.hoist==='hook')s.tube([[0,H,0],[0,H-.15,0],[.05,H-.2,0],[.08,H-.14,0]],.018,iron);
+ if(a.drain==='channel')s.box([.12,.025,1],[-R-.15,.0125,0],dark);if(a.drain==='bucket'){s.lathe([[.12,0],[.14,.27],[.12,.27],[.1,.03],[.12,0]],iron,[R+.3,0,.1]);}if(a.drain==='grate')for(let j=0;j<5;j++)s.box([.25,.02,.02],[-R-.2,.01,-.15+j*.06],iron);if(a.state==='secured')s.tube([[-cw/2,Y,0],[-cw/2,Y+ch+.01,0],[cw/2,Y+ch+.01,0],[cw/2,Y,0]],.018,rope);if(a.state==='rope')for(let j=0;j<4;j++)s.ring(.1+j*.015,.007,[R+.25,.008,-.3],rope).rotation.x=Math.PI/2;
+return s.finish();
+  },
+});

@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type PaletteRole, choice, clamp01, defineLook, mix, rekey, score, seeded } from '@conjure/kit';
 
 type RGB = readonly [number, number, number];
 // Shadow, middle dye, paper. Each chemistry retains a real black and a gentle shoulder.
@@ -10,6 +10,11 @@ const DYES: Record<string, readonly [RGB, RGB, RGB]> = {
   silver: [[18, 25, 35], [125, 137, 145], [245, 244, 231]],
   candy: [[31, 18, 68], [205, 89, 153], [248, 232, 179]],
 };
+/** Under the picture's palette the dye carries the ink, the shadow answers in the second colour and the paper takes the ground's tint; silver keeps a colourless middle. */
+const DYE_ROLES: Record<string, PaletteRole> = { shadow: 'second', middle: 'ink', paper: 'ground' };
+const ROLES: Record<string, Record<string, PaletteRole>> = { silver: { shadow: 'second', paper: 'ground' } };
+/** Stray light keeps its three characters (hot, deep, cool) as a set turned to the second colour. */
+const LEAKS: Record<string, RGB> = { amber: [255, 166, 71], carmine: [246, 68, 121], prism: [95, 191, 224] };
 const smooth = (lo: number, hi: number, value: number) => {
   const t = clamp01((value - lo) / (hi - lo));
   return t * t * (3 - 2 * t);
@@ -51,13 +56,13 @@ export default defineLook({
       solarized: 'A Sabattier solarization: light partially reverses into dark, with silver halos and unfamiliar tones.',
       photogram: 'A camera-less photogram: objects become pale ghost impressions suspended on saturated dark paper.',
     }),
-    chemistry: choice('Which pair of dyes should develop the photograph?', {
-      petrol: 'Petrol blue shadows, jade middle tones and apricot white, like a distant summer.',
-      ember: 'Plum black, burnt orange and pale gold, intimate and firelit.',
-      lilac: 'Midnight indigo, dusty lilac and rose-white, tender and otherworldly.',
-      moss: 'Forest black, olive dye and warm ivory, quiet and botanical.',
-      silver: 'Blue-black, neutral silver and warm white, restrained and archival.',
-      candy: 'Violet-black, hot magenta and butter yellow, exuberant experimental film.',
+    chemistry: choice('What character have the dyes that develop the photograph? Their colours come from the picture\u2019s palette.', {
+      petrol: 'Deep cool shadows, a soft mid-strength dye and a warm pale paper, like a distant summer.',
+      ember: 'Bruised dark shadows, a hot glowing dye and a pale golden paper, intimate and firelit.',
+      lilac: 'Inky shadows, a dusty muted dye and a tender pale paper, soft and otherworldly.',
+      moss: 'Dense dark shadows, a quiet earthy dye and a warm ivory paper, calm and botanical.',
+      silver: 'Tinted black, a colourless silver middle and a faintly tinted white, restrained and archival.',
+      candy: 'Saturated dark shadows, a hot vivid dye and a bright pale paper, exuberant experimental film.',
     }),
     exposure: score('How far was the photographic print exposed?', ['Deep, underexposed blacks', 'Low key', 'Balanced', 'Open luminous tones', 'High-key pearly light']),
     contrast: score('How hard is the darkroom paper grade?', ['Soft and milky', 'Gentle', 'Defined', 'Hard', 'Very crisp and dramatic']),
@@ -69,9 +74,9 @@ export default defineLook({
     }),
     leak: choice('Did stray light enter the film holder?', {
       sealed: 'A sealed holder: no stray light.',
-      amber: 'A small amber flare burns one edge of the negative.',
-      carmine: 'A red-magenta veil enters from a corner.',
-      prism: 'A cool prism flare sweeps softly across one edge.',
+      amber: 'A small hot flare burns one edge of the negative.',
+      carmine: 'A deep saturated veil enters from a corner.',
+      prism: 'A pale prism flare in a contrasting hue sweeps softly across one edge.',
     }),
     edge: choice('How is the darkroom print presented?', {
       full: 'Full bleed: the photograph fills the sheet.',
@@ -90,7 +95,10 @@ export default defineLook({
     const { size, color, identity } = capture;
     const count = size * size, small = Math.max(1, Math.ceil(size / 4));
     const light = new Float32Array(small * small);
-    const [shadow, middle, white] = DYES[a.chemistry];
+    const [shadow0, middle0, paper0] = DYES[a.chemistry];
+    const { shadow, middle, paper: white } = rekey({ shadow: shadow0, middle: middle0, paper: paper0 }, context.palette, ROLES[a.chemistry] ?? DYE_ROLES);
+    const leaks = rekey(LEAKS, context.palette, { amber: 'second', carmine: 'second', prism: 'second' });
+    const leakColor = leaks[a.leak as keyof typeof LEAKS] ?? leaks.amber;
     const random = seeded(context.seed ^ 0x46db5923);
     const grainAmount = { fine: 1.5, pushed: 4.0, coarse: 6.7 }[a.grain] * (0.8 + context.mood.wear * 0.4);
     const phase = random() * Math.PI * 2, leakSide = random() < 0.5 ? -1 : 1;
@@ -139,7 +147,6 @@ export default defineLook({
         const cloud = Math.sin(x * 0.065 + phase + Math.sin(y * 0.079)) * Math.cos(y * 0.053 + phase) * (a.grain === 'coarse' ? 1.8 : 0.35);
         const edgeDistance = leakSide < 0 ? u : 1 - u;
         const leak = a.leak === 'sealed' ? 0 : Math.exp(-edgeDistance * edgeDistance / 0.016 - (v - leakY) ** 2 / 0.24) * 0.43;
-        const leakColor = a.leak === 'prism' ? [95, 191, 224] : a.leak === 'carmine' ? [246, 68, 121] : [255, 166, 71];
         const t = tone < 0.5 ? smooth(0, 0.5, tone) : smooth(0.5, 1, tone);
         for (let c = 0; c < 3; c++) {
           const dye = tone < 0.5 ? mix(shadow[c], middle[c], t) : mix(middle[c], white[c], t);

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Podocyte interdigitating foot process interface", "summary": "Two supported podocyte process arbors interdigitate over a capillary surface, leaving real slit intervals with schematic diaphragms. The two arbors interdigitate over their real basement support. Slit diaphragms are enlarged porous strand diagrams above the basement layer, not solid plugs or endothelial fenestrae.", "scales": ["macro", "tabletop"]});

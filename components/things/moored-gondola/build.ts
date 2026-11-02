@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Sculpture, choice, defineThing, disposeTree, mix, score, visibleBounds } from '@conjure/kit';
+import { Sculpture, choice, defineThing, mix, score } from '@conjure/kit';
 
 const TRIMS = {
   crimson: 'Crimson damask and red carpet, the postcard gondola.',
@@ -92,6 +92,28 @@ export default defineThing({
       none: 'No rope or post in sight.',
     }),
     finery: score('How dressed-up is the boat?', ['A bare working boat', 'A few brass fittings', 'Brass sea-horses, tassels and a gilded deck carving']),
+    hullLength: score('How long is the gondola?', ['A compact canal boat', 'A full-size gondola', 'A long ceremonial hull']),
+    beam: score('How broad is its passenger well?', ['A narrow, nimble hull', 'A standard passenger well', 'A broad, steady hull']),
+    floorboards: choice('How is the visible well floor laid?', {
+      plain: 'A plain dark well floor.', lengthwise: 'Narrow lengthwise timber battens.',
+      ribs: 'A sequence of transverse floor ribs.', herringbone: 'Alternating diagonal battens across the well.',
+    }),
+    gunwale: choice('What extra edging follows the open well?', {
+      plain: 'Only the original slim gunwale.', raised: 'A second low rail on short uprights.',
+      rope: 'A pale rope rail suspended between low pins.', moulded: 'A thick dark moulding with a narrow brass inlay.',
+    }),
+    fenders: choice('What protects the hull beside the seat?', {
+      none: 'No hanging fenders.', rope: 'Rounded rope fenders on short lines.',
+      timber: 'Narrow timber rubbing blocks.', cushions: 'Small fabric-covered fender cushions.',
+    }),
+    canopy: choice('If the passenger well is uncovered, what canopy is fitted?', {
+      open: 'Open air above the passengers.', hoops: 'Three bare curved canopy hoops.',
+      short: 'A short fabric shade over the rear seat.', felze: 'A long arched black passenger canopy with open ends.',
+    }),
+    deckCargo: choice('What load rests on a tray on the foredeck?', {
+      clear: 'An empty foredeck without a tray.', case: 'A strapped travelling case.',
+      parcels: 'Two wrapped parcels tied with narrow cord.', flowers: 'A shallow flower basket with upright stems.',
+    }),
   },
 
   build(a, context) {
@@ -110,9 +132,9 @@ export default defineThing({
     const wood = s.material('#6a4426');
 
     // Hull: lofted cross-sections from stern (u = -1) to bow (u = 1), waterline at y = 0.
-    const L = 9.2, stations = 44;
+    const L = mix(8.0, 10.4, a.hullLength), beam = mix(.74, 1.0, a.beam), stations = 44;
     const rise = (u: number) => (u > 0 ? 0.78 * u ** 3 : 0.98 * (-u) ** 3.2);
-    const half = (u: number) => 0.84 * (1 - Math.abs(u) ** 2.3) ** 0.75;
+    const half = (u: number) => beam * (1 - Math.abs(u) ** 2.3) ** 0.75;
     const sheer = (u: number) => 0.46 + rise(u);
     const keel = (u: number) => sheer(u) - (0.62 * (1 - Math.abs(u) ** 3) + 0.1);
     const X = (u: number) => (u * L) / 2;
@@ -127,6 +149,25 @@ export default defineThing({
     B(loft(us.filter((u) => Math.abs(u) <= 0.56).map((u) => [[X(u), keel(u) + 0.16, -half(u) * 0.72], [X(u), keel(u) + 0.16, half(u) * 0.72]] as P3[]), inner));
     for (const side of [-1, 1]) B(s.tube(us.filter((_u, i) => i % 2 === 0).map((u) => [X(u), sheer(u) + 0.015, side * half(u)] as P3), 0.022, a.finery > 0.3 ? gold : black));
     if (a.finery > 0.66) for (const u of [0.6, 0.68, 0.76]) B(s.ring(half(u) * 0.45, 0.02, [X(u), sheer(u) + half(u) * 0.09, 0], gold)).rotation.x = Math.PI / 2;
+
+    if (a.floorboards === 'lengthwise') for (const fraction of [-.55, -.27, 0, .27, .55]) B(s.tube(us.filter(u => Math.abs(u) < .52).map(u => [X(u), keel(u) + .174, half(u) * fraction] as P3), .018, wood));
+    else if (a.floorboards === 'ribs') for (let i = 0; i < 14; i++) { const u = -.48 + i * .96 / 13; B(s.rod([X(u), keel(u) + .18, -half(u) * .7], [X(u), keel(u) + .18, half(u) * .7], .026, wood)); }
+    else if (a.floorboards === 'herringbone') for (let i = 0; i < 13; i++) for (const side of [-1, 1]) { const u = -.46 + i * .072, to = u + .05; B(s.rod([X(u), keel(u) + .174, 0], [X(to), keel(to) + .174, side * half(to) * .68], .018, wood)); }
+    for (const side of [-1, 1]) {
+      const strip = us.filter(u => Math.abs(u) < .52);
+      if (a.gunwale === 'moulded') { B(s.tube(strip.map(u => [X(u), sheer(u) + .035, side * half(u)] as P3), .055, black)); B(s.tube(strip.map(u => [X(u), sheer(u) + .085, side * half(u)] as P3), .012, gold)); }
+      else if (a.gunwale === 'raised' || a.gunwale === 'rope') {
+        for (const u of [-.48, -.24, 0, .24, .48]) B(s.rod([X(u), sheer(u), side * half(u)], [X(u), sheer(u) + .18, side * half(u)], .018, gold));
+        B(s.tube(strip.map(u => [X(u), sheer(u) + .18, side * half(u)] as P3), a.gunwale === 'rope' ? .023 : .018, a.gunwale === 'rope' ? s.material('#d1be91') : gold));
+      }
+      if (a.fenders !== 'none') for (const u of [-.25, .18]) {
+        const x = X(u), z = side * (half(u) + .13), y = sheer(u) - .15;
+        B(s.rod([x, sheer(u) + .02, side * half(u)], [x, y + .12, z], .012, s.material('#c6b48e')));
+        if (a.fenders === 'timber') B(s.box([.13, .52, .14], [x, y - .14, z], wood));
+        else if (a.fenders === 'cushions') B(s.ball([.16, .26, .12], [x, y - .12, z], plainCloth, 14));
+        else { B(s.cylinder(.085, .085, .35, [x, y - .1, z], s.material('#c6b48e'), 14)); for (const yy of [y - .275, y + .075]) B(s.ball([.085, .06, .085], [x, yy, z], s.material('#c6b48e'), 10)); }
+      }
+    }
 
     // The ferro at the bow and the small curled risso at the stern.
     const iron = a.ferro === 'gilded' ? s.material('#e6b84a', { metalness: 0.3, roughness: 0.3, emissive: '#e6b84a', emissiveIntensity: 0.15 }) : s.material('#dfe3e8', { metalness: 0.3, roughness: 0.3 });
@@ -171,6 +212,17 @@ export default defineThing({
           B(s.tube([[seatX + 0.55, y, z], [seatX + 0.62, y + 0.14, z], [seatX + 0.55, y + 0.26, z], [seatX + 0.66, y + 0.3, z]], 0.028, gold));
         }
         if (a.finery > 0.75) B(s.rod([seatX - 0.36, floorY + 0.78, side * 0.5], [seatX - 0.36, floorY + 0.5, side * 0.52], 0.03, gold, 0.012));
+      }
+    }
+
+    if (dressed && a.canopy !== 'open') {
+      const left = -.39, right = a.canopy === 'short' ? -.12 : .23, top = 1.65;
+      const arch = (u: number, t: number): P3 => [X(u), sheer(u) + Math.sin(t) * (top - sheer(u)), Math.cos(t) * half(u)];
+      for (const u of [left, (left + right) / 2, right]) B(s.tube(Array.from({length: 25}, (_, i) => arch(u, i * Math.PI / 24)), .025, gold));
+      if (a.canopy !== 'hoops') {
+        const rows: P3[][] = [];
+        for (let j = 0; j <= 20; j++) { const u = mix(left, right, j / 20); rows.push(Array.from({length: 25}, (_, i) => arch(u, i * Math.PI / 24))); }
+        B(loft(rows, a.canopy === 'felze' ? black : plainCloth));
       }
     }
 
@@ -232,8 +284,28 @@ export default defineThing({
       I(s.box([0.02, 0.004, 0.45], [0, 0.01, 0], s.material(cloth)));
     }
 
+    // Keep a travelling load level on a tray with short legs on the actual foredeck.
+    if (a.deckCargo !== 'clear') {
+      const x = X(.66), depth = Math.min(.62, half(.66) * 1.4), width = .75;
+      const deckAt = (xx: number, zz: number) => { const u = xx / (L / 2), w = half(u); return sheer(u) + .12 * Math.max(0, w - Math.abs(zz)); };
+      const trayY = Math.max(...[-width / 2, width / 2].flatMap(dx => [-depth / 2, depth / 2].map(dz => deckAt(x + dx, dz)))) + .055;
+      for (const dx of [-width * .4, width * .4]) for (const dz of [-depth * .4, depth * .4]) B(s.rod([x + dx, deckAt(x + dx, dz), dz], [x + dx, trayY - .035, dz], .02, wood));
+      B(s.box([width, .035, depth], [x, trayY - .0175, 0], wood));
+      const paper = s.material('#d5c5a3');
+      if (a.deckCargo === 'case') {
+        B(s.box([.61, .28, depth * .8], [x, trayY + .14, 0], s.material('#76573e')));
+        for (const dx of [-.2, .2]) B(s.box([.04, .285, depth * .81], [x + dx, trayY + .14, 0], gold));
+        B(s.ring(.065, .012, [x, trayY + .29, 0], wood, Math.PI));
+      } else if (a.deckCargo === 'parcels') for (const dx of [-.18, .18]) {
+        B(s.box([.31, .22, depth * .8], [x + dx, trayY + .11, 0], paper)); B(s.box([.018, .225, depth * .81], [x + dx, trayY + .11, 0], wood));
+      } else {
+        B(s.box([.58, .14, depth * .8], [x, trayY + .07, 0], paper));
+        for (let i = 0; i < 7; i++) { const xx = x + (i % 4 - 1.5) * .12, z = (Math.floor(i / 4) - .5) * .14, y = trayY + .3 + (i % 3) * .06; B(s.rod([xx, trayY + .14, z], [xx, y, z], .008, s.material('#59734b'))); B(s.ball([.055, .05, .055], [xx, y, z], i % 2 ? plainCloth : paper, 10)); }
+      }
+    }
+
     // Forcola (oarlock) and oar.
-    const fx = -2.7, fz = half(-0.51) - 0.06, fy = sheer(-0.51);
+    const fx = X(-.58), fz = half(-0.51) - 0.06, fy = sheer(-0.51);
     B(s.tube([[fx, fy - 0.2, fz], [fx + 0.03, fy + 0.2, fz + 0.03], [fx - 0.08, fy + 0.36, fz + 0.06], [fx + 0.05, fy + 0.5, fz + 0.02], [fx - 0.02, fy + 0.6, fz]], 0.05, wood));
     if (a.oar !== 'missing') {
       const oar = new THREE.Group();
@@ -264,11 +336,11 @@ export default defineThing({
       B(s.tube([[X(0.82), sheer(0.82) + 0.04, -0.1], [X(0.81), sheer(0.82) - 0.1, -0.5], [px + 0.1, 0.95, pz + 0.5], [px, 1.25, pz + 0.1]], 0.02, rope));
     } else if (a.mooring === 'adrift') {
       B(s.tube([[X(0.82), sheer(0.82) + 0.04, 0.1], [X(0.83), 0.5, 0.75], [X(0.86), 0.03, 0.95]], 0.02, rope));
-      s.tube([[X(0.86), 0.02, 0.95], [X(0.95), 0.02, 1.35], [X(0.8), 0.02, 1.6], [X(0.7), 0.02, 1.3]], 0.02, rope);
+      B(s.tube([[X(0.86), 0.03, 0.95], [X(0.95), 0.03, 1.35], [X(0.8), 0.03, 1.6], [X(0.7), 0.03, 1.3]], 0.02, rope));
     }
-    const water = new THREE.MeshStandardMaterial({ color: new THREE.Color('#4f8372').lerp(new THREE.Color('#6c7f58'), mood.wear * 0.6), roughness: 0.2, metalness: 0.1, transparent: true, opacity: 0.6, depthWrite: false });
-    const pond = s.cylinder(1, 1, 0.01, [0, 0.006, 0], water, 48);
-    pond.scale.set(5.5, 1, 1.9);
+    const water = new THREE.MeshStandardMaterial({ color: new THREE.Color('#4f8372').lerp(new THREE.Color('#6c7f58'), mood.wear * 0.6), roughness: 0.24, metalness: 0.12 });
+    const pond = s.cylinder(1, 1, .9, [0, -.45, 0], water, 48);
+    pond.scale.set(L * .67, 1, 2.3);
     pond.castShadow = false;
     const rippleMaterial = new THREE.MeshBasicMaterial({ color: '#d9ece2', transparent: true, opacity: 0.55, depthWrite: false });
     const ripples = [0, 1, 2].map((n) => {
@@ -279,21 +351,19 @@ export default defineThing({
       return ring;
     });
 
-    // Keep the waterline on y = 0; only centre in plan.
-    const centre = visibleBounds(s.root).getCenter(new THREE.Vector3());
-    s.root.position.set(-centre.x, 0, -centre.z);
+    // The solid canal section supplies a stable base while an untied hull rocks gently.
     const energy = mix(0.25, 1.3, mood.energy), phase = random() * 6;
     const update = (_dt: number, time: number) => {
       const t = time + phase;
-      boat.position.y = Math.sin(t * 1.1 * energy) * 0.035 * energy;
-      boat.rotation.x = Math.sin(t * 0.8 * energy) * 0.03 * energy;
-      boat.rotation.z = Math.sin(t * 0.55 * energy + 1) * 0.008 * energy;
+      boat.position.y = a.mooring === 'post' ? 0 : Math.sin(t * 1.1 * energy) * 0.035 * energy;
+      boat.rotation.x = a.mooring === 'post' ? 0 : Math.sin(t * 0.8 * energy) * 0.03 * energy;
+      boat.rotation.z = a.mooring === 'post' ? 0 : Math.sin(t * 0.55 * energy + 1) * 0.008 * energy;
       for (const ring of ripples) {
         const f = (t * 0.12 * energy + ring.userData.phase) % 1;
-        ring.scale.set(4.6 + f * 0.9, 0.9 + f * 1, 1);
+        ring.scale.set(L * (.49 + f * .12), 0.9 + f * 1, 1);
       }
     };
     update(0, 0);
-    return { object: s.root, footprint: 4.7, update, dispose: () => disposeTree(s.root) };
+    return s.finish({ footprint: L * .67, update });
   },
 });

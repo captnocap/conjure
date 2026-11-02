@@ -48,6 +48,42 @@ export default defineThing({
       antique: 'An antique jointed bear: long snout, long arms, humped back, small ears.',
       floppy: 'Understuffed and floppy, flattened from years of being slept on.',
     }),
+    fabric: choice('What fabric was the bear made from?', {
+      plush: 'Short brushed plush with a directional nap.',
+      curls: 'Small tightly curled mohair-like tufts.',
+      loops: 'Soft looped towelling with clear little loops.',
+      patchwork: 'Different cloth squares pieced together into the bear.',
+    }),
+    pads: choice('How are the paw pads finished?', {
+      plain: 'Plain pale soft paw pads.',
+      checked: 'Small checked-cloth pads.',
+      hearts: 'Little contrasting hearts are printed on the pads.',
+      stitched: 'Pale pads with clearly visible border stitches.',
+    }),
+    goodEye: choice('What is the surviving good eye made from?', {
+      button: 'A small black two-hole button.',
+      four: 'A broad four-hole coat button.',
+      glass: 'A glossy dark domed glass eye.',
+      sewn: 'A neat stitched oval in dark thread.',
+    }),
+    nose: choice('How is the nose made?', {
+      oval: 'A small polished oval toy nose.',
+      triangle: 'A rounded triangular black nose.',
+      felt: 'A broad flat brown felt nose.',
+      thread: 'Several thick embroidered threads make the nose.',
+    }),
+    joints: choice('What shows at the limb joints?', {
+      hidden: 'The joints are hidden inside the fabric.',
+      discs: 'Pale round joint discs show at shoulders and hips.',
+      buttons: 'Large contrasting buttons secure the jointed limbs.',
+      stitches: 'A few visible securing stitches cross the joint covers.',
+    }),
+    companion: choice('What has been left beside the bear?', {
+      cup: 'A tiny toy teacup for a pretend tea party.',
+      book: 'A small closed picture book with a moon on its cover.',
+      sampler: 'A folded patchwork scrap matching a repair.',
+      sewing: 'A shallow sewing tray holds thread and spare buttons.',
+    }),
   },
 
   build(a, context) {
@@ -65,13 +101,19 @@ export default defineThing({
       g.fillRect(0, 0, 256, 256);
       g.lineCap = 'round';
       for (let i = 0; i < 2400; i++) {
-        const x = random() * 256, y = random() * 256, angle = Math.PI / 2 + jit(0.9), reach = 3 + random() * 5;
+        const x = random() * 256, y = random() * 256, angle = Math.PI / 2 + jit(0.9), reach = a.fabric === 'curls' ? 4 + random() * 3 : a.fabric === 'loops' ? 5 : 3 + random() * 5;
         g.strokeStyle = random() < 0.5 ? 'rgba(40,25,10,0.22)' : 'rgba(255,245,220,0.2)';
         g.lineWidth = 1 + random();
         g.beginPath();
-        g.moveTo(x, y);
-        g.lineTo(x + Math.cos(angle) * reach, y + Math.sin(angle) * reach);
+        if (a.fabric === 'curls' || a.fabric === 'loops') g.arc(x,y,reach * .5,angle,angle + (a.fabric === 'loops' ? Math.PI * 2 : Math.PI * 1.4));
+        else { g.moveTo(x, y); g.lineTo(x + Math.cos(angle) * reach, y + Math.sin(angle) * reach); }
         g.stroke();
+      }
+      if (a.fabric === 'patchwork') {
+        const cloths = ['#b99573','#a3ac95','#c8b08b','#a78c83'];
+        for (let y=0;y<4;y++) for(let x=0;x<4;x++) { g.fillStyle=cloths[(x+y*3)%4];g.fillRect(x*64,y*64,64,64); }
+        g.strokeStyle='#e8d5b0';g.lineWidth=2;g.setLineDash([6,5]);
+        for(let i=1;i<4;i++){g.beginPath();g.moveTo(i*64,0);g.lineTo(i*64,256);g.moveTo(0,i*64);g.lineTo(256,i*64);g.stroke();}g.setLineDash([]);
       }
       // Threadbare places: the pale backing cloth and its weave show through.
       for (let i = 0; i < Math.round(bald * 9); i++) {
@@ -93,6 +135,15 @@ export default defineThing({
     };
     const fur = plush(base, mood.wear);
     const pad = plush(pale, mood.wear * 0.6);
+    let pawPad: THREE.Material = pad;
+    if (a.pads !== 'plain') {
+      const canvas=document.createElement('canvas');canvas.width=canvas.height=128;const g=canvas.getContext('2d')!;
+      g.fillStyle=`#${pale.getHexString()}`;g.fillRect(0,0,128,128);
+      if(a.pads==='checked')for(let y=0;y<8;y++)for(let x=0;x<8;x++){g.fillStyle=(x+y)%2?'#a2736d':'#dcc6a0';g.fillRect(x*16,y*16,16,16);}
+      if(a.pads==='hearts'){g.fillStyle='#a55551';g.beginPath();g.moveTo(64,99);g.bezierCurveTo(8,61,26,17,64,45);g.bezierCurveTo(102,17,120,61,64,99);g.fill();}
+      if(a.pads==='stitched'){g.strokeStyle='#7c6450';g.lineWidth=4;g.setLineDash([7,6]);g.strokeRect(12,12,104,104);}
+      const map=new THREE.CanvasTexture(canvas);map.colorSpace=THREE.SRGBColorSpace;pawPad=new THREE.MeshStandardMaterial({map,roughness:1});
+    }
     const thread = s.material(a.fur === 'chocolate' || a.fur === 'grey' ? '#efe6d0' : '#2a2320', { roughness: 0.9 });
     const black = new THREE.MeshStandardMaterial({ color: '#17140f', roughness: 0.25 });
     const stuffing = s.material('#f6f3ea', { roughness: 1 });
@@ -142,7 +193,10 @@ export default defineThing({
     const snout = antique ? 1.55 : 1;
     blob(head, [0.034, 0.027, 0.03 * snout], [0, headC.y - 0.014, headR[2] * 0.82], pad);
     const noseZ = headR[2] * 0.82 + 0.03 * snout;
-    blob(head, [0.0125, 0.009, 0.008], [0, headC.y - 0.004, noseZ - 0.003], black);
+    if(a.nose==='oval')blob(head, [0.0125, 0.009, 0.008], [0, headC.y - 0.004, noseZ - 0.003], black);
+    if(a.nose==='triangle'){const nose=put(head,new THREE.Mesh(new THREE.CylinderGeometry(.013,.013,.008,3),black),[0,headC.y-.004,noseZ-.003]);nose.rotation.x=Math.PI/2;nose.rotation.z=Math.PI;}
+    if(a.nose==='felt')blob(head,[.017,.01,.002],[0,headC.y-.004,noseZ-.001],s.material('#544033',{roughness:1}));
+    if(a.nose==='thread')for(let i=0;i<6;i++)rod(head,[-.012,headC.y+.003-i*.0026,noseZ],[.012,headC.y+.003-i*.0026,noseZ],.0016,black);
     rod(head, [0, headC.y - 0.012, noseZ - 0.001], [0, headC.y - 0.024, noseZ - 0.006], 0.0013, black);
     const smile = mood.cheer > 0.6 ? 1 : mood.cheer < 0.3 ? -1 : 0;
     for (const side of [-1, 1]) rod(head, [0, headC.y - 0.024, noseZ - 0.006], [side * 0.014, headC.y - 0.024 + smile * 0.007, noseZ - 0.012], 0.0013, black);
@@ -187,7 +241,13 @@ export default defineThing({
         put(eye, new THREE.Mesh(new THREE.SphereGeometry(radius * 0.16, 8, 6), s.material('#d9cfbb')), [Math.cos(angle) * radius * 0.34, 0.0048, Math.sin(angle) * radius * 0.34]);
       }
     };
-    button(onHead(-damaged * 0.42, 0.24, 0.88), 0.0115, black, 2);
+    const good=onHead(-damaged * 0.42, 0.24, 0.88);
+    if(a.goodEye==='button'||a.goodEye==='four')button(good,a.goodEye==='four'?.014:.0115,black,a.goodEye==='four'?4:2);
+    if(a.goodEye==='glass')blob(head,[.012,.012,.012],good.at.toArray() as [number,number,number],black);
+    if(a.goodEye==='sewn'){
+      const sewn=put(head,new THREE.Group(),good.at.toArray() as [number,number,number]);sewn.quaternion.copy(good.turn);
+      for(let i=0;i<12;i++){const t=i/12*Math.PI*2,u=(i+1)/12*Math.PI*2;rod(sewn,[Math.cos(t)*.009,.002,Math.sin(t)*.012],[Math.cos(u)*.009,.002,Math.sin(u)*.012],.0016,black);}
+    }
     const gone = onHead(damaged * 0.42, 0.24, 0.88);
     const socket = put(head, new THREE.Group(), gone.at.toArray() as [number, number, number]);
     socket.quaternion.copy(gone.turn);
@@ -216,13 +276,17 @@ export default defineThing({
       blob(pivot, [radius, long, radius * limbFlat], [0, -long * 0.8, 0], fur);
       if (foot) {
         blob(pivot, [radius * 1.08, radius * 0.9, radius * 1.25], [0, -long * 1.55, radius * 0.4], fur);
-        put(pivot, new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.74, radius * 0.74, 0.004, 18), pad), [0, -long * 1.55 - radius * 0.86, radius * 0.45]).scale.z = 1.2;
-      } else put(pivot, new THREE.Mesh(new THREE.SphereGeometry(radius * 0.62, 14, 10), pad), [0, -long * 1.55, radius * 0.55 * limbFlat]).scale.z = 0.45;
+        put(pivot, new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.74, radius * 0.74, 0.004, 18), pawPad), [0, -long * 1.55 - radius * 0.86, radius * 0.45]).scale.z = 1.2;
+      } else put(pivot, new THREE.Mesh(new THREE.SphereGeometry(radius * 0.62, 14, 10), pawPad), [0, -long * 1.55, radius * 0.55 * limbFlat]).scale.z = 0.45;
       return pivot;
     };
     const shoulderY = neckY - 0.03 - 0.03;
     const arms = [-1, 1].map((side) => limb(upper, [side * torsoR[0] * 0.9, shoulderY, 0.008], 0.027, armLong, false));
     const legs = [-1, 1].map((side) => limb(bear, [side * torsoR[0] * 0.6, 0.046, 0.022], 0.031, legLong, true));
+    if(a.joints!=='hidden') for(const limbs of [arms,legs]) limbs.forEach((limb,index)=>{
+      const side=index?1:-1,cover=put(limb,new THREE.Mesh(new THREE.CylinderGeometry(.016,.016,.004,20),a.joints==='buttons'?s.material('#8b5b45'):pad),[side*.027,-.02,.001]);cover.rotation.z=Math.PI/2;
+      if(a.joints==='stitches'||a.joints==='buttons')for(const shift of [-.005,.005])rod(limb,[side*.03,-.026,shift-.004],[side*.03,-.014,shift+.004],.0011,thread);
+    });
     for (const leg of legs) leg.rotation.order = 'YXZ';
 
     // Repairs.
@@ -343,6 +407,25 @@ export default defineThing({
     if (a.posture === 'facedown') bear.rotation.x = Math.PI / 2 - 0.04;
     bear.rotation.y = jit(0.12);
     s.root.add(bear);
+    // Set the completed pose on the floor before adding the separate keepsake.
+    bear.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(bear,true);bear.position.y-=bounds.min.y;
+    const keepsakeX=.19,keepsakeZ=.04;
+    if(a.companion==='cup'){
+      const ceramic=s.material('#d9c7a0');const cup=new THREE.Mesh(new THREE.CylinderGeometry(.021,.016,.031,24,1,true),ceramic);cup.material.side=THREE.DoubleSide;cup.position.set(keepsakeX,.018,keepsakeZ);s.root.add(cup);
+      s.cylinder(.016,.016,.003,[keepsakeX,.004,keepsakeZ],ceramic,24);
+      const handle=new THREE.Mesh(new THREE.TorusGeometry(.012,.0035,8,20),ceramic);handle.position.set(keepsakeX+.024,.019,keepsakeZ);s.root.add(handle);
+    }else if(a.companion==='book'){
+      const cover=s.material('#667f91');s.box([.09,.012,.065],[keepsakeX,.006,keepsakeZ],cover);s.box([.086,.008,.061],[keepsakeX+.002,.006,keepsakeZ],s.material('#e8dfc9'));
+      s.cylinder(.015,.015,.0008,[keepsakeX,.0125,keepsakeZ],s.material('#e9d18b'),24);
+    }else if(a.companion==='sampler'){
+      s.box([.09,.006,.068],[keepsakeX,.003,keepsakeZ],pad);
+      for(let y=0;y<2;y++)for(let x=0;x<3;x++)s.box([.027,.0007,.03],[keepsakeX+(x-1)*.029,.0064,keepsakeZ+(y-.5)*.032],s.material((x+y)%2?'#a5786d':'#9aa990'));
+    }else{
+      const tin=s.material('#858f89',{metalness:.25});s.box([.092,.004,.065],[keepsakeX,.002,keepsakeZ],tin);
+      for(const side of [-1,1]){s.box([.092,.014,.003],[keepsakeX,.011,keepsakeZ+side*.031],tin);s.box([.003,.014,.065],[keepsakeX+side*.0445,.011,keepsakeZ],tin);}
+      s.cylinder(.01,.01,.022,[keepsakeX-.023,.015,keepsakeZ],s.material('#9a605c'),18);
+      for(let i=0;i<3;i++)s.cylinder(.007,.007,.003,[keepsakeX+.012+i*.009,.0055,keepsakeZ+(i%2?-.009:.009)],s.material('#d9bf82'),16);
+    }
 
     // The faintest breathing: a loved toy never looks quite inanimate.
     const breath = mix(0, 0.012, mood.energy);

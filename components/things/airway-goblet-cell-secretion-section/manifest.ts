@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Airway goblet cell secretion section", "summary": "An epithelial goblet cell has a narrow basal attachment, expanded apical granule compartment and a genuine surface opening. A sectioned goblet-cell model retains a basal nucleus, apical secretory granules and an actual outlet. Small model rods support exposed granules; fusion necks and mucus states explain secretion rather than specify molecular scale.", "scales": ["macro", "tabletop"]});

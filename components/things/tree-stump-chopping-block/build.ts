@@ -34,6 +34,14 @@ export default defineThing({
       empty: 'A steel pail, emptied and rinsed.',
       none: 'There is no bucket: the scraps go on the floor.',
     }),
+    binding: choice('How is the chopping block reinforced?', { none: 'Only its existing hoops, if any.', iron: 'Two dark iron bands.', copper: 'Two broad copper bands with rivets.', rope: 'Three turns of thick binding rope.' }),
+    bladeProfile: choice('What shape are the working cleaver blades?', { square: 'Square heavy blades.', long: 'Long narrow slicing blades.', broad: 'Extra broad rectangular choppers.', rounded: 'Blades with a rounded upper corner.' }),
+    scraper: choice('What is used to scrape the block clean?', { none: 'No scraper nearby.', broad: 'A broad steel scraper on a side hook.', curved: 'A curved half-moon scraper.', brush: 'A stiff bamboo block brush.' }),
+    saltDish: choice('Where is the cleaning salt kept?', { none: 'No salt dish.', enamel: 'In a small enamel cup on a shelf.', tin: 'In a lidded square tin.', bowl: 'In a dark pottery bowl with a wooden spoon.' }),
+    rinseBottle: choice('What rinse container is nearby?', { none: 'No rinse container.', squeeze: 'A white squeeze bottle.', glass: 'A green bottle with a cork.', jug: 'A blue plastic jug.' }),
+    sideShelf: choice('What extra surface folds out from the stand?', { none: 'No extra surface.', board: 'A small wooden preparation board.', steel: 'A steel tray on brackets.', slatted: 'A short slatted drying shelf.' }),
+    footrest: choice('What foot support is fixed to the stand?', { none: 'No foot support.', bar: 'A simple low crossbar.', step: 'A broad timber step.', hoop: 'A low circular foot rail.' }),
+    workMat: choice('What is under the chopping station?', { bare: 'The bare floor.', rubber: 'A rectangular ribbed rubber mat.', boards: 'A small duckboard platform.', tile: 'A square of cream kitchen tiles.' }),
   },
 
   build(a, context) {
@@ -134,9 +142,10 @@ export default defineThing({
     const surface = TOP - dish * 0.6;
     const cleaver = (heavy: boolean) => {
       const g = new THREE.Group();
-      const L = heavy ? 0.25 : 0.22, H = heavy ? 0.12 : 0.085;
+      const L=(heavy?.25:.22)*(a.bladeProfile==='long'?1.3:a.bladeProfile==='broad'?1.1:1),H=(heavy?.12:.085)*(a.bladeProfile==='long'?.7:a.bladeProfile==='broad'?1.35:1);
       const bladeMaterial = s.material(heavy ? '#8f9698' : '#cfd4d6', { metalness: 0.85, roughness: heavy ? 0.45 : 0.25 });
       const shape = new THREE.Shape([new THREE.Vector2(-L / 2, 0), new THREE.Vector2(L / 2, 0.006), new THREE.Vector2(L / 2, H), new THREE.Vector2(-L / 2 + 0.01, H), new THREE.Vector2(-L / 2 - 0.008, H * 0.5)]);
+      if(a.bladeProfile==='rounded'){shape.curves=[];shape.moveTo(-L/2,0);shape.lineTo(L/2,.006);shape.lineTo(L/2,H*.6);shape.quadraticCurveTo(L/2,H,L/2-.06,H);shape.lineTo(-L/2+.01,H);shape.lineTo(-L/2-.008,H*.5);shape.closePath();}
       const hole = new THREE.Path(); hole.absarc(-L / 2 + 0.03, H - 0.025, 0.008, 0, Math.PI * 2, false); shape.holes.push(hole);
       const blade = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: heavy ? 0.007 : 0.003, bevelEnabled: false }), bladeMaterial);
       blade.position.z = -0.003;
@@ -258,6 +267,50 @@ export default defineThing({
           s.ball([0.02, 0.016, 0.02], to, boneMaterial, 8);
         }
       }
+    }
+
+    const timber=s.material('#a48254'),dark=s.material('#454641'),rope=s.material('#bca776');
+    if(a.binding!=='none')for(const fraction of a.binding==='rope'?[.25,.5,.75]:[.22,.75]) {
+      const y=base+thick*fraction;
+      if(a.binding==='rope')s.ring(R*1.06,.012,[0,y,0],rope).rotation.x=Math.PI/2;
+      else {const mat=a.binding==='copper'?s.material('#a5734f',{metalness:.6,roughness:.4}):iron;s.mesh(new THREE.CylinderGeometry(R*1.065,R*1.065,a.binding==='copper'?.045:.025,40,1,true),mat,[0,y,0]);if(a.binding==='copper')for(let i=0;i<8;i++){const t=i*Math.PI/4;s.ball([.006,.006,.006],[Math.sin(t)*R*1.07,y,Math.cos(t)*R*1.07],steel,8);}}
+    }
+    if(a.scraper!=='none') {
+      const x=-R-.08,y=base+.05,z=-.1;
+      s.rod([-R,base+.08,z],[x,base+.08,z],.008,iron);
+      if(a.scraper==='brush'){s.box([.1,.045,.07],[x,y,z],timber);for(let i=0;i<7;i++)s.rod([x+(i-3)*.012,y-.02,z],[x+(i-3)*.012,y-.08,z],.004,rope);}
+      else {s.box([.13,.025,.025],[x,y+.015,z],timber);if(a.scraper==='broad')s.box([.14,.085,.006],[x,y-.04,z],steel);else s.mesh(new THREE.CircleGeometry(.07,20,0,Math.PI),steel,[x,y,z]).rotation.z=Math.PI;}
+    }
+    if(a.saltDish!=='none'||a.rinseBottle!=='none') {
+      const x=-R-.24,z=.2,y=Math.max(.25,base*.7);
+      s.box([.38,.025,.25],[x,y,z],timber);s.rod([-R,base-.02,z],[x-.15,y-.012,z],.012,iron);
+      if(a.saltDish==='enamel'){s.lathe([[0,0],[.045,0],[.055,.075]],s.material('#e7e1cf'),[x-.08,y+.0125,z]);s.cylinder(.048,.048,.01,[x-.08,y+.074,z],s.material('#eee8d8'),14);}
+      else if(a.saltDish==='tin'){s.box([.1,.07,.1],[x-.08,y+.0475,z],steel);s.box([.11,.015,.11],[x-.08,y+.09,z],steel);}
+      else if(a.saltDish==='bowl'){s.lathe([[0,0],[.035,0],[.065,.05]],s.material('#694838'),[x-.08,y+.0125,z]);s.rod([x-.12,y+.065,z],[x+.01,y+.065,z],.006,timber);}
+      if(a.rinseBottle!=='none') {
+        const bx=x+.09,mat=s.material(a.rinseBottle==='glass'?'#56886a':a.rinseBottle==='jug'?'#4d8cac':'#e7e3d6');
+        s.cylinder(.04,.045,.13,[bx,y+.0775,z],mat,16);s.cylinder(.018,.035,.045,[bx,y+.165,z],mat,12);
+        if(a.rinseBottle==='squeeze')s.cylinder(.003,.012,.04,[bx,y+.2075,z],s.material('#b34438'),10);
+        else if(a.rinseBottle==='glass')s.cylinder(.018,.018,.02,[bx,y+.1975,z],timber,10);
+        else {s.ring(.032,.008,[bx+.04,y+.13,z],mat);s.box([.07,.02,.03],[bx+.015,y+.2,z],mat);}
+      }
+    }
+    if(a.sideShelf!=='none') {
+      const z=-R-.18,y=base+thick*.35;
+      if(a.sideShelf==='slatted')for(let i=0;i<5;i++)s.box([.055,.025,.3],[-.12+i*.06,y,z],timber);
+      else s.box([.35,.025,.3],[0,y,z],a.sideShelf==='steel'?steel:timber);
+      for(const x of[-.12,.12])s.rod([x,base-.02,-R*.7],[x,y-.012,z-.12],.012,iron);
+      if(a.sideShelf==='steel')for(const x of[-.17,.17])s.box([.01,.04,.3],[x,y+.0325,z],steel);
+    }
+    if(a.footrest==='bar'){s.rod([-.3,.14,.3],[.3,.14,.3],.02,iron);for(const x of[-.3,.3])s.rod([x,.14,.3],[x*.8,base*.45,.12],.012,iron);}
+    else if(a.footrest==='step'){s.box([.55,.035,.2],[0,.145,.36],timber);for(const x of[-.22,.22])s.box([.045,.1275,.16],[x,.06375,.36],timber);}
+    else if(a.footrest==='hoop'){s.ring(.37,.018,[0,.14,0],iron).rotation.x=Math.PI/2;for(let i=0;i<3;i++){const t=i*Math.PI*2/3;s.rod([Math.sin(t)*.37,.14,Math.cos(t)*.37],[Math.sin(t)*.2,base*.5,Math.cos(t)*.2],.012,iron);}}
+    if(a.workMat!=='bare') {
+      const mat=a.workMat==='boards'?timber:a.workMat==='rubber'?dark:s.material('#d9d2bb');
+      s.box([1.65,.04,1.25],[0,-.027,.08],mat);
+      if(a.workMat==='rubber')for(let i=0;i<16;i++)s.box([.008,.006,1.12],[-.75+i*.1,-.003,.08],iron);
+      else if(a.workMat==='boards')for(let i=0;i<8;i++)s.box([.19,.006,1.23],[-.7+i*.2,-.003,.08],timber);
+      else for(let i=0;i<6;i++)for(let j=0;j<5;j++)s.box([.268,.006,.243],[-.6875+i*.275,-.003,-.42+j*.25],s.material((i+j)%4?'#ece4cd':'#b6c1b0'));
     }
 
     return s.finish({ footprint: 0.55 });

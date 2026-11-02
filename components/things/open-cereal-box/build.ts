@@ -36,6 +36,12 @@ function grin(g: G, x: number, y: number, w: number) {
 
 export default defineThing({
   questions: {
+    carton: choice('What size and proportion is the cereal carton?',{mini:'A short narrow individual-serving carton.',regular:'A familiar upright breakfast box.',family:'A broad deep family-size carton.',tall:'A tall slim pantry carton.'}),
+    opening: choice('How are the top flaps opened?',{flared:'All four flaps are folded outward.',upright:'The long flaps stand nearly upright.',torn:'The front flap has a ragged torn edge.',creased:'The long flaps are folded sharply back against the sides.'}),
+    liner: choice('What inner bag shows above the carton?',{clear:'A translucent crumpled plastic liner.',wax:'A warm pale waxed-paper liner.',foil:'A bright silver foil-lined bag.',striped:'A white liner with fine blue seams.'}),
+    topping: choice('What was added to the cereal bowl?',{banana:'Several pale banana slices.',berries:'A few round blueberries.',raisins:'Small wrinkled dark raisins.',almond:'Thin almond flakes across the surface.'}),
+    graphics: choice('What graphic pattern surrounds the mascot?',{rays:'A pale sunburst radiates from the mascot.',stripes:'Bold pale diagonal stripes cross the carton.',dots:'Rows of large pale polka dots.',checks:'A quiet checkerboard behind the picture.'}),
+    mat: choice('What is underneath the breakfast setting?',{woven:'A coarse natural woven placemat.',ribbed:'A blue ribbed cloth mat.',checked:'A red-and-cream checked cloth.',paper:'A pale disposable paper mat with a printed border.'}),
     mascot: choice('Who is the mascot on the box?', {
       tiger: 'A grinning orange tiger with black stripes.',
       rabbit: 'A manic white rabbit with long ears.',
@@ -88,7 +94,7 @@ export default defineThing({
     const s = new Sculpture(context);
     const { mood, random } = context;
     const wobble = (amount: number) => (random() - 0.5) * 2 * amount;
-    const W = 0.19, H = 0.275, D = 0.065;
+    const [W,H,D]={mini:[.135,.185,.052],regular:[.19,.275,.065],family:[.235,.29,.085],tall:[.16,.32,.065]}[a.carton];
     const cereal = CEREALS[a.cereal];
     const base = BOX[a.colour];
     const dark = `#${new THREE.Color(base).multiplyScalar(0.55).getHexString()}`;
@@ -115,7 +121,10 @@ export default defineThing({
     const front = panel(512, 740, (g, w, h) => {
       // Sunburst.
       g.fillStyle = 'rgba(255,255,255,0.16)';
-      for (let i = 0; i < 16; i += 2) { g.beginPath(); g.moveTo(w / 2, h * 0.52); g.arc(w / 2, h * 0.52, 700, (i / 16) * Math.PI * 2, ((i + 1) / 16) * Math.PI * 2); g.fill(); }
+      if(a.graphics==='rays')for (let i = 0; i < 16; i += 2) { g.beginPath(); g.moveTo(w / 2, h * 0.52); g.arc(w / 2, h * 0.52, 700, (i / 16) * Math.PI * 2, ((i + 1) / 16) * Math.PI * 2); g.fill(); }
+      if(a.graphics==='stripes'){g.save();g.rotate(-.5);for(let x=-600;x<900;x+=95)g.fillRect(x,-400,38,1500);g.restore();}
+      if(a.graphics==='dots')for(let y=25;y<h;y+=70)for(let x=25;x<w;x+=70)circle(g,x,y,20,'rgba(255,255,255,.22)');
+      if(a.graphics==='checks')for(let y=0;y<h;y+=65)for(let x=0;x<w;x+=65)if((x/65+y/65)%2===0)g.fillRect(x,y,65,65);
       // Brand.
       g.textAlign = 'center'; g.textBaseline = 'middle';
       g.font = '900 104px Impact, "Arial Black", sans-serif';
@@ -201,10 +210,10 @@ export default defineThing({
     const flapSkin = new THREE.MeshStandardMaterial({ color: new THREE.Color(base).lerp(new THREE.Color('#e1d7c3'), fade), roughness: 0.6, side: THREE.DoubleSide });
 
     const box = new Sculpture(context);
-    const body = new THREE.Mesh(new THREE.BoxGeometry(W, H, D), [side, side, card, flapSkin, front, back]);
-    body.position.y = H / 2;
-    body.castShadow = body.receiveShadow = true;
-    box.root.add(body);
+    // Four actual walls and a bottom leave the carton mouth open.
+    for(const z of [-1,1]){const wall=box.mesh(new THREE.PlaneGeometry(W,H),z>0?front:back,[0,H/2,z*D/2]);wall.rotation.y=z>0?0:Math.PI;}
+    for(const x of [-1,1]){const wall=box.mesh(new THREE.PlaneGeometry(D,H),side,[x*W/2,H/2,0]);wall.rotation.y=x*Math.PI/2;}
+    box.box([W,.0015,D],[0,.00075,0],card);
     // Flaps: two short ones folded out, the back long flap up, the front one torn ragged.
     const flap = (w: number, d: number, at: [number, number, number], rx: number, rz: number, torn: boolean) => {
       const shape = new THREE.Shape();
@@ -222,20 +231,22 @@ export default defineThing({
       box.root.add(hinge);
       return hinge;
     };
-    flap(W, D * 0.95, [0, H, D / 2], 0.35 + random() * 0.3, 0, true);
-    flap(W, D * 0.95, [0, H, -D / 2], -0.2 - random() * 0.25, 0, false);
+    flap(W, D * 0.95, [0, H, D / 2], a.opening==='upright'?.08:a.opening==='creased'?2.8:1.15, 0, a.opening==='torn');
+    flap(W, D * 0.95, [0, H, -D / 2], a.opening==='upright'?-.08:a.opening==='creased'?-2.8:-1.15, 0, false);
     for (const sx of [-1, 1]) {
       const hinge = flap(D, D * 0.55, [sx * W / 2, H, 0], 0, 0, false);
       hinge.rotation.set(0, sx * Math.PI / 2, 0);
       hinge.rotateX(0.5 + random() * 0.5);
     }
-    // The inner bag, crumpled open.
-    const bagGeometry = new THREE.IcosahedronGeometry(1, 2);
-    const bagPosition = bagGeometry.getAttribute('position');
-    for (let i = 0; i < bagPosition.count; i++) bagPosition.setXYZ(i, bagPosition.getX(i) * (1 + wobble(0.16)), Math.abs(bagPosition.getY(i)) * (1 + wobble(0.5)), bagPosition.getZ(i) * (1 + wobble(0.16)));
+    // A crumpled open tube, with a dark interior well below its rim.
+    const bagGeometry = new THREE.CylinderGeometry(1,.92,.09,24,4,true);
+    const bagPosition=bagGeometry.getAttribute('position');
+    for(let i=0;i<bagPosition.count;i++){const x=bagPosition.getX(i),y=bagPosition.getY(i),z=bagPosition.getZ(i),t=Math.atan2(z,x);const wrinkle=1+.06*Math.sin(t*7+y*40);bagPosition.setXYZ(i,x*W*.43*wrinkle,y+(y>.04?.004*Math.sin(t*5):0),z*D*.4*wrinkle);}
     bagGeometry.computeVertexNormals();
-    const bag = box.mesh(bagGeometry, new THREE.MeshStandardMaterial({ color: '#f4f6f6', roughness: 0.25, flatShading: true, transparent: true, opacity: 0.86 }), [0, H - 0.004, 0]);
-    bag.scale.set(W * 0.44, 0.045, D * 0.42);
+    const bagSkin=box.material(a.liner==='foil'?'#bcc4c8':a.liner==='wax'?'#e6d7b5':'#f0f3ef',{roughness:a.liner==='foil'?.26:.55,metalness:a.liner==='foil'?.75:0,side:THREE.DoubleSide,transparent:a.liner==='clear',opacity:a.liner==='clear'?.6:1});
+    box.mesh(bagGeometry,bagSkin,[0,H-.018,0]);
+    box.box([W*.82,.001,D*.73],[0,H-.063,0],box.material('#958267'));
+    if(a.liner==='striped')for(let i=0;i<12;i++){const t=i*Math.PI/6;box.rod([Math.cos(t)*W*.434,H-.043,Math.sin(t)*D*.405],[Math.cos(t)*W*.434,H+.02,Math.sin(t)*D*.405],.0007,box.material('#7194a5'));}
 
     // Pieces.
     const kindGeometry = () => {
@@ -246,15 +257,16 @@ export default defineThing({
       for (let i = 0; i < 10; i++) { const rad = i % 2 ? 0.0048 : 0.0105, an = (i / 10) * Math.PI * 2; if (i) star.lineTo(Math.sin(an) * rad, Math.cos(an) * rad); else star.moveTo(Math.sin(an) * rad, Math.cos(an) * rad); }
       return new THREE.ExtrudeGeometry(star, { depth: 0.005, bevelEnabled: false }).rotateX(-Math.PI / 2);
     };
-    interface Bit { at: [number, number, number]; size: number; tilt: number; pale: number }
+    interface Bit { at: [number, number, number]; size: number; tilt: number; pale: number; floor?: boolean }
     const strew = (bits: Bit[]) => {
       if (!bits.length) return;
       const mesh = new THREE.InstancedMesh(kindGeometry(), new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: a.cereal === 'choc' ? 0.8 : 0.5 }), bits.length);
-      const dummy = new THREE.Object3D(), milk = new THREE.Color(cereal.milk);
+      const dummy = new THREE.Object3D(), milk = new THREE.Color(cereal.milk), probe=new THREE.Mesh(mesh.geometry);const support=new THREE.Box3();
       bits.forEach((bit, i) => {
         dummy.position.set(...bit.at);
         dummy.rotation.set(wobble(bit.tilt), random() * 6, wobble(bit.tilt));
         dummy.scale.setScalar(bit.size);
+        if(bit.floor){probe.position.copy(dummy.position);probe.quaternion.copy(dummy.quaternion);probe.scale.copy(dummy.scale);probe.updateMatrixWorld(true);support.setFromObject(probe,true);dummy.position.y+=bit.at[1]-support.min.y;}
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
         mesh.setColorAt(i, new THREE.Color(cereal.tints[Math.floor(random() * cereal.tints.length)]).lerp(milk, bit.pale));
@@ -275,13 +287,14 @@ export default defineThing({
       box.root.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(new THREE.Vector3(0, 0, 1), new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0)));
       box.root.position.set(-H / 2 - 0.02, D / 2, -0.05);
       s.root.add(lay);
-      const mouth = new THREE.Vector3(H / 2 - 0.02, 0, -0.05).applyAxisAngle(new THREE.Vector3(0, 1, 0), lay.rotation.y).add(lay.position);
+      lay.updateMatrixWorld(true);lay.position.y-=new THREE.Box3().setFromObject(lay,true).min.y;lay.updateMatrixWorld(true);
+      const mouth = box.root.localToWorld(new THREE.Vector3(0,H,0));
       const amount = Math.round(mix(50, 150, mood.density));
       for (let i = 0; i < amount; i++) {
         const far = random() ** 1.6 * 0.17, spread = wobble(0.045 + far * 0.55);
         const dir = lay.rotation.y;
         const heap = Math.max(0, 0.022 - far * 0.22) * random();
-        loose.push({ at: [mouth.x + Math.cos(dir) * far - Math.sin(dir) * spread * -1, 0.003 + heap, mouth.z - Math.sin(dir) * far + Math.cos(dir) * spread], size: 1, tilt: heap > 0.004 ? 1.2 : 0.2, pale: 0 });
+        loose.push({ at: [mouth.x + Math.cos(dir) * far - Math.sin(dir) * spread * -1, heap, mouth.z - Math.sin(dir) * far + Math.cos(dir) * spread], size: 1, tilt: heap > 0.004 ? 1.2 : 0.2, pale: 0, floor:true });
       }
     } else {
       box.root.position.set(-0.06, 0, -0.07);
@@ -318,9 +331,16 @@ export default defineThing({
       const heap = wet ? (1 - soggy) * (1 - eaten) * 0.022 * (1 - rad / R) * random() : 0.03 * (1 - rad / R) * random();
       loose.push({ at: [bx + Math.sin(angle) * rad, level + 0.002 + heap - soggy * 0.002, bz + Math.cos(angle) * rad], size: 1 + soggy * 0.3, tilt: heap > 0.003 ? 1.3 : 0.25 - soggy * 0.1, pale: soggy * 0.55 });
     }
+    // Fruit and nuts share the cereal's actual surface level.
+    for(let i=0;i<6;i++){const t=i*Math.PI/3+.2,rad=(wallAt(level)-.02)*.68,x=bx+Math.cos(t)*rad,z=bz+Math.sin(t)*rad,y=level+.009;
+      if(a.topping==='banana'){s.cylinder(.012,.012,.004,[x,y,z],s.material('#e9db9b'),16);for(let j=0;j<3;j++)s.ball([.0009,.0005,.0018],[x+Math.cos(j*2.1)*.003,y+.0024,z+Math.sin(j*2.1)*.003],s.material('#9c8958'),6);}
+      if(a.topping==='berries'){s.ball([.006,.0058,.006],[x,y+.002,z],s.material('#454e79'),12);s.ring(.0018,.0006,[x,y+.0075,z],s.material('#9398ac')).rotation.x=Math.PI/2;}
+      if(a.topping==='raisins'){const r=s.ball([.004,.003,.006],[x,y,z],s.material('#65503e',{roughness:.9}),8);r.rotation.y=t;}
+      if(a.topping==='almond'){const r=s.ball([.006,.0008,.011],[x,y,z],s.material('#e2c995'),12);r.rotation.y=t;}
+    }
     // Stray pieces on the table.
     const stray = Math.round(mix(4, 26, mood.density));
-    for (let i = 0; i < stray; i++) loose.push({ at: [bx - 0.05 + wobble(0.13), 0.003, bz + wobble(0.09) + 0.04], size: 1, tilt: 0.15, pale: 0 });
+    for (let i = 0; i < stray; i++) loose.push({ at: [bx - 0.05 + wobble(0.13), 0, bz + wobble(0.09) + 0.04], size: 1, tilt: 0.15, pale: 0, floor:true });
     strew(loose);
 
     // Spoon.
@@ -355,7 +375,7 @@ export default defineThing({
       for (const [x, z] of [[0.01, 0.007], [0.01, -0.007], [-0.01, 0.007], [-0.01, -0.007]]) toy.rod([x, 0.016, z], [x, 0, z], 0.004, plastic);
       toy.root.position.set(lx, 0.002, lz);
       toy.root.rotation.set(Math.PI / 2 - 0.1, 0, 0.6);
-      toy.root.position.y = 0.013;
+      toy.root.position.y = 0;toy.root.updateMatrixWorld(true);toy.root.position.y=.002-new THREE.Box3().setFromObject(toy.root,true).min.y;
       s.root.add(toy.root);
       const wrap = s.box([0.1, 0.002, 0.07], [lx + 0.005, 0.001, lz + 0.012], new THREE.MeshStandardMaterial({ color: '#ffffff', transparent: true, opacity: 0.35, roughness: 0.05 }));
       wrap.rotation.y = 0.6;
@@ -376,6 +396,17 @@ export default defineThing({
       s.root.add(remote.root);
     }
 
+    // Fit a thin mat under the complete setting, including a toppled carton.
+    s.root.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(s.root,true),mw=bounds.max.x-bounds.min.x+.045,md=bounds.max.z-bounds.min.z+.045,mx=(bounds.min.x+bounds.max.x)/2,mz=(bounds.min.z+bounds.max.z)/2;
+    for(const child of s.root.children)child.position.y+=.002;
+    const matCanvas=document.createElement('canvas');matCanvas.width=512;matCanvas.height=384;const mg=matCanvas.getContext('2d')!;
+    mg.fillStyle={woven:'#c5ae7e',ribbed:'#78929e',checked:'#eee3c8',paper:'#f2ecd9'}[a.mat];mg.fillRect(0,0,512,384);
+    if(a.mat==='checked'){mg.fillStyle='#b85b4d';for(let y=0;y<384;y+=32)for(let x=0;x<512;x+=32)if((x/32+y/32)%2===0)mg.fillRect(x,y,32,32);}
+    else if(a.mat==='paper'){mg.strokeStyle='#a28b5f';mg.lineWidth=3;mg.strokeRect(15,15,482,354);mg.strokeRect(22,22,468,340);}
+    else{mg.strokeStyle=a.mat==='woven'?'#8a774f':'#4d7181';mg.lineWidth=1;for(let y=0;y<384;y+=a.mat==='woven'?6:8){mg.beginPath();mg.moveTo(0,y);mg.lineTo(512,y);mg.stroke();}if(a.mat==='woven')for(let x=0;x<512;x+=7){mg.beginPath();mg.moveTo(x,0);mg.lineTo(x,384);mg.stroke();}}
+    const matTexture=new THREE.CanvasTexture(matCanvas);matTexture.colorSpace=THREE.SRGBColorSpace;
+    s.box([mw,.002,md],[mx,.001,mz],s.material('#c0b090'));
+    s.mesh(new THREE.PlaneGeometry(mw,md),new THREE.MeshStandardMaterial({map:matTexture,roughness:1}),[mx,.0021,mz]).rotation.x=-Math.PI/2;
     return s.finish();
   },
 });

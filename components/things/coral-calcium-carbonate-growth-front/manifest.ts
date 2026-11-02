@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Coral calcium carbonate growth front", "summary": "A closed skeletal edge supports fine needle or bundle growth into the exposed calcifying interface; use microscopy-defined habits. A schematic calcification interface with radiating aragonite bundles and an optional supported tissue section; mineral growth, living reefs and microscopy.", "scales": ["macro", "tabletop"]});

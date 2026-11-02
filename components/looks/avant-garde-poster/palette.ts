@@ -1,4 +1,4 @@
-import type { Mood } from '@conjure/kit';
+import { type Mood, type Palette, type PaletteRole, rekey, rekeyOne } from '@conjure/kit';
 import { type RGB, hex, luma, mixRGB } from './common';
 
 /** Every tradition draws from the same roles, so one palette question serves all four. */
@@ -54,8 +54,21 @@ function spot(mood: Mood): Roles {
   return { red: ink, yellow: tint, blue: shade, key, light: hex('#f6f0e3'), grey: mixRGB(key, hex('#f4ede0'), 0.62), green: tint, pink: tint };
 }
 
-export function rolesFor(palette: PaletteKey, tradition: Tradition, mood: Mood, darkPaper = false): Roles {
-  const base = palette === 'canon' ? CANON[tradition] : palette === 'spot' ? spot(mood) : SHARED[palette];
+/**
+ * Under the idea's palette every set but the movement's own canon is re-keyed: the lead ink (red, with
+ * pink keeping its offset) turns onto the palette's ink, the others (yellow, blue, green) onto its
+ * second colour as a set, the light ink toward its ground; black and grey stay. A spot run is one ink and
+ * its tints, so all of them follow the ink.
+ */
+const ROLES: Partial<Record<keyof Roles, PaletteRole>> = { red: 'ink', pink: 'ink', yellow: 'second', blue: 'second', green: 'second', light: 'ground' };
+const SPOT_ROLES: Partial<Record<keyof Roles, PaletteRole>> = { red: 'ink', pink: 'ink', yellow: 'ink', blue: 'ink', green: 'ink', light: 'ground' };
+
+/** A paper stock's tone under the idea's palette: tinted toward its ground. */
+export const paperTone = (tone: RGB, inks: Palette | undefined): RGB => rekeyOne(tone, inks, 'ground');
+
+export function rolesFor(palette: PaletteKey, tradition: Tradition, mood: Mood, darkPaper = false, inks?: Palette): Roles {
+  const made = palette === 'canon' ? CANON[tradition] : palette === 'spot' ? spot(mood) : SHARED[palette];
+  const base: Roles = palette === 'canon' ? made : rekey(made as unknown as Record<keyof Roles, RGB>, inks, palette === 'spot' ? SPOT_ROLES : ROLES);
   // Grim moods sink the inks a little toward the key; joyful ones lift them.
   const sink = Math.max(0, 0.45 - mood.cheer) * 0.25;
   const out = { ...base };

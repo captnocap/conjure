@@ -75,20 +75,22 @@ function sheet() {
   return { canvas, ctx: canvas.getContext('2d')!, w: canvas.width, h: canvas.height };
 }
 
-function faceMaterial([rank, suit]: Card, paper: string, blemish: 'none' | 'ring' | 'burn' | 'blood', random: () => number) {
+type PrintDetail={indices:string;border:string;stock:string};
+function faceMaterial([rank, suit]: Card, paper: string, blemish: 'none' | 'ring' | 'burn' | 'blood', random: () => number, detail: PrintDetail) {
   const { canvas, ctx, w, h } = sheet();
   ctx.fillStyle = paper; ctx.fillRect(0, 0, w, h);
   const ink = suit === 'h' || suit === 'd' ? '#c2242b' : '#17171a';
   ctx.fillStyle = ink; ctx.strokeStyle = ink;
-  for (const flip of [0, 1]) {
+  for (const flip of detail.indices === 'none' ? [] : [0, 1]) {
     ctx.save();
     if (flip) { ctx.translate(w, h); ctx.rotate(Math.PI); }
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = `bold ${rank === '10' ? 54 : 70}px sans-serif`;
+    ctx.font = `bold ${(rank === '10' ? 54 : 70)*(detail.indices==='jumbo'?1.22:1)}px sans-serif`;
     ctx.fillText(rank, 38, 46);
     drawSuit(ctx, suit, 38, 104, 22);
     ctx.restore();
   }
+  if(detail.indices==='four')for(const flip of [0,1]){ctx.save();if(flip){ctx.translate(w,h);ctx.rotate(Math.PI);}ctx.font='bold 43px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(rank,w-31,39);drawSuit(ctx,suit,w-31,82,15);ctx.restore();}
   if (PIPS[rank]) for (const [u, v] of PIPS[rank]) drawSuit(ctx, suit, mix(30, w - 30, u), mix(14, h - 14, v), 22);
   else if (rank === 'A') drawSuit(ctx, suit, w / 2, h / 2, suit === 's' ? 78 : 58);
   else {
@@ -116,10 +118,12 @@ function faceMaterial([rank, suit]: Card, paper: string, blemish: 'none' | 'ring
     ctx.fillStyle = 'rgba(120,12,16,0.88)';
     for (let i = 0; i < 9; i++) { ctx.beginPath(); ctx.arc(w * random(), h * random(), 4 + random() * random() * 34, 0, Math.PI * 2); ctx.fill(); }
   }
-  return texture(canvas);
+  if(detail.border!=='plain'){ctx.strokeStyle=detail.border==='gold'?'#b68c32':ink;ctx.lineWidth=detail.border==='gold'?5:2;ctx.strokeRect(8,8,w-16,h-16);if(detail.border==='double')ctx.strokeRect(13,13,w-26,h-26);if(detail.border==='dots'){ctx.fillStyle=ink;for(let x=16;x<w-8;x+=14){ctx.beginPath();ctx.arc(x,12,1.8,0,7);ctx.arc(x,h-12,1.8,0,7);ctx.fill();}}}
+  if(detail.stock==='linen'){ctx.strokeStyle='rgba(70,60,45,.11)';ctx.lineWidth=1;for(let x=0;x<w;x+=4){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();}for(let y=0;y<h;y+=4){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}}
+  const material=texture(canvas);material.roughness=detail.stock==='plastic'?.15:detail.stock==='linen'?.92:.65;return material;
 }
 
-function backMaterial(design: keyof typeof BACKS, paper: string, marked: boolean) {
+function backMaterial(design: keyof typeof BACKS, paper: string, marked: boolean, detail: PrintDetail) {
   const { canvas, ctx, w, h } = sheet();
   const [ink, line] = BACK_INK[design];
   ctx.fillStyle = design === 'casino' ? ink : paper; ctx.fillRect(0, 0, w, h);
@@ -147,7 +151,8 @@ function backMaterial(design: keyof typeof BACKS, paper: string, marked: boolean
       ctx.beginPath(); ctx.moveTo(x - 20, y - 20); ctx.lineTo(x + 20, y + 20); ctx.moveTo(x + 20, y - 20); ctx.lineTo(x - 20, y + 20); ctx.stroke();
     }
   }
-  return texture(canvas);
+  if(detail.stock==='linen'){ctx.strokeStyle='rgba(255,255,240,.13)';ctx.lineWidth=1;for(let y=0;y<h;y+=4){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}}
+  const material=texture(canvas);material.roughness=detail.stock==='plastic'?.15:detail.stock==='linen'?.92:.65;return material;
 }
 
 function cardGeometry(part: 'full' | 'top' | 'bottom', jag: number[]) {
@@ -176,6 +181,11 @@ function cardGeometry(part: 'full' | 'top' | 'bottom', jag: number[]) {
 
 export default defineThing({
   questions: {
+    format: choice('What size are the playing cards?', { poker: 'Standard poker-width cards.', bridge: 'Narrow bridge-width cards.', jumbo: 'A larger easy-to-read deck.', miniature: 'A miniature travel deck.' }),
+    stock: choice('What is the card stock like?', { smooth: 'Smooth coated card.', linen: 'A fine crosshatched linen finish.', plastic: 'Glossy washable plastic cards.', aged: 'Yellowed old card stock.' }),
+    indices: choice('How are the corner indices printed?', { standard: 'The standard two diagonal corner indices.', four: 'Small indices in all four corners.', jumbo: 'Large bold corner indices.', none: 'No corner indices, just the central pips and courts.' }),
+    border: choice('What frame surrounds the card faces?', { plain: 'A plain unprinted margin.', double: 'A fine double-rule frame.', gold: 'A narrow gold-coloured frame.', dots: 'A small dotted ornamental frame.' }),
+    accessory: choice('What sits beside the deck?', { box: 'An empty open tuck box.', pencil: 'A short scoring pencil.', guard: 'A small brass card-guard disc.', note: 'A folded handwritten score slip.' }),
     hand: choice('What is the hand?', HANDS),
     reveal: choice('How are the five cards showing?', {
       fan: 'Fanned face up on the table for everyone to read.',
@@ -205,10 +215,10 @@ export default defineThing({
   build(a, context) {
     const s = new Sculpture(context);
     const { mood, random } = context;
-    const paper = '#' + new THREE.Color('#f7f3e8').lerp(new THREE.Color('#cdb98a'), mood.wear * 0.7).getHexString();
+    const paper = '#' + new THREE.Color(a.stock==='aged'?'#d7c797':'#f7f3e8').lerp(new THREE.Color('#cdb98a'), mood.wear * 0.7).getHexString();
     const hand = DEALS[a.hand].slice();
     const full = cardGeometry('full', []);
-    const back = backMaterial(a.back, paper, false);
+    const back = backMaterial(a.back, paper, false, a);
     const edge = s.material(paper, { roughness: 0.8 });
     const hurry = mix(0.15, 1, mood.energy);
 
@@ -226,8 +236,8 @@ export default defineThing({
 
     const blemished = a.flaw === 'burn' ? [Math.floor(random() * 5)] : a.flaw === 'ring' ? [1, 2, 3] : a.flaw === 'blood' ? [0, 1, 2, 3, 4] : [];
     const special = a.flaw === 'torn' || a.flaw === 'marked' ? 1 + Math.floor(random() * 3) : -1;
-    const faces = hand.map((entry, index) => faceMaterial(entry, paper, blemished.includes(index) ? (a.flaw as 'ring' | 'burn' | 'blood') : 'none', random));
-    const markedBack = a.flaw === 'marked' ? backMaterial(a.back, paper, true) : back;
+    const faces = hand.map((entry, index) => faceMaterial(entry, paper, blemished.includes(index) ? (a.flaw as 'ring' | 'burn' | 'blood') : 'none', random, a));
+    const markedBack = a.flaw === 'marked' ? backMaterial(a.back, paper, true, a) : back;
     const handRoot = new THREE.Group();
     s.root.add(handRoot);
 
@@ -265,7 +275,7 @@ export default defineThing({
         lay(index, -Math.sin(angle) * radius, pivot + HC / 2 - Math.cos(angle) * radius + HC / 2, angle, 0.0004 + index * 0.0005);
       });
       if (a.flaw === 'sixth') {
-        const extra = card(faceMaterial(['A', a.hand === 'royal' ? 'h' : 's'], paper, 'none', random), back, true);
+        const extra = card(faceMaterial(['A', a.hand === 'royal' ? 'h' : 's'], paper, 'none', random, a), back, true);
         extra.position.set(0.035, 0.0001, HC * 0.95);
         extra.rotation.y = -0.5;
         handRoot.add(extra);
@@ -273,14 +283,14 @@ export default defineThing({
     } else if (a.reveal === 'thrown') {
       hand.forEach((_entry, index) => lay(index, (index - 2) * 0.034 + (random() - 0.5) * 0.06, (random() - 0.5) * 0.09 + 0.05, (random() - 0.5) * 2.6, 0.0004 + index * 0.0006));
       if (a.flaw === 'sixth') {
-        const extra = card(faceMaterial(['A', 's'], paper, 'none', random), back, true);
+        const extra = card(faceMaterial(['A', 's'], paper, 'none', random, a), back, true);
         extra.position.set(0.1, 0.0001, 0.11); extra.rotation.y = 1.1;
         handRoot.add(extra);
       }
     } else {
       hand.forEach((_entry, index) => lay(index, (index - 2) * (a.reveal === 'peek' ? 0.05 : 0.03) + (random() - 0.5) * 0.008 * hurry, 0.05 + (random() - 0.5) * 0.012 * hurry, (random() - 0.5) * 0.3 * hurry, 0.0004 + index * 0.0005));
       if (a.flaw === 'sixth') {
-        const extra = card(faceMaterial(['A', 's'], paper, 'none', random), back, true);
+        const extra = card(faceMaterial(['A', 's'], paper, 'none', random, a), back, true);
         extra.position.set(0.085, 0.0001, 0.085); extra.rotation.y = -0.7;
         handRoot.add(extra);
       }
@@ -298,7 +308,7 @@ export default defineThing({
     const deckX = a.reveal === 'propped' ? 0 : -0.15, deckZ = a.reveal === 'propped' ? -0.02 : 0.03;
     const loose = (x: number, z: number, turn: number, y: number, up = false) => {
       const entry: Card = [['3', '6', 'Q', '9', 'K', '4'][Math.floor(random() * 6)] === '6' ? '5' : ['3', 'Q', '9', 'K', '4'][Math.floor(random() * 5)], (['s', 'h', 'd', 'c'] as const)[Math.floor(random() * 4)]];
-      const group = card(up ? faceMaterial(entry, paper, 'none', random) : back, back, true);
+      const group = card(up ? faceMaterial(entry, paper, 'none', random, a) : back, back, true);
       group.position.set(x, y, z); group.rotation.y = turn;
       s.root.add(group);
     };
@@ -332,6 +342,12 @@ export default defineThing({
       handRoot.rotation.x = 1.15;
       handRoot.position.set(0, 0, 0.03);
     }
+    const ax=.16,az=-.06;
+    if(a.accessory==='box'){const paint=s.material(a.back==='red'?'#b3262b':'#27478f');s.box([W+.008,.003,HC+.008],[ax,.0015,az],paint);for(const side of [-1,1])s.box([.003,.022,HC+.008],[ax+side*(W/2+.0025),.012,az],paint);s.box([W+.008,.022,.003],[ax,.012,az+HC/2+.0025],paint);const flap=s.box([W+.008,.002,.028],[ax,.013,az-HC/2-.015],paint);flap.rotation.x=-.6;}
+    if(a.accessory==='pencil'){s.rod([ax-.04,.003,az],[ax+.035,.003,az],.003,s.material('#c59732'));s.rod([ax+.035,.003,az],[ax+.047,.003,az],.003,s.material('#d7bb87'),.0006);}
+    if(a.accessory==='guard'){s.cylinder(.017,.017,.004,[ax,.002,az],s.material('#b99a4f',{metalness:.7,roughness:.35}),24);const face=s.label('LUCK',.025,.009,[ax,.0042,az],'#40351d','#b99a4f');face.rotation.x=-Math.PI/2;}
+    if(a.accessory==='note'){s.box([.052,.001,.074],[ax,.0005,az],s.material('#e8dfc7'));const note=s.label('7  12  19',.045,.027,[ax,.0012,az],'#3d4050','#e8dfc7');note.rotation.x=-Math.PI/2;}
+    const scale={poker:[1,1,1],bridge:[.9,1,1],jumbo:[1.2,1.2,1.2],miniature:[.72,.72,.72]}[a.format];s.root.scale.set(...scale as [number,number,number]);
     return s.finish();
   },
 });

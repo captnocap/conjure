@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({ kind: 'look', title: 'Dry-pigment sand picture', medium: 'craft', scales: ['cosmic', 'planetary', 'landscape', 'street', 'room', 'tabletop', 'macro'], summary: 'Dry coloured sand builds the picture in matte granular fields, with precise poured boundaries, raked passages and small trails of loose pigment. Temporary patterns, patient handwork, ritual concentration and an image that could be swept away.' });

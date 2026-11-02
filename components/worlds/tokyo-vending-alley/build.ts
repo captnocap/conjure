@@ -57,6 +57,11 @@ const BODIES = {
 
 export default defineWorld({
   questions: {
+    paving: choice('How is the walking surface laid?', { asphalt: 'Patched asphalt with worn edge lines.', brick: 'Small staggered paving blocks.', slabs: 'Long rectangular concrete slabs.', tile: 'A grid of small textured square tiles.' }),
+    drainage: choice('Where does rainwater drain?', { gutter: 'Open dark gutters along both kerbs.', grates: 'Short metal cross-grates at regular intervals.', channel: 'A narrow grated channel down the centre.', covers: 'Round embossed inspection covers.' }),
+    canopy: choice('What shelters the vending row?', { metal: 'A plain sheet-metal awning.', corrugated: 'A corrugated metal canopy with projecting ridges.', glass: 'Pale transparent panels in a steel frame.', scalloped: 'A striped canvas awning with a scalloped valance.' }),
+    display: choice('What fills the vending display windows?', { mixed: 'A mixture of cans and bottles.', cans: 'Rows of short aluminium cans.', bottles: 'Rows of tall capped drink bottles.', packets: 'Square snack packets with sealed tops.' }),
+    services: choice('Which building services stand out above the shops?', { fans: 'Circular extraction fans in square wall housings.', meters: 'Pairs of round utility meters and their downpipes.', ducts: 'Ribbed elbow ducts climbing above the eaves.', balconies: 'Shallow service balconies with open steel railings.' }),
     machines: choice('What are the vending machines like?', {
       mixed: 'A mismatched row from rival drink brands: white, red, blue, green.',
       white: 'Clean modern white machines, all alike, clinically bright.',
@@ -121,6 +126,10 @@ export default defineWorld({
       mesh.position.set(...at); mesh.castShadow = cast; mesh.receiveShadow = true;
       return add(mesh);
     };
+    const repeatedBoxes=(size:Point,positions:Point[],material:THREE.Material)=>{
+      const mesh=add(new THREE.InstancedMesh(new THREE.BoxGeometry(...size),material,positions.length));
+      positions.forEach((p,i)=>mesh.setMatrixAt(i,new THREE.Matrix4().makeTranslation(...p)));mesh.receiveShadow=true;return mesh;
+    };
     const lit = (canvas: HTMLCanvasElement, glow: HTMLCanvasElement, intensity: number) => { const map = textureOf(canvas); return new THREE.MeshStandardMaterial({ map, emissive: '#ffffff', emissiveMap: glow === canvas ? map : textureOf(glow), emissiveIntensity: intensity, roughness: 0.6 }); };
     const wet = a.weather === 'wet' || a.weather === 'rain';
     const wallTone = new THREE.Color(hour.wall);
@@ -141,6 +150,11 @@ export default defineWorld({
       g.fillStyle = hour.ground; g.fillRect(0, 0, w, h);
       for (let i = 0; i < 2600; i++) { g.fillStyle = `rgba(${random() > 0.5 ? '255,255,255' : '0,0,0'},${0.03 + random() * 0.07})`; g.fillRect(random() * w, random() * h, 1 + random() * 2, 1 + random() * 2); }
       for (let i = 0; i < 5 + mood.wear * 8; i++) { g.fillStyle = `rgba(20,22,30,${0.12 + random() * 0.16})`; g.fillRect(random() * w, random() * h, 30 + random() * 90, 40 + random() * 160); }
+      if(a.paving!=='asphalt') {
+        g.fillStyle=a.paving==='brick'?shade('#796b65',.25):a.paving==='slabs'?shade('#9a9995',.25):shade('#767e83',.2);g.fillRect(0,0,w,h);
+        const cw=a.paving==='brick'?26:a.paving==='slabs'?w/3:20,ch=a.paving==='brick'?36:a.paving==='slabs'?140:40;
+        for(let y=0,row=0;y<h;y+=ch,row++)for(let x=-(a.paving==='brick'&&row%2?cw/2:0);x<w;x+=cw){g.fillStyle=`rgba(${random()>.5?'240,237,225':'20,22,28'},${.04+random()*.1})`;g.fillRect(x+1,y+1,cw-2,ch-2);g.strokeStyle='rgba(12,18,24,.45)';g.lineWidth=1.4;g.strokeRect(x,y,cw,ch);}
+      }
       g.fillStyle = `rgba(235,235,225,${mix(0.55, 0.2, mood.wear)})`;
       for (const x of [26, w - 32]) for (let y = 0; y < h; y += 4) if (random() > mood.wear * 0.5) g.fillRect(x, y, 6, 4);
       for (let i = 0; i < 3; i++) { const cx = w * (0.4 + random() * 0.2), cy = h * (0.2 + i * 0.28); g.strokeStyle = 'rgba(20,22,28,0.7)'; g.lineWidth = 3; g.beginPath(); g.arc(cx, cy, 17, 0, Math.PI * 2); g.stroke(); g.lineWidth = 1; for (let k = -2; k <= 2; k++) { g.beginPath(); g.moveTo(cx - 14, cy + k * 6); g.lineTo(cx + 14, cy + k * 6); g.stroke(); } }
@@ -149,6 +163,13 @@ export default defineWorld({
     const ground = add(new THREE.Mesh(new THREE.PlaneGeometry(HALF * 2, LENGTH).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: textureOf(asphalt), roughness: wet ? 0.45 : 0.9, metalness: wet ? 0.1 : 0 })));
     ground.position.set(0, 0, (NEAR + FAR) / 2 + 1); ground.receiveShadow = true;
     for (const side of [-1, 1]) box([0.34, 0.07, LENGTH], [side * (HALF - 0.17), 0.035, (NEAR + FAR) / 2 + 1], flat(shade('#a4a39c', 0.15), { roughness: 0.95 }), false);
+
+    // Drain surfaces are flush with the walking surface and outside the casting stands.
+    const drainMetal=flat('#4b5359',{metalness:.65,roughness:.6});
+    if(a.drainage==='gutter')for(const side of [-1,1])box([.12,.006,LENGTH],[side*(HALF-.4),.003,(NEAR+FAR)/2+1],flat('#252a30'),false);
+    if(a.drainage==='grates'){const bars:Point[]=[];for(let z=-12;z<10;z+=4){box([3.5,.009,.25],[0,.0045,z],flat('#242931'),false);for(let x=-1.7;x<=1.7;x+=.12)bars.push([x,.006,z]);}repeatedBoxes([.045,.012,.25],bars,drainMetal);}
+    if(a.drainage==='channel'){box([.18,.009,LENGTH],[0,.0045,(NEAR+FAR)/2+1],flat('#20252c'),false);const bars:Point[]=[];for(let z=FAR-2;z<NEAR+4;z+=.17)bars.push([0,.007,z]);repeatedBoxes([.18,.014,.045],bars,drainMetal);}
+    if(a.drainage==='covers')for(let z=-10;z<9;z+=5){const cover=add(new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.012,24),drainMetal));cover.position.set(.15,.006,z);for(let k=-3;k<=3;k++)box([Math.sqrt(.075-k*k*.0049)*2,.004,.016],[.15,.014,z+k*.07],flat('#697279'),false);}
 
     // The two building walls, painted with seams, pipes and upper windows.
     const wallArt = (top: number, mirrored: boolean) => sheet(1024, 384, (g, w, h) => {
@@ -217,9 +238,10 @@ export default defineWorld({
             if (random() < mood.wear * 0.25) continue;
             const colour = a.machines === 'odd' ? pick(['#1d1d22', '#f08fb4', '#8a45d6', '#f0c330']) : pick(DRINKS);
             g.fillStyle = on ? colour : shade(colour, 0.55);
-            const can = random() > 0.5;
+            const can = a.display==='cans'||a.display==='mixed'&&random()>.5;
             g.beginPath(); g.roundRect(x + (can ? 1 : 2), y + (can ? 8 : 2), cw - (can ? 2 : 4), can ? 22 : 28, 3); g.fill();
-            if (!can) g.fillRect(x + cw / 2 - 2.5, y - 1, 5, 5);
+            if (!can&&a.display!=='packets') g.fillRect(x + cw / 2 - 2.5, y - 1, 5, 5);
+            if(a.display==='packets'){g.fillRect(x,y+2,cw,28);g.fillStyle='rgba(245,240,222,.7)';g.fillRect(x,y+3,cw,2);g.fillRect(x,y+27,cw,2);}
             g.fillStyle = 'rgba(255,255,255,0.75)'; g.fillRect(x + 2, y + 15, cw - 4, 5);
             g.fillStyle = '#e8eaec'; g.fillRect(x, y + 32, cw, 7);
             const soldOut = !on || random() < mood.wear * 0.3;
@@ -248,7 +270,16 @@ export default defineWorld({
       if (on) pools.push({ z, width, colour: new THREE.Color(dark ? body : '#dff0ff').lerp(new THREE.Color('#e8f6ff'), dark ? 0.55 : 0).lerp(new THREE.Color('#ffd9a8'), mood.warmth * 0.3) });
     }
     // A strip awning with tubes over the row, brightest over the hero's gap.
-    box([0.95, 0.05, 19], [-HALF + 0.47, 2.22, -1.1], flat(shade('#7f8c98', 0.35), { roughness: 0.6 }), false);
+    const canopyMaterial=a.canopy==='glass'?flat('#b7d7da',{transparent:true,opacity:.35,roughness:.18,metalness:.05}):a.canopy==='scalloped'?new THREE.MeshStandardMaterial({map:textureOf(sheet(64,64,(g,w,h)=>{g.fillStyle='#b9ae95';g.fillRect(0,0,w,h);g.fillStyle='#476275';for(let x=0;x<w;x+=16)g.fillRect(x,0,8,h);})),roughness:.96}):flat(shade('#7f8c98',.35),{roughness:.6});
+    box([.95,.05,19],[-HALF+.47,2.22,-1.1],canopyMaterial,false);
+    if(a.canopy==='corrugated'){const ribs:Point[]=[];for(let z=-10.5;z<8.4;z+=.18)ribs.push([-HALF+.47,2.26,z]);repeatedBoxes([.95,.035,.055],ribs,canopyMaterial);}
+    if(a.canopy==='glass')for(let z=-10.6;z<=8.4;z+=1.9)box([.98,.055,.035],[-HALF+.47,2.225,z],steel,false);
+    if(a.canopy==='scalloped') {
+      const valance=sheet(64,128,(g,w,h)=>{g.fillStyle='#b9ae95';g.fillRect(0,0,w,h);g.fillStyle='#476275';for(let x=0;x<w;x+=16)g.fillRect(x,0,8,h);});
+      const cloth=new THREE.MeshStandardMaterial({map:textureOf(valance),side:THREE.DoubleSide,roughness:.96});
+      for(let z=-10.5;z<8.35;z+=.45){const geo=new THREE.PlaneGeometry(.45,.23,10,1);const pos=geo.attributes.position;for(let i=0;i<pos.count;i++)if(pos.getY(i)<0)pos.setY(i,-.055-.06*Math.cos(pos.getX(i)/.225*Math.PI));geo.computeVertexNormals();const panel=add(new THREE.Mesh(geo,cloth));panel.position.set(-HALF+.945,2.08,z+.225);panel.rotation.y=Math.PI/2;}
+    }
+    for(const x of [-HALF,-HALF+.94])box([.035,.06,19],[x,2.22,-1.1],steel,false);
     for (let z = 7.6; z > -10; z -= 1.9) box([0.03, 0.2, 0.03], [-HALF + 0.9, 2.1, z], steel, false);
     const tubeTone = new THREE.Color('#e8f6ff').lerp(new THREE.Color('#ffe2b0'), mood.warmth * 0.5);
     const tube = new THREE.MeshStandardMaterial({ color: '#ffffff', emissive: tubeTone, emissiveIntensity: 2.2 * bright });
@@ -327,7 +358,7 @@ export default defineWorld({
       // Crates and pots collect outside in a crowded alley.
       if (random() < 0.25 + mood.density * 0.6) {
         const cz = z - 1.55, colour = tint(pick(['#e3b62c', '#b8362c', '#27478e']));
-        for (let level = 0; level < 1 + Math.floor(random() * 3); level++) box([0.34, 0.3, 0.46], [HALF - 0.36, 0.22 + level * 0.31, cz + (random() - 0.5) * 0.04], flat(colour, { roughness: 0.6 })).rotation.y = (random() - 0.5) * 0.2;
+        for (let level = 0; level < 1 + Math.floor(random() * 3); level++) box([0.34, 0.3, 0.46], [HALF - 0.36, 0.22 + level * 0.3, cz + (random() - 0.5) * 0.04], flat(colour, { roughness: 0.6 })).rotation.y = (random() - 0.5) * 0.2;
       }
       if (random() < 0.2 + mood.density * 0.5) {
         const pz = z + 1.6;
@@ -335,6 +366,25 @@ export default defineWorld({
         const bush = add(new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 6), flat(pick(['#4d7a3c', '#3f6a4c'])))); bush.position.set(HALF - 0.38, 0.52, pz); bush.scale.y = 1.3; bush.castShadow = true;
       }
     });
+
+    // Real fixtures break the upper wall silhouette and remain present under any cast.
+    for(const z of [5.3,-2.4,-8.8]) {
+      const x=HALF-.2,y=4.25;
+      if(a.services==='fans'){
+        box([.3,.75,.75],[x,y,z],steel);
+        const disk=add(new THREE.Mesh(new THREE.CylinderGeometry(.29,.29,.035,24),flat('#252e36')));disk.rotation.z=Math.PI/2;disk.position.set(x-.17,y,z);
+        for(let j=0;j<4;j++){const blade=box([.04,.12,.23],[x-.2,y+Math.sin(j*Math.PI/2)*.15,z+Math.cos(j*Math.PI/2)*.15],flat('#a5adb0',{metalness:.6}));blade.rotation.x=-j*Math.PI/2;}
+      }else if(a.services==='meters'){
+        for(const dz of [-.23,.23]){box([.15,.45,.32],[x,y,z+dz],steel);const face=add(new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,.025,18),flat('#e0e1d9')));face.rotation.z=Math.PI/2;face.position.set(x-.09,y,z+dz);box([.025,.07,.012],[x-.11,y+.025,z+dz],flat('#1f252a'));box([.035,1.3,.035],[x,3.4,z+dz],steel);}
+      }else if(a.services==='ducts'){
+        const path=new THREE.CatmullRomCurve3([new THREE.Vector3(HALF,y-.6,z),new THREE.Vector3(HALF-.45,y-.6,z),new THREE.Vector3(HALF-.55,y,z),new THREE.Vector3(HALF-.55,y+1.1,z)]);
+        add(new THREE.Mesh(new THREE.TubeGeometry(path,20,.14,10),steel));for(let yy=y;yy<y+1.1;yy+=.16){const ring=add(new THREE.Mesh(new THREE.TorusGeometry(.145,.013,5,12),drainMetal));ring.rotation.x=Math.PI/2;ring.position.set(HALF-.55,yy,z);}
+      }else{
+        box([.7,.08,1.6],[HALF-.35,y-.5,z],steel);for(const zz of [z-.8,z+.8])box([.7,.035,.035],[HALF-.35,y+.38,zz],steel);box([.035,.035,1.6],[HALF-.7,y+.38,z],steel);
+        for(let zz=z-.8;zz<=z+.81;zz+=.2)box([.025,.85,.025],[HALF-.7,y-.045,zz],steel);
+        for(const zz of [z-.6,z+.6]){const bracket=box([.04,.7,.04],[HALF-.25,y-.79,zz],steel);bracket.rotation.z=-.65;}
+      }
+    }
 
     // Projecting signboards, both sides, receding.
     const blinkers: { material: THREE.MeshStandardMaterial; base: number }[] = [];
@@ -362,6 +412,8 @@ export default defineWorld({
     add(new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.16, poleTop, 12), flat(shade('#aaa8a0', 0.2), { roughness: 0.95 }))).position.set(poleX, poleTop / 2, poleZ);
     for (const y of [poleTop - 0.3, poleTop - 1]) box([1.5, 0.08, 0.08], [poleX - 0.3, y, poleZ], steel, false);
     const drum = add(new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.8, 14), flat(shade('#9ea5a6', 0.2), { metalness: 0.3 }))); drum.position.set(poleX - 0.42, poleTop - 2, poleZ);
+    box([.72,.08,.62],[poleX-.3,poleTop-2.44,poleZ],steel,false);
+    box([.06,.7,.06],[poleX-.05,poleTop-2.75,poleZ],steel,false);
     const sag = mix(0.25, 0.6, mood.wear);
     const along = (x: number, y: number, depth: number, radius: number) => wire([[x + (random() - 0.5) * 0.3, y + 0.5, NEAR], [x, y - depth * 0.6, (NEAR + poleZ) / 2], [x, y, poleZ], [x, y - depth, (poleZ + FAR) / 2 - 1], [x + (random() - 0.5) * 0.4, y + 0.4, FAR - 4]], radius);
     for (const y of [poleTop - 0.2, poleTop - 0.9]) for (const dx of [-0.95, -0.3, 0.3]) along(poleX + dx, y, sag, 0.014);
@@ -379,12 +431,12 @@ export default defineWorld({
       for (let leg = 0; leg < legs; leg++) {
         const from = new THREE.Vector3(leg % 2 ? HALF : -HALF, 4.3 + (leg % 3) * 0.2, 6.5 - leg * 2.6), to = new THREE.Vector3(leg % 2 ? -HALF : HALF, 4.3 + ((leg + 1) % 3) * 0.2, 6.5 - (leg + 1) * 2.6);
         const middle = from.clone().lerp(to, 0.5); middle.y -= 0.55;
-        wire([from.toArray() as Point, middle.toArray() as Point, to.toArray() as Point], 0.008);
-        const curve = new THREE.QuadraticBezierCurve3(from, middle.clone().setY(middle.y - 0.5), to);
+        const curve=new THREE.CatmullRomCurve3([from,middle,to]);
+        wire([from.toArray() as Point,middle.toArray() as Point,to.toArray() as Point],.008);
         const beads = a.overhead === 'lanterns' ? 6 : 14;
         for (let i = 1; i < beads; i++) {
           const at = curve.getPoint(i / beads);
-          const matrix = new THREE.Matrix4().compose(at.setY(at.y - (a.overhead === 'lanterns' ? 0.2 : 0.11)), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, a.overhead === 'bunting' ? Math.atan2(to.x - from.x, to.z - from.z) + Math.PI / 2 : 0, (random() - 0.5) * 0.3)), new THREE.Vector3(1, 1, 1));
+          const matrix = new THREE.Matrix4().compose(at.setY(at.y - (a.overhead === 'lanterns' ? .184 : .11)), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, a.overhead === 'bunting' ? Math.atan2(to.x - from.x, to.z - from.z) + Math.PI / 2 : 0, 0)), new THREE.Vector3(1, 1, 1));
           marks.push(matrix);
           colours.push(new THREE.Color(a.overhead === 'lanterns' ? (random() > 0.3 ? '#e8402c' : '#f6ecd2') : tint(pick(['#f08fb4', '#f6ecd2', '#e8402c', '#f2c62e', '#58c8c0']))));
         }
@@ -465,7 +517,7 @@ export default defineWorld({
       const saddle = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.05, 0.26), rubber); saddle.position.set(0, 0.98, 0.22); bike.add(saddle);
       const basket = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.24, 0.28), flat('#5a5e64', { wireframe: false, roughness: 0.6 })); basket.position.set(0, 0.92, -0.62); basket.castShadow = true; bike.add(basket);
       rod([0.08, 0.3, 0.3], [0.2, 0, 0.36], 0.01, steel);
-      bike.position.set(-1.02, 0, -1.6); bike.rotation.set(0, 0.1, 0.1);
+      bike.position.set(-1.02, 0, -1.6); bike.rotation.set(0, 0.1, 0.1);bike.updateWorldMatrix(true,true);bike.position.y-=new THREE.Box3().setFromObject(bike,true).min.y;
     } else if (a.waiting === 'bags') {
       for (let i = 0; i < 5 + Math.floor(random() * 4); i++) { const r = mix(0.2, 0.3, random()); const bag = add(new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), flat(random() > 0.3 ? '#dfe4e6' : '#b8d0dc', { roughness: 0.35 }))); bag.scale.y = 0.82; bag.position.set(1.2 + random() * 0.55, r * 0.75 + (i > 4 ? 0.3 : 0), -1.2 + random() * 1.4); bag.castShadow = true; }
     } else if (a.waiting === 'cat') {

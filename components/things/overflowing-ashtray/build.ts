@@ -20,6 +20,13 @@ const TRAY_LOOK: Record<keyof typeof TRAYS, { color: string; opacity: number; me
 
 export default defineThing({
   questions: {
+    outline: choice('What is the ashtray outline?', { round: 'A round dish.', octagon: 'An eight-sided dish.', hexagon: 'A six-sided dish.', oval: 'A broad oval dish.' }),
+    restCount: choice('How many notched rests are cut into the rim?', { two: 'Two opposing rests.', three: 'Three equally spaced rests.', four: 'Four rests.', six: 'Six small rests.' }),
+    edging: choice('How is the outer rim finished?', { plain: 'A plain smooth rim.', fluted: 'Short radial ribs.', scalloped: 'A row of small rounded scallops.', beaded: 'A row of small raised beads.' }),
+    ashTone: choice('What colour is the ash?', { pale: 'Pale nearly white ash.', grey: 'Ordinary mid-grey ash.', black: 'Dark charcoal-rich ash.', mixed: 'Grey ash with contrasting pale flakes.' }),
+    surface: choice('What surface texture is visible on the dish?', { smooth: 'A smooth surface.', hammered: 'Small hammered-looking dimples.', radial: 'Fine radial decorative strokes.', speckled: 'Fine scattered surface speckles.' }),
+    makersMark: choice('What mark is on the back rim?', { crest: 'A small round crest.', hotel: 'A little HOTEL plaque.', number: 'A small numbered table plaque.', plain: 'An unlettered rectangular badge.' }),
+    smokeShape: choice('How does any remaining smoke rise?', { thread: 'A thin wandering thread.', straight: 'A nearly straight thread.', spiral: 'A gently curling spiral.', broad: 'A broader soft drifting plume.' }),
     full: score('How full is the ashtray?', ['Two lonely butts', 'An evening\'s worth', 'Heaped to the rim', 'A mountain spilling onto the table']),
     burning: choice('What is still burning in it?', {
       cigarette: 'One cigarette resting on the rim with a long ash, smoke rising.',
@@ -60,24 +67,31 @@ export default defineThing({
       color: look.color, transparent: glassy, opacity: look.opacity, metalness: look.metalness, roughness: look.roughness + mood.wear * 0.25,
       flatShading: look.facets < 20, clearcoat: glassy ? 1 : 0, emissive: look.color, emissiveIntensity: glassy ? 0.12 : 0,
     });
-    const tray = s.mesh(new THREE.LatheGeometry(profile, look.facets), trayMaterial);
-    tray.rotation.y = random() * Math.PI;
+    const rests={two:2,three:3,four:4,six:6}[a.restCount];
+    const trayGeometry=new THREE.LatheGeometry(profile,96),positions=trayGeometry.attributes.position;
+    const sides=a.outline==='octagon'?8:a.outline==='hexagon'?6:look.facets<20?look.facets:0;
+    for(let i=0;i<positions.count;i++){let x=positions.getX(i),z=positions.getZ(i),y=positions.getY(i);const r=Math.hypot(x,z),t=Math.atan2(z,x);if(sides){const step=2*Math.PI/sides,local=((t+step/2)%step+step)%step-step/2,f=Math.cos(Math.PI/sides)/Math.cos(local);x*=f;z*=f;}
+      if(r>BOWL+.001&&y>TOP-.01){let distance=Infinity;for(let k=0;k<rests;k++){const angle=k*Math.PI*2/rests+.4;distance=Math.min(distance,Math.abs(Math.atan2(Math.sin(t-angle),Math.cos(t-angle)))*r);}y-=.005*Math.exp(-((distance/.0045)**2))*Math.min(1,(y-(TOP-.01))/.006);}
+      positions.setXYZ(i,x,y,z);
+    }trayGeometry.computeVertexNormals();
+    if(a.surface!=='smooth'){const canvas=document.createElement('canvas');canvas.width=canvas.height=128;const ctx=canvas.getContext('2d')!;ctx.fillStyle='#ffffff';ctx.fillRect(0,0,128,128);ctx.fillStyle=a.surface==='speckled'?'#a9a9a9':'#d8d8d8';if(a.surface==='radial'){ctx.strokeStyle='#bbbbbb';ctx.lineWidth=1;for(let i=0;i<32;i++){const t=i*Math.PI/16;ctx.beginPath();ctx.moveTo(64,64);ctx.lineTo(64+Math.cos(t)*90,64+Math.sin(t)*90);ctx.stroke();}}else for(let i=0;i<(a.surface==='hammered'?70:240);i++){ctx.beginPath();ctx.arc(random()*128,random()*128,a.surface==='hammered'?3+random()*3:.6+random(),0,7);ctx.fill();}trayMaterial.map=new THREE.CanvasTexture(canvas);trayMaterial.map.colorSpace=THREE.SRGBColorSpace;}
+    const tray=s.mesh(trayGeometry,trayMaterial);
     if (a.tray === 'ceramic') s.ring(RIM - 0.0015, 0.0022, [0, TOP, 0], s.material('#eee8d8', { roughness: 0.3 })).rotation.x = Math.PI / 2;
-    // Cigarette rests notched into the rim.
-    const notch = s.material(glassy ? '#' + new THREE.Color(look.color).multiplyScalar(0.55).getHexString() : '#111112', { roughness: 0.3 });
-    const rests = a.tray === 'tin' ? 3 : 4;
-    for (let i = 0; i < rests; i++) {
-      const angle = (i / rests) * Math.PI * 2 + 0.4;
-      const groove = s.cylinder(0.0052, 0.0052, RIM - BOWL + 0.004, [Math.cos(angle) * (RIM + BOWL) / 2, TOP - 0.0022, Math.sin(angle) * (RIM + BOWL) / 2], notch, 10);
-      groove.rotation.set(0, -angle, Math.PI / 2);
-      groove.scale.set(1, 1, 1);
+    const rimRadius=(radius:number,t:number)=>{if(!sides)return radius;const step=2*Math.PI/sides,local=((t+step/2)%step+step)%step-step/2;return radius*Math.cos(Math.PI/sides)/Math.cos(local);};
+    // The recesses above are cut into the actual rim surface.
+    if(a.edging!=='plain')for(let i=0;i<36;i++){const t=i*Math.PI/18+.1,nearRest=Array.from({length:rests},(_,k)=>Math.abs(Math.atan2(Math.sin(t-(k*2*Math.PI/rests+.4)),Math.cos(t-(k*2*Math.PI/rests+.4))))).some(d=>d<.13);if(nearRest)continue;
+      const r=rimRadius(RIM-.006,t),x=Math.cos(t)*r,z=Math.sin(t)*r;
+      if(a.edging==='fluted')s.rod([Math.cos(t)*rimRadius(RIM-.013,t),TOP+.0005,Math.sin(t)*rimRadius(RIM-.013,t)],[Math.cos(t)*rimRadius(RIM-.002,t),TOP+.0005,Math.sin(t)*rimRadius(RIM-.002,t)],.001,trayMaterial);
+      else s.ball([.0025,a.edging==='beaded'?.0025:.0015,.0025],[x,TOP+.001,z],trayMaterial,7);
     }
+    const mark=s.label(a.makersMark==='hotel'?'HOTEL':a.makersMark==='number'?'No. 4':a.makersMark==='crest'?'◇':'',.021,.009,[0,TOP+.001,-RIM+.01],'#5b5036','#cfbf94');mark.rotation.x=-Math.PI/2;
 
     // Ash bed.
-    const ashGrey = s.material('#8c8a86', { roughness: 1 });
-    const heap = mix(0.004, 0.03, a.full);
-    s.ball([BOWL * 0.95, heap, BOWL * 0.95], [0, FLOOR, 0], ashGrey, 18);
+    const ashGrey = s.material({pale:'#c8c5bc',grey:'#8c8a86',black:'#403f3b',mixed:'#8d8880'}[a.ashTone], { roughness: 1 });
+    const heap = mix(0.004, 0.03, a.full), ashRadius=BOWL*(sides&&sides<=8?.82:.95);
+    s.ball([ashRadius, heap, ashRadius], [0, FLOOR, 0], ashGrey, 18);
 
+    if(a.ashTone==='mixed')for(let i=0;i<20;i++){const t=random()*Math.PI*2,r=random()*BOWL*.7;s.ball([.002,.001,.002],[Math.cos(t)*r,FLOOR+heap*Math.sqrt(1-(r/ashRadius)**2)+.0005,Math.sin(t)*r],s.material('#d4d0c4'),5);}
     // Butts: filter, paper and burnt tip share a transform.
     const count = Math.max(2, Math.round(mix(2, 44, a.full * a.full * 0.6 + a.full * 0.4) * mix(0.8, 1.25, mood.density)));
     const unit = new THREE.CylinderGeometry(0.004, 0.004, 1, 9);
@@ -139,7 +153,7 @@ export default defineThing({
       const lean = new THREE.Group();
       const cigar = type === 'cigar';
       const radius = cigar ? 0.0085 : 0.004;
-      lean.position.set((RIM + BOWL) / 2, TOP + radius * 0.8, 0);
+      lean.position.set(rimRadius((RIM + BOWL) / 2,angle), TOP + radius * 0.8, 0);
       lean.rotation.z = cigar ? 0.1 : 0.16;
       holder.add(lean);
       const piece = (from: number, to: number, material: THREE.Material, r = radius, r2 = r) => {
@@ -175,16 +189,16 @@ export default defineThing({
       // Smoke: a wandering thread that widens as it rises.
       const start = new THREE.Vector3(-tip, radius, 0);
       const points: THREE.Vector3[] = [];
-      const rise = mix(0.2, 0.34, random()), phase = random() * 6.28, sway = mix(0.012, 0.045, mood.energy);
+      const rise = mix(0.2, 0.34, random()), phase = random() * 6.28, sway = (a.smokeShape==='straight'?.15:a.smokeShape==='spiral'?1.4:1)*mix(.012,.045,mood.energy);
       for (let i = 0; i <= 26; i++) {
         const t = i / 26;
-        points.push(new THREE.Vector3(start.x + Math.sin(t * 7 + phase) * sway * t * t * 1.6 + t * t * 0.03, start.y + t * rise, Math.cos(t * 5.3 + phase) * sway * t * t * 1.4));
+        points.push(new THREE.Vector3(start.x + Math.sin(t * (a.smokeShape==='spiral'?16:7) + phase) * sway * t * t * 1.6 + t * t * 0.03, start.y + t * rise, Math.cos(t * (a.smokeShape==='spiral'?16:5.3) + phase) * sway * t * t * 1.4));
       }
       const curve = new THREE.CatmullRomCurve3(points);
       for (const [r, opacity] of [[0.0018, 0.6], [0.0045, 0.22]] as const) {
         const material = smokeMaterial.clone();
-        material.opacity = opacity;
-        const thread = new THREE.Mesh(new THREE.TubeGeometry(curve, 60, r, 6), material);
+        material.opacity = opacity*(a.smokeShape==='broad'?.65:1);
+        const thread = new THREE.Mesh(new THREE.TubeGeometry(curve,60,r*(a.smokeShape==='broad'?2.3:1),6), material);
         thread.position.copy(start);
         thread.geometry.translate(-start.x, -start.y, -start.z);
         lean.add(thread);
@@ -198,6 +212,7 @@ export default defineThing({
     else if (a.burning === 'two') { smoker(first, 'cigarette'); smoker(first + (rests === 3 ? Math.PI * 2 / 3 : Math.PI), 'cigarette'); }
     smokeMaterial.dispose();
 
+    if(a.outline==='oval'){const dishGroup=new THREE.Group();for(const node of [...s.root.children])dishGroup.add(node);dishGroup.scale.x=1.2;s.root.add(dishGroup);}
     // Beside it.
     const side = RIM + 0.055, sideAngle = first + 2.2;
     const bx = Math.cos(sideAngle) * side, bz = Math.abs(Math.sin(sideAngle)) * side * 0.6 + 0.05;

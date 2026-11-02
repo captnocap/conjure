@@ -6,6 +6,12 @@ const HANDLES = { blue: '#2a5fb0', red: '#b8302a', yellow: '#dba820', black: '#2
 
 export default defineThing({
   questions: {
+    bit: choice('What tip is fitted?', { original: 'The usual bit for this iron.', needle: 'A fine conical needle.', chisel: 'A broad flat chisel.', bent: 'A bent precision tip.' }),
+    grip: choice('What is the grip surface?', { original: 'The original moulded or turned handle.', smooth: 'A smooth untextured grip.', cork: 'A cork sleeve over the handle.', knurled: 'A closely ridged grip for a firm hold.' }),
+    spares: choice('Are spare bits laid out?', { none: 'No spares.', row: 'Three spare bits in a row.', block: 'Three bits standing in a drilled wooden block.', tube: 'Spare bits in an open metal storage tube.' }),
+    desolder: choice('What desoldering tool is alongside?', { none: 'None.', braid: 'A reel of copper desoldering braid with its end pulled out.', pump: 'A spring-loaded solder sucker.', forceps: 'A pair of fine forceps for lifting a freed lead.' }),
+    mat: choice('What protects the bench under the work?', { bare: 'The bare bench.', silicone: 'A blue silicone heat mat.', ceramic: 'A pale ceramic tile.', steel: 'A shallow steel work tray.' }),
+    extraction: choice('Is there a small fume collector nearby?', { none: 'No collector.', fan: 'A square filter fan on a little stand.', hood: 'A low flared extraction hood.', duct: 'A round flexible extraction duct.' }),
     iron: choice('What style of soldering iron is it?', {
       pencil: 'A slim modern pencil iron with a coloured plastic handle and a fine tip.',
       wooden: 'An old iron with a turned wooden handle, a thick steel shaft and a fat copper bit.',
@@ -61,7 +67,12 @@ export default defineThing({
     const tool = new Sculpture(context);
     const big = a.iron === 'wooden' || a.iron === 'heavy';
     const tipLen = big ? 0.04 : 0.022, barrelLen = big ? 0.085 : 0.06, barrelR = big ? 0.0085 : 0.0045, gripR = a.iron === 'wooden' ? 0.016 : big ? 0.015 : 0.0105, gripLen = big ? 0.12 : 0.105;
-    if (big) {
+    if (a.bit === 'bent') {
+      tool.tube([[0, 0, 0], [0.005, tipLen * 0.24, 0], [0.008, tipLen * 0.55, 0], [0, tipLen, 0]], barrelR * 0.55, tipMat);
+    } else if (a.bit === 'chisel') {
+      const chisel = tool.cylinder(barrelR * 1.3, barrelR * 0.2, tipLen, [0, tipLen / 2, 0], tipMat, 4); chisel.scale.z = 0.45;
+    } else if (a.bit === 'needle') tool.cylinder(barrelR * 0.85, 0.0005, tipLen, [0, tipLen / 2, 0], tipMat, 12);
+    else if (big) {
       tool.cylinder(barrelR * 1.3, barrelR * 0.3, tipLen * 0.55, [0, tipLen * 0.275, 0], a.iron === 'wooden' ? new THREE.MeshStandardMaterial({ color: mood.wear > 0.5 ? '#6b4a34' : '#c47a42', metalness: 0.6, roughness: 0.45, emissive: '#ff4a10', emissiveIntensity: glow }) : tipMat, 4);
       tool.cylinder(barrelR * 1.3, barrelR * 1.3, tipLen * 0.5, [0, tipLen * 0.78, 0], a.iron === 'wooden' ? copper : tipMat, 12);
     } else tool.cylinder(barrelR * 0.9, 0.0006, tipLen, [0, tipLen / 2, 0], tipMat, 10);
@@ -74,7 +85,13 @@ export default defineThing({
     } else {
       tool.cylinder(gripR, gripR * 1.15, gripLen, [0, y0 + 0.012 + gripLen / 2, 0], handleMat, 16);
       // A ribbed cushion grip near the hot end.
-      for (let i = 0; i < 5; i++) tool.cylinder(gripR * 1.22, gripR * 1.22, 0.004, [0, y0 + 0.022 + i * 0.008, 0], dark, 16);
+      if (a.grip === 'original') for (let i = 0; i < 5; i++) tool.cylinder(gripR * 1.22, gripR * 1.22, 0.004, [0, y0 + 0.022 + i * 0.008, 0], dark, 16);
+    }
+    if (a.grip === 'cork') {
+      const cork = s.material('#b89765', { roughness: 1 }); tool.cylinder(gripR * 1.16, gripR * 1.16, gripLen * 0.68, [0, y0 + 0.02 + gripLen * 0.34, 0], cork, 18);
+      for (let i = 0; i < 22; i++) { const t = i * 2.4, y = y0 + 0.027 + random() * gripLen * 0.55; tool.ball([0.0013, 0.0018, 0.0013], [Math.cos(t) * gripR * 1.16, y, Math.sin(t) * gripR * 1.16], s.material('#836b46'), 5); }
+    } else if (a.grip === 'knurled') {
+      for (let i = 0; i < 14; i++) tool.cylinder(gripR * 1.17, gripR * 1.17, 0.0014, [0, y0 + 0.021 + i * gripLen * 0.047, 0], dark, 16);
     }
     const tail = y0 + 0.012 + gripLen;
     tool.cylinder(0.004, gripR * 0.8, 0.02, [0, tail + 0.01, 0], dark, 10);
@@ -212,6 +229,55 @@ export default defineThing({
     for (let i = 0; i < 2 + Math.floor(mood.density * 9); i++) { const t = random() * 6.28, r = 0.05 + random() * 0.06; blobs.push({ at: [Math.cos(t) * r, 0.0012, Math.sin(t) * r + 0.02] as P, size: 0.4 + random() }); }
     s.scatter(new THREE.SphereGeometry(0.0035, 8, 5), s.material('#d4d8da', { metalness: 0.9, roughness: 0.2 }), blobs).scale.y = 1;
 
+    if (a.spares !== 'none') {
+      const sx = -0.1, sz = 0.15;
+      if (a.spares === 'block') s.box([0.066, 0.018, 0.026], [sx, 0.009, sz], s.material('#9d7b50'));
+      if (a.spares === 'tube') { const tube = s.lathe([[0.009, 0], [0.011, 0], [0.011, 0.072], [0.009, 0.072], [0.009, 0]], steel, [sx, 0.011, sz]); tube.rotation.z = Math.PI / 2; }
+      for (let i = 0; i < 3; i++) {
+        const x = sx + (i - 1) * 0.02, z = sz + (a.spares === 'tube' ? i * 0.003 : 0);
+        if (a.spares === 'block') { s.cylinder(0.003, 0.003, 0.032 + i * 0.006, [x, 0.029 + i * 0.003, z], steel, 10); s.cylinder(0.0006, 0.003, 0.012, [x, 0.051 + i * 0.006, z], copper, 8); }
+        else { const bx = a.spares === 'tube' ? sx + 0.013 + i * 0.006 : x; s.rod([bx, 0.004, z - 0.022], [bx, 0.004, z + 0.014], 0.003, steel); s.rod([bx, 0.004, z + 0.014], [bx, 0.004, z + 0.025], 0.003, copper, 0.0005); }
+      }
+    }
+    if (a.desolder === 'braid') {
+      s.cylinder(0.024, 0.024, 0.012, [0.16, 0.006, 0.08], s.material('#a45c39'), 20);
+      s.cylinder(0.009, 0.009, 0.013, [0.16, 0.0065, 0.08], dark, 14);
+      s.tube([[0.18, 0.006, 0.08], [0.195, 0.003, 0.1], [0.18, 0.002, 0.13], [0.155, 0.002, 0.135]], 0.0024, copper);
+    } else if (a.desolder === 'pump') {
+      s.rod([0.155, 0.012, 0.02], [0.155, 0.012, 0.15], 0.011, s.material('#4387a5'), 0.011);
+      s.rod([0.155, 0.012, 0.15], [0.155, 0.012, 0.175], 0.004, dark, 0.002);
+      s.rod([0.155, 0.012, 0.02], [0.155, 0.012, -0.005], 0.004, steel);
+      s.ball([0.009, 0.009, 0.004], [0.155, 0.012, -0.008], dark, 10);
+    } else if (a.desolder === 'forceps') {
+      s.tube([[0.145, 0.003, 0.15], [0.15, 0.005, 0.055], [0.158, 0.005, 0.05], [0.165, 0.003, 0.15]], 0.0016, steel);
+    }
+    const extractor = new THREE.Vector3(0.12, 0.14, -0.17);
+    if (a.extraction !== 'none') {
+      const ex = extractor.x, ez = extractor.z;
+      s.box([0.12, 0.008, 0.08], [ex, 0.004, ez], iron);
+      s.rod([ex, 0.008, ez], [ex, 0.14, ez], 0.007, steel);
+      if (a.extraction === 'fan') {
+        s.box([0.12, 0.11, 0.035], [ex, 0.14, ez], dark);
+        s.box([0.1, 0.09, 0.002], [ex, 0.14, ez + 0.018], s.material('#4c554c'));
+        for (let i = -4; i <= 4; i++) { s.rod([ex - 0.05, 0.14 + i * 0.01, ez + 0.02], [ex + 0.05, 0.14 + i * 0.01, ez + 0.02], 0.0009, steel); s.rod([ex + i * 0.011, 0.095, ez + 0.02], [ex + i * 0.011, 0.185, ez + 0.02], 0.0009, steel); }
+      } else if (a.extraction === 'hood') {
+        const hood = s.mesh(new THREE.CylinderGeometry(0.025, 0.06, 0.07, 4, 1, true), new THREE.MeshStandardMaterial({ color: '#657677', roughness: 0.6, side: THREE.DoubleSide }), [ex, 0.14, ez]); hood.rotation.set(Math.PI / 2, Math.PI / 4, 0);
+      } else {
+        const duct: P[] = [[ex, 0.015, ez - 0.03], [ex, 0.11, ez - 0.06], [ex, 0.16, ez - 0.02], [ex, 0.14, ez + 0.045]];
+        s.tube(duct, 0.025, dark);
+        const curve = new THREE.CatmullRomCurve3(duct.map(p => new THREE.Vector3(...p)));
+        for (let i = 0; i < 16; i++) { const t = i / 15, ring = s.ring(0.026, 0.002, curve.getPoint(t).toArray() as P, iron); ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), curve.getTangent(t).normalize()); }
+      }
+    }
+    const matLift = a.mat === 'bare' ? 0 : a.mat === 'ceramic' ? 0.009 : 0.004;
+    if (matLift) {
+      for (const child of s.root.children) child.position.y += matLift;
+      const surface = s.material(a.mat === 'silicone' ? '#608a9c' : a.mat === 'ceramic' ? '#d5d1b9' : '#959e9f', { roughness: a.mat === 'ceramic' ? 0.3 : 0.75, metalness: a.mat === 'steel' ? 0.6 : 0 });
+      s.box([0.5, matLift, 0.5], [0, matLift / 2, 0], surface);
+      if (a.mat === 'steel') for (const x of [-0.25, 0.25]) s.box([0.008, 0.014, 0.5], [x, 0.011, 0], surface);
+      if (a.mat === 'silicone') for (let i = 0; i < 7; i++) s.box([0.025, 0.003, 0.06], [-0.21 + i * 0.065, matLift + 0.0015, -0.205], s.material('#4f7887'));
+    }
+
     // ---- Smoke from the tip: a slow thread, or a pour when scorching.
     const puffs: { mesh: THREE.Mesh; phase: number; drift: number }[] = [];
     if (level >= 2) {
@@ -224,12 +290,14 @@ export default defineThing({
       }
     }
     const origin = tip.clone().addScaledVector(aim, 0.004);
+    origin.y += matLift; extractor.y += matLift;
     const height = level === 3 ? 0.2 : 0.15, speed = mix(0.12, 0.5, mood.energy), sway = mix(0.004, 0.02, mood.energy);
     const place = (time: number) => {
       for (const p of puffs) {
         const t = (p.phase + time * speed) % 1;
         const w = t * t;
         p.mesh.position.set(origin.x + Math.sin(t * 7 + p.drift + time) * sway * (0.3 + w * 3) + w * 0.03, origin.y + t * height, origin.z + Math.cos(t * 5 + p.drift) * sway * (0.3 + w * 2));
+        if (a.extraction !== 'none') p.mesh.position.lerp(extractor, w * 0.7);
         p.mesh.scale.setScalar((level === 3 ? 0.008 : 0.005) + t * (level === 3 ? 0.024 : 0.013));
       }
     };

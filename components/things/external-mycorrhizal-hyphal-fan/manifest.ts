@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "External mycorrhizal hyphal fan", "summary": "Connected hyphal branches run through a real irregular soil-pore volume, including branching junctions and exposed ends. A magnified teaching section for hidden processes, careful observation and scientific discovery.", "scales": ["macro", "tabletop"]});

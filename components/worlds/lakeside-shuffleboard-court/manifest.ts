@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind: 'world', title: "Lakeside shuffleboard court", summary: "A long permanently marked shuffleboard lane ends in scoring triangles beside a quiet lake. Fixed benches, a cue rack and numbered team discs keep the place identifiable through changing casts, from early preparation to a close afternoon game.", scales: ["street", "landscape", "room"]});

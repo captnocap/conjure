@@ -51,6 +51,14 @@ export default defineThing({
       floor: 'Several cards dropped and scattered at its foot.',
       hand: 'A fresh card lying face up on the step plate.',
     }),
+    tread: choice('What grips the weighing platform?', { bars: 'The original straight tread bars.', dots: 'Rows of raised circular studs.', chevrons: 'A repeated chevron tread.', border: 'A smooth mat inside a bright rim.' }),
+    handrail: choice('What helps the customer balance?', { none: 'No balance rail.', left: 'One curved rail on the left.', pair: 'A curved rail on either side.', crossbar: 'Two uprights joined by a low crossbar.' }),
+    bezelFinish: choice('How is the dial bezel finished?', { plain: 'Plain chrome.', beads: 'A ring of little chrome beads.', scallops: 'Six rounded scallop ornaments.', double: 'Two fine concentric rings.' }),
+    bulbSpacing: choice('How many lamps surround the dial?', { twelve: 'Twelve widely spaced bulbs.', eighteen: 'Eighteen evenly spaced bulbs.', twentyfour: 'Twenty-four close bulbs.', thirty: 'Thirty small closely packed bulbs.' }),
+    coinReturn: choice('What is below the coin slot?', { plain: 'The original round release button.', lever: 'A short chromed release lever.', tray: 'A little projecting change tray.', hood: 'A rounded protective hood over the return.' }),
+    rearVent: choice('What ventilates the back of the cabinet?', { plain: 'A plain painted back.', slots: 'Six narrow horizontal slots.', grille: 'A square crossed-wire grille.', plate: 'A bolted access plate with a small vent.' }),
+    cable: choice('How is the power cable arranged?', { none: 'No loose cable visible.', coil: 'A coiled cable at the rear foot.', straight: 'A cable running along the ground behind it.', reel: 'A small cable reel beside the base.' }),
+    baseTrim: choice('What protects the front of the step?', { plain: 'Plain enamel.', chrome: 'A bright chrome edge.', corners: 'Two large metal corner guards.', chequer: 'A black and cream chequered edge.' }),
   },
 
   build(a, context) {
@@ -83,7 +91,10 @@ export default defineThing({
     // ---- step plate --------------------------------------------------------
     s.box([0.52, 0.09, 0.66], [0, 0.045, 0.08], body);
     s.box([0.46, 0.012, 0.44], [0, 0.096, 0.17], black);
-    for (let i = 0; i < 9; i++) s.box([0.42, 0.008, 0.014], [0, 0.105, -0.02 + i * 0.047], chrome);
+    if(a.tread==='bars')for(let i=0;i<9;i++)s.box([.42,.008,.014],[0,.105,-.02+i*.047],chrome);
+    else if(a.tread==='dots')for(let x=0;x<6;x++)for(let z=0;z<6;z++)s.cylinder(.009,.009,.007,[-.175+x*.07,.1055,-.005+z*.07],chrome,8);
+    else if(a.tread==='chevrons')for(let i=0;i<7;i++)for(const side of[-1,1])s.rod([0,.106,.005+i*.055],[side*.2,.106,-.025+i*.055],.004,chrome);
+    else{for(const x of[-.22,.22])s.box([.01,.008,.44],[x,.105,.17],chrome);for(const z of[-.045,.385])s.box([.45,.008,.01],[0,.105,z],chrome);}
     s.box([0.54, 0.02, 0.68], [0, 0.01, 0.08], black);
 
     // ---- body --------------------------------------------------------------
@@ -156,7 +167,7 @@ export default defineThing({
       const out = a.lights === 'dying' ? random() < 0.5 : random() < mood.wear * 0.25;
       groups[out ? 3 : i % 3].push(at);
     };
-    const ringN = 18, ringR = headR + (a.form === 'cabinet' ? 0.04 : 0.045);
+    const ringN = {twelve:12,eighteen:18,twentyfour:24,thirty:30}[a.bulbSpacing], ringR = headR + (a.form === 'cabinet' ? 0.04 : 0.045);
     for (let i = 0; i < ringN; i++) { const t = (i / ringN) * Math.PI * 2; addBulb(i, [Math.sin(t) * ringR, headY + Math.cos(t) * ringR, zf + 0.012]); }
     if (a.form === 'cabinet') for (let i = 0; i < 9; i++) for (const x of [-1, 1]) addBulb(i + (x > 0 ? 1 : 0), [x * 0.27, 0.22 + i * 0.085, 0.19]);
     if (a.form === 'classic') for (let i = 0; i < 6; i++) for (const x of [-1, 1]) addBulb(i + (x > 0 ? 1 : 0), [x * 0.15, 0.24 + i * 0.1, colZ + 0.162]);
@@ -228,6 +239,30 @@ export default defineThing({
       const rust = new THREE.MeshStandardMaterial({ color: '#6b3d22', transparent: true, opacity: mix(0, 0.75, mood.wear), roughness: 1, depthWrite: false });
       for (let i = 0; i < 5; i++) s.box([rnd(0.03, 0.09), rnd(0.08, 0.3), 0.002], [rnd(-0.15, 0.15), rnd(0.2, 0.5), zf + 0.002], rust).castShadow = false;
     }
+
+    if(a.handrail!=='none'){
+      const sides=a.handrail==='left'?[-1]:[-1,1];for(const side of sides){const x=side*.25;if(a.handrail==='crossbar')s.rod([x,.09,.02],[x,.78,.02],.018,chrome);else s.tube([[x,.09,.24],[x,.72,.24],[x,.88,.13],[x,.72,-.1],[x,.09,-.1]],.017,chrome);}
+      if(a.handrail==='crossbar')s.rod([-.25,.78,.02],[.25,.78,.02],.018,chrome);
+    }
+    if(a.bezelFinish==='beads')for(let i=0;i<36;i++){const t=i*Math.PI/18;s.ball([.012,.012,.009],[Math.sin(t)*headR,headY+Math.cos(t)*headR,zf+.025],chrome,6);}
+    else if(a.bezelFinish==='double')for(const r of[headR-.022,headR+.025])s.ring(r,.006,[0,headY,zf+.02],chrome);
+    else if(a.bezelFinish==='scallops')for(let i=0;i<6;i++){const t=i*Math.PI/3;const arc=s.ring(.045,.008,[Math.sin(t)*(headR-.012),headY+Math.cos(t)*(headR-.012),zf+.026],trim,Math.PI);arc.rotation.z=-t;}
+    if(a.coinReturn==='lever')s.rod([.06,slotY-.035,signZ+.03],[.12,slotY-.075,signZ+.045],.008,chrome);
+    else if(a.coinReturn==='tray'){s.box([.085,.008,.065],[.06,slotY-.065,signZ+.04],chrome);for(const x of[.018,.102])s.box([.006,.035,.065],[x,slotY-.05,signZ+.04],chrome);}
+    else if(a.coinReturn==='hood')s.tube([[.025,slotY-.05,signZ+.03],[.025,slotY+.005,signZ+.045],[.095,slotY+.005,signZ+.045],[.095,slotY-.05,signZ+.03]],.01,chrome);
+    const back=a.form==='cabinet'?-.215:colZ-(a.form==='classic'?.155:.085),ventY=.6,vw=a.form==='lollipop'?.12:.25;
+    if(a.rearVent==='slots')for(let i=0;i<6;i++)s.box([vw,.014,.006],[0,ventY-.09+i*.036,back-.005],black);
+    else if(a.rearVent==='grille'){s.box([vw,.23,.008],[0,ventY,back-.004],black);for(let i=0;i<7;i++)s.rod([-vw/2+i*vw/6,ventY-.11,back-.012],[-vw/2+i*vw/6,ventY+.11,back-.012],.003,chrome);for(let i=0;i<5;i++)s.rod([-vw/2,ventY-.1+i*.05,back-.012],[vw/2,ventY-.1+i*.05,back-.012],.003,chrome);}
+    else if(a.rearVent==='plate'){s.box([vw,.25,.01],[0,ventY,back-.005],trim);for(const x of[-1,1])for(const y of[-1,1])s.ball([.006,.006,.005],[x*vw*.4,ventY+y*.105,back-.014],chrome,6);for(let i=0;i<3;i++)s.box([vw*.6,.012,.004],[0,ventY-.03+i*.03,back-.013],black);}
+    if(a.cable!=='none'){
+      s.tube([[0,.18,back],[0,.06,-.42],[-.15,.009,-.5]],.008,black);
+      if(a.cable==='coil')for(let i=0;i<4;i++)s.ring(.1+i*.009,.006,[-.25,.008,-.51],black).rotation.x=Math.PI/2;
+      else if(a.cable==='straight')s.tube([[-.15,.009,-.5],[-.35,.009,-.58],[-.5,.009,-.8],[-.7,.009,-.78]],.008,black);
+      else{s.box([.2,.02,.16],[-.36,.01,-.55],black);for(const x of[-.44,-.28]){s.rod([x,.02,-.55],[x,.18,-.55],.012,chrome);s.cylinder(.11,.11,.012,[x,.18,-.55],trim,16).rotation.z=Math.PI/2;}s.cylinder(.075,.075,.15,[-.36,.18,-.55],black,16).rotation.z=Math.PI/2;s.tube([[-.15,.009,-.5],[-.2,.035,-.55],[-.28,.18,-.55]],.008,black);}
+    }
+    if(a.baseTrim==='chrome')s.box([.52,.045,.012],[0,.045,.416],chrome);
+    else if(a.baseTrim==='corners')for(const x of[-1,1]){s.box([.08,.07,.012],[x*.22,.045,.416],chrome);s.box([.012,.07,.08],[x*.266,.045,.38],chrome);}
+    else if(a.baseTrim==='chequer')for(let i=0;i<12;i++)s.box([.043,.045,.012],[-.238+i*.043,.045,.416],i%2?black:trim);
 
     const spin = lit ? mix(0.6, 5, mood.energy) : 0;
     const chase = mix(2, 9, mood.energy);

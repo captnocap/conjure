@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type PaletteRole, choice, clamp01, defineLook, fromOklch, mix, oklch, rekey, score, seeded } from '@conjure/kit';
 
 /**
  * A linocut. The frame is read as a lino block the way a printmaker would cut it:
@@ -36,29 +36,44 @@ const describe = <T extends Record<string, { description: string }>>(table: T) =
 
 const PAPERS = {
   white: { hex: '#f3f0e8', dark: false, fibre: 0, mottle: 0.015, specks: 0, name: 'white printmaking paper', description: 'Bright white printmaking paper: the carved areas print as clean white.' },
-  cream: { hex: '#ebe1c7', dark: false, fibre: 0.15, mottle: 0.04, specks: 0, name: 'cream cartridge paper', description: 'Warm cream cartridge paper, a little mottled.' },
+  cream: { hex: '#ebe1c7', dark: false, fibre: 0.15, mottle: 0.04, specks: 0, name: 'cream cartridge paper', description: 'Softly tinted cartridge paper, a little mottled.' },
   mulberry: { hex: '#ede6d4', dark: false, fibre: 1, mottle: 0.03, specks: 0, name: 'mulberry paper', description: 'Soft Japanese mulberry paper with long fibres lying in the sheet.' },
   newsprint: { hex: '#d7cdab', dark: false, fibre: 0.2, mottle: 0.06, specks: 1, name: 'yellowed newsprint', description: 'Cheap yellowed newsprint, speckled, the ink sunk in: a proof pulled on whatever was to hand.' },
   kraft: { hex: '#bf9a66', dark: false, fibre: 0.5, mottle: 0.07, specks: 0.3, name: 'kraft paper', description: 'Brown kraft paper, so the carved areas come out tan instead of white.' },
-  grey: { hex: '#b8b7b0', dark: false, fibre: 0.1, mottle: 0.04, specks: 0, name: 'grey card', description: 'Mid-grey card: a quiet tonal print, the paper itself a half-tone.' },
-  black: { hex: '#17181b', dark: true, fibre: 0, mottle: 0.02, specks: 0, name: 'black paper', description: 'Black paper printed with white and pale inks: a night print, where the gouges read as dark.' },
+  grey: { hex: '#b8b7b0', dark: false, fibre: 0.1, mottle: 0.04, specks: 0, name: 'toned card', description: 'Mid-toned card: a quiet tonal print, the paper itself a half-tone.' },
+  black: { hex: '#17181b', dark: true, fibre: 0, mottle: 0.02, specks: 0, name: 'black paper', description: 'Near-black paper printed with white and pale inks: a night print, where the gouges read as dark.' },
 } as const;
 
 /** Blocks in printing order: a tint, a colour, and the key that goes on last. */
 const INKS = {
   black: { key: '#161616', mid: '#6d6964', light: '#c4bdb0', spot: false, name: 'black ink', description: 'Black oil ink alone; further blocks add a warm grey and a pale stone tint.' },
-  brick: { key: '#1a1513', mid: '#b4372a', light: '#e9bba4', spot: false, name: 'black over brick red', description: 'Black key over a brick-red block, with a blush tint for the third: the classic poster linocut.' },
-  indigo: { key: '#1a2746', mid: '#4b6b9b', light: '#abc0d9', spot: false, name: 'indigo inks', description: 'Indigo key, a mid steel blue and a pale sky blue: cool, nautical, nocturnal.' },
-  sepia: { key: '#3a2316', mid: '#8b5a33', light: '#d5b88d', spot: false, name: 'sepia inks', description: 'Dark brown key over tobacco and a cream-tan tint: an old book-plate.' },
-  forest: { key: '#17251c', mid: '#3f6c47', light: '#aac78d', spot: false, name: 'forest inks', description: 'Bottle-green key, leaf green and a pale lime: botanical, damp, woodland.' },
-  harbour: { key: '#132c47', mid: '#3a8c9f', light: '#e3b43a', spot: true, name: 'navy, teal and mustard', description: 'Navy key, a teal block and a mustard spot colour printed wherever the scene is warm: a harbour poster.' },
-  fluoro: { key: '#1b1b1b', mid: '#ff4f8f', light: '#f9e04a', spot: true, name: 'black, fluorescent pink and lemon', description: 'Black key, fluorescent pink and a lemon spot colour on the warm things: a gig poster.' },
-  oxblood: { key: '#4a1620', mid: '#b86b78', light: '#e7d7c3', spot: false, name: 'oxblood inks', description: 'Oxblood key, dusty rose and bone: wine, velvet, theatre.' },
+  brick: { key: '#1a1513', mid: '#b4372a', light: '#e9bba4', spot: false, name: 'black over a strong colour', description: 'Black key over a strong saturated block, with a soft blush of it for the third: the classic poster linocut.' },
+  indigo: { key: '#1a2746', mid: '#4b6b9b', light: '#abc0d9', spot: false, name: 'deep cool inks', description: 'A deep key, a muted mid tone and a pale tint of one colour: cool, nautical, nocturnal.' },
+  sepia: { key: '#3a2316', mid: '#8b5a33', light: '#d5b88d', spot: false, name: 'mellow inks', description: 'A dark mellow key over a softer mid ink and a pale tint: an old book-plate.' },
+  forest: { key: '#17251c', mid: '#3f6c47', light: '#aac78d', spot: false, name: 'dense organic inks', description: 'A very dark key, a rich mid ink and a pale fresh tint: botanical, damp, woodland.' },
+  harbour: { key: '#132c47', mid: '#3a8c9f', light: '#e3b43a', spot: true, name: 'a deep key, a colour block and a spot', description: 'A deep key, a clear colour block and a contrasting spot colour printed wherever the scene is warm: a harbour poster.' },
+  fluoro: { key: '#1b1b1b', mid: '#ff4f8f', light: '#f9e04a', spot: true, name: 'black with two fluorescent inks', description: 'Black key, a fluorescent block and a contrasting fluorescent spot colour on the warm things: a gig poster.' },
+  oxblood: { key: '#4a1620', mid: '#b86b78', light: '#e7d7c3', spot: false, name: 'dusky inks', description: 'A dark heavy key, a dusty mid ink and a bone-pale tint: wine, velvet, theatre.' },
 } as const;
+
+/**
+ * Blocks re-keyed to the picture's palette: the colour block carries the ink, a spot colour answers in
+ * the second, and a coloured key follows the ink but keeps its own darkness (a key that lifted toward a
+ * pale palette ink would stop being a key). Black keys and the all-black set are black ink and stay.
+ */
+const INK_ROLES: Record<string, Record<string, PaletteRole>> = {
+  black: {},
+  brick: { mid: 'ink', light: 'ink' },
+  fluoro: { mid: 'ink', light: 'second' },
+  harbour: { key: 'ink', mid: 'ink', light: 'second' },
+};
+const FAMILY: Record<string, PaletteRole> = { key: 'ink', mid: 'ink', light: 'ink' };
+/** Toned and dark papers take the palette's ground; white, mulberry, kraft and newsprint are materials and stay. */
+const GROUND_PAPERS = new Set(['cream', 'grey', 'black']);
 
 export default defineLook({
   questions: {
-    inks: choice('Which inks are mixed for the blocks?', describe(INKS)),
+    inks: choice('What character have the inks mixed for the blocks? Coloured inks take the picture\u2019s palette.', describe(INKS)),
     blocks: choice('How many blocks were cut and printed?', {
       one: 'A single key block: one ink and bare paper, the starkest print.',
       two: 'Two blocks: a flat colour block printed under the key.',
@@ -133,15 +148,22 @@ export default defineLook({
       c[1],
       Math.max(0, Math.min(255, c[2] - (mood.warmth - 0.5) * amount)),
     ];
-    const inkOf = (h: string, lift: number): RGB => {
-      let c = hex(h);
+    const inkOf = (c0: readonly [number, number, number], lift: number): RGB => {
+      let c: RGB = [c0[0], c0[1], c0[2]];
       if (dark && lift) c = mixRGB(c, [246, 241, 230], lift);
       return temper(mixRGB(grey(c), c, 0.7 + 0.3 * mood.cheer), 14);
     };
-    const paper = temper(hex(paperSpec.hex), 10);
-    const keyInk = dark ? temper(hex('#ede7d9'), 10) : inkOf(inkSpec.key, 0);
-    const midInk = inkOf(inkSpec.mid, 0.3);
-    const lightInk = inkOf(inkSpec.light, 0.45);
+    const designed = { key: hex(inkSpec.key), mid: hex(inkSpec.mid), light: hex(inkSpec.light) };
+    const keyed = rekey(designed, context.palette, INK_ROLES[a.inks] ?? FAMILY);
+    if (keyed !== designed && keyed.key !== designed.key) {
+      const [, chroma, hue] = oklch(keyed.key);
+      keyed.key = fromOklch(oklch(designed.key)[0], chroma, hue);
+    }
+    const sheetColour = hex(paperSpec.hex);
+    const paper = temper(GROUND_PAPERS.has(a.paper) ? [...rekey({ sheetColour }, context.palette, { sheetColour: 'ground' }).sheetColour] as RGB : sheetColour, 10);
+    const keyInk = dark ? temper(hex('#ede7d9'), 10) : inkOf(keyed.key, 0);
+    const midInk = inkOf(keyed.mid, 0.3);
+    const lightInk = inkOf(keyed.light, 0.45);
 
     // ── The plate: the block's rectangle inside the sheet ────────────────────────────────────
     const wide = a.proof === 'artist';

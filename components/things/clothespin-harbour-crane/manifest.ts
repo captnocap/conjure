@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Clothespin harbour crane", "summary": "A giant sprung wooden clothespin forms the mast of a miniature harbour crane, with a supported boom, sheaves and a real hanging load line. Small cargo, borrowed household tools and a dock made from what washed ashore.", "scales": ["room", "street", "tabletop"]});

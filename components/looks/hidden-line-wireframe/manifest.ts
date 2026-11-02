@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Hidden line wireframe',summary:'A schematic lattice on visible surfaces, silhouette and crease lines, normal-driven grid wrapping and restrained depth weights. Technical wireframe-like drawings, early computer graphics and clean drafting studies.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'game'});

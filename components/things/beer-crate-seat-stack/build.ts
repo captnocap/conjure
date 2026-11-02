@@ -21,19 +21,19 @@ const BRAND: Record<Exclude<keyof typeof BRANDS, 'mixed'>, { body: string; band:
 type BrandKey = keyof typeof BRAND;
 
 const W = 0.46, D = 0.34, H = 0.31;
-function crateGeometry() {
+function crateGeometry(wall:string,bottom:string) {
   const parts: THREE.BufferGeometry[] = [];
   const add = (w: number, h: number, d: number, x: number, y: number, z: number) => parts.push(new THREE.BoxGeometry(w, h, d).translate(x, y, z));
-  add(W, 0.02, D, 0, 0.01, 0);
+  if(bottom==='solid')add(W,.02,D,0,.01,0);else{for(let i=0;i<7;i++)add(bottom==='slats'?.038:.015,.02,D,-W/2+.025+i*(W-.05)/6,.01,0);if(bottom==='grid'||bottom==='cross')for(let i=0;i<5;i++)add(W,.02,.015,0,.01,-D/2+.02+i*(D-.04)/4);if(bottom==='cross')for(const side of [-1,1]){const brace=new THREE.BoxGeometry(Math.hypot(W,D),.012,.02);brace.rotateY(side*Math.atan2(D,W));brace.translate(0,.016,0);parts.push(brace);}}
   for (const x of [-1, 1]) for (const z of [-1, 1]) add(0.035, H, 0.035, x * (W / 2 - 0.0175), H / 2, z * (D / 2 - 0.0175));
   for (const z of [-1, 1]) {
     add(W, 0.04, 0.02, 0, H - 0.02, z * (D / 2 - 0.01));
-    add(W, 0.15, 0.016, 0, 0.095, z * (D / 2 - 0.008));
-    for (const x of [-0.12, 0, 0.12]) add(0.02, H, 0.016, x, H / 2, z * (D / 2 - 0.008));
+    if(wall==='panel')add(W,.15,.016,0,.095,z*(D/2-.008));else for(let row=0;row<(wall==='slats'?4:2);row++)add(W,wall==='slats'?.025:.035,.016,0,.04+row*(wall==='slats'?.052:.13),z*(D/2-.008));
+    for(const x of wall==='lattice'?[-.16,-.08,0,.08,.16]:wall==='frame'?[-.15,.15]:[-.12,0,.12]) add(0.02, H, 0.016, x, H / 2, z * (D / 2 - 0.008));
   }
   for (const x of [-1, 1]) {
     add(0.02, 0.04, D, x * (W / 2 - 0.01), H - 0.02, 0);
-    add(0.016, 0.15, D, x * (W / 2 - 0.008), 0.095, 0);
+    if(wall==='panel')add(.016,.15,D,x*(W/2-.008),.095,0);else for(let row=0;row<4;row++)add(.016,.025,D,x*(W/2-.008),.04+row*.052,0);
     add(0.016, 0.03, D, x * (W / 2 - 0.008), 0.215, 0);
   }
   for (const z of [-D / 6, D / 6]) add(W - 0.04, 0.14, 0.006, 0, 0.09, z);
@@ -45,6 +45,13 @@ function crateGeometry() {
 
 export default defineThing({
   questions: {
+    crateWall: choice('How are the crate walls moulded?', { panel: 'Solid lower panels with open upper ribs.', lattice: 'A close vertical lattice.', slats: 'Four horizontal slats with narrow uprights.', frame: 'Broad open rectangular frames.' }),
+    crateBottom: choice('What does each crate bottom look like?', { solid: 'A solid moulded base.', slats: 'Parallel open slats.', grid: 'An open rectangular grid.', cross: 'An open grid reinforced by crossed ribs.' }),
+    seatTop: choice('What makes the upturned crates comfortable to sit on?', { bare: 'The bare crate bottom.', board: 'A thin wooden seat board.', cushion: 'A small red vinyl cushion.', mat: 'A folded woven mat.' }),
+    stackBase: choice('What keeps the stored crates off the ground?', { bare: 'They stand directly on the ground.', pallet: 'A low slatted wooden pallet.', runners: 'Two broad timber runners.', steel: 'A shallow steel stock platform.' }),
+    bottleGlass: choice('If bottles are present, what glass are they made of?', { amber: 'Brown amber bottle glass.', green: 'Deep green bottle glass.', clear: 'Pale clear glass.', cobalt: 'Dark cobalt-blue glass.' }),
+    labelFormat: choice('How are the brewery markings applied?', { band: 'A broad printed label band.', plaque: 'A small central printed plaque.', framed: 'The printed label inside a raised border.', stencil: 'A narrow painted stencil strip.' }),
+    cornerGuard: choice('How are the crate corners reinforced?', { plain: 'Plain moulded uprights.', ribbed: 'Extra vertical plastic ribs.', metal: 'Small metal corner plates.', boots: 'Thicker dark corner boots.' }),
     height: score('How high is the stack?', ['A single crate', 'Two or three', 'Chest high', 'A leaning tower taller than a person']),
     brand: choice('What colour are the crates?', BRANDS),
     load: choice('What is in the stacked crates?', {
@@ -76,7 +83,9 @@ export default defineThing({
   build(a, context) {
     const s = new Sculpture(context);
     const { mood, random } = context;
-    const geometry = crateGeometry();
+    const geometry=crateGeometry(a.crateWall,a.crateBottom);
+    const ground=(node:THREE.Object3D,height=0)=>{node.updateMatrixWorld(true);node.position.y+=height-new THREE.Box3().setFromObject(node,true).min.y;};
+    const glassColour={amber:'#5a3a1c',green:'#2d5139',clear:'#a4bbb7',cobalt:'#253964'}[a.bottleGlass];
     const keys = Object.keys(BRAND) as BrandKey[];
     const plastic = new Map<BrandKey, THREE.Material>();
     const labels = new Map<BrandKey, THREE.Material>();
@@ -108,11 +117,12 @@ export default defineThing({
       shell.castShadow = shell.receiveShadow = true;
       group.add(shell);
       for (const side of [-1, 1]) {
-        const label = new THREE.Mesh(new THREE.PlaneGeometry(W * 0.62, 0.11), labelOf(key));
+        const label = new THREE.Mesh(new THREE.PlaneGeometry(W*(a.labelFormat==='plaque'?.34:a.labelFormat==='stencil'?.56:.62),a.labelFormat==='stencil'?.045:.11), labelOf(key));
         label.position.set(0, 0.095, side * (D / 2 + 0.001));
         if (side < 0) label.rotation.y = Math.PI;
-        group.add(label);
+        group.add(label);if(a.labelFormat==='framed'){const material=bodyOf(key);for(const sign of [-1,1]){const horizontal=new THREE.Mesh(new THREE.BoxGeometry(W*.66,.012,.008),material);horizontal.position.set(0,.095+sign*.061,side*(D/2+.004));group.add(horizontal);const vertical=new THREE.Mesh(new THREE.BoxGeometry(.012,.13,.008),material);vertical.position.set(sign*W*.325,.095,side*(D/2+.004));group.add(vertical);}}
       }
+      if(a.cornerGuard!=='plain')for(const side of [-1,1])for(const end of [-1,1]){const material=a.cornerGuard==='metal'?s.material('#8f9394',{metalness:.7,roughness:.4}):a.cornerGuard==='boots'?s.material('#303234'):bodyOf(key);const height=a.cornerGuard==='ribbed'?H:a.cornerGuard==='boots'?.07:.055;const guard=new THREE.Mesh(new THREE.BoxGeometry(.044,height,.044),material);guard.position.set(side*(W/2-.012),height/2,end*(D/2-.012));group.add(guard);}
       group.userData.full = full;
       return group;
     };
@@ -127,7 +137,8 @@ export default defineThing({
 
     // The stack: one or two columns against the back.
     const total = 1 + Math.round(a.height * 8);
-    const columns = total > 6 ? 2 : 1;
+    const columns=total>6?2:1,baseHeight=a.stackBase==='bare'?0:a.stackBase==='pallet'?.1:a.stackBase==='runners'?.06:.05;
+    if(baseHeight){const width=columns>1?W*2.5:W*1.5,depth=D*1.7,mat=s.material(a.stackBase==='steel'?'#6c7479':'#93754d',{metalness:a.stackBase==='steel'?.55:0,roughness:.7});if(a.stackBase==='steel')s.box([width,baseHeight,depth],[0,baseHeight/2,0],mat);else{for(const side of [-1,1])s.box([width,baseHeight*.6,.07],[0,baseHeight*.3,side*depth*.35],mat);if(a.stackBase==='pallet')for(let j=0;j<7;j++)s.box([.07,.04,depth],[-width*.45+j*width*.9/6,.08,0],mat);else for(const side of [-1,1])s.box([width,.024,.11],[0,.048,side*depth*.35],mat);}}
     const mess = a.order === 'neat' ? 0.02 : mix(0.12, 0.3, mood.wear * 0.5 + mood.energy * 0.5);
     let placed = 0, topOfMain = 0;
     const tops: THREE.Group[] = [];
@@ -142,13 +153,13 @@ export default defineThing({
         if (toppled) {
           group.rotation.set(Math.PI / 2 + 0.05, 0, 0.4 + random() * 0.5);
           group.position.set(cx + W * 0.9 + random() * 0.2, D / 2, 0.55 + random() * 0.2);
-          s.root.add(group);
-          const glass = s.material('#5a3a1c', { roughness: 0.25 });
-          for (let i = 0; i < 5; i++) { const lying = s.cylinder(0.034, 0.034, 0.22, [group.position.x - 0.2 + random() * 0.5, 0.034, group.position.z + 0.25 + random() * 0.4], glass, 10); lying.rotation.set(Math.PI / 2, 0, random() * 3); }
+          s.root.add(group);ground(group);
+          const glass = s.material(glassColour,{roughness:.25,transparent:a.bottleGlass==='clear',opacity:a.bottleGlass==='clear'?.45:1,depthWrite:a.bottleGlass!=='clear'});
+          for (let i = 0; i < 5; i++) { const lying = s.cylinder(0.034, 0.034, 0.22, [group.position.x - 0.2 + random() * 0.5, 0.034, group.position.z + 0.25 + random() * 0.4], glass, 10); lying.rotation.set(Math.PI/2,0,random()*3);ground(lying); }
           continue;
         }
         driftX += (random() - 0.5) * mess * 0.35; driftZ += (random() - 0.5) * mess * 0.25;
-        group.position.set(cx + driftX, level * (H + 0.004), driftZ);
+        group.position.set(cx + driftX, baseHeight+level*H, driftZ);
         group.rotation.y = (random() - 0.5) * mess * 2.2;
         s.root.add(group);
         if (full) fill(group, level === inColumn - 1 || (a.order === 'toppled' && level === inColumn - 2) ? mix(0.5, 1, random()) : 0.85);
@@ -166,7 +177,9 @@ export default defineThing({
       seat.rotation.set(Math.PI, turn + (random() - 0.5) * 0.3, 0);
       seat.position.set(x, H, z);
       s.root.add(seat);
-      seatTops.push(new THREE.Vector3(x, H, z));
+      const padHeight=a.seatTop==='bare'?0:a.seatTop==='cushion'?.045:a.seatTop==='board'?.018:.012;
+      if(padHeight){const pad=s.box([W+.012,padHeight,D+.012],[x,H+padHeight/2,z],s.material(a.seatTop==='cushion'?'#9e3433':a.seatTop==='board'?'#ba9767':'#b7a77a',{roughness:a.seatTop==='cushion'?.4:.85}));pad.rotation.y=-(turn+(seat.rotation.y-turn));if(a.seatTop==='cushion'){const button=s.cylinder(.012,.012,.003,[x,H+padHeight,z],s.material('#6d2425'),10);void button;}}
+      seatTops.push(new THREE.Vector3(x,H+padHeight,z));
     }
     let table = seatTops[0];
     if (seatCount === 3) {
@@ -185,16 +198,16 @@ export default defineThing({
       s.lathe([[0, 0.004], [0.055, 0.004], [0.06, 0], [0.062, 0.035], [0.055, 0.035], [0.052, 0.01], [0, 0.01]], tin, [tx - 0.1, ty, tz + 0.02]);
       const butts = 4 + Math.floor(random() * 5 + mood.wear * 6);
       for (let i = 0; i < butts; i++) { const butt = s.cylinder(0.0045, 0.0045, 0.03, [tx - 0.1 + (random() - 0.5) * 0.07, ty + 0.018 + random() * 0.012, tz + 0.02 + (random() - 0.5) * 0.07], s.material(random() > 0.5 ? '#e8a05a' : '#f4f1e6'), 6); butt.rotation.set(random() * 3, 0, 1.2 + random() * 0.6); }
-      s.cylinder(0.034, 0.028, 0.11, [tx + 0.1, ty + 0.055, tz - 0.03], new THREE.MeshStandardMaterial({ color: '#eef6f8', transparent: true, opacity: 0.3, roughness: 0.05, depthWrite: false }), 16);
+      s.lathe([[0,0],[.028,0],[.034,.11],[.032,.11],[.026,.004],[0,.004]],new THREE.MeshStandardMaterial({color:'#eef6f8',transparent:true,opacity:.3,roughness:.05,depthWrite:false}),[tx+.1,ty,tz-.03]);
       s.ring(0.034, 0.003, [tx + 0.1, ty + 0.11, tz - 0.03], s.material('#f4f8f8', { roughness: 0.1 })).rotation.x = Math.PI / 2;
       s.cylinder(0.028, 0.027, 0.012, [tx + 0.1, ty + 0.007, tz - 0.03], s.material('#f1e6c2'), 14);
       ember = new THREE.Vector3(tx - 0.045, ty + 0.04, tz + 0.02);
     } else if (a.left === 'bottle') {
-      const glass = s.material('#5a3a1c', { roughness: 0.2 });
-      s.lathe([[0, 0], [0.034, 0], [0.036, 0.01], [0.036, 0.15], [0.014, 0.22], [0.013, 0.28], [0.016, 0.285], [0, 0.285]], glass, [tx - 0.06, ty, tz]);
+      const glass = s.material(glassColour,{roughness:.2,transparent:a.bottleGlass==='clear',opacity:a.bottleGlass==='clear'?.45:1,depthWrite:a.bottleGlass!=='clear'});
+      s.lathe([[0, 0], [0.034, 0], [0.036, 0.01], [0.036, 0.15], [0.014, 0.22], [0.013, 0.28], [.016,.285],[.010,.285],[.010,.273],[.007,.267],[0,.267]], glass, [tx - 0.06, ty, tz]);
       s.label('BEER', 0.06, 0.05, [tx - 0.06, ty + 0.09, tz + 0.037], '#b8362c', '#f3ecd8');
       s.cylinder(0.014, 0.014, 0.006, [tx + 0.07, ty + 0.003, tz + 0.06], s.material('#d8a52e', { metalness: 0.7 }), 12);
-      s.cylinder(0.034, 0.028, 0.11, [tx + 0.1, ty + 0.055, tz - 0.06], new THREE.MeshStandardMaterial({ color: '#eef6f8', transparent: true, opacity: 0.3, depthWrite: false }), 16);
+      s.lathe([[0,0],[.028,0],[.034,.11],[.032,.11],[.026,.004],[0,.004]],new THREE.MeshStandardMaterial({color:'#eef6f8',transparent:true,opacity:.3,roughness:.05,depthWrite:false}),[tx+.1,ty,tz-.06]);
       s.cylinder(0.03, 0.027, 0.05, [tx + 0.1, ty + 0.027, tz - 0.06], s.material('#d89a2a', { roughness: 0.2, emissive: '#7a4a08', emissiveIntensity: 0.3 }), 14);
       s.cylinder(0.031, 0.03, 0.012, [tx + 0.1, ty + 0.058, tz - 0.06], s.material('#fbf6e2'), 14);
     } else if (a.left === 'paper') {
@@ -245,19 +258,19 @@ export default defineThing({
     // Things on top of the stack and around its foot.
     if (mood.density > 0.35 && tops.length) {
       const top = tops[0];
-      if (!top.userData.full) s.box([0.34, 0.2, 0.26], [top.position.x, top.position.y + H + 0.1, top.position.z], s.material('#b8926a', { roughness: 0.95 })).rotation.y = random() * 0.4;
+      if (!top.userData.full) s.box([W+.02,.2,D+.02], [top.position.x, top.position.y + H + 0.1, top.position.z], s.material('#b8926a', { roughness: 0.95 })).rotation.y = random() * 0.4;
     }
     void topOfMain;
     const litter = Math.floor(mood.wear * 9 + mood.density * 5);
     for (let i = 0; i < litter; i++) {
       const lx = (random() - 0.5) * 1.6, lz = 0.3 + random() * 1.0;
-      if (random() > 0.4) { const butt = s.cylinder(0.004, 0.004, 0.028, [lx, 0.004, lz], s.material(random() > 0.5 ? '#e8a05a' : '#efeadc'), 6); butt.rotation.set(Math.PI / 2, 0, random() * 3); }
+      if (random() > 0.4) { const butt = s.cylinder(0.004, 0.004, 0.028, [lx, 0.004, lz], s.material(random() > 0.5 ? '#e8a05a' : '#efeadc'), 6); butt.rotation.set(Math.PI/2,0,random()*3);ground(butt); }
       else s.cylinder(0.014, 0.014, 0.005, [lx, 0.0025, lz], s.material('#d8a52e', { metalness: 0.7 }), 10);
     }
 
     if (bottles.length) {
-      const bottle = new THREE.LatheGeometry([[0, 0], [0.034, 0], [0.036, 0.01], [0.036, 0.15], [0.014, 0.22], [0.013, 0.28], [0.017, 0.285], [0, 0.285]].map(([x, y]) => new THREE.Vector2(x, y)), 10);
-      const all = new THREE.InstancedMesh(bottle, s.material('#5a3a1c', { roughness: 0.22 }), bottles.length);
+      const bottle = new THREE.LatheGeometry([[0, 0], [0.034, 0], [0.036, 0.01], [0.036, 0.15], [0.014, 0.22], [0.013, 0.28], [.017,.285],[.010,.285],[.010,.273],[.007,.267],[0,.267]].map(([x, y]) => new THREE.Vector2(x, y)), 10);
+      const all = new THREE.InstancedMesh(bottle, s.material(glassColour,{roughness:.22,transparent:a.bottleGlass==='clear',opacity:a.bottleGlass==='clear'?.45:1,depthWrite:a.bottleGlass!=='clear'}), bottles.length);
       bottles.forEach((matrix, index) => all.setMatrixAt(index, matrix));
       all.castShadow = true;
       s.root.add(all);

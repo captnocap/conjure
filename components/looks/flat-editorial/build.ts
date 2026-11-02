@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type Palette, type PaletteRole, type RGB, choice, clamp01, defineLook, mix, rekey, score, seeded } from '@conjure/kit';
 
 /**
  * Contemporary flat editorial illustration, the grainy vector style of explainer videos and
@@ -25,6 +25,22 @@ const PALETTES = {
   wood: { bg: '#EDE3D1', surface: '#F7F1E6', ink: '#2B2622', sub: '#7A6E62', accent: '#C4552D', accent2: '#3F5B4B' },
   chalk: { bg: '#23302B', surface: '#2E3D37', ink: '#F1EFE6', sub: '#A9B3AA', accent: '#F4D35E', accent2: '#E87D5A' },
 } as const;
+
+/**
+ * Under the picture's palette each card keeps its tonal design (light or dark ground, near-black or
+ * off-white ink): the ground, surface and grey take the ground's tint, the hero's accent the ink and
+ * the second accent the second colour. The ink stays neutral; Bauhaus keeps its primaries.
+ */
+const CARD_ROLES: Partial<Record<keyof (typeof PALETTES)['paper'], PaletteRole>> = { bg: 'ground', surface: 'ground', sub: 'ground', accent: 'ink', accent2: 'second' };
+const FIXED_CARDS = new Set(['bauhaus']);
+const hexPaint = (h: string): RGB => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const paintHexOf = (c: RGB) => `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+function cardIn(key: keyof typeof PALETTES, palette: Palette | undefined): Record<keyof (typeof PALETTES)['paper'], string> {
+  const card = PALETTES[key];
+  if (!palette || FIXED_CARDS.has(key)) return card;
+  const keyed = rekey(Object.fromEntries(Object.entries(card).map(([name, hex]) => [name, hexPaint(hex)])) as Record<keyof typeof card, RGB>, palette, CARD_ROLES);
+  return Object.fromEntries(Object.entries(keyed).map(([name, rgb]) => [name, paintHexOf(rgb)])) as Record<keyof typeof card, string>;
+}
 
 /** The flat device behind the subject: which palette colour, and how far it is mixed into the paper. */
 const DEVICE: Record<keyof typeof PALETTES, ['surface' | 'sub' | 'accent2', number]> = {
@@ -292,15 +308,15 @@ const capsule = (x: number, y: number, half: number, r: number) => Math.hypot(Ma
 
 export default defineLook({
   questions: {
-    palette: choice('Which named palette is the illustration printed in?', {
-      paper: 'Paper: warm cream ground, near-black ink, warm grey, a brick-red accent and deep teal. Essays, history, reading, explaining an idea.',
-      poster: 'Poster yellow: a loud yellow ground, black ink, a hot orange-red accent and dark navy. Opinions, conflict, one big claim.',
-      ink: 'Deep ink: a near-black ground with off-white, stone grey, a saffron accent and sea green. Technology, night, serious subjects.',
-      navy: 'Navy: a flat dark navy ground with pale grey-white, slate, a bright cyan accent and amber. Products, data, phones and devices.',
+    palette: choice('Which card is the illustration printed in? Its hues come from the picture\u2019s palette; Bauhaus keeps its primaries.', {
+      paper: 'Paper: a warm pale ground, near-black ink, a soft grey, a strong earthy accent and a deep second colour. Essays, history, reading, explaining an idea.',
+      poster: 'Poster: a loud saturated ground, black ink, a hot accent and a dark second colour. Opinions, conflict, one big claim.',
+      ink: 'Deep ink: a near-black ground with off-white, stone grey, a glowing accent and a soft second colour. Technology, night, serious subjects.',
+      navy: 'Night field: a flat dark tinted ground with pale grey-white, slate, a bright accent and a warm answer. Products, data, phones and devices.',
       bauhaus: 'Bauhaus: off-white and pure white, black, mid grey, a primary red accent and cobalt blue. Design, structure, geometry, process.',
-      snow: 'Snow: pale icy grey and white, blue-black, slate, a vermilion accent and steel teal. Winter, medicine, cleanliness, the lab.',
-      wood: 'Warm wood: oatmeal and linen, dark brown, taupe, a terracotta accent and pine green. Home, kitchen, crafts, everyday life.',
-      chalk: 'Chalkboard: dark green slate, chalk white, sage grey, a chalk-yellow accent and coral. Classrooms, working things out, formulas.',
+      snow: 'Snow: a pale cool ground and white, a tinted near-black, slate, a sharp accent and a quiet second colour. Winter, medicine, cleanliness, the lab.',
+      wood: 'Homely: oatmeal and linen tones, a dark warm ink, taupe, an earthy accent and a muted second colour. Home, kitchen, crafts, everyday life.',
+      chalk: 'Chalkboard: a dark slate ground, chalk white, a soft grey, a pale chalky accent and a soft second colour. Classrooms, working things out, formulas.',
     }),
     tones: score('How many tone steps model each form?', [
       'Two: one light and one shadow',
@@ -354,7 +370,7 @@ export default defineLook({
     const count = size * size;
     const unit = size / 720;
     const mood = context.mood;
-    const scheme = PALETTES[answers.palette];
+    const scheme = cardIn(answers.palette, context.palette);
     const shape = SHAPES[answers.shapes];
     const seed = context.seed >>> 0;
     const random = seeded((seed ^ 0x6a09e667) >>> 0);

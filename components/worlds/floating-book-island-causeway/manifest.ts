@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Floating-book island causeway", "summary": "Open books become a miniature archipelago, exposed page layers rising above clouds and little bridges linking their shores. Reading as travel, houses between paragraphs, paper landscapes and a route to the next chapter.", "scales": ["tabletop", "room"]});

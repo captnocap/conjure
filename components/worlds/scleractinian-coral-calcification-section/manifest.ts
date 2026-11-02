@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Scleractinian coral calcification section", "summary": "A fixed calice with radial septa and an attached living polyp section anchors a reef-building coral study independently of cast selection. A magnified schematic of a reef-building coral, with actual tissue and skeleton cuts, oral cavity and sixfold anatomy; calcification, symbiosis and colony growth.", "scales": ["macro", "tabletop"]});

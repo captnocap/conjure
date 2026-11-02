@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Postsynaptic junctional fold bank", "summary": "A bank of deep open membrane folds with continuous U-shaped channels and visible cross section. A magnified neuromuscular teaching specimen: the meeting of nerve and muscle, movement, signal release and cellular organization.", "scales": ["macro", "tabletop"]});

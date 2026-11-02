@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Fault gouge shear zone cutaway", "summary": "Two exposed rock blocks frame an inclined shear zone with offset marker beds and clear specimen sites on low stratified terraces. Permanent displaced host walls and a gouge core expose the fault independently of the foreground teaching specimens.", "scales": ["landscape", "tabletop"]});

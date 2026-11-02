@@ -1,0 +1,24 @@
+import * as THREE from 'three';
+import { Sculpture, choice, score, noul, defineThing, figure } from '@conjure/kit';
+const questions = {
+  form: choice("What instrument gives the starting note?", {"round": "A circular chromatic pitch pipe.", "row": "A row of tuned metal reeds.", "fork": "A tuning fork with a resonance block.", "hex": "A hexagonal pocket pitch pipe.", "twin": "Two small pitch pipes in a shared case."}),
+  state: choice("How is it stored?", {"open": "The fitted case is open.", "closed": "The case is latched shut.", "out": "The instrument lies outside its case.", "ready": "A starting note marker is fitted.", "clean": "A cleaning cloth lies under the instrument."}),
+  detail: choice("What finish does the instrument have?", {"silver": "Brushed silver.", "brass": "Warm brass.", "black": "Dark enamel and silver.", "blue": "Blue enamel and metal.", "cream": "Ivory enamel and brass."}),
+  support: choice("What kind of case protects it?", {"wood": "A fitted timber case.", "felt": "A dark felt-lined box.", "round": "A round shallow case.", "leather": "A brown leather-look case.", "tin": "A small grey metal tin."}),
+  extra: choice("What sits beside the case?", {"note": "A small starting-note card.", "pencil": "A short pencil.", "cloth": "A folded cleaning cloth.", "cord": "A coiled carrying cord.", "none": "No extra accessory."}),
+  mark: choice("What is printed on the case?", {"pitch": "A PITCH label.", "choir": "A CHOIR label.", "initials": "Two simple initials.", "stripe": "A narrow colour stripe.", "plain": "A plain unmarked lid."}),
+  extent: score("How large is the pitch instrument?", ["A tiny pocket instrument", "A standard pitch pipe", "A large easy-to-read instrument"]),
+  load: score("How many note positions are marked?", ["A few reference notes", "Eight clear notes", "A full ring of twelve notes"]),
+  closed: noul("Is the case lid held by a visible stay?"),
+};
+export default defineThing({
+  questions,
+  build(a, context) {
+    const s = new Sculpture(context), { random, mood } = context;
+    const f = Object.keys(questions.form.options).indexOf(a.form), t = Object.keys(questions.state.options).indexOf(a.state), d = Object.keys(questions.detail.options).indexOf(a.detail), u = Object.keys(questions.support.options).indexOf(a.support), e = Object.keys(questions.extra.options).indexOf(a.extra), m = Object.keys(questions.mark.options).indexOf(a.mark);
+    const wood = s.material('#a47c4e'), pale = s.material('#e0d2ac'), metal = s.material('#8f9995', { metalness: 0.7, roughness: 0.35 }), dark = s.material('#3d443c'), green = s.material('#667e50');
+    const colors = ['#a64d39', '#497e70', '#d4af55', '#59778c', '#b47b8c'];
+
+ const R=.07+a.extent*.04,W=R*(f===4?5:3.4),D=R*3.2,H=.055,finish=s.material(['#a5aaa0','#b39a57','#454e4a','#678699','#d0c8a8'][d],{metalness:.65,roughness:.4}),caseMat=u===0?wood:u===1?dark:u===3?s.material('#876e52'):u===4?metal:pale,liner=s.material('#6e7f66');if(u===2){s.lathe([[W*.45,0],[W*.5,H],[W*.47,H],[W*.43,.012]],caseMat);s.cylinder(W*.44,W*.44,.008,[0,.016,0],liner,32);}else{s.box([W,.012,D],[0,.006,0],caseMat);for(const x of [-W/2,W/2])s.box([.012,H,D],[x,H/2,0],caseMat);for(const z of [-D/2,D/2])s.box([W,H,.012],[0,H/2,z],caseMat);s.box([W-.02,.008,D-.02],[0,.016,0],liner);}const hinge=u===2?W*.5:D/2,lid=new THREE.Group();lid.add(u===2?s.cylinder(W*.5,W*.5,.012,[0,0,hinge],caseMat,32):s.box([W,.012,D],[0,0,D/2],caseMat));if(m!==4)lid.add(s.label(m===0?'PITCH':m===1?'CHOIR':m===2?'AC':'—',W*.65,.04,[0,.007,hinge]).rotateX(-Math.PI/2));lid.position.set(0,H,-hinge);lid.rotation.x=t===1?0:-1.35;s.root.add(lid);if(a.closed&&t!==1)for(const x of [-W*.42,W*.42])s.rod([x,H,D*.2],[x,H+Math.sin(1.35)*D*.7,-hinge+Math.cos(1.35)*D*.7],.003,metal);if(t!==1){const x=t===2?W*.8:0,y=t===2?.014:.03;for(let b=0;b<(f===4?2:1);b++){const bx=x+(f===4?(b-.5)*R*2.2:0);if(f===2){s.box([R*1.7,.035,R*2.5],[bx,y,0],wood);s.tube([[bx-R*.35,y+.025,-R],[bx-R*.35,y+.025,R*.4],[bx+R*.35,y+.025,R*.4],[bx+R*.35,y+.025,-R]],.007,metal);s.rod([bx,y+.025,R*.4],[bx,y+.025,R*1.4],.008,metal);}else if(f===1){for(let j=0;j<8;j++)s.rod([bx-R+j*R*.28,y+.015,-R],[bx-R+j*R*.28,y+.015,R*(.3+j*.08)],.012,finish);}else{s.cylinder(R,R,.024,[bx,y+.012,0],finish,f===3?6:32);const n=4+Math.round(a.load*8);for(let j=0;j<n;j++){const q=j/n*Math.PI*2;s.rod([bx+Math.cos(q)*R*.72,y+.027,Math.sin(q)*R*.72],[bx+Math.cos(q)*R*1.13,y+.027,Math.sin(q)*R*1.13],.006,metal);s.label(['C','D','E','F','G','A','B'][j%7],.018,.018,[bx+Math.cos(q)*R*.55,y+.026,Math.sin(q)*R*.55]).rotation.x=-Math.PI/2;}if(t===3)s.box([.025,.005,.04],[bx,y+.029,R*.65],green);}if(t===4)s.box([R*2.4,.004,R*2.4],[bx,y-.006,0],pale);}}const x=-W*.8;if(e===0)s.label('START: C',R*2,.055,[x,.003,0]).rotation.x=-Math.PI/2;if(e===1)s.rod([x,.005,-R],[x,.005,R],.003,wood);if(e===2)s.box([R*1.5,.015,R*1.8],[x,.008,0],pale);if(e===3)s.ring(R*.6,.004,[x,.005,0],dark).rotation.x=Math.PI/2;return s.finish();
+  },
+});

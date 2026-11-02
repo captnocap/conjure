@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Chloroplast starch granule stromal contact", "summary": "An unmembraned starch granule with a true interior cut sits in a retained stromal volume beside displaced thylakoids. Flattened granules occupy stromal pockets beside finite thylakoid sections. Cut bands are illustrative growth structure, not membrane layers or a calibrated molecular reconstruction; granules have no added enclosing bilayer.", "scales": ["macro", "tabletop"]});

@@ -16,6 +16,12 @@ function canvasTexture(size: number, paint: (ctx: CanvasRenderingContext2D) => v
 
 export default defineWorld({
   questions: {
+    edging: choice('How is the blanket edge finished?', { short: 'A short neat fringe.', long: 'Long loose tassels.', bound: 'A smooth bound edge.', pompoms: 'Small rounded wool pompoms.' }),
+    weights: choice('What holds down the flat blanket corners?', { stones: 'Smooth grey stones.', pegs: 'Wooden pegs through corner loops.', cones: 'Heavy pinecones.', bottles: 'Small capped water bottles.' }),
+    barkMarks: choice('What marks the shade tree bark?', { lichen: 'Pale patches of lichen.', moss: 'Green moss at the lower trunk.', knots: 'Dark oval knots.', peeling: 'Pale peeling bark flakes.' }),
+    roots: choice('How do the exposed roots spread?', { buttress: 'Thick short buttress roots.', reaching: 'Long roots reaching into the meadow.', shallow: 'Thin shallow surface roots.', mossy: 'Low roots covered with moss.' }),
+    approach: choice('What approach runs beside the picnic spot?', { earth: 'A narrow bare earth path.', stones: 'A row of flat stepping stones.', boards: 'Short wooden walkway slats.', gravel: 'A pale gravel strip.' }),
+    seat: choice('What small seat stands beyond the blanket?', { bench: 'A wooden bench with a back.', log: 'A fallen log with exposed ends.', stool: 'A three-legged round stool.', mat: 'A rolled-end woven sitting mat.' }),
     blanket: choice('What is the blanket like?', {
       tartan: 'Red tartan wool with green and yellow lines, the classic picnic rug.',
       gingham: 'Blue and white gingham, fresh and wholesome.',
@@ -162,7 +168,37 @@ export default defineWorld({
       if (side === -1 && lz > BD / 2 - 1.6) continue;
       fringe.push({ p: [lx * Math.cos(turn) + lz * Math.sin(turn), 0.03, -lx * Math.sin(turn) + lz * Math.cos(turn)], s: [0.26 + random() * 0.08, 0.02, 0.035], r: [0, turn + (random() - 0.5) * 0.5, side * 0.12] });
     }
-    instanced(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: fringeTone, roughness: 0.95 }), fringe);
+    if(a.edging==='short'||a.edging==='long') {if(a.edging==='long')for(const item of fringe){item.s[0]*=1.9;item.s[2]*=.75;}instanced(new THREE.BoxGeometry(1,1,1),new THREE.MeshStandardMaterial({color:fringeTone,roughness:.95}),fringe);}
+    else {
+      const pos=cloth.attributes.position, boundary:number[]=[];
+      for(let x=0;x<=44;x++)boundary.push(x);
+      for(let z=1;z<=32;z++)boundary.push(z*45+44);
+      for(let x=43;x>=0;x--)boundary.push(32*45+x);
+      for(let z=31;z>0;z--)boundary.push(z*45);
+      const edgePaint=s.material(fringeTone,{roughness:.95});
+      const points=boundary.map(i=>{const x=pos.getX(i),z=pos.getZ(i);return [x*Math.cos(turn)+z*Math.sin(turn),pos.getY(i)+.014,-x*Math.sin(turn)+z*Math.cos(turn)] as Triple;});
+      for(let i=0;i<points.length;i++) if(a.edging==='bound')s.rod(points[i],points[(i+1)%points.length],.022,edgePaint);else if(i%3===0)s.ball([.065,.05,.065],points[i],edgePaint,8);
+    }
+    // Weights sit on the three flat corners, leaving the folded corner free.
+    const cornerToWorld=(x:number,z:number,y:number):Triple=>[x*Math.cos(turn)+z*Math.sin(turn),y,-x*Math.sin(turn)+z*Math.cos(turn)];
+    for(const [x,z] of [[BW/2-.28,BD/2-.28],[BW/2-.28,-BD/2+.28],[-BW/2+.28,-BD/2+.28]]) {
+      const [wx,,wz]=cornerToWorld(x,z,.06);
+      if(a.weights==='stones')s.ball([.22,.11,.16],[wx,.16,wz],s.material('#8a8d83'),10);
+      if(a.weights==='pegs'){s.cylinder(.045,.045,.24,[wx,.12,wz],s.material('#a48152'),8);const loop=s.ring(.12,.018,[wx,.07,wz],s.material(fringeTone));loop.rotation.x=Math.PI/2;}
+      if(a.weights==='cones'){s.ball([.13,.22,.13],[wx,.27,wz],s.material('#775333'),9);for(let j=0;j<5;j++){const ring=s.ring(.12*(1-j*.1),.025,[wx,.12+j*.065,wz],s.material('#987443'));ring.rotation.x=Math.PI/2;}}
+      if(a.weights==='bottles'){s.cylinder(.105,.105,.39,[wx,.25,wz],s.material('#a8c6c9'),14);s.cylinder(.055,.055,.12,[wx,.505,wz],s.material('#d8e6df'),12);s.cylinder(.06,.06,.045,[wx,.585,wz],s.material('#376181'),12);}
+    }
+    // A narrow approach remains outside the blanket and foreground shoes.
+    const pathX=W/2-.5,pathZ=-1.5,pathLength=5;
+    if(a.approach==='earth'||a.approach==='gravel')s.box([.68,.018,pathLength],[pathX,.009,pathZ],s.material(a.approach==='earth'?'#9d8662':'#c6c1a5'));
+    if(a.approach==='stones')for(let i=0;i<8;i++)s.ball([.3,.055,.23],[pathX+Math.sin(i)*.08,.055,pathZ-pathLength/2+i*.65],s.material('#999f8d'),10);
+    if(a.approach==='boards')for(let i=0;i<18;i++)s.box([.7,.045,.22],[pathX,.0225,pathZ-pathLength/2+i*.28],s.material(i%2?'#ad9872':'#998660'));
+    if(a.approach==='gravel')for(let i=0;i<70;i++)s.ball([.035,.018,.03],[pathX+(random()-.5)*.6,.03,pathZ+(random()-.5)*pathLength],s.material(i%2?'#a7aa95':'#ded7b8'),5);
+    const seatX=3.9,seatZ=-4.25,seatWood=s.material('#93714c');
+    if(a.seat==='bench'){for(const x of [-.65,.65])for(const z of [-.24,.24])s.box([.09,.6,.09],[seatX+x,.3,seatZ+z],seatWood);for(let i=0;i<3;i++)s.box([1.65,.08,.18],[seatX,.64,seatZ-.2+i*.2],seatWood);for(const x of [-.65,.65])s.box([.08,.7,.08],[seatX+x,.83,seatZ-.28],seatWood);for(const y of [.9,1.13])s.box([1.65,.16,.07],[seatX,y,seatZ-.28],seatWood);}
+    if(a.seat==='log'){const log=s.cylinder(.27,.3,1.8,[seatX,.29,seatZ],s.material('#76634b'),14);log.rotation.z=Math.PI/2;for(const x of [-.906,.906]){const end=s.cylinder(.268,.268,.008,[seatX+x,.29,seatZ],s.material('#c6ae7c'),14);end.rotation.z=Math.PI/2;}}
+    if(a.seat==='stool'){s.cylinder(.38,.38,.09,[seatX,.62,seatZ],seatWood,20);for(let i=0;i<3;i++){const t=i*Math.PI*2/3;s.rod([seatX+Math.cos(t)*.31,.03,seatZ+Math.sin(t)*.31],[seatX+Math.cos(t)*.22,.58,seatZ+Math.sin(t)*.22],.04,seatWood);}}
+    if(a.seat==='mat'){s.box([1.5,.035,.75],[seatX,.0175,seatZ],s.material('#c2ab79'));for(const x of [-.72,.72]){const end=s.cylinder(.075,.075,.75,[seatX+x,.075,seatZ],s.material('#9c875e'),14);end.rotation.x=Math.PI/2;}for(let i=0;i<20;i++)s.box([.018,.006,.75],[seatX-.67+i*.07,.039,seatZ],s.material('#8b774c'));}
 
     // Grass: long at the back and left, kept low between the camera and the blanket.
     const wind = stormy ? 0.45 : 0.08 + mood.energy * 0.12;
@@ -170,7 +206,7 @@ export default defineWorld({
     const bladeCount = Math.round(1500 + a.grass * 1700);
     for (let i = 0; i < bladeCount; i++) {
       const x = (random() - 0.5) * W, z = (random() - 0.5) * D;
-      if (onBlanket(x, z, -0.12)) continue;
+      if (onBlanket(x, z, -0.12) || (Math.abs(x-pathX)<.4 && Math.abs(z-pathZ)<pathLength/2+.1) || (Math.abs(x-seatX)<1 && Math.abs(z-seatZ)<.5)) continue;
       const front = z > 1 && x > -4 || x > 4.5, rim = Math.max(Math.abs(x) / (W / 2), Math.abs(z) / (D / 2));
       const h = mix(0.1, 0.95, a.grass) * (0.55 + random() * 0.9) * (front ? 0.45 : 1) * (rim > 0.8 ? 1.3 : 1) + 0.05;
       const straw = random() < 0.12 + mood.wear * 0.25 + a.grass * 0.12;
@@ -188,7 +224,7 @@ export default defineWorld({
       const want = Math.round(60 + mood.density * 150);
       for (let i = 0, placed = 0; i < want * 8 && placed < want; i++) {
         const x = (random() - 0.5) * W * 0.98, z = (random() - 0.5) * D * 0.98;
-        if (onBlanket(x, z, 0.1)) continue;
+        if (onBlanket(x, z, 0.1) || (Math.abs(x-pathX)<.4 && Math.abs(z-pathZ)<pathLength/2+.1) || (Math.abs(x-seatX)<1 && Math.abs(z-seatZ)<.5)) continue;
         if (!onBlanket(x, z, 1.5) && z > -3.5 && x > -5 && random() < 0.75) continue;
         const front = z > 1 && x > -4 || x > 4.6;
         const h = (front ? 0.22 : 0.3 + a.grass * 0.5) * (0.7 + random() * 0.6), [petal, heart] = palettes[random() < 0.72 ? 0 : 1];
@@ -217,10 +253,14 @@ export default defineWorld({
         else ctx.fillRect(random() * 128, 0, 1 + random() * 4, 128);
       }
     });
+    const barkCanvas=bark.image as HTMLCanvasElement,barkCtx=barkCanvas.getContext('2d')!;
+    for(let i=0;i<22;i++){const x=random()*128,y=random()*128;barkCtx.fillStyle={lichen:'#b9baa0',moss:'#556d36',knots:'#3f3325',peeling:'#d9ccb2'}[a.barkMarks];barkCtx.beginPath();barkCtx.ellipse(x,y,a.barkMarks==='knots'?3:4+random()*7,a.barkMarks==='peeling'?12:3+random()*5,random(),0,7);barkCtx.fill();if(a.barkMarks==='peeling'){barkCtx.fillStyle='#8b795c';barkCtx.fillRect(x+4,y-6,1,12);}}
+    bark.needsUpdate=true;
     bark.repeat.set(3, 2);
     const barkPaint = new THREE.MeshStandardMaterial({ map: bark, roughness: 0.95 });
     s.lathe([[1.25 * slim, -0.1], [0.85 * slim, 0.35], [0.62 * slim, 1.2], [0.52 * slim, treeHeight * 0.6], [0.4 * slim, treeHeight]], barkPaint, [tx, 0, tz]);
-    for (let i = 0; i < 6; i++) { const angle = i * 1.05 + random() * 0.5; s.rod([tx + Math.cos(angle) * 0.5 * slim, 0.5, tz + Math.sin(angle) * 0.5 * slim], [tx + Math.cos(angle) * (1.7 + random()) * slim, -0.05, tz + Math.sin(angle) * (1.7 + random()) * slim], 0.3 * slim, barkPaint, 0.08); }
+    const rootReach={buttress:1.6,reaching:2.8,shallow:2.1,mossy:1.9}[a.roots],rootH={buttress:.7,reaching:.4,shallow:.15,mossy:.25}[a.roots];
+    for (let i = 0; i < 6; i++) { const angle = i * 1.05 + random() * 0.5; s.rod([tx + Math.cos(angle) * 0.5 * slim, rootH, tz + Math.sin(angle) * 0.5 * slim], [tx + Math.cos(angle) * rootReach * slim, -.03, tz + Math.sin(angle) * rootReach * slim], (a.roots==='shallow'?.12:.3)*slim,barkPaint,.05);if(a.roots==='mossy')s.ball([.35,.12,.28],[tx+Math.cos(angle)*slim,.13,tz+Math.sin(angle)*slim],s.material('#607842'),8); }
     const leafTone = new THREE.Color({ oak: '#5f9040', willow: '#8aa64a', birch: '#8fb85a', apple: '#68994a' }[a.tree]).offsetHSL(0, (mood.cheer - 0.5) * 0.15, stormy ? -0.02 : 0);
     const crowns: Instance[] = [], strands: Instance[] = [], dots: Instance[] = [];
     const boughs = a.tree === 'birch' ? 16 : 24;
@@ -335,6 +375,7 @@ export default defineWorld({
       const neat = a.shoes === 'both' || mood.energy < 0.25;
       tipped.position.set(cornerX + shift - 0.62 - random() * 0.15, neat ? 0 : (kind === 'wellies' ? 0.19 : 0.2) * size, cornerZ + (neat ? 0.02 : 0.45 + random() * 0.2));
       if (neat) tipped.rotation.y = upright.rotation.y + 0.08; else { tipped.rotation.set(0, 1 + random() * 1.2, Math.PI / 2); tipped.rotation.order = 'YZX'; }
+      for(const supported of [upright,tipped]){supported.updateMatrixWorld(true);supported.position.y-=new THREE.Box3().setFromObject(supported,true).min.y;}
       if (kind === 'brogues') for (let i = 0; i < 2; i++) { const sock = s.ball([0.2, 0.15, 0.2], [cornerX + shift + 0.55 + i * 0.3, 0.14, cornerZ + 0.25 - i * 0.35], s.material(i ? '#b3262c' : '#d9d2bc', { roughness: 1 }), 10); sock.rotation.y = random(); }
     }
 

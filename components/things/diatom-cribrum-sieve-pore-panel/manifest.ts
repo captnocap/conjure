@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Diatom cribrum sieve pore panel", "summary": "A thin silica sieve panel carries actual through-pores with finite shared rims and an attached areola wall. A finite perforated silica plate, distinct from a complete chamber or valve. Enlarged openings and comparative rib-adjacent rows are a teaching study of real pore architecture, not a universal molecular lattice.", "scales": ["macro", "tabletop"]});

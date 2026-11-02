@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=.env server/index.ts",
     "start": "NODE_ENV=production tsx --env-file-if-exists=.env server/index.ts",
-    "build": "node dev/typecheck.mjs && vite build",
+    "build": "node dev/typecheck.mjs && node --max-old-space-size=8192 node_modules/vite/bin/vite.js build",
     "typecheck": "node dev/typecheck.mjs",
     "check": "node dev/check.mjs",
     "test": "tsx --test tests/*.test.ts",
@@ -15,6 +15,7 @@
     "check:expansion": "node dev/expansion-check.mjs",
     "check:layers": "node dev/layers-check.mjs",
     "check:styles": "node --import tsx dev/styles-check.mjs",
+    "check:atelier": "node dev/atelier-check.mjs",
     "check:requests": "node --import tsx dev/requests-check.mjs",
     "check:directions": "node --import tsx dev/directions-check.mjs"
   },

@@ -1,7 +1,7 @@
 // Laps: conjure a spread of ideas headlessly and keep what was decided for each, so recurring
 // choices (a world that turns up for everything, a look that wins too often, a thing cast into
 // scenes it does not belong to) can be seen across prompts rather than guessed from one.
-//   node dev/laps.mjs ideas.txt [--base http://127.0.0.1:3400] [--t 0] [--roll 0] [--parallel 2] [--out .data/laps/<stamp>]
+//   node dev/laps.mjs ideas.txt [--base http://127.0.0.1:3400] [--t 0] [--roll 0] [--parallel 2] [--model nanogpt:liquid/d1] [--timeout 240] [--out .data/laps/<stamp>]
 //     one idea per line; each is conjured with first choices (t=0) unless --t says otherwise.
 //   node dev/laps.mjs --tally .data/laps/<run> [--min 3]
 //     counts directions, settings, looks, media, cast, presentations and finishes across the run.
@@ -20,13 +20,13 @@ if (args.includes('--tally')) {
   if (!file) { console.error('usage: node dev/laps.mjs ideas.txt | --tally <run dir>'); process.exit(1); }
   await run(file, {
     base: option('--base', 'http://127.0.0.1:3400'),
-    t: option('--t', '0'), roll: option('--roll', '0'),
+    t: option('--t', '0'), roll: option('--roll', '0'), model: option('--model'), timeout: Number(option('--timeout', 240)),
     parallel: Number(option('--parallel', 2)),
     out: option('--out', join('.data/laps', new Date().toISOString().slice(0, 16).replace(/[-:T]/g, ''))),
   });
 }
 
-async function run(file, { base, t, roll, parallel, out }) {
+async function run(file, { base, t, roll, model, timeout, parallel, out }) {
   const ideas = readFileSync(file, 'utf8').split('\n').map((line) => line.trim()).filter((line) => line && !line.startsWith('#'));
   mkdirSync(out, { recursive: true });
   const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
@@ -41,8 +41,8 @@ async function run(file, { base, t, roll, parallel, out }) {
       const name = `${String(index + 1).padStart(2, '0')}-${idea.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60)}.json`;
       const at = Date.now();
       try {
-        await page.goto(`${base}/?idea=${encodeURIComponent(idea)}&t=${t}&roll=${roll}`);
-        await page.waitForFunction(() => document.title.startsWith('conjure-'), null, { timeout: 240_000 });
+        await page.goto(`${base}/?idea=${encodeURIComponent(idea)}&t=${t}&roll=${roll}${model ? `&model=${encodeURIComponent(model)}` : ''}`);
+        await page.waitForFunction(() => document.title.startsWith('conjure-'), null, { timeout: timeout * 1000 });
         const record = await page.evaluate(() => {
           const held = window.__conjure;
           if (!held) return { failed: document.querySelector('#status')?.textContent ?? 'no plan' };
@@ -61,10 +61,13 @@ async function run(file, { base, t, roll, parallel, out }) {
             presentation: plan.presentation.kind, arc: plan.presentation.arc, blend: plan.presentation.blend ?? null,
             accent: plan.accent ? { region: plan.accent.region, look: plan.accent.look.entry.id } : null,
             otherworld: plan.otherworld ?? null, vacui: plan.vacui ?? null, camera: plan.camera ?? null,
+            materialize: plan.materialize ?? null, materials: { [plan.world.entry.id]: plan.world.material ?? null, ...Object.fromEntries(plan.cast.map((m) => [m.entry.id, m.material ?? null])) },
             design: plan.design ? { notes: plan.design.notes, layers: plan.design.layers.map((l) => `${l.motif}${l.ink ? `/${l.ink}` : ''}`) } : null,
             lookAnswers: plan.look?.answers ?? null, worldAnswers: plan.world.answers,
             failed: reports.filter((r) => r.error).map((r) => `${r.id}: ${r.error}`),
             usage: plan.usage, status: document.querySelector('#status')?.textContent ?? '',
+            // Every ruling with its full probabilities, so a run can be read decision by decision afterwards.
+            rulings: plan.rulings,
           };
         });
         writeFileSync(join(out, name), JSON.stringify({ idea, t: Number(t), roll: Number(roll), ...record }, null, 1));
@@ -105,12 +108,15 @@ function tally(dir, min) {
   show('Presentation', count(laps.map((r) => r.presentation)));
   show('Cast (ideas a thing was cast into)', count(laps.flatMap((r) => [...new Set(r.cast.map((m) => m.id))])));
   show('Hero (first cast)', count(laps.map((r) => r.cast[0]?.id)));
+  show('Materials (things and settings dressed by the idea)', count(laps.flatMap((r) => Object.entries(r.materials ?? {}).flatMap(([id, m]) => m ? [`${id.split('/')[1]} ${Object.values(m).join('/')}`] : []))), laps.length, 1);
+  show('Surfaces through the medium', count(laps.map((r) => r.materialize ? `${Math.round(r.materialize.weight * 100)}%` : null)));
   show('Relation', count(laps.flatMap((r) => r.cast.map((m) => m.relation))), laps.reduce((n, r) => n + r.cast.filter((m) => m.relation).length, 0));
   show('Framing anchor', count(laps.map((r) => r.framing?.anchor)));
   show('Frame level', count(laps.map((r) => (r.framing?.tilt ? 'tilted' : 'level'))));
   show('Accent', count(laps.map((r) => (r.accent ? `${r.accent.region}: ${r.accent.look}` : 'none'))));
   show('Otherworld rift', count(laps.map((r) => (r.otherworld ? r.otherworld.rift : 'none'))));
   show('Dead space', count(laps.map((r) => (r.vacui ? r.vacui.fill : 'none'))));
+  show('Doodles (glyph fills)', count(laps.map((r) => (r.vacui?.fill === 'glyphs' ? r.vacui.doodles ?? 'machinery' : 'none'))));
   show('Camera', count(laps.map((r) => r.camera)));
   show('Vector motif', count(laps.flatMap((r) => (r.design?.layers ?? []).map((layer) => layer.split('/')[0]))));
   show('Vector ink', count(laps.flatMap((r) => (r.design?.layers ?? []).map((layer) => layer.split('/')[1]).filter(Boolean))));

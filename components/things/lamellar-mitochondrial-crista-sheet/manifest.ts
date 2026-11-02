@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Lamellar mitochondrial crista sheet", "summary": "A closed flattened inner-membrane fold has a rounded rim and a genuine narrow junction to an inner-boundary patch. A schematic membrane-topology teaching model preserves continuous neck-to-pocket lumen; the matrix lies outside the crista shell, and section controls are model cuts rather than biological openings.", "scales": ["macro", "tabletop"]});

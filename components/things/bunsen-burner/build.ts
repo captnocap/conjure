@@ -33,6 +33,42 @@ function gauzeTexture(heat: number, wear: number) {
 
 export default defineThing({
   questions: {
+    base: choice('What shape anchors the burner?', {
+      cast: 'A traditional low domed cast foot.',
+      hexagonal: 'A broad hexagonal metal foot.',
+      stepped: 'Three round stepped discs make a heavy base.',
+      lugs: 'A low round foot with four bolt-down lugs.',
+    }),
+    support: choice('If there is a vessel above the burner, what supports it?', {
+      tripod: 'Three simple splayed iron legs.',
+      four: 'Four splayed legs support a square upper frame.',
+      braced: 'Three legs with a low triangular brace.',
+      tower: 'Four straight posts with small broad feet.',
+    }),
+    collar: choice('How is the adjustable air collar made?', {
+      round: 'A plain sleeve with round intake openings.',
+      slots: 'A sleeve with tall narrow air slots.',
+      window: 'A broad dark rectangular intake window.',
+      ribbed: 'A knurled collar with narrow vertical grip ribs.',
+    }),
+    connection: choice('What is attached at the distant end of the hose?', {
+      loose: 'A plain disconnected hose fitting lies on the bench.',
+      tap: 'A small bench-mounted gas tap with a coloured handle.',
+      gauge: 'A compact regulator with a round pressure dial.',
+      manifold: 'A two-outlet gas manifold with one capped branch.',
+    }),
+    shield: choice('What shelters the burner from a draught?', {
+      none: 'No draught shield.',
+      curved: 'A low curved sheet-metal shield behind the burner.',
+      perforated: 'A tall perforated metal screen behind the apparatus.',
+      folding: 'A three-panel folding screen open toward the viewer.',
+    }),
+    handling: choice('What tool is set beside the heat source?', {
+      none: 'No extra handling tool.',
+      tongs: 'Long crucible tongs lie open on the bench.',
+      snuffer: 'A small handled metal flame cap rests nearby.',
+      striker: 'A wire-frame spark lighter waits beside the burner.',
+    }),
     flame: choice('What is the flame doing right now?', {
       off: 'Unlit: cold brass, gas off, nothing happening yet.',
       yellow: 'A lazy, tall, wavering yellow safety flame with the air hole closed.',
@@ -89,7 +125,16 @@ export default defineThing({
     }
 
     // Foot, gas inlet, air collar and barrel.
-    s.lathe([[0, 0], [0.047, 0], [0.05, 0.004], [0.046, 0.012], [0.03, 0.018], [0.016, 0.03], [0.014, 0.04], [0, 0.04]], foot, [0, y0, 0]);
+    if (a.base === 'cast' || a.base === 'lugs') s.lathe([[0, 0], [0.047, 0], [0.05, 0.004], [0.046, 0.012], [0.03, 0.018], [0.016, 0.03], [0.014, 0.04], [0, 0.04]], foot, [0, y0, 0]);
+    else if (a.base === 'hexagonal') {
+      s.cylinder(0.055, 0.06, 0.018, [0, y0 + 0.009, 0], foot, 6);
+      s.cylinder(0.014, 0.028, 0.022, [0, y0 + 0.029, 0], metal, 20);
+    } else for (const [r, y, h] of [[0.055, 0.006, 0.012], [0.036, 0.018, 0.012], [0.018, 0.032, 0.016]]) s.cylinder(r, r, h, [0, y0 + y, 0], foot, 24);
+    if (a.base === 'lugs') for (let i = 0; i < 4; i++) {
+      const t = i * Math.PI / 2, x = Math.cos(t) * 0.052, z = Math.sin(t) * 0.052;
+      s.cylinder(0.013, 0.013, 0.006, [x, y0 + 0.003, z], foot, 14);
+      s.cylinder(0.003, 0.003, 0.001, [x, y0 + 0.0065, z], soot, 10);
+    }
     s.rod([-0.012, y0 + 0.028, 0], [-0.06, y0 + 0.028, 0], 0.006, metal);
     for (let i = 0; i < 3; i++) s.ring(0.0068, 0.0015, [-0.04 - i * 0.007, y0 + 0.028, 0], metal).rotation.y = Math.PI / 2;
     const H = 0.15;
@@ -99,6 +144,12 @@ export default defineThing({
     const hole = s.cylinder(0.005, 0.005, 0.004, [0, y0 + 0.056, 0.016], a.flame === 'yellow' || a.flame === 'off' ? metal : soot, 12);
     hole.rotation.x = Math.PI / 2;
     s.ring(0.0125, 0.002, [0, y0 + H, 0], mood.wear > 0.5 || a.flame === 'yellow' ? soot : metal).rotation.x = Math.PI / 2;
+    if (a.collar === 'slots' || a.collar === 'ribbed') for (let i = 0; i < 12; i++) {
+      const t = i * Math.PI / 6;
+      const slot = s.box([0.002, a.collar === 'slots' ? 0.014 : 0.021, 0.0015], [Math.sin(t) * 0.017, y0 + 0.056, Math.cos(t) * 0.017], a.collar === 'slots' ? soot : metal);
+      slot.rotation.y = t;
+    }
+    if (a.collar === 'window') s.box([0.018, 0.014, 0.002], [0, y0 + 0.056, 0.0165], soot);
     // Gas tap lever on the inlet.
     s.box([0.006, 0.02, 0.006], [-0.03, y0 + 0.04, 0], iron).rotation.z = lit ? 0.9 : 0;
 
@@ -116,6 +167,23 @@ export default defineThing({
     s.tube(points, 0.0075, rubber);
     const end = points[points.length - 1];
     s.ball([0.009, 0.009, 0.009], end, metal, 10);
+    if (a.connection !== 'loose') {
+      const [x, , z] = end;
+      s.cylinder(0.025, 0.025, 0.006, [x, 0.003, z], foot, 18);
+      s.rod([x, 0.006, z], [x, 0.055, z], 0.008, metal);
+      s.tube([end, [x + 0.017, 0.015, z], [x + 0.017, 0.04, z], [x, 0.04, z]], 0.005, metal);
+      s.box([0.038, 0.006, 0.009], [x, 0.06, z], s.material('#9d3c31')).rotation.y = lit ? 0 : Math.PI / 2;
+      if (a.connection === 'gauge') {
+        s.rod([x, 0.052, z], [x, 0.085, z], 0.005, metal);
+        s.cylinder(0.023, 0.023, 0.009, [x, 0.09, z], metal, 24).rotation.x = Math.PI / 2;
+        s.cylinder(0.02, 0.02, 0.001, [x, 0.09, z + 0.005], s.material('#eee8cf'), 24).rotation.x = Math.PI / 2;
+        s.rod([x, 0.09, z + 0.006], [x + 0.009, 0.103, z + 0.006], 0.0012, soot);
+      }
+      if (a.connection === 'manifold') {
+        s.rod([x - 0.035, 0.036, z], [x + 0.035, 0.036, z], 0.007, metal);
+        s.ball([0.009, 0.009, 0.009], [x - 0.035, 0.036, z], foot, 10);
+      }
+    }
     if (a.hose === 'patched') {
       const tape = s.material('#ece8dc', { roughness: 0.9 });
       for (const i of [3, 4]) s.ball([0.011, 0.0085, 0.011], points[i], tape, 10);
@@ -127,9 +195,19 @@ export default defineThing({
     const heater = lit && tripod ? heat : 0;
     if (tripod) {
       s.ring(0.058, 0.0045, [0, ringY, 0], iron).rotation.x = Math.PI / 2;
-      for (let i = 0; i < 3; i++) {
-        const t = i * (Math.PI * 2) / 3 + Math.PI / 6;
-        s.rod([Math.cos(t) * 0.058, ringY, Math.sin(t) * 0.058], [Math.cos(t) * 0.092, 0, Math.sin(t) * 0.092], 0.0048, iron, 0.004);
+      const legs = a.support === 'four' || a.support === 'tower' ? 4 : 3;
+      for (let i = 0; i < legs; i++) {
+        const t = i * Math.PI * 2 / legs + Math.PI / 6, bottomR = a.support === 'tower' ? 0.058 : 0.092;
+        s.rod([Math.cos(t) * 0.058, ringY, Math.sin(t) * 0.058], [Math.cos(t) * bottomR, 0.003, Math.sin(t) * bottomR], 0.0048, iron, 0.004);
+        if (a.support === 'tower') s.cylinder(0.012, 0.012, 0.006, [Math.cos(t) * bottomR, 0.003, Math.sin(t) * bottomR], iron, 12);
+        if (a.support === 'braced') {
+          const t1 = (i + 1) * Math.PI * 2 / legs + Math.PI / 6;
+          s.rod([Math.cos(t) * 0.078, ringY * 0.4, Math.sin(t) * 0.078], [Math.cos(t1) * 0.078, ringY * 0.4, Math.sin(t1) * 0.078], 0.0026, iron);
+        }
+        if (a.support === 'four') {
+          const t1 = (i + 1) * Math.PI * 2 / legs + Math.PI / 6;
+          s.rod([Math.cos(t) * 0.058, ringY, Math.sin(t) * 0.058], [Math.cos(t1) * 0.058, ringY, Math.sin(t1) * 0.058], 0.004, iron);
+        }
       }
       if (a.above === 'crucible') {
         const clay = s.material('#e9e4d6', { roughness: 0.9 });
@@ -255,6 +333,32 @@ export default defineThing({
       }
       const shard = s.material('#d9eef2', { roughness: 0.1 });
       for (let i = 0; i < 4; i++) s.box([0.014, 0.001, 0.008], [side - 0.03 + random() * 0.05, y0 + 0.003, 0.05 + random() * 0.05], shard).rotation.y = random() * 3;
+    }
+
+    if (a.shield !== 'none') {
+      const sheet = s.material('#9da8a7', { metalness: 0.65, roughness: 0.5, side: THREE.DoubleSide });
+      const shieldH = a.shield === 'curved' ? 0.16 : 0.28;
+      if (a.shield === 'curved') {
+        const points: [number, number][] = [[0.11, 0], [0.11, shieldH]];
+        const shell = new THREE.LatheGeometry(points.map(([r, y]) => new THREE.Vector2(r, y)), 28, Math.PI / 2, Math.PI);
+        s.mesh(shell, sheet);
+      } else {
+        s.box([0.23, shieldH, 0.002], [0, shieldH / 2, -0.115], sheet);
+        if (a.shield === 'folding') for (const side of [-1, 1]) s.box([0.09, shieldH, 0.002], [side * 0.145, shieldH / 2, -0.088], sheet).rotation.y = side * 0.6;
+        else for (let row = 0; row < 6; row++) for (let col = 0; col < 7; col++) s.cylinder(0.004, 0.004, 0.0006, [-0.09 + col * 0.03, 0.035 + row * 0.04, -0.1135], soot, 8).rotation.x = Math.PI / 2;
+      }
+      for (const x of [-0.085, 0.085]) s.box([0.03, 0.006, 0.045], [x, 0.003, -0.11], iron);
+    }
+    if (a.handling === 'tongs') {
+      for (const side of [-1, 1]) s.tube([[0.13 + side * 0.012, 0.003, -0.08], [0.13, 0.004, -0.015], [0.13 + side * 0.025, 0.004, 0.07], [0.13 + side * 0.018, 0.004, 0.09]], 0.0022, metal);
+      s.cylinder(0.004, 0.004, 0.005, [0.13, 0.004, -0.015], iron, 10);
+    } else if (a.handling === 'snuffer') {
+      s.lathe([[0, 0.024], [0.008, 0.024], [0.017, 0], [0.015, 0], [0.006, 0.021]], metal, [0.16, 0, -0.06]);
+      s.rod([0.16, 0.022, -0.06], [0.21, 0.004, -0.01], 0.002, metal);
+    } else if (a.handling === 'striker') {
+      s.tube([[0.12, 0.003, -0.07], [0.14, 0.003, -0.095], [0.17, 0.003, -0.07], [0.16, 0.003, -0.025]], 0.002, metal);
+      s.box([0.018, 0.009, 0.02], [0.16, 0.0045, -0.02], iron);
+      s.rod([0.12, 0.003, -0.07], [0.153, 0.006, -0.02], 0.002, metal);
     }
 
     const flick = mix(0.03, 0.16, mood.energy) * (a.flame === 'yellow' ? 1.6 : 1);

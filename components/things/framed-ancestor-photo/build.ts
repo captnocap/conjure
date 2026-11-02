@@ -70,6 +70,12 @@ function dog(g: Ctx, ink: Ink, tint: boolean) {
 
 export default defineThing({
   questions: {
+    backdrop: choice('What background was used for the portrait?', { studio: 'A softly shaded studio background.', curtain: 'Heavy folded studio curtains.', garden: 'Blurred garden foliage behind the sitter.', arch: 'A pale painted architectural arch.' }),
+    crop: choice('How closely is the sitter framed?', { bust: 'A balanced head-and-shoulders portrait.', close: 'A close crop around the face.', wide: 'More space around the shoulders and body.', offset: 'The sitter is placed a little to one side.' }),
+    printSurface: choice('What surface does the photograph have?', { glossy: 'Smooth glossy photographic paper.', matte: 'Soft matte photographic paper.', linen: 'A fine crosshatched linen surface.', stipple: 'A lightly pebbled photographic paper.' }),
+    caption: choice('What is written along the bottom of the print?', { none: 'No caption.', date: 'A small handwritten date.', name: 'A short family dedication.', studio: 'The name of the photographic studio.' }),
+    fasteners: choice('What small fixtures secure the portrait?', { hidden: 'The fittings are hidden behind the frame.', pins: 'Four small brass pins.', corners: 'Dark triangular photo corners.', tabs: 'Small ivory paper retaining tabs.' }),
+    support: choice('What holds up the frame?', { strut: 'One narrow rear support strut.', pair: 'Two splayed rear struts.', card: 'A broad folding card kickstand.', wire: 'A simple wire easel with two back feet.' }),
     who: choice('Who is in the photograph?', {
       elder: 'A grandmother with white hair in a bun, glasses and a dark shawl.',
       soldier: 'A young man in uniform and peaked cap who did not come back.',
@@ -115,11 +121,16 @@ export default defineThing({
     const grad = g.createRadialGradient(128, 130, 20, 128, 160, 220);
     grad.addColorStop(0, ink.bg2); grad.addColorStop(1, ink.bg);
     g.fillStyle = grad; g.fillRect(0, 0, 256, 320);
+    if(a.backdrop==='curtain'){for(let x=0;x<256;x+=22){g.fillStyle= x%44?ink.mid:ink.bg;g.fillRect(x,0,14,320);}g.strokeStyle=ink.light;g.lineWidth=3;for(let x=0;x<256;x+=22){g.beginPath();g.moveTo(x,0);g.quadraticCurveTo(x+10,160,x,320);g.stroke();}}
+    if(a.backdrop==='garden'){for(let i=0;i<60;i++){g.globalAlpha=.25+random()*.2;g.fillStyle=i%2?ink.accent:ink.bg2;g.beginPath();g.arc(random()*256,random()*320,8+random()*25,0,Math.PI*2);g.fill();}g.globalAlpha=1;}
+    if(a.backdrop==='arch'){g.strokeStyle=ink.light;g.lineWidth=19;g.beginPath();g.moveTo(28,320);g.lineTo(28,130);g.arc(128,130,100,Math.PI,0);g.lineTo(228,320);g.stroke();g.lineWidth=3;g.strokeStyle=ink.mid;g.strokeRect(12,165,30,155);g.strokeRect(214,165,30,155);}
+    g.save();const portraitScale=a.crop==='close'?1.28:a.crop==='wide'?.8:1;g.translate(128+(a.crop==='offset'?27:0),150);g.scale(portraitScale,portraitScale);g.translate(-128,-150);
     if (a.who === 'elder') person(g, ink, 128, 132, 1.25, 'elder', a.tinted);
     else if (a.who === 'soldier') person(g, ink, 128, 132, 1.25, 'soldier', a.tinted);
     else if (a.who === 'child') person(g, ink, 128, 168, 1.1, 'child', a.tinted);
     else if (a.who === 'couple') { person(g, ink, 80, 150, 0.85, 'bride', a.tinted); person(g, ink, 176, 136, 0.85, 'groom', a.tinted); }
     else dog(g, a.era === 'glossy' ? { ...ink, mid: '#b07a48' } : ink, a.tinted);
+    g.restore();
     if (a.era === 'sepia') { g.fillStyle = ink.light; g.beginPath(); g.rect(0, 0, 256, 320); g.ellipse(128, 160, 108, 142, 0, 0, Math.PI * 2, true); g.fill('evenodd'); }
     if (a.era === 'faded') { g.strokeStyle = '#f6f0e0'; g.lineWidth = 28; g.strokeRect(0, 0, 256, 320); }
     g.fillStyle = `rgba(${a.era === 'faded' ? '240,200,150' : '236,226,204'},${0.06 + mood.wear * 0.24})`; g.fillRect(0, 0, 256, 320);
@@ -137,8 +148,10 @@ export default defineThing({
       const ox = 70 + random() * 110, oy = 90 + random() * 120;
       for (let i = 0; i < 7; i++) { const ang = i / 7 * 6.28 + random() * 0.5; g.beginPath(); g.moveTo(ox, oy); let px = ox, py = oy; for (let k = 0; k < 5; k++) { px += Math.cos(ang + (random() - 0.5) * 0.7) * 50; py += Math.sin(ang + (random() - 0.5) * 0.7) * 50; g.lineTo(px, py); } g.stroke(); }
     }
+    if(a.caption!=='none'){g.fillStyle=ink.light;g.fillRect(0,292,256,28);g.fillStyle=ink.dark;g.font=a.caption==='studio'?'13px serif':'italic 15px serif';g.textAlign='center';g.fillText(a.caption==='date'?{sepia:'1903',silver:'1948',faded:'1976',glossy:'1994'}[a.era]:a.caption==='name'?'Siempre en casa':'Estudio del Sol',128,311);}
     const map = new THREE.CanvasTexture(canvas); map.colorSpace = THREE.SRGBColorSpace;
-    const photoMat = new THREE.MeshStandardMaterial({ map, roughness: a.state === 'cracked' ? 0.5 : 0.22 });
+    const photoMat = new THREE.MeshStandardMaterial({ map, roughness: a.printSurface==='glossy'?.2:a.printSurface==='matte'?.9:.72 });
+    if(a.printSurface==='linen'||a.printSurface==='stipple'){const c=document.createElement('canvas');c.width=c.height=128;const p=c.getContext('2d')!;p.fillStyle='#888';p.fillRect(0,0,128,128);p.fillStyle='#bbb';for(let x=0;x<128;x+=4)for(let y=0;y<128;y+=4){if(a.printSurface==='linen'){p.fillRect(x,y,3,1);p.fillRect(x,y,1,3);}else{p.beginPath();p.arc(x+random()*2,y+random()*2,1,0,Math.PI*2);p.fill();}}photoMat.bumpMap=new THREE.CanvasTexture(c);photoMat.bumpScale=.0007;}
 
     // Frame, built upright in its own space with the bottom edge on y = 0.
     let fw = pw, fh = ph, depth = 0.012, cy = 0;
@@ -208,6 +221,12 @@ export default defineThing({
     if (dots.length) f.scatter(new THREE.SphereGeometry(1, 8, 6), f.material('#ffffff', { roughness: 0.4, metalness: 0.3 }), dots.map((d) => ({ color: '#b9bec0', ...d })));
     const photo = a.frame === 'gilt' ? f.mesh(new THREE.CircleGeometry(0.5, 48), photoMat, [0, cy, 0.004]) : f.mesh(new THREE.PlaneGeometry(1, 1), photoMat, [0, cy, 0.0048]);
     photo.scale.set(pw, ph, 1); photo.castShadow = false;
+    if(a.fasteners!=='hidden')for(const x of [-1,1])for(const y of [-1,1]){
+      const at:V3=[x*pw*(a.frame==='gilt'?.32:.45),cy+y*ph*(a.frame==='gilt'?.32:.45),.007];
+      if(a.fasteners==='pins'){const pin=f.cylinder(.0022,.0022,.0015,at,f.material('#c7aa59',{metalness:.8,roughness:.35}),10);pin.rotation.x=Math.PI/2;}
+      else if(a.fasteners==='tabs'){f.box([.014,.007,.0008],at,f.material('#f1e5c9'));}
+      else{const shape=new THREE.Shape();shape.moveTo(-.008*x,.008*y);shape.lineTo(.008*x,.008*y);shape.lineTo(.008*x,-.008*y);shape.closePath();f.mesh(new THREE.ShapeGeometry(shape),f.material('#2b2927',{side:THREE.DoubleSide}),at);}
+    }
     const top = a.frame === 'tin' ? cy + fh / 2 : a.frame === 'nicho' ? fh : fh;
 
     // Draped things, in frame space.
@@ -258,22 +277,34 @@ export default defineThing({
     }
 
     // Stand it up, leaning back on a strut, or lay it flat.
+    const supportMat=s.material('#3a2a1a',{roughness:.8});
+    if(a.state==='fallen'){
+      const width=a.support==='card'?.065:a.support==='pair'?.055:a.support==='wire'?.045:.015;
+      f.box([width,fh*.58,.003],[0,fh*.43,-.006],supportMat);
+    }
     const lean = a.state === 'fallen' ? Math.PI / 2 - 0.04 : mix(0.2, 0.3, random());
     f.root.rotation.x = -lean;
     f.root.rotation.y = a.state === 'fallen' ? (random() - 0.5) * 0.8 : 0;
     f.root.position.y = a.state === 'fallen' ? 0.012 : 0;
     s.root.add(f.root);
+    f.root.updateMatrixWorld(true);f.root.position.y-=new THREE.Box3().setFromObject(f.root,true).min.y;f.root.updateMatrixWorld(true);
     if (a.state !== 'fallen') {
       const h = fh * 0.72;
-      s.rod([0, Math.cos(lean) * h, -Math.sin(lean) * h - 0.003], [0, 0, -Math.sin(lean) * h - 0.085], 0.004, s.material('#3a2a1a'));
-      s.box([0.03, 0.004, 0.02], [0, 0.002, -Math.sin(lean) * h - 0.085], s.material('#3a2a1a'));
+      const anchor=f.root.localToWorld(new THREE.Vector3(0,h,-.004)),footZ=anchor.z-.085;
+      if(a.support==='card'){
+        const points=[-.028,anchor.y,anchor.z,.028,anchor.y,anchor.z,-.045,.002,footZ,.045,.002,footZ];
+        const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(points,3));geometry.setIndex([0,2,1,1,2,3]);geometry.computeVertexNormals();const material=supportMat.clone();material.side=THREE.DoubleSide;s.mesh(geometry,material);s.box([.09,.004,.012],[0,.002,footZ],supportMat);
+      }else for(const side of a.support==='strut'?[0]:[-1,1]){
+        s.rod([side*.02,anchor.y,anchor.z],[side*.05,.004,footZ],a.support==='wire'?.002:.004,supportMat);
+        s.box([.03,.004,.02],[side*.05,.002,footZ],supportMat);
+      }
     }
 
     // Company on the table.
     let flame: THREE.Mesh | null = null;
     if (mood.density > 0.45) {
       const x = fw / 2 + 0.035, z = 0.07;
-      s.cylinder(0.0195, 0.0185, 0.016, [x, 0.008, z], s.material('#cfd4d6', { metalness: 0.7, roughness: 0.3 }), 18);
+      s.lathe([[0,0],[.0185,0],[.0195,.016],[.0185,.016],[.0175,.0015],[0,.0015]],s.material('#cfd4d6',{metalness:.7,roughness:.3}),[x,0,z]);
       s.cylinder(0.018, 0.018, 0.003, [x, 0.015, z], s.material('#f6efdc', { emissive: '#ffb347', emissiveIntensity: 0.6 }), 18);
       flame = s.mesh(new THREE.SphereGeometry(1, 10, 8), new THREE.MeshBasicMaterial({ color: '#ffc04a' }), [x, 0.03, z]);
       flame.scale.set(0.005, 0.012, 0.005); flame.castShadow = false;

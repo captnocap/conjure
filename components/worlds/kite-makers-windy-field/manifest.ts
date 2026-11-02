@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind: 'world', title: "Kite makers’ windy field", summary: "An open grassy field with a sheltered kite-making table, a low fence and clear space for the first launch. Paper colours, bamboo offcuts, fluttering wind markers and neighbours gathering around a patient outdoor craft.", scales: ["street", "landscape", "tabletop"]});

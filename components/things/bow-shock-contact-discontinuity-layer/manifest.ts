@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Bow shock contact discontinuity layer", "summary": "Two adjacent but distinct curved shell volumes retain a separating contact surface and exposed thickness at a sectional edge. A finite layered teaching model retains shocked wind, a separating contact interface and swept ambient material in order. Corrugations and thicknesses are schematic explanatory controls, not a simulated fluid solution.", "scales": ["cosmic", "tabletop"]});

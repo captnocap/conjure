@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Vector arcade display',summary:'Luminous vector-like contours on dark display glass, with phosphor bloom, beam dwell, depth cues and faint redraw traces. Early arcade screens, wire-like technical images and glowing retro computer scenes.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'game'});

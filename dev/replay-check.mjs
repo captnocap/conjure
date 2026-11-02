@@ -44,6 +44,8 @@ if (entry.vacui) {
   force['direction::vacuiForm'] = entry.vacui.form ?? 'land';
   force['direction::vacuiInk'] = entry.vacui.ink ?? 'print';
   force['direction::vacuiDrip'] = entry.vacui.drip ?? false;
+  // Pictures saved before the themed doodle sets existed drew machinery.
+  force['direction::vacuiDoodles'] = entry.vacui.doodles ?? 'machinery';
 } else force['direction::vacui'] = 'none';
 if (entry.camera) force['direction::loopCamera'] = entry.camera;
 // The direction the entry followed. Entries saved before directions existed followed the Fifth World
@@ -54,6 +56,14 @@ if (entry.look) force['direction::look'] = entry.look.id;
 for (const owner of [entry.world, entry.look, ...(entry.cast ?? [])].filter(Boolean))
   for (const [key, value] of Object.entries(owner.answers ?? {})) force[`${owner.id}::${key}`] = value;
 for (const member of entry.cast ?? []) force[`direction::cast:${member.id}`] = true;
+// Entries saved before materials were asked keep every surface as built; those saved before the
+// materialize pass existed print flat, as they did.
+if (!(entry.rulings ?? []).some((ruling) => ruling.name === 'materialBody' || ruling.name === 'materialSky')) {
+  for (const name of ['materialBody', 'materialSky']) force[`${entry.world.id}::${name}`] = 'as-made';
+  for (const member of entry.cast ?? []) force[`${member.id}::materialBody`] = 'as-made';
+}
+force['direction::materialize'] = entry.materialize ? entry.materialize.weight : 'none';
+
 for (const [key, value] of Object.entries(entry.design?.answers ?? {})) force[`design::${key}`] = value;
 Object.assign(force, JSON.parse(extra));
 

@@ -27,6 +27,7 @@ export function projectMembraneMasks(
     resolution > 128
   )
     throw Error("Invalid projected membrane snapshot");
+  if (snapshot.source === "conjure") return projectSceneMembranes(snapshot, resolution, excludeIds);
   const n = resolution,
     projection = snapshot.projection,
     exclude = new Set(excludeIds),
@@ -39,9 +40,9 @@ export function projectMembraneMasks(
       1e-12 ||
     Math.abs(projection[15] - 1) > 1e-12
   )
-    throw Error("Projected membranes require an orthographic camera");
+    if (snapshot.source !== "conjure") throw Error("Projected membranes require an orthographic camera");
   for (let j = 0; j < snapshot.meshes.length; j++) {
-    const id = j + 1;
+    const id = snapshot.meshes[j].id ?? j + 1;
     if (exclude.has(id)) continue;
     const mesh = snapshot.meshes[j],
       source = mesh.position,
@@ -56,12 +57,13 @@ export function projectMembraneMasks(
         y = source[i + 1],
         z = source[i + 2];
       if (!Number.isFinite(x + y + z)) throw Error("Invalid vertex");
+      const cw = matrix[3] * x + matrix[7] * y + matrix[11] * z + matrix[15];
       const sx =
-          ((matrix[0] * x + matrix[4] * y + matrix[8] * z + matrix[12] + 1) *
+          (((matrix[0] * x + matrix[4] * y + matrix[8] * z + matrix[12]) / cw + 1) *
             n) /
           2,
         sy =
-          ((1 - (matrix[1] * x + matrix[5] * y + matrix[9] * z + matrix[13])) *
+          ((1 - (matrix[1] * x + matrix[5] * y + matrix[9] * z + matrix[13]) / cw) *
             n) /
           2;
       points[(i / 3) * 2] = sx;
@@ -96,7 +98,7 @@ export function projectMembraneMasks(
         Math.min(ax, bx, cx, ay, by, cy) < -1e-8 ||
         Math.max(ax, bx, cx, ay, by, cy) > n + 1e-8
       )
-        throw Error(
+        if (snapshot.source !== "conjure") throw Error(
           "A foreground projected membrane extends outside the viewport",
         );
       const area = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
@@ -115,7 +117,69 @@ export function projectMembraneMasks(
             mask[y * n + x] = 1;
         }
     }
-    result.push({ id, resolution: n, mask });
+    const prior = result.find(entry => entry.id === id);
+    if (prior) for (let i = 0; i < mask.length; i++) prior.mask[i] |= mask[i];
+    else result.push({ id, resolution: n, mask });
   }
   return result;
+}
+
+
+// Conjure worlds may cross the frame and use perspective. Clip their actual
+// triangles in homogeneous space before constructing each owner's union.
+function projectSceneMembranes(snapshot, n, excluded) {
+  const vp = multiply(snapshot.projection, snapshot.view), masks = new Map();
+  const planes = [p => p[3] + p[0], p => p[3] - p[0], p => p[3] + p[1],
+    p => p[3] - p[1], p => p[3] + p[2], p => p[3] - p[2]];
+  const clip = (polygon, distance) => {
+    const output = [];
+    if (!polygon.length) return output;
+    let a = polygon.at(-1), da = distance(a);
+    for (const b of polygon) {
+      const db = distance(b);
+      if ((da >= 0) !== (db >= 0)) {
+        const t = da / (da - db);
+        output.push(a.map((value, i) => value + (b[i] - value) * t));
+      }
+      if (db >= 0) output.push(b);
+      a = b; da = db;
+    }
+    return output;
+  };
+  const raster = (mask, a, b, c) => {
+    const area = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+    if (!Number.isFinite(area) || Math.abs(area) < 1e-12) return;
+    const x0 = Math.max(0, Math.ceil(Math.min(a[0], b[0], c[0]) - .5));
+    const x1 = Math.min(n - 1, Math.floor(Math.max(a[0], b[0], c[0]) - .5));
+    const y0 = Math.max(0, Math.ceil(Math.min(a[1], b[1], c[1]) - .5));
+    const y1 = Math.min(n - 1, Math.floor(Math.max(a[1], b[1], c[1]) - .5));
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+      const px = x + .5, py = y + .5;
+      const u = ((b[0] - px) * (c[1] - py) - (b[1] - py) * (c[0] - px)) / area;
+      const v = ((c[0] - px) * (a[1] - py) - (c[1] - py) * (a[0] - px)) / area;
+      if (u >= -1e-10 && v >= -1e-10 && u + v <= 1 + 1e-10) mask[y * n + x] = 1;
+    }
+  };
+  for (const [ordinal, mesh] of snapshot.meshes.entries()) {
+    const id = mesh.id ?? ordinal + 1;
+    if (excluded.includes(id)) continue;
+    if (!matrixOK(mesh.matrix) || !mesh.position || mesh.position.length % 3) throw Error("Invalid projected membrane mesh");
+    let mask = masks.get(id);
+    if (!mask) masks.set(id, mask = new Uint8Array(n * n));
+    const matrix = multiply(vp, mesh.matrix), points = new Float64Array(mesh.position.length / 3 * 4);
+    for (let i = 0; i < mesh.position.length / 3; i++) {
+      const [x, y, z] = mesh.position.subarray(i * 3, i * 3 + 3);
+      for (let k = 0; k < 4; k++) points[i * 4 + k] = matrix[k] * x + matrix[k + 4] * y + matrix[k + 8] * z + matrix[k + 12];
+    }
+    const total = mesh.index?.length ?? mesh.position.length / 3;
+    const start = mesh.drawRange?.start ?? 0, end = Math.min(total, start + (mesh.drawRange?.count ?? Infinity));
+    for (let i = start; i + 2 < end; i += 3) {
+      let polygon = [0, 1, 2].map(k => Array.from(points.subarray((mesh.index?.[i + k] ?? i + k) * 4, (mesh.index?.[i + k] ?? i + k) * 4 + 4)));
+      for (const plane of planes) { polygon = clip(polygon, plane); if (!polygon.length) break; }
+      if (polygon.length < 3) continue;
+      const projected = polygon.map(p => [(p[0] / p[3] + 1) * n / 2, (1 - p[1] / p[3]) * n / 2]);
+      for (let k = 1; k + 1 < projected.length; k++) raster(mask, projected[0], projected[k], projected[k + 1]);
+    }
+  }
+  return [...masks].map(([id, mask]) => ({ id, resolution: n, mask }));
 }

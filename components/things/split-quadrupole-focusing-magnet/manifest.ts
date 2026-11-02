@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Split quadrupole focusing magnet", "summary": "Four distinct pole shoes surround an open beam bore inside a split yoke, with attached coils and coolant manifolds. A beam-transport engineering specimen with a clear vacuum aperture, connected mechanisms and an exposed service view.", "scales": ["tabletop", "room"]});

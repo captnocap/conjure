@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Intergranular downdraft lane junction", "summary": "Three narrow depressed lanes meet around neighboring granule shoulders; an open vertical section exposes the downflow channel. A schematic solar-surface relief with actual depressed lanes and labeled-model downflow geometry; granulation, convection and stellar surfaces.", "scales": ["planetary", "macro"]});

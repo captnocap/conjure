@@ -52,6 +52,12 @@ export default defineThing({
       rolling: 'A roaring flame and a kettle boiling hard, steam billowing.',
     }),
     abandoned: noul('Has someone left a half-drunk glass on the edge of the counter when their train came?'),
+    counterEdge: choice('What finishes the customer edge of the counter?', { plain: 'The original plain edge.', steel: 'A folded stainless-steel lip.', timber: 'A broad rounded wooden edge.', beaded: 'A brass edge with regularly spaced round studs.' }),
+    cupShelf: choice('What extends from the end of the counter?', { none: 'No extra shelf.', narrow: 'A narrow steel cup ledge.', divided: 'A divided ledge for three glasses.', slatted: 'A slatted wooden drying ledge.' }),
+    towelRail: choice('What hangs from the front towel rail?', { none: 'No rail.', bare: 'An empty steel rail.', checked: 'A folded red and cream checked towel.', plain: 'A long pale cotton towel.' }),
+    utensilStore: choice('What tools hang at the counter end?', { none: 'No hanging tools.', strainer: 'A long-handled tea strainer.', ladle: 'A deep brass ladle.', pair: 'A strainer beside a stirring spoon.' }),
+    milkContainer: choice('What stands beside the stall for fresh milk?', { none: 'No separate milk vessel.', can: 'A tall aluminium milk can with a lid.', jug: 'A large handled steel jug.', pail: 'A lidded milk pail with a carrying bail.' }),
+    footRail: choice('What is below the customer side of the counter?', { none: 'No rail.', pipe: 'A single low steel foot rail.', board: 'A narrow wooden standing board on brackets.', double: 'Two horizontal steel rails.' }),
   },
 
   build(a, context) {
@@ -81,6 +87,8 @@ export default defineThing({
       texture.colorSpace = THREE.SRGBColorSpace;
       return texture;
     };
+
+    const standOnGround = (mesh: THREE.Mesh) => { mesh.updateMatrixWorld(true); mesh.position.y -= new THREE.Box3().setFromObject(mesh, true).min.y; return mesh; };
 
     // ---- signboard texture -------------------------------------------------
     const signInk = a.paint === 'yellow' || a.paint === 'bare' ? '#7a1f18' : '#fff3c9';
@@ -132,16 +140,16 @@ export default defineThing({
       for (let i = 0; i < 7; i++) s.box([0.012, 0.36, 0.006], [-W / 2 + 0.1 + i * (W - 0.2) / 6, H - 0.21, D / 2 + 0.003], darkWood);
       s.box([W - 0.06, 0.05, 0.02], [0, H - 0.07, D / 2 + 0.012], trim);
       // Axle, bicycle wheels with spokes, a front prop leg and push handles.
-      s.rod([-W / 2 - 0.06, 0.33, 0.02], [W / 2 + 0.06, 0.33, 0.02], 0.014, soot);
+      s.rod([-W / 2 - 0.06, 0.332, 0.02], [W / 2 + 0.06, 0.332, 0.02], 0.014, soot);
       for (const side of [-1, 1]) {
         const x = side * (W / 2 + 0.05);
-        const tyre = s.ring(0.31, 0.022, [x, 0.33, 0.02], rubber); tyre.rotation.y = Math.PI / 2;
-        const rim = s.ring(0.285, 0.008, [x, 0.33, 0.02], steel); rim.rotation.y = Math.PI / 2;
+        const tyre = s.ring(0.31, 0.022, [x, 0.332, 0.02], rubber); tyre.rotation.y = Math.PI / 2;
+        const rim = s.ring(0.285, 0.008, [x, 0.332, 0.02], steel); rim.rotation.y = Math.PI / 2;
         for (let k = 0; k < 10; k++) {
           const t = (k / 10) * Math.PI * 2;
-          s.rod([x, 0.33, 0.02], [x, 0.33 + Math.sin(t) * 0.285, 0.02 + Math.cos(t) * 0.285], 0.003, steel);
+          s.rod([x, 0.332, 0.02], [x, 0.332 + Math.sin(t) * 0.285, 0.02 + Math.cos(t) * 0.285], 0.003, steel);
         }
-        s.cylinder(0.03, 0.03, 0.05, [x, 0.33, 0.02], soot, 10).rotation.z = Math.PI / 2;
+        s.cylinder(0.03, 0.03, 0.05, [x, 0.332, 0.02], soot, 10).rotation.z = Math.PI / 2;
         s.rod([side * (W / 2 - 0.12), H - 0.2, -D / 2], [side * (W / 2 - 0.12), H - 0.06, -D / 2 - 0.34], 0.016, wood);
       }
       s.rod([-W / 2 + 0.12, H - 0.06, -D / 2 - 0.34], [W / 2 - 0.12, H - 0.06, -D / 2 - 0.34], 0.016, wood);
@@ -172,14 +180,14 @@ export default defineThing({
       top(wood);
       s.box([W, 0.05, D], [0, H - 0.055, 0], darkWood);
       for (const x of [-1, 1]) {
-        s.rod([x * (W / 2 - 0.1), 0, -D / 2 + 0.06], [x * (W / 2 - 0.1), H - 0.07, D / 2 - 0.06], 0.018, tin);
-        s.rod([x * (W / 2 - 0.1), 0, D / 2 - 0.06], [x * (W / 2 - 0.1), H - 0.07, -D / 2 + 0.06], 0.018, tin);
+        standOnGround(s.rod([x * (W / 2 - 0.1), 0, -D / 2 + 0.06], [x * (W / 2 - 0.1), H - 0.07, D / 2 - 0.06], 0.018, tin));
+        standOnGround(s.rod([x * (W / 2 - 0.1), 0, D / 2 - 0.06], [x * (W / 2 - 0.1), H - 0.07, -D / 2 + 0.06], 0.018, tin));
       }
       s.rod([-W / 2 + 0.1, 0.42, 0], [W / 2 - 0.1, 0.42, 0], 0.012, tin);
       // A cloth over the front and the big umbrella on its pole.
       const cloth = s.box([W * 0.9, 0.34, 0.008], [0, H - 0.2, D / 2 + 0.035], paint);
       cloth.rotation.x = 0.03;
-      s.rod([-0.52, 0, -0.36], [-0.46, 2.12, -0.2], 0.018, darkWood);
+      standOnGround(s.rod([-0.52, 0, -0.36], [-0.46, 2.12, -0.2], 0.018, darkWood));
       const canopy = new THREE.Group();
       const panels = 8;
       for (let i = 0; i < panels; i++) {
@@ -303,17 +311,17 @@ export default defineThing({
     const sweets = ['#e23b3b', '#f2c230', '#3aa6d8', '#5fc04f', '#e86fb0', '#f08a2c'];
     const bits: { at: [number, number, number]; size: number; color?: string }[] = [];
     for (let j = 0; j < jarCount; j++) {
-      const jx = W / 2 - 0.1 - j * 0.175, jz = -D / 2 + 0.12 + (j % 2) * 0.03;
-      if (jx < sx + 0.24) break;
+      const jarScale = jarCount === 6 ? 0.74 : 1;
+      const jx = W / 2 - 0.1 - j * (jarCount === 6 ? 0.125 : 0.175), jz = -D / 2 + 0.12 + (j % 2) * 0.03;
       const jh = 0.2 + (j % 3) * 0.02;
-      const jar = s.cylinder(0.075, 0.075, jh, [jx, H + jh / 2, jz], glass, 16); jar.castShadow = false;
-      s.cylinder(0.062, 0.07, 0.035, [jx, H + jh + 0.017, jz], lidRed, 16);
+      const jar = s.cylinder(0.075 * jarScale, 0.075 * jarScale, jh, [jx, H + jh / 2, jz], glass, 16); jar.castShadow = false; jar.name = 'snack-jar';
+      s.cylinder(0.062 * jarScale, 0.07 * jarScale, 0.035, [jx, H + jh + 0.017, jz], lidRed, 16);
       s.ball([0.018, 0.012, 0.018], [jx, H + jh + 0.04, jz], lidRed, 8);
       const fill = mix(0.25, 0.95, mood.density) * rnd(0.7, 1);
       const n = Math.round(fill * 16);
       for (let k = 0; k < n; k++) {
-        const t = random() * Math.PI * 2, r = random() * 0.042;
-        bits.push({ at: [jx + Math.cos(t) * r, H + 0.03 + (k / 16) * (jh - 0.05), jz + Math.sin(t) * r], size: 1, color: a.snack === 'toffee' ? sweets[Math.floor(random() * sweets.length)] : undefined });
+        const t = random() * Math.PI * 2, r = random() * (jarCount === 6 ? 0.024 : 0.042);
+        bits.push({ at: [jx + Math.cos(t) * r, H + 0.03 + (k / 16) * (jh - 0.05), jz + Math.sin(t) * r], size: jarScale, color: a.snack === 'toffee' ? sweets[Math.floor(random() * sweets.length)] : undefined });
       }
     }
     if (bits.length) {
@@ -321,7 +329,7 @@ export default defineThing({
       const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1);
       bits.forEach((bit, i) => {
         q.setFromEuler(new THREE.Euler(a.snack === 'khari' ? rnd(-0.2, 0.2) : rnd(-0.5, 0.5), random() * Math.PI, a.snack === 'khari' ? rnd(-0.2, 0.2) : rnd(-0.6, 0.6)));
-        scattered.setMatrixAt(i, m.compose(p.set(...bit.at), q, one));
+        scattered.setMatrixAt(i, m.compose(p.set(...bit.at), q, one.setScalar(bit.size)));
       });
       scattered.instanceMatrix.needsUpdate = true;
     } else snackGeo.dispose();
@@ -348,6 +356,45 @@ export default defineThing({
         beads.push({ at: [(u - 0.5) * (W - 0.1), H - 0.06 - Math.sin(u * Math.PI) * 0.09, D / 2 + 0.045], size: 1, color: marigold[i % 3] });
       }
       s.scatter(new THREE.SphereGeometry(0.022, 7, 5), s.material('#ffffff'), beads);
+    }
+
+    if(a.counterEdge!=='plain'){
+      const mat=a.counterEdge==='timber'?wood:a.counterEdge==='beaded'?brass:steel;
+      s.box([W+.06,a.counterEdge==='timber'?.045:.025,.025],[0,H-.014,D/2+.04],mat);
+      if(a.counterEdge==='beaded')for(let i=0;i<20;i++)s.ball([.006,.006,.004],[-W/2+i*W/19,H-.014,D/2+.055],brass,6);
+    }
+    if(a.cupShelf!=='none'){
+      const x=W/2+.15,z=.02,w=.28,d=.42,mat=a.cupShelf==='slatted'?wood:steel;
+      if(a.cupShelf==='slatted')for(let i=0;i<5;i++)s.box([w,.02,.07],[x,H-.01,z-.16+i*.08],mat);else s.box([w,.02,d],[x,H-.01,z],mat);
+      for(const dz of[-.16,.16])s.rod([W/2,H-.23,z+dz],[x+.1,H-.02,z+dz],.01,tin);
+      if(a.cupShelf==='divided')for(const dz of[-.07,.07])s.box([w,.05,.01],[x,H+.025,z+dz],steel);
+    }
+    if(a.towelRail!=='none'){
+      const y=H-.22,z=D/2+.1;s.rod([-.28,y,z],[.28,y,z],.01,steel);for(const x of[-.28,.28])s.rod([x,y,D/2],[x,y,z],.008,steel);
+      if(a.towelRail!=='bare'){
+        const length=a.towelRail==='plain'?.35:.24,towel=s.material('#dcd0b3');s.box([.24,length,.012],[0,y-length/2,z+.012],towel);s.box([.24,length*.7,.012],[0,y-length*.35,z-.012],towel);s.box([.24,.012,.035],[0,y+.004,z],towel);
+        if(a.towelRail==='checked'){const red=s.material('#a34e43');for(const x of[-.09,-.03,.03,.09])s.box([.012,length,.003],[x,y-length/2,z+.02],red);for(let i=0;i<4;i++)s.box([.24,.012,.003],[0,y-.025-i*.06,z+.022],red);}
+      }
+    }
+    if(a.utensilStore!=='none'){
+      const x=-W/2-.035,z=.13;s.rod([-W/2,H-.06,z],[x-.06,H-.06,z],.008,steel);
+      const utensil=(dx:number,ladle:boolean)=>{s.rod([x+dx,H-.06,z],[x+dx,H-.34,z],.006,ladle?brass:steel);if(ladle)s.ball([.04,.04,.02],[x+dx,H-.37,z],brass,12);else{s.ring(.045,.006,[x+dx,H-.38,z],steel);for(const d of[-.02,0,.02])s.rod([x+dx+d,H-.415,z],[x+dx+d,H-.345,z],.002,steel);}};
+      utensil(0,a.utensilStore==='ladle');if(a.utensilStore==='pair')utensil(-.06,true);
+    }
+    if(a.milkContainer!=='none'){
+      const milkStart = s.root.children.length;
+      const x=-1.15,z=.36;
+      if(a.milkContainer==='can'){s.lathe([[0,0],[.14,0],[.14,.36],[.09,.42],[.09,.48]],tin,[x,0,z]);s.cylinder(.1,.1,.022,[x,.49,z],steel,18);for(const side of[-1,1])s.tube([[x+side*.12,.28,z],[x+side*.21,.31,z],[x+side*.21,.42,z],[x+side*.1,.43,z]],.012,steel);}
+      else if(a.milkContainer==='jug'){s.lathe([[0,0],[.12,0],[.14,.28],[.12,.35]],steel,[x,0,z]);s.tube([[x+.12,.07,z],[x+.23,.09,z],[x+.23,.28,z],[x+.13,.31,z]],.014,steel);s.tube([[x-.11,.32,z],[x-.18,.35,z],[x-.21,.33,z]],.018,steel);}
+      else{s.cylinder(.15,.12,.28,[x,.14,z],tin,20);s.cylinder(.155,.155,.014,[x,.287,z],steel,20);s.ring(.15,.008,[x,.28,z],steel,Math.PI);}
+      const milk = new THREE.Group(); milk.name = 'milk-container';
+      for (const child of s.root.children.slice(milkStart)) milk.add(child);
+      s.root.add(milk);
+    }
+    if(a.footRail!=='none'){
+      const y=.22,z=D/2+.2;for(const x of[-.48,.48])s.rod([x,.02,D/2-.03],[x,y,z],.014,tin);
+      if(a.footRail==='board')s.box([1.1,.025,.22],[0,y,z],wood);
+      else{ s.rod([-.55,y,z],[.55,y,z],.018,steel);if(a.footRail==='double')s.rod([-.55,y+.12,z],[.55,y+.12,z],.014,steel);}
     }
 
     // ---- steam -------------------------------------------------------------

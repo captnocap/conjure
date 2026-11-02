@@ -1237,6 +1237,7 @@ const albedoDisplay = Uint8ClampedArray.from({ length: 256 }, (_, byte) => {
 });
 export function makeFrame(raw, seed, intensity, ink = defaultInk()) {
   const { size: w, color, normal, depth, identity } = raw;
+  const geometry = raw.geometry || raw.geometrySnapshot?.();
   const visibilityKey = materialVisibilityKey(raw.materialVisibility),
     materialVisibility = copyMaterialVisibility(raw.materialVisibility);
   const effectiveSurface = () => {
@@ -1273,9 +1274,10 @@ export function makeFrame(raw, seed, intensity, ink = defaultInk()) {
       color[index(x, y) * 4 + 2],
     ];
   const surfaceColor = (x, y) => {
-    if (!raw.albedo || !raw.materialSettings?.assignments?.[ID(x, y)])
+    if (!raw.albedo || (geometry?.source !== 'conjure' && !raw.materialSettings?.assignments?.[ID(x, y)]))
       return baseColor(x, y);
     const i = index(x, y) * 4;
+    if (geometry?.source === 'conjure' && ID(x, y) === 0) return baseColor(x, y);
     return [
       albedoDisplay[raw.albedo[i]],
       albedoDisplay[raw.albedo[i + 1]],
@@ -1295,6 +1297,18 @@ export function makeFrame(raw, seed, intensity, ink = defaultInk()) {
       (raw.near ?? 0.1) + ((raw.far ?? 100) - (raw.near ?? 0.1)) * normalized
     );
   };
+  const perspective = geometry?.source === 'conjure' && geometry.projection?.[11] !== 0;
+  let depthMinimum = 6, depthSpan = 15;
+  if (geometry?.source === 'conjure' && depth && identity) {
+    let lo = Infinity, hi = -Infinity;
+    for (let at = 0; at < w * w; at++) if (identity[at * 4]) {
+      const value = distance(at % w, Math.floor(at / w));
+      if (Number.isFinite(value)) { lo = Math.min(lo, value); hi = Math.max(hi, value); }
+    }
+    if (Number.isFinite(lo)) { depthMinimum = lo; depthSpan = Math.max(hi - lo, 1e-9); }
+  }
+  const normalizedDepth = (value) => clamp((value - depthMinimum) / depthSpan);
+  const interpolateDepth = (a, b, t) => perspective ? 1 / ((1 - t) / a + t / b) : a + (b - a) * t;
   return {
     w,
     ...(materialVisibility ? { materialVisibility, surfaceVisibility: () => effectiveSurface().surfaceVisibility() } : {}),
@@ -1316,8 +1330,15 @@ export function makeFrame(raw, seed, intensity, ink = defaultInk()) {
     materialKey: (x, y) => {
       const id = ID(x, y),
         assignment = raw.materialSettings?.assignments?.[id];
+      if (geometry?.source === 'conjure' && raw.materialProfiles && raw.transmission) {
+        const at = index(x, y) * 4;
+        const profile = raw.transmission[at + 1] * 256 + raw.transmission[at + 2];
+        if (profile) return `captured-profile:${profile}`;
+      }
       return assignment
         ? `assigned:${assignment}`
+        : raw.material
+          ? `captured:${raw.material[index(x, y) * 4]}:${raw.material[index(x, y) * 4 + 1]}:${raw.material[index(x, y) * 4 + 2]}`
         : `original:${raw.metalnesses?.[id] || 0}:${raw.transmissions?.[id] || 0}`;
     },
     openBoundaries:
@@ -1344,9 +1365,10 @@ export function makeFrame(raw, seed, intensity, ink = defaultInk()) {
     materialSettings: raw.materialSettings || null,
     diffuse: raw.diffuse || null,
     pixelWorldSize: raw.pixelWorldSize || 8.2 / w,
-    metalness: (x, y) => raw.metalnesses?.[ID(x, y)] || 0,
+    metalness: (x, y) => raw.material ? raw.material[index(x, y) * 4] / 255 : raw.metalnesses?.[ID(x, y)] || 0,
     reliefLight: raw.reliefLight || [-0.45, -0.55, 0.704],
     worldPosition: (x, y) => worldFromPixel(raw, x, y, distance(x, y)),
+    worldAtDepth: (x, y, depth) => worldFromPixel(raw, x, y, depth),
     spectralLights: raw.spectralLights || [
       {
         direction: raw.reliefLight || [-0.45, -0.55, 0.704],
@@ -1391,10 +1413,12 @@ export function makeFrame(raw, seed, intensity, ink = defaultInk()) {
       return [color[i], color[i + 1], color[i + 2]];
     },
     ID,
-    T: (x, y) => raw.transmissions?.[ID(x, y)] ?? 0,
+    T: (x, y) => raw.transmission ? raw.transmission[index(x, y) * 4] / 255 : raw.transmissions?.[ID(x, y)] ?? 0,
     B: surfaceColor,
     baseColor,
-    Z: (x, y) => clamp((distance(x, y) - 6) / 15),
+    Z: (x, y) => normalizedDepth(distance(x, y)),
+    normalizedDepth,
+    interpolateDepth,
     distance,
     edge: (x, y) =>
       Math.abs(lum[index(x + 2, y)] - lum[index(x - 2, y)]) +
@@ -1999,7 +2023,7 @@ function architectural(p, f) {
         x = a[0] + (b[0] - a[0]) * t,
         y = a[1] + (b[1] - a[1]) * t;
       if (x < 0 || y < 0 || x >= f.w || y >= f.w) continue;
-      const z = a[2] + (b[2] - a[2]) * t,
+      const z = f.interpolateDepth ? f.interpolateDepth(a[2], b[2], t) : a[2] + (b[2] - a[2]) * t,
         visible = z <= f.distance(x, y) + 0.04;
       if (!visible && (step % 7 >= 3 || f.rnd(a[0], a[1]) > f.intensity))
         continue;
@@ -2369,7 +2393,9 @@ function surfacePointillism(p, f) {
   paper(p, f, "#f3eedf");
   p.noStroke();
   const points = f.surfacePoints(),
-    density = 0.15 + f.intensity * 0.8;
+    density = 0.15 + f.intensity * 0.8,
+    geometry = f.geometrySnapshot?.(),
+    perspective = geometry?.source === 'conjure' && geometry.camera === 'perspective';
   for (let i = 0; i < points.length; i += 6) {
     const x = points[i],
       y = points[i + 1],
@@ -2382,6 +2408,7 @@ function surfacePointillism(p, f) {
     if (
       facing <= 0 ||
       z <= 0 ||
+      (perspective && (z < geometry.near || z > geometry.far)) ||
       x < 0 ||
       y < 0 ||
       x >= f.w ||
@@ -2922,7 +2949,7 @@ function sectionalVolume(p, f) {
         const t = (k + 0.5) / pieces,
           mx = x + dx * t,
           my = y + dy * t,
-          mz = z + dz * t,
+          mz = f.interpolateDepth ? f.interpolateDepth(z, z + dz, t) : z + dz * t,
           sx = Math.floor(mx),
           sy = Math.floor(my);
         if (sx < 0 || sy < 0 || sx >= f.w || sy >= f.w || mz <= 0) continue;
@@ -4021,7 +4048,7 @@ function ceramicRims(f) {
         if (f.ID(px, py) !== id) continue;
         const t = f.clamp(((px - x) * dx + (py - y) * dy) / length),
           distance = (px - x - dx * t) ** 2 + (py - y - dy * t) ** 2,
-          depth = z + (zz - z) * t;
+          depth = f.interpolateDepth ? f.interpolateDepth(z, zz, t) : z + (zz - z) * t;
         if (depth > f.distance(px, py) + 0.035) continue;
         const at = py * w + px;
         mask[at] = Math.max(mask[at], Math.exp(-distance / 1.2) * strength);
@@ -4053,8 +4080,14 @@ function surfaceBlocks(p, f) {
     p.fill(...color.map((v) => f.clamp(v * gain, 0, 255)));
     p.stroke(...color.map((v) => f.clamp(v * gain * 0.84, 0, 255)));
     p.beginShape();
-    for (let k = 0; k < 4; k++)
-      p.vertex(faces[i + k * 2], faces[i + k * 2 + 1]);
+    const polygon = faces.polygons?.[i / 16];
+    if (polygon) {
+      for (const vertex of polygon)
+        p.vertex(vertex[0], vertex[1]);
+    } else {
+      for (let k = 0; k < 4; k++)
+        p.vertex(faces[i + k * 2], faces[i + k * 2 + 1]);
+    }
     p.endShape(p.CLOSE);
   }
 }

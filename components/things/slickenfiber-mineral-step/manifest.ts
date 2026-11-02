@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Slickenfiber mineral step", "summary": "Parallel mineral fibers bridge and thicken against a fault step, with both ends rooted in rock. An exposed structural-geology teaching specimen with matching fault surfaces, connected mineral growth and physically cut sections.", "scales": ["tabletop", "macro"]});

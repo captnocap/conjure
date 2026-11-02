@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Mitochondrial crista junction neck", "summary": "A narrow curved neck connects a crista pocket to the inner boundary; a section reveals matrix outside and intracristal space inside. A schematic close view of the crista junction preserves a continuous narrow lumen into the inner-boundary compartment. Every exposure is an explicit model section; membrane thickness is enlarged for legibility.", "scales": ["macro", "tabletop"]});

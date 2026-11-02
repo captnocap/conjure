@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Sculpture, choice, defineThing, mix, noul } from '@conjure/kit';
+import { Sculpture, choice, defineThing, mix, noul, score } from '@conjure/kit';
 
 const WHO = {
   madonna: 'The Madonna and child in a blue mantle under gold stars.',
@@ -132,6 +132,28 @@ export default defineThing({
       brick: 'Bare old brick.',
     }),
     cracked: noul('Is the glass of the niche cracked?'),
+    breadth: score('How broad is the surviving wall around the shrine?', ['A narrow pier', 'A small wall fragment', 'A broad patch of alley wall']),
+    elevation: score('How high is the devotional niche mounted?', ['Low enough to tend without reaching', 'At eye level', 'Raised well above the ledge']),
+    wallCrown: choice('How does the wall end above the shrine?', {
+      broken: 'An uneven exposed course of brick.', coping: 'A continuous pale stone coping.',
+      tiles: 'A shallow row of overlapping terracotta coping tiles.', merlons: 'A low parapet with three square raised brick ends.',
+    }),
+    ledgeEdge: choice('What detail finishes the offering ledge?', {
+      plain: 'A plain straight stone or timber edge.', moulded: 'Two shallow mouldings below the lip.',
+      dentils: 'A row of square blocks under the front edge.', scalloped: 'A row of rounded stone pendants under the lip.',
+    }),
+    paving: choice('What little pavement lies before the shrine?', {
+      slabs: 'Three broad limestone paving slabs.', brick: 'A staggered brick apron.',
+      checker: 'A small black and pale stone checkerboard.', fan: 'A fan of wedge-shaped paving stones.',
+    }),
+    devotion: choice('What helps a visitor pause in front of it?', {
+      clear: 'An open patch of paving.', rail: 'A waist-high prayer rail across the front.',
+      kneeler: 'A low padded kneeler with a hand rail.', bench: 'A narrow wooden bench facing the image.',
+    }),
+    lowerPlaque: choice('What is fixed below the offering ledge?', {
+      nothing: 'Bare wall below the shelf.', offering: 'A small locked metal offering box.',
+      tablet: 'A pale stone tablet bearing a simple cross.', repair: 'A square timber inspection hatch with metal hinges.',
+    }),
   },
 
   build(a, context) {
@@ -141,15 +163,28 @@ export default defineThing({
     const wallColour = { red: '#b5553c', ochre: '#d9a94e', plaster: '#c9c4b6', brick: '#a8563c' }[a.wall];
     const wall = new THREE.MeshStandardMaterial({ map: stuccoTexture(wallColour, random, a.wall === 'brick' ? 0 : mood.wear), roughness: 0.95 });
     const brick = s.material('#a8563c', { roughness: 1 });
-    const W = 1.95, H = 3, face = 0.16;
+    const W = mix(1.95, 2.65, a.breadth), cy = mix(1.55, 2.1, a.elevation), H = cy + 1.3, face = 0.16;
     s.box([W, H, 0.32], [0, H / 2, 0], wall);
-    for (let i = 0; i < 7; i++) s.box([W / 7 + 0.01, 0.1 + random() * 0.3, 0.32], [-W / 2 + (i + 0.5) * W / 7, H + 0.05, 0], brick);
+    if (a.wallCrown === 'broken') for (let i = 0; i < 7; i++) {
+      const h = 0.1 + random() * 0.2;
+      s.box([W / 7 + 0.01, h, 0.32], [-W / 2 + (i + 0.5) * W / 7, H + h / 2, 0], brick);
+    } else if (a.wallCrown === 'coping') s.box([W + 0.16, 0.12, 0.48], [0, H + 0.06, 0], s.material('#d1c8af'));
+    else if (a.wallCrown === 'tiles') {
+      const n = Math.ceil(W / 0.19);
+      for (let i = 0; i < n; i++) {
+        const tile = s.box([W / n + 0.025, 0.065, 0.45], [-W / 2 + (i + 0.5) * W / n, H + 0.06, 0], s.material(i % 2 ? '#b76443' : '#ce8058'));
+        tile.rotation.x = -0.08;
+      }
+    } else {
+      s.box([W + 0.06, 0.08, 0.38], [0, H + 0.04, 0], brick);
+      for (const x of [-W / 2 + 0.14, 0, W / 2 - 0.14]) s.box([0.28, 0.2, 0.38], [x, H + 0.18, 0], brick);
+    }
     for (const side of [-1, 1]) for (let i = 0; i < 9; i++) if (random() < 0.6) s.box([0.1 + random() * 0.14, 0.14, 0.32], [side * (W / 2 + 0.03), 0.25 + i * 0.3, 0], brick);
     s.box([W + 0.1, 0.22, 0.4], [0, 0.11, 0.02], s.material('#bdb6a4'));
 
     const frameMat = { marble: s.material('#e6e1d4'), wood: s.material('#4a3324'), gilded: s.material('#dcae3a', { metalness: 0.3, roughness: 0.35, emissive: '#a87a1a', emissiveIntensity: 0.15 }), cage: s.material('#2b2b2e') }[a.frame];
     const iron = s.material('#2b2b2e');
-    const cy = 1.82, fw = 0.9, fh = 1.14, depth = a.frame === 'cage' ? 0.03 : 0.2;
+    const fw = 0.9, fh = 1.14, depth = a.frame === 'cage' ? 0.03 : 0.2;
     const front = face + depth;
     // Niche: back, picture, sides.
     const picture = new THREE.MeshStandardMaterial({ map: icon(a.who, random, mood.wear), roughness: 0.8 });
@@ -211,6 +246,10 @@ export default defineThing({
     // Ledge with its offerings.
     const ledgeY = cy - fh / 2 - 0.05, ledgeZ = face + 0.2;
     s.box([fw + 0.4, 0.05, 0.4], [0, ledgeY - 0.025, ledgeZ], a.frame === 'wood' ? frameMat : s.material('#d9d3c4'));
+    const ledgeStone = a.frame === 'wood' ? frameMat : s.material('#c9c2af');
+    if (a.ledgeEdge === 'moulded') for (let i = 0; i < 2; i++) s.box([fw + 0.36 - i * 0.08, 0.04, 0.1], [0, ledgeY - 0.07 - i * 0.035, ledgeZ + 0.15 - i * 0.025], ledgeStone);
+    else if (a.ledgeEdge === 'dentils') for (let i = 0; i < 9; i++) s.box([0.08, 0.085, 0.075], [-0.52 + i * 0.13, ledgeY - 0.09, ledgeZ + 0.16], ledgeStone);
+    else if (a.ledgeEdge === 'scalloped') for (let i = 0; i < 9; i++) s.ball([0.058, 0.068, 0.04], [-0.52 + i * 0.13, ledgeY - 0.1, ledgeZ + 0.16], ledgeStone, 10);
     for (const side of [-1, 1]) { const corbel = s.box([0.06, 0.2, 0.3], [side * (fw / 2 + 0.05), ledgeY - 0.14, face + 0.13], a.frame === 'wood' ? frameMat : s.material('#d9d3c4')); corbel.rotation.x = 0.5; }
     const flames: THREE.Mesh[] = [];
     const candleAt = (x: number, z: number, tall: number, burning: boolean) => {
@@ -283,13 +322,65 @@ export default defineThing({
         s.cylinder(0.024, 0.026, 0.04, [-0.2 + side * 0.04, ledgeY + 0.04, ledgeZ + 0.09], s.material('#f2ede2'), 10);
       }
     }
-    // A lamp arm above, and a jar on the ground when the mood is crowded.
+    // The apron and visitor furniture remain independent of the devotional objects.
+    const pale = s.material('#c9c2ae'), dark = s.material('#5c625f'), timber = s.material('#77573b');
+    const apronTop = 0.04, apronZ = 0.89, apronDepth = 1.26;
+    if (a.paving === 'slabs') for (let i = 0; i < 3; i++) s.box([W / 3 - 0.018, apronTop, apronDepth], [-W / 2 + W * (i + 0.5) / 3, apronTop / 2, apronZ], pale);
+    else if (a.paving === 'brick' || a.paving === 'checker') {
+      const nx = a.paving === 'brick' ? 8 : 6, nz = a.paving === 'brick' ? 5 : 4, stepX = W / nx, stepZ = apronDepth / nz;
+      for (let j = 0; j < nz; j++) for (let i = 0; i < nx + (a.paving === 'brick' && j % 2 ? 1 : 0); i++) {
+        const shift = a.paving === 'brick' && j % 2 ? -0.5 : 0;
+        const left = Math.max(-W / 2, -W / 2 + (i + shift) * stepX), right = Math.min(W / 2, -W / 2 + (i + shift + 1) * stepX);
+        if (right - left > 0.02) s.box([right - left - 0.012, apronTop, stepZ - 0.012], [(left + right) / 2, apronTop / 2, apronZ - apronDepth / 2 + (j + 0.5) * stepZ], a.paving === 'brick' ? brick : (i + j) % 2 ? dark : pale);
+      }
+    } else {
+      const radius = W / 2;
+      for (let i = 0; i < 12; i++) {
+        const start = i * Math.PI / 12 + 0.008, end = (i + 1) * Math.PI / 12 - 0.008;
+        const shape = new THREE.Shape(); shape.moveTo(0, 0);
+        for (let k = 0; k <= 4; k++) { const t = start + (end - start) * k / 4; shape.lineTo(Math.cos(t) * radius, Math.sin(t) * radius); }
+        shape.closePath();
+        const tile = s.mesh(new THREE.ExtrudeGeometry(shape, {depth: apronTop, bevelEnabled: false}), i % 3 ? pale : dark, [0, apronTop, 0.26]); tile.rotation.x = -Math.PI / 2;
+      }
+    }
+    // Fan paving does not reach the two front corners: furniture feet get their own pads.
+    const support = (x: number, z: number) => { s.box([0.13, apronTop, 0.13], [x, apronTop / 2, z], pale); };
+    if (a.devotion === 'rail' || a.devotion === 'kneeler') {
+      const z = a.devotion === 'rail' ? 1.16 : 0.9, h = a.devotion === 'rail' ? 0.86 : 0.72;
+      for (const x of [-0.52, 0.52]) { support(x, z); s.box([0.065, h, 0.065], [x, apronTop + h / 2, z], timber); }
+      s.box([1.2, 0.07, 0.12], [0, apronTop + h, z], timber);
+      if (a.devotion === 'kneeler') {
+        for (const x of [-0.45, 0.45]) { support(x, 1.18); s.box([0.08, 0.16, 0.12], [x, apronTop + 0.08, 1.18], timber); }
+        s.box([1.05, 0.075, 0.28], [0, apronTop + 0.1975, 1.18], s.material('#6f3c43'));
+      }
+    } else if (a.devotion === 'bench') {
+      for (const x of [-0.48, 0.48]) for (const z of [1.0, 1.25]) { support(x, z); s.box([0.065, 0.39, 0.065], [x, apronTop + 0.195, z], timber); }
+      for (const z of [1.02, 1.14, 1.26]) s.box([1.2, 0.055, 0.11], [0, apronTop + 0.4175, z], timber);
+    }
+    if (a.lowerPlaque === 'offering') {
+      s.box([0.29, 0.28, 0.14], [0, ledgeY - 0.34, face + 0.07], iron);
+      s.box([0.17, 0.012, 0.008], [0, ledgeY - 0.25, face + 0.144], s.material('#111416'));
+      s.ring(0.018, 0.006, [0, ledgeY - 0.41, face + 0.15], s.material('#c6a35a', {metalness: 0.35}));
+    } else if (a.lowerPlaque === 'tablet') {
+      s.box([0.36, 0.34, 0.035], [0, ledgeY - 0.34, face + 0.018], pale);
+      s.box([0.027, 0.2, 0.012], [0, ledgeY - 0.34, face + 0.04], dark);
+      s.box([0.13, 0.027, 0.012], [0, ledgeY - 0.3, face + 0.04], dark);
+    } else if (a.lowerPlaque === 'repair') {
+      s.box([0.42, 0.33, 0.035], [0, ledgeY - 0.34, face + 0.018], timber);
+      for (const y of [-0.43, -0.25]) s.box([0.13, 0.03, 0.016], [-0.13, ledgeY + y, face + 0.043], iron);
+      s.ring(0.025, 0.007, [0.12, ledgeY - 0.34, face + 0.05], iron);
+    }
+    // A lamp arm above, and a flower jar on the paving when the mood is crowded.
     s.tube([[0.5, top + 0.5, face], [0.5, top + 0.62, face + 0.2], [0.5, top + 0.52, face + 0.34]], 0.012, iron);
     s.cylinder(0.02, 0.07, 0.06, [0.5, top + 0.47, face + 0.34], iron, 8);
     s.cylinder(0.06, 0.045, 0.14, [0.5, top + 0.37, face + 0.34], s.material('#e9e2c4', lit || a.candle === 'electric' ? { emissive: '#ffcf80', emissiveIntensity: 0.9 } : {}), 8);
     if (mood.density > 0.55) {
-      s.cylinder(0.06, 0.06, 0.16, [-0.4, 0.3, face + 0.12], s.material('#cfe0dc', { roughness: 0.2 }), 10);
-      for (let i = 0; i < 5; i++) s.ball([0.04, 0.04, 0.04], [-0.4 + (random() - 0.5) * 0.14, 0.46 + random() * 0.1, face + 0.12 + (random() - 0.5) * 0.1], s.material(['#f2e24a', '#f6f1e2', '#e86a8a'][i % 3]), 8);
+      s.cylinder(0.06, 0.06, 0.16, [-0.4, apronTop + 0.08, face + 0.3], s.material('#cfe0dc', { roughness: 0.2 }), 10);
+      for (let i = 0; i < 5; i++) {
+        const tip: [number, number, number] = [-0.4 + (random() - 0.5) * 0.14, apronTop + 0.3 + random() * 0.1, face + 0.3 + (random() - 0.5) * 0.1];
+        s.rod([-0.4, apronTop + 0.14, face + 0.3], tip, 0.005, s.material('#526448'));
+        s.ball([0.04, 0.04, 0.04], tip, s.material(['#f2e24a', '#f6f1e2', '#e86a8a'][i % 3]), 8);
+      }
     }
 
     const energy = mix(0.4, 1.6, mood.energy), phases = flames.map(() => random() * 10);

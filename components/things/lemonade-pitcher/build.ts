@@ -36,6 +36,13 @@ function sliceTexture(rind: string, flesh: string) {
 
 export default defineThing({
   questions: {
+    glassTint: choice('What tint does the jug glass have?',{clear:'Almost colourless clear glass.',blue:'A pale blue cast in thick glass.',green:'Soft green recycled glass.',amber:'A light honey tint in the glass.'}),
+    moulding: choice('What moulded texture shapes the jug?',{plain:'Smooth unbroken glass.',ribs:'Close vertical ribs around the body.',scallops:'Six broad gently lobed sides.',bands:'Three raised horizontal bands around the belly.'}),
+    tumblerStyle: choice('How are the drinking glasses made?',{plain:'Plain smooth round tumblers.',facets:'Six-sided pressed-glass tumblers.',flutes:'Round tumblers with fine vertical flutes.',bands:'Round tumblers with two coloured bands.'}),
+    iceShape: choice('What shape is the ice?',{cubes:'Large square ice cubes.',crushed:'Small irregular crushed pieces.',round:'Round ice balls.',sticks:'Long narrow ice sticks.'}),
+    fruitCut: choice('How has the garnish fruit been cut?',{wheels:'Full round fruit wheels.',halves:'Half wheels with a straight cut edge.',quarters:'Quarter wheels showing two straight edges.',strips:'Narrow oblong fruit strips.'}),
+    stirrer: choice('What stirring tool rests inside the jug?',{wood:'A long wooden spoon.',steel:'A long polished bar spoon.',glass:'A clear glass stirring rod.',paddle:'A flat wooden mixing paddle.'}),
+    marking: choice('How is the jug marked?',{measure:'Fine volume marks climb the front of the glass.',tag:'A small paper label hangs from a neck string.',painted:'A simple painted fruit emblem marks the front.',wrap:'A narrow paper band carries the drink name.'}),
     drink: choice('What is in the jug?', DRINKS),
     jug: choice('What kind of jug is it?', {
       belly: 'A round-bellied glass pitcher with a pinched spout and a looped handle, the classic.',
@@ -64,8 +71,8 @@ export default defineThing({
   build(a, context) {
     const s = new Sculpture(context);
     const { mood, random } = context;
-    const glass = new THREE.MeshPhysicalMaterial({ color: '#e4f3f4', transparent: true, opacity: 0.3, roughness: 0.04, depthWrite: false, side: THREE.DoubleSide });
-    const solidGlass = new THREE.MeshStandardMaterial({ color: '#c9dfe2', roughness: 0.1 });
+    const glass = new THREE.MeshPhysicalMaterial({ color: {clear:'#e9f0ed',blue:'#a7c8df',green:'#a6c8aa',amber:'#dab87b'}[a.glassTint], transparent: true, opacity: a.glassTint==='clear'?.3:.4, roughness: 0.04, depthWrite: false, side: THREE.DoubleSide });
+    const solidGlass = new THREE.MeshStandardMaterial({ color: {clear:'#cadcda',blue:'#8eafc7',green:'#8db297',amber:'#bf9c63'}[a.glassTint], roughness: 0.1 });
     const liquidColour = new THREE.Color(LIQUID[a.drink]).offsetHSL(0, 0, (mood.cheer - 0.5) * 0.06);
     const liquid = new THREE.MeshStandardMaterial({ color: liquidColour, roughness: 0.15, transparent: a.drink === 'water', opacity: a.drink === 'water' ? 0.75 : 1 });
     const [rind, flesh] = FRUIT[a.drink];
@@ -103,7 +110,9 @@ export default defineThing({
     const jug = new THREE.Group();
     const wall = new THREE.LatheGeometry([new THREE.Vector2(0, 0.003), ...samples], 48);
     spoutShape(wall, jugHeight);
+    if(a.moulding==='ribs'||a.moulding==='scallops'){const pos=wall.getAttribute('position');for(let i=0;i<pos.count;i++){const y=pos.getY(i);if(y<.015||y>jugHeight-.018)continue;const x=pos.getX(i),z=pos.getZ(i),t=Math.atan2(z,x),f=1+(a.moulding==='ribs'?.025:.065)*Math.cos(t*(a.moulding==='ribs'?24:6));pos.setXYZ(i,x*f,y,z*f);}wall.computeVertexNormals();}
     add(new THREE.Mesh(wall, glass), jug);
+    if(a.moulding==='bands')for(const f of [.24,.49,.72]){const band=add(new THREE.Mesh(new THREE.TorusGeometry(radiusAt(jugHeight*f),.0025,6,48),solidGlass),jug);band.rotation.x=Math.PI/2;band.position.y=jugHeight*f;}
     add(new THREE.Mesh(new THREE.CylinderGeometry(outline[0][0] + 0.006, outline[0][0], 0.007, 32), solidGlass), jug).position.y = 0.0035;
     const lip = new THREE.TorusGeometry(outline[outline.length - 1][0], 0.0035, 6, 48);
     lip.rotateX(Math.PI / 2);
@@ -131,7 +140,11 @@ export default defineThing({
     add(new THREE.Mesh(new THREE.LatheGeometry(body, 40), liquid), jug);
 
     const slice = (parent: THREE.Object3D, radius = 0.03) => {
-      const mesh = add(new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, 0.006, 20), [sliceRind, sliceFace, sliceFace]), parent);
+      let geometry:THREE.BufferGeometry;let materials:THREE.Material|THREE.Material[];
+      if(a.fruitCut==='wheels'){geometry=new THREE.CylinderGeometry(radius,radius,.006,24);materials=[sliceRind,sliceFace,sliceFace];}
+      else if(a.fruitCut==='strips'){geometry=new THREE.BoxGeometry(radius*.55,.006,radius*1.8);materials=[sliceRind,sliceRind,sliceFace,sliceFace,sliceRind,sliceRind];}
+      else{const shape=new THREE.Shape();shape.moveTo(0,0);shape.absarc(0,0,radius,0,a.fruitCut==='halves'?Math.PI:Math.PI/2,false);shape.lineTo(0,0);geometry=new THREE.ExtrudeGeometry(shape,{depth:.006,bevelEnabled:false,curveSegments:16});const pos=geometry.getAttribute('position'),uv=geometry.getAttribute('uv');for(let i=0;i<pos.count;i++)uv.setXY(i,.5+pos.getX(i)/(radius*2),.5+pos.getY(i)/(radius*2));geometry.rotateX(-Math.PI/2);geometry.translate(0,-.003,0);materials=[sliceFace,sliceRind];}
+      const mesh = add(new THREE.Mesh(geometry,materials), parent);
       return mesh;
     };
     // Citrus wheels pressed against the glass, where they can be seen.
@@ -146,11 +159,12 @@ export default defineThing({
       wheel.rotation.order = 'YXZ';
       wheel.rotation.y = Math.PI / 2 - angle;
     }
+    const iceGeometry=(scale=1)=>a.iceShape==='crushed'?new THREE.IcosahedronGeometry(.012*scale,0):a.iceShape==='round'?new THREE.SphereGeometry(.012*scale,12,8):a.iceShape==='sticks'?new THREE.BoxGeometry(.011*scale,.032*scale,.011*scale):new THREE.BoxGeometry(.022*scale,.022*scale,.022*scale);
     const floaters: THREE.Object3D[] = [];
     if (a.ice) {
       for (let i = 0; i < 7; i++) {
         const angle = random() * 6.28, r = random() * surface * 0.7;
-        const cube = add(new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.022, 0.022), iceMaterial), jug);
+        const cube = add(new THREE.Mesh(iceGeometry(), iceMaterial), jug);
         cube.position.set(Math.cos(angle) * r, level + 0.002, Math.sin(angle) * r);
         cube.rotation.set(random() * 3, random() * 3, random() * 3);
         floaters.push(cube);
@@ -187,6 +201,19 @@ export default defineThing({
       const dew = s.scatter(new THREE.SphereGeometry(1, 6, 5), new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.05 }), beads);
       jug.add(dew);
     }
+    // The stirrer extends into the liquid and leans against the near rim.
+    const stirring=new Sculpture(context),stirMaterial=stirring.material(a.stirrer==='steel'?'#bac6c8':a.stirrer==='glass'?'#c6e1df':'#b98d55',{roughness:a.stirrer==='wood'||a.stirrer==='paddle'?.7:.2,metalness:a.stirrer==='steel'?.8:0});
+    stirring.rod([0,.012,0],[0,jugHeight+.045,0],a.stirrer==='glass'?.003:.0025,stirMaterial);
+    if(a.stirrer==='paddle')stirring.box([.018,.05,.004],[0,.035,0],stirMaterial);
+    else if(a.stirrer!=='glass')stirring.ball([.01,.018,.0035],[0,.024,0],stirMaterial,12);
+    else stirring.ball([.005,.005,.005],[0,jugHeight+.047,0],stirMaterial,12);
+    stirring.root.position.set(0,.009,-surface*.2);stirring.root.rotation.x=-.14;jug.add(stirring.root);
+    const marking=new Sculpture(context),mark=marking.material('#eae8ca');
+    if(a.marking==='measure')for(let i=0;i<7;i++){const y=.04+i*.022,r=radiusAt(y);marking.rod([-.008,y,r+.0015],[i%2?.008:.014,y,r+.0015],.0008,mark);}
+    if(a.marking==='tag'){marking.ring(radiusAt(jugHeight-.025)+.002,.001,[0,jugHeight-.025,0],mark).rotation.x=Math.PI/2;marking.rod([0,jugHeight-.025,radiusAt(jugHeight-.025)],[0,jugHeight-.075,radiusAt(jugHeight-.075)+.003],.001,mark);marking.label(a.drink.toUpperCase(),.065,.028,[0,jugHeight-.085,radiusAt(jugHeight-.085)+.004],'#59683e','#eee6cd');}
+    if(a.marking==='painted'){const y=jugHeight*.56,r=radiusAt(y);const emblem=marking.mesh(new THREE.CircleGeometry(.018,24),mark,[0,y,r+.002]);marking.rod([0,y+.018,r+.003],[.007,y+.028,r+.003],.0013,mark);}
+    if(a.marking==='wrap'){const y=jugHeight*.45;marking.label(a.drink.toUpperCase(),.088,.028,[0,y,radiusAt(y)+.004],'#556342','#eee7cd');}
+    jug.add(marking.root);
     jug.rotation.y = -0.5 + (random() - 0.5) * 0.4;
     s.root.add(jug);
 
@@ -197,7 +224,10 @@ export default defineThing({
     for (let i = 0; i < count; i++) {
       const tumbler = new THREE.Group();
       const tipped = a.scene === 'spilled' && i === 0;
-      add(new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0, 0.004), new THREE.Vector2(0.029, 0.004), new THREE.Vector2(0.039, 0.105)], 28), glass), tumbler);
+      const tumblerWall=new THREE.LatheGeometry([new THREE.Vector2(0,.004),new THREE.Vector2(.029,.004),new THREE.Vector2(.039,.105)],a.tumblerStyle==='facets'?6:32);
+      if(a.tumblerStyle==='flutes'){const pos=tumblerWall.getAttribute('position');for(let j=0;j<pos.count;j++){const x=pos.getX(j),z=pos.getZ(j),f=1+.03*Math.cos(Math.atan2(z,x)*16);pos.setXYZ(j,x*f,pos.getY(j),z*f);}tumblerWall.computeVertexNormals();}
+      add(new THREE.Mesh(tumblerWall,glass),tumbler);
+      if(a.tumblerStyle==='bands')for(const y of [.035,.073]){const band=add(new THREE.Mesh(new THREE.TorusGeometry(.029+y*.095,.002,6,32),s.material(stripes[i%4])),tumbler);band.rotation.x=Math.PI/2;band.position.y=y;}
       add(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.029, 0.008, 24), solidGlass), tumbler).position.y = 0.004;
       const rim = add(new THREE.Mesh(new THREE.TorusGeometry(0.039, 0.0022, 6, 32), solidGlass), tumbler);
       rim.rotation.x = Math.PI / 2; rim.position.y = 0.105;
@@ -206,12 +236,12 @@ export default defineThing({
         const h = 0.095 * left;
         add(new THREE.Mesh(new THREE.CylinderGeometry(0.028 + h * 0.095, 0.027, h, 24), liquid), tumbler).position.y = 0.008 + h / 2;
         if (a.ice) for (let k = 0; k < 2; k++) {
-          const cube = add(new THREE.Mesh(new THREE.BoxGeometry(0.017, 0.017, 0.017), iceMaterial), tumbler);
+          const cube = add(new THREE.Mesh(iceGeometry(.77), iceMaterial), tumbler);
           cube.position.set((k - 0.5) * 0.02, 0.01 + h, (random() - 0.5) * 0.02);
           cube.rotation.set(random() * 3, random() * 3, 0);
         }
       } else if (a.ice && !tipped) {
-        for (let k = 0; k < 3; k++) add(new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.015, 0.015), iceMaterial), tumbler).position.set((k - 1) * 0.014, 0.016, (random() - 0.5) * 0.02);
+        for (let k = 0; k < 3; k++) add(new THREE.Mesh(iceGeometry(.68), iceMaterial), tumbler).position.set((k - 1) * 0.014, 0.016, (random() - 0.5) * 0.02);
       }
       if (a.scene === 'tray' && !tipped) {
         const straw = add(new THREE.Mesh(new THREE.CylinderGeometry(0.0035, 0.0035, 0.17, 8), new THREE.MeshStandardMaterial({ color: stripes[i % 4], roughness: 0.6 })), tumbler);
@@ -227,7 +257,7 @@ export default defineThing({
       if (tipped) {
         tumbler.rotation.set(0, random() * 0.6 - 0.2, -Math.PI / 2 + 0.09);
         tumbler.position.y = 0.039;
-        tumbler.position.x += 0.02;
+        tumbler.position.x += 0.02;tumbler.updateMatrixWorld(true);tumbler.position.y-=new THREE.Box3().setFromObject(tumbler,true).min.y;
         const pool = new THREE.MeshStandardMaterial({ color: liquidColour, roughness: 0.05, transparent: a.drink === 'water', opacity: a.drink === 'water' ? 0.6 : 1 });
         for (let k = 0; k < 6; k++) {
           const blob = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 0.002, 20), pool);

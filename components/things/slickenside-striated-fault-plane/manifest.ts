@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Slickenside striated fault plane", "summary": "An inclined rock slab exposes continuous striations and asymmetric mineral steps attached to the true surface. An exposed structural-geology teaching specimen with matching fault surfaces, connected mineral growth and physically cut sections.", "scales": ["tabletop", "macro"]});

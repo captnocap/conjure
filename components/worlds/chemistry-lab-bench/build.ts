@@ -94,6 +94,48 @@ function boardTexture(kind: 'periodic' | 'chalk' | 'safety', r: Rnd) {
 
 export default defineWorld({
   questions: {
+    utilities: choice('What services are fitted along the rear of the bench?', {
+      gas: 'Traditional paired gas taps for burners.',
+      electric: 'Raised electrical outlet boxes replace the gas taps.',
+      water: 'Small water outlets and drain hoses serve wet experiments.',
+      mixed: 'Gas taps and a separate raised electrical supply rail.',
+    }),
+    enclosure: choice('How is the reagent shelving enclosed?', {
+      open: 'Open shelves let the bottle rows show clearly.',
+      glazed: 'Sliding glazed panels with narrow metal frames.',
+      guarded: 'A low guard rail prevents bottles falling from each shelf.',
+      shutters: 'Half-closed timber shutters cover part of the reagent store.',
+    }),
+    drying: choice('How is washed glassware dried near the sink?', {
+      none: 'No separate drying fixture.',
+      pegs: 'A wall-mounted board with slanted glassware pegs.',
+      draining: 'A metal draining rack stands on the sink-side corner.',
+      towel: 'A folded cloth and two upturned beakers drain at the sink edge.',
+    }),
+    records: choice('What working records are attached to the bench?', {
+      none: 'No added working records.',
+      numbers: 'Large station numbers label the cupboard fronts.',
+      cards: 'Small practical instruction cards hang below the worktop.',
+      inventory: 'An inventory clipboard hangs at the end of the reagent shelf.',
+    }),
+    ventilation: choice('What ventilation fixture is visible above the work area?', {
+      none: 'A plain wall without a mechanical vent.',
+      fan: 'A round extractor fan with visible blades.',
+      grille: 'A long louvred ventilation grille high on the wall.',
+      hood: 'A compact extraction hood with a short duct above the left end.',
+    }),
+    screens: choice('What splash screens divide the work area?', {
+      none: 'An open continuous bench.',
+      ends: 'Short clear splash shields protect both end stations.',
+      rear: 'A low clear shield separates the front work area from rear services.',
+      folding: 'A folded two-panel splash shield stands at the right rear.',
+    }),
+    preparation: choice('What small preparation set occupies a gap at the back?', {
+      clear: 'The gap is clear and ready for work.',
+      labels: 'A label roll, marker and blank sample cards are laid out.',
+      gloves: 'A glove dispenser and folded blue gloves wait for the next practical.',
+      weights: 'A small wooden box of reference weights stands open.',
+    }),
     top: choice('What is the bench top made of?', {
       black: 'Black acid-proof resin, matt and chalky with use.',
       teak: 'Thick oiled teak boards, a century of burns and initials.',
@@ -219,7 +261,7 @@ export default defineWorld({
 
     // Gas taps along the back.
     const lever = s.material(palette.tap, { metalness: a.era === 'school' ? 0.1 : 0.8, roughness: 0.4 });
-    for (const x of [-3.9, -0.25, 2.9]) {
+    if (a.utilities === 'gas' || a.utilities === 'mixed') for (const x of [-3.9, -0.25, 2.9]) {
       const z = -1.95;
       s.lathe([[0, 0], [0.16, 0], [0.17, 0.04], [0.08, 0.1], [0.07, 0.62], [0.1, 0.66], [0.1, 0.78], [0, 0.8]], metal, [x, 0, z]);
       for (const side of [-1, 1]) {
@@ -228,6 +270,21 @@ export default defineWorld({
         for (let k = 0; k < 3; k++) s.ring(0.034 - k * 0.004, 0.008, [x + side * (0.32 + k * 0.016), 0.585 - k * 0.032, z + 0.24 + k * 0.03], metal).rotation.set(0.9, side * 0.4, 0);
         s.box([0.07, 0.2, 0.05], [x + side * 0.16, 0.8, z + 0.1], lever).rotation.z = side * (random() < 0.3 ? 1.2 : 0.2);
       }
+    }
+
+    if (a.utilities === 'electric' || a.utilities === 'mixed') for (const x of [-4.1, -0.5, 3.3]) {
+      s.box([0.12, 0.8, 0.12], [x, 0.4, -1.82], metal);
+      s.box([0.7, 0.46, 0.24], [x, 0.92, -1.82], s.material('#deded4'));
+      for (const side of [-1, 1]) {
+        s.box([0.2, 0.26, 0.025], [x + side * 0.17, 0.92, -1.687], s.material('#faf6e7'));
+        for (const dx of [-0.04, 0.04]) s.box([0.025, 0.06, 0.01], [x + side * 0.17 + dx, 0.95, -1.67], s.material('#354343'));
+      }
+    }
+    if (a.utilities === 'water') for (const x of [-3.9, -0.25, 2.9]) {
+      s.cylinder(0.11, 0.14, 0.12, [x, 0.06, -1.95], metal, 14);
+      s.tube([[x, 0.1, -1.95], [x, 0.74, -1.95], [x + 0.25, 0.85, -1.95], [x + 0.36, 0.63, -1.95]], 0.045, metal);
+      s.box([0.28, 0.06, 0.09], [x, 0.5, -1.95], s.material('#477a96'));
+      s.tube([[x + 0.36, 0.63, -1.95], [x + 0.4, 0.12, -1.65], [x + 0.58, 0.03, -1.5], [x + 0.9, 0.03, -1.6]], 0.03, s.material('#9cbaa9'));
     }
 
     // Wall, windows and what hangs there.
@@ -321,6 +378,24 @@ export default defineWorld({
     if (bodies.length) s.root.add(instances(bottleGeo, new THREE.MeshStandardMaterial({ roughness: 0.2 }), bodies));
     if (stoppers.length) s.root.add(instances(new THREE.CylinderGeometry(0.07, 0.05, 0.1, 10), new THREE.MeshStandardMaterial({ roughness: 0.6 }), stoppers));
     if (labels.length) s.root.add(instances(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ roughness: 0.9 }), labels));
+    if (a.enclosure === 'guarded') for (const y of tiers) {
+      for (const x of [shX0, 0, shX1]) s.rod([x, y + 0.035, shZ + 0.27], [x, y + 0.27, shZ + 0.27], 0.018, metal);
+      s.rod([shX0, y + 0.27, shZ + 0.27], [shX1, y + 0.27, shZ + 0.27], 0.018, metal);
+    }
+    if (a.enclosure === 'glazed') {
+      const glazing = s.material('#b9d6d5', { transparent: true, opacity: 0.12, depthWrite: false, roughness: 0.15 });
+      for (const x of [-1.7, 1.7]) {
+        s.box([3.25, 2.14, 0.025], [x, 1.22, shZ + 0.32], glazing);
+        for (const dx of [-1.62, 1.62]) s.box([0.045, 2.18, 0.035], [x + dx, 1.22, shZ + 0.34], metal);
+        for (const y of [0.14, 2.3]) s.box([3.28, 0.045, 0.035], [x, y, shZ + 0.34], metal);
+        s.box([0.055, 0.28, 0.08], [x - 1.42, 1.2, shZ + 0.36], metal);
+      }
+    }
+    if (a.enclosure === 'shutters') for (const x of [-2.5, 2.5]) {
+      s.box([1.65, 2.19, 0.06], [x, 1.2, shZ + 0.33], shelfMat);
+      for (let i = 0; i < 5; i++) s.box([0.022, 2.15, 0.02], [x - 0.65 + i * 0.325, 1.2, shZ + 0.37], trim);
+      s.box([0.07, 0.25, 0.05], [x + (x < 0 ? 0.65 : -0.65), 1.2, shZ + 0.39], metal);
+    }
     // A few big named bottles on top.
     const names = ['HCl', 'NaOH', 'CuSO4', 'H2SO4', 'KMnO4', 'AgNO3', 'NH3', 'ETHANOL'];
     const bigTint: Record<string, string> = { CuSO4: '#2a8fe0', KMnO4: '#7b2fc0' };
@@ -396,6 +471,77 @@ export default defineWorld({
       const dust: Item[] = [];
       for (let i = 0; i < Math.round(mood.wear * 60); i++) dust.push({ at: [(random() - 0.5) * (W - 3.5) - 1.3, 0.006, (random() - 0.5) * (D - 0.6)], scale: [0.03 + random() * 0.05, 0.006, 0.03 + random() * 0.04], turn: [0, random() * 3, 0], color: random() < 0.5 ? '#e9e6d8' : '#5a4a36' });
       s.root.add(instances(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ roughness: 1 }), dust));
+    }
+
+    if (a.drying === 'pegs') {
+      s.box([1.2, 1.25, 0.08], [5.55, 1.72, WALL_Z + 0.18], s.material('#c2c8bb'));
+      for (let row = 0; row < 3; row++) for (let col = 0; col < 4; col++) s.rod([5.1 + col * 0.3, 1.3 + row * 0.37, WALL_Z + 0.22], [5.1 + col * 0.3, 1.45 + row * 0.37, WALL_Z + 0.62], 0.025, metal);
+    } else if (a.drying === 'draining') {
+      for (const x of [6.6, 6.94]) s.rod([x, 0.025, -1.0], [x, 0.025, 0.1], 0.025, metal);
+      for (let i = 0; i < 7; i++) s.tube([[6.6, 0.025, -0.95 + i * 0.17], [6.65, 0.25, -0.95 + i * 0.17], [6.89, 0.25, -0.95 + i * 0.17], [6.94, 0.025, -0.95 + i * 0.17]], 0.022, metal);
+    } else if (a.drying === 'towel') {
+      s.box([0.35, 0.025, 0.9], [6.75, 0.0125, -0.3], s.material('#e4dfcf'));
+      for (const z of [-0.55, -0.05]) {
+        s.mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.31, 16, 1, true), glass, [6.75, 0.18, z]);
+        s.ring(0.14, 0.012, [6.75, 0.025, z], rim).rotation.x = Math.PI / 2;
+      }
+    }
+    if (a.records === 'numbers' || a.records === 'cards') for (let i = 0; i < 4; i++) {
+      const x = -5.2 + i * 3.4;
+      s.label(a.records === 'numbers' ? String(i + 1).padStart(2, '0') : ['RECORD', 'MEASURE', 'COMPARE', 'CLEAN'][i], a.records === 'numbers' ? 0.44 : 0.8, 0.23, [x, -0.52, D / 2 - 0.055], '#324b50', '#e8e1c9');
+    }
+    if (a.records === 'inventory') {
+      s.box([0.75, 1.0, 0.035], [-3.8, 1.25, WALL_Z + 0.18], trim);
+      s.label('STOCK', 0.64, 0.85, [-3.8, 1.25, WALL_Z + 0.205], '#3b4c46', '#e5dfc8');
+      s.box([0.25, 0.11, 0.045], [-3.8, 1.73, WALL_Z + 0.23], metal);
+    }
+    if (a.ventilation === 'fan') {
+      s.box([1.05, 1.05, 0.18], [-5.7, 5.8, WALL_Z + 0.24], s.material('#7f8a87'));
+      s.cylinder(0.43, 0.43, 0.08, [-5.7, 5.8, WALL_Z + 0.37], s.material('#465b5c'), 24).rotation.x = Math.PI / 2;
+      for (let i = 0; i < 4; i++) {
+        const angle = i * Math.PI / 2;
+        s.ball([0.1, 0.28, 0.025], [-5.7 + Math.sin(angle) * 0.19, 5.8 + Math.cos(angle) * 0.19, WALL_Z + 0.43], metal, 12).rotation.z = -angle - 0.2;
+      }
+      s.ball([0.09, 0.09, 0.04], [-5.7, 5.8, WALL_Z + 0.46], metal, 12);
+    } else if (a.ventilation === 'grille') {
+      s.box([3.2, 0.4, 0.12], [-3.7, 6.09, WALL_Z + 0.2], s.material('#566564'));
+      for (let i = 0; i < 16; i++) s.box([0.045, 0.31, 0.1], [-5.13 + i * 0.19, 6.09, WALL_Z + 0.3], metal).rotation.y = 0.3;
+    } else if (a.ventilation === 'hood') {
+      s.cylinder(0.13, 0.13, 1.5, [-5.7, 5.5, -2.4], metal, 16);
+      s.lathe([[0.14, 0.5], [0.21, 0.35], [0.68, 0.03], [0.7, 0]], s.material('#94a5a0', { side: THREE.DoubleSide }), [-5.7, 4.25, -2.4]);
+      s.rod([-5.7, 6.15, -2.4], [-5.7, 6.15, WALL_Z + 0.1], 0.12, metal);
+    }
+    if (a.screens !== 'none') {
+      const screen = s.material('#c3d9d7', { transparent: true, opacity: 0.16, depthWrite: false, roughness: 0.15 });
+      const panel = (x: number, z: number, width: number, yaw: number) => {
+        const g = new THREE.Group();
+        const add = (o: THREE.Object3D) => g.add(o);
+        add(s.box([width, 1.25, 0.025], [0, 0.7, 0], screen));
+        for (const side of [-1, 1]) {
+          add(s.box([0.045, 1.35, 0.045], [side * width / 2, 0.675, 0], metal));
+          add(s.box([0.25, 0.045, 0.35], [side * width / 2, 0.0225, 0], metal));
+        }
+        add(s.box([width, 0.045, 0.045], [0, 1.33, 0], metal));
+        g.position.set(x, 0, z); g.rotation.y = yaw; s.root.add(g);
+      };
+      if (a.screens === 'ends') { panel(-6.7, -0.5, 1.8, Math.PI / 2); panel(6.8, 1.4, 1.65, Math.PI / 2); }
+      if (a.screens === 'rear') { panel(-2.1, -1.45, 2.4, 0); panel(1.1, -1.45, 2.4, 0); }
+      if (a.screens === 'folding') { panel(4.4, 1.7, 0.9, 0.35); panel(5.25, 1.55, 0.9, 0); }
+    }
+    if (a.preparation === 'labels') {
+      s.cylinder(0.15, 0.15, 0.1, [-5.3, 0.05, -2.13], s.material('#e6d9b5'), 18);
+      s.cylinder(0.06, 0.06, 0.101, [-5.3, 0.05, -2.13], trim, 16);
+      s.box([0.45, 0.015, 0.27], [-5.85, 0.008, -2.1], s.material('#eee5d0'));
+      s.rod([-6.2, 0.035, -1.9], [-5.65, 0.035, -1.85], 0.025, s.material('#344f62'));
+    } else if (a.preparation === 'gloves') {
+      s.box([0.8, 0.3, 0.45], [-5.7, 0.15, -2.1], s.material('#a9c8cf'));
+      s.box([0.4, 0.01, 0.1], [-5.7, 0.305, -2.1], s.material('#354b56'));
+      s.label('GLOVES', 0.55, 0.17, [-5.7, 0.16, -1.868], '#35545b', '#c6dadd');
+      for (const x of [-5.45, -5.95]) { s.ball([0.16, 0.026, 0.15], [x, 0.026, -1.58], s.material('#86b9c8'), 12); for (let i = 0; i < 4; i++) s.rod([x - 0.11 + i * 0.065, 0.026, -1.5], [x - 0.11 + i * 0.065, 0.025, -1.26], 0.025, s.material('#86b9c8')); }
+    } else if (a.preparation === 'weights') {
+      s.box([1.15, 0.13, 0.55], [-5.65, 0.065, -2.0], trim);
+      s.box([1.15, 0.52, 0.05], [-5.65, 0.32, -2.27], shelfMat);
+      for (let i = 0; i < 5; i++) { const r = 0.06 + i * 0.012, x = -6.1 + i * 0.23; s.cylinder(r, r, 0.12 + i * 0.025, [x, 0.13 + (0.12 + i * 0.025) / 2, -2.0], metal, 14); s.cylinder(r * 0.45, r * 0.45, 0.045, [x, 0.13 + 0.12 + i * 0.025 + 0.0225, -2.0], metal, 12); }
     }
 
     const energy = mix(0.3, 1.6, mood.energy);

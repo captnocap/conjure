@@ -62,6 +62,42 @@ export default defineThing({
       fallen: 'Several spools have been knocked off and rolled away, unravelling.',
       spent: 'It has been worked hard: many reels are down to bare wood or a few last turns.',
     }),
+    threadSurface: choice('What is the thread wound from?', {
+      cotton: 'Soft matte cotton with closely wound turns.',
+      silk: 'Smooth lustrous thread that catches a narrow highlight.',
+      metallic: 'Metallic embroidery thread with bright reflective turns.',
+      variegated: 'Variegated thread whose shade changes along the winding.',
+    }),
+    pegTips: choice('How are the spool pegs finished?', {
+      plain: 'Plain wooden dowels.',
+      brass: 'Brass pegs instead of wood.',
+      capped: 'Small round brass caps finish the exposed peg tips.',
+      tall: 'Long wooden pegs with dark flattened tips.',
+    }),
+    catalogue: choice('How is the thread stock identified?', {
+      none: 'No extra catalogue.',
+      numbers: 'A numbered stock card lists the occupied thread slots.',
+      samples: 'A swatch card carries six real short thread samples.',
+      weights: 'A thread-weight chart distinguishes fine, general and heavy thread.',
+    }),
+    winding: choice('What winding equipment accompanies the rack?', {
+      none: 'No winding equipment.',
+      hand: 'A small hand-cranked bobbin winder.',
+      spindle: 'A vertical spare winding spindle on a broad base.',
+      swift: 'A small crossed-arm skein holder on a spindle.',
+    }),
+    supply: choice('What supplies lie at the rack’s foot?', {
+      none: 'No extra supplies.',
+      bobbins: 'A little open box of wound machine bobbins.',
+      cards: 'Two flat thread winding cards.',
+      empty: 'An open box of empty wooden reels.',
+    }),
+    cover: choice('How is the stock protected while it waits?', {
+      none: 'The rack is uncovered.',
+      hood: 'A clear open-front hood surrounds the rack.',
+      cloth: 'A small cloth canopy hangs over the rear of the rack.',
+      screen: 'A low clear screen protects the front row from dust.',
+    }),
     snips: noul('Is a small pair of thread snips left at its foot?'),
   },
 
@@ -122,6 +158,9 @@ export default defineThing({
       halfWidth = r1 + 0.03;
     }
 
+    s.root.updateMatrixWorld(true);
+    const rackBounds = new THREE.Box3().setFromObject(s.root);
+
     // Colours for every peg, then shuffled according to how carefully they were put back.
     const fade = mix(0, 0.2, mood.wear), vivid = mix(0.75, 1.1, mood.cheer);
     const tints = slots.map((_slot, index) => {
@@ -171,7 +210,13 @@ export default defineThing({
     const taken: { at: V3; direction: V3; tint: THREE.Color; height: number; radius: number }[] = [];
     const knocked: THREE.Color[] = [];
     slots.forEach((slot, index) => {
-      pegs.push({ matrix: along(slot.at, slot.direction, 0.05 * scale, 0.0032) });
+      const pegLength = (a.pegTips === 'tall' ? 0.073 : 0.05) * scale;
+      pegs.push({ matrix: along(slot.at, slot.direction, pegLength, 0.0032) });
+      if (a.pegTips === 'capped' || a.pegTips === 'tall') {
+        const tip = slot.at.clone().addScaledVector(slot.direction, pegLength);
+        const cap = s.ball([0.004, 0.004, 0.004], [tip.x, tip.y, tip.z], s.material(a.pegTips === 'capped' ? '#c5a04f' : '#574736', { metalness: a.pegTips === 'capped' ? 0.75 : 0 }), 8);
+        if (a.pegTips === 'tall') cap.scale.y *= 0.5;
+      }
       const keep = random() < fill || (index === 0 && fill > 0.2);
       if (!keep) return;
       if (a.state === 'fallen' && random() < 0.2 && knocked.length < 6) { knocked.push(tints[index]); return; }
@@ -212,9 +257,14 @@ export default defineThing({
     });
 
     const solid = (tint: string) => s.material(tint, { roughness: 0.7 });
-    instanced(s.root, new THREE.CylinderGeometry(1, 1, 1, 8), wood, pegs);
-    instanced(s.root, new THREE.CylinderGeometry(1, 1, 1, 18), s.material('#ffffff', { roughness: 0.85 }), thread);
-    instanced(s.root, new THREE.CylinderGeometry(0.42, 1, 1, 18), s.material('#ffffff', { roughness: 0.85 }), cone);
+    instanced(s.root, new THREE.CylinderGeometry(1, 1, 1, 8), a.pegTips === 'brass' ? s.material('#b99a56', { metalness: 0.75, roughness: 0.3 }) : wood, pegs);
+    const windingCanvas = document.createElement('canvas'); windingCanvas.width = 64; windingCanvas.height = 128;
+    const wc = windingCanvas.getContext('2d')!; wc.fillStyle = '#ffffff'; wc.fillRect(0, 0, 64, 128);
+    for (let y = 0; y < 128; y += 4) { wc.fillStyle = a.threadSurface === 'variegated' ? `rgb(${150 + Math.round(90 * (0.5 + 0.5 * Math.sin(y * 0.11)))},${155 + Math.round(90 * (0.5 + 0.5 * Math.sin(y * 0.11)))},255)` : '#dededc'; wc.fillRect(0, y, 64, a.threadSurface === 'variegated' ? 4 : 1); }
+    const windingMap = new THREE.CanvasTexture(windingCanvas); windingMap.colorSpace = THREE.SRGBColorSpace;
+    const threadMaterial = s.material('#ffffff', { map: windingMap, metalness: a.threadSurface === 'metallic' ? 0.85 : 0, roughness: a.threadSurface === 'cotton' || a.threadSurface === 'variegated' ? 0.9 : 0.23 });
+    instanced(s.root, new THREE.CylinderGeometry(1, 1, 1, 18), threadMaterial, thread);
+    instanced(s.root, new THREE.CylinderGeometry(0.42, 1, 1, 18), threadMaterial, cone);
     instanced(s.root, new THREE.CylinderGeometry(0.66, 1, 1, 18), solid('#ffffff'), low);
     instanced(s.root, new THREE.CylinderGeometry(1, 0.66, 1, 18), solid('#ffffff'), high);
     instanced(s.root, new THREE.CylinderGeometry(1, 1, 1, 10), solid('#ffffff'), cores);
@@ -238,6 +288,75 @@ export default defineThing({
       snips.position.set(-halfWidth * 0.6, 0.0025, front + 0.035);
       snips.rotation.y = random() * 2 - 1;
       s.root.add(snips);
+    }
+
+    if (a.catalogue !== 'none') {
+      const canvas = document.createElement('canvas'); canvas.width = 320; canvas.height = 240;
+      const c = canvas.getContext('2d')!; c.fillStyle = '#f0e7d1'; c.fillRect(0, 0, 320, 240); c.fillStyle = '#4b4031'; c.font = 'bold 26px sans-serif';
+      c.fillText(a.catalogue === 'weights' ? 'THREAD WEIGHTS' : a.catalogue === 'samples' ? 'THREAD SAMPLES' : 'STOCK NUMBERS', 12, 34);
+      c.font = '22px monospace';
+      for (let k = 0; k < 6; k++) c.fillText(a.catalogue === 'weights' ? ['80 FINE', '60 LIGHT', '50 SEW', '40 QUILT', '30 TOP', '12 HEAVY'][k] : String(k + 1).padStart(2, '0'), 16, 67 + k * 28);
+      const map = new THREE.CanvasTexture(canvas); map.colorSpace = THREE.SRGBColorSpace;
+      const paper = s.material('#f0e7d1'), face = s.material('#ffffff', { map });
+      const card = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.002, 0.085), [paper, paper, face, paper, paper, paper]); card.position.set(-halfWidth - 0.075, 0.001, front); card.castShadow = true; s.root.add(card);
+      if (a.catalogue === 'samples') for (let k = 0; k < 6; k++) s.rod([-halfWidth - 0.08, 0.0024, front - 0.024 + k * 0.009], [-halfWidth - 0.035, 0.0024, front - 0.024 + k * 0.009], 0.001, s.material(tints[k % tints.length]));
+    }
+    if (a.winding !== 'none') {
+      const x = halfWidth + 0.065, z = 0;
+      const metal = s.material('#b9c3c6', { metalness: 0.7, roughness: 0.3 });
+      s.box([0.09, 0.012, 0.075], [x, 0.006, z], wood);
+      const H = a.winding === 'hand' ? 0.065 : 0.14;
+      s.rod([x, 0.012, z], [x, H, z], 0.005, darkWood);
+      if (a.winding === 'hand') {
+        s.rod([x - 0.022, H, z], [x + 0.028, H, z], 0.003, metal);
+        s.cylinder(0.017, 0.017, 0.025, [x - 0.012, H, z], s.material(tints[0]), 20).rotation.z = Math.PI / 2;
+        s.rod([x + 0.028, H, z], [x + 0.028, H - 0.018, z], 0.0025, metal);
+        s.rod([x + 0.028, H - 0.018, z], [x + 0.042, H - 0.018, z], 0.0035, darkWood);
+      } else if (a.winding === 'swift') {
+        for (const alongX of [true, false]) {
+          s.box([alongX ? 0.11 : 0.006, 0.006, alongX ? 0.006 : 0.11], [x, H, z], wood);
+          for (const side of [-1, 1]) s.rod([x + (alongX ? side * 0.05 : 0), H, z + (alongX ? 0 : side * 0.05)], [x + (alongX ? side * 0.05 : 0), H + 0.025, z + (alongX ? 0 : side * 0.05)], 0.003, darkWood);
+        }
+        s.tube([[x - 0.05, H + 0.014, z], [x, H + 0.014, z - 0.05], [x + 0.05, H + 0.014, z], [x, H + 0.014, z + 0.05], [x - 0.05, H + 0.014, z]], 0.003, s.material(tints[0]));
+      }
+    }
+    if (a.supply !== 'none') {
+      const x = halfWidth * 0.55, z = front + 0.09;
+      const paper = s.material('#e5d7bc');
+      if (a.supply === 'cards') for (let k = 0; k < 2; k++) {
+        s.box([0.035, 0.002, 0.055], [x + k * 0.04, 0.001, z], paper);
+        s.box([0.036, 0.004, 0.033], [x + k * 0.04, 0.003, z], s.material(tints[k % tints.length]));
+      } else {
+        s.box([0.1, 0.003, 0.065], [x, 0.0015, z], wood);
+        for (const side of [-1, 1]) { s.box([0.1, 0.015, 0.003], [x, 0.009, z + side * 0.031], wood); s.box([0.003, 0.015, 0.065], [x + side * 0.049, 0.009, z], wood); }
+        for (let k = 0; k < 6; k++) {
+          const cx = x - 0.03 + k % 3 * 0.03, cz = z - 0.014 + Math.floor(k / 3) * 0.028, H = a.supply === 'bobbins' ? 0.01 : 0.022;
+          for (const y of [0.005, H + 0.003]) s.cylinder(0.011, 0.011, 0.003, [cx, y, cz], paper, 14);
+          s.cylinder(a.supply === 'bobbins' ? 0.009 : 0.004, a.supply === 'bobbins' ? 0.009 : 0.004, H, [cx, H / 2 + 0.004, cz], a.supply === 'bobbins' ? s.material(tints[k % tints.length]) : wood, 14);
+        }
+      }
+    }
+    if (a.cover !== 'none') {
+      const top = Math.max(rackBounds.max.y, ...slots.map(p => p.at.y + (a.spools === 'cones' ? 0.08 : 0.055))) + 0.025;
+      const zBack = Math.min(rackBounds.min.z, ...slots.map(p => p.at.z)) - 0.045, zFront = Math.max(front, rackBounds.max.z) + 0.005;
+      const transparent = s.material('#c3d6d9', { transparent: true, opacity: 0.17, depthWrite: false, roughness: 0.16 });
+      if (a.cover === 'screen') {
+        s.box([halfWidth * 2 + 0.04, top * 0.45, 0.002], [0, top * 0.225, zFront], transparent);
+        for (const side of [-1, 1]) s.box([0.018, 0.01, 0.035], [side * halfWidth, 0.005, zFront], darkWood);
+      } else {
+        for (const x of [-halfWidth - 0.02, halfWidth + 0.02]) for (const z of [zBack, zFront]) s.rod([x, 0, z], [x, top, z], 0.003, darkWood);
+        const width = halfWidth * 2 + 0.04, depth = zFront - zBack;
+        if (a.cover === 'hood') {
+          s.box([width, 0.002, depth], [0, top, (zBack + zFront) / 2], transparent);
+          s.box([width, top, 0.002], [0, top / 2, zBack], transparent);
+          for (const x of [-width / 2, width / 2]) s.box([0.002, top, depth], [x, top / 2, (zBack + zFront) / 2], transparent);
+        } else {
+          s.rod([-width / 2, top, zBack], [width / 2, top, zBack], 0.003, darkWood);
+          s.rod([-width / 2, top, zBack + depth * 0.6], [width / 2, top, zBack + depth * 0.6], 0.003, darkWood);
+          for (const side of [-1, 1]) s.rod([side * width / 2, top, zBack], [side * width / 2, top, zFront], 0.003, darkWood);
+          s.drape({ size: [width, depth * 0.6], at: [0, top, zBack + depth * 0.3], hang: 'corners', floor: null, stiffness: 0.6, rumple: 0.15, detail: 14 }, s.material('#e3dac7', { side: THREE.DoubleSide }));
+        }
+      }
     }
 
     return s.finish();

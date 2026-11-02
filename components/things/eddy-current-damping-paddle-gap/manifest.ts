@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Eddy current damping paddle gap", "summary": "A conducting paddle enters the gap of a supported magnet yoke and connects to a moving stem; the motion states retain physical clearance. A conducting paddle passes through a real non-contact magnet gap on an independent suspension; a schematic eddy-current damping teaching mechanism with explicit load paths and service positions.", "scales": ["macro", "tabletop"]});

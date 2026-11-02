@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Music-box twilight village", "summary": "An open music box contains a miniature village around its pinned cylinder, tuned comb and winding gears. Small homes under a raised lid, the evening tune nearly finished and ordinary streets woven through a visible working mechanism.", "scales": ["tabletop", "room"]});

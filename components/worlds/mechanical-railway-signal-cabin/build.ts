@@ -1,0 +1,29 @@
+import * as THREE from 'three';
+import { Sculpture, choice, score, noul, diorama, defineThing, defineWorld, figure } from '@conjure/kit';
+export default defineWorld({
+  questions: {
+    base: choice("What supports the operating room?", {"brick": "A tall brick locking room.", "stilts": "Open timber stilts.", "iron": "Braced iron trestles.", "low": "A low stone ground floor."}),
+    windows: choice("What window arrangement is visible?", {"long": "A continuous long window band.", "bays": "Three projecting window bays.", "corner": "An open corner glazed on two sides.", "sparse": "Widely spaced tall sash windows."}),
+    roof: choice("What roof frame is seen?", {"gable": "A steep gabled roof frame.", "hip": "A hipped roof skeleton.", "flat": "A flat roof with deep eaves.", "lean": "A single sloping roof."}),
+    access: choice("How is the room reached?", {"straight": "A straight exterior stair.", "return": "A stair with a return landing.", "ladder": "A steep service ladder.", "porch": "A broad porch and short steps."}),
+    locking: choice("What is below the room?", {"rods": "Long signalling rods on low stools.", "wires": "Pairs of signal wires.", "chest": "A timber locking chest.", "clear": "Clear space below."}),
+    track: choice("What track setting lies outside?", {"double": "Two parallel approach tracks.", "single": "One curving approach track.", "points": "A visible turnout junction.", "none": "No track in the slice."}),
+    furniture: choice("What fixed furnishing is fitted?", {"shelf": "A long instrument shelf.", "bench": "A rear writing bench.", "stove": "A corner stove and flue.", "clear": "An unfurnished operating room."}),
+    state: choice("What workday detail appears?", {"active": "An active signal cabin.", "repair": "A missing board exposes the locking floor.", "night": "Pendant work lamps.", "closed": "A barrier at the stair entrance."}),
+    width: score("How long is the cabin?", ["Small rural cabin", "Station signal box", "Large junction cabin"])
+  },
+  build(a,context){
+
+ const W=8+a.width*4,D=7,Y=a.base==='low'?.65:1.8;const {world,art:s}=diorama(context,{width:W+2,depth:D+3,background:'#d9dfd6',floor:'#b4baa5',radius:.95,maxHeight:2.1,pitch:32,yaw:30,scale:[.75,1.3],slots:[[-W*.28,.3,Y],[0,.3,Y],[W*.28,.3,Y],[-W*.2,-1.5,Y]]});
+ const wood=s.material('#9a835e'),cream=s.material('#d6cfb0'),iron=s.material('#5b7160'),brick=s.material('#a28d71'),dark=s.material('#454e43'),glass=s.material('#aec8bc',{transparent:true,opacity:.16,depthWrite:false});s.box([W,.18,4.5],[0,Y-.09,-.7],wood);
+ if(a.base==='brick'||a.base==='low'){for(const z of [-2.85,1.45])s.box([W,Y,.22],[0,Y/2,z],brick);for(const x of [-W/2,W/2])s.box([.22,Y,4.5],[x,Y/2,-.7],brick);for(let j=0;j<Math.ceil(Y/.28);j++)s.box([W,.012,.012],[0,.15+j*.28,1.565],dark);}else for(const x of [-W*.45,0,W*.45])for(const z of [-2.6,1.2]){s.rod([x,0,z],[x,Y,z],.1,a.base==='iron'?iron:wood);if(a.base==='iron')s.rod([x,0,z],[x+.8,Y,z],.04,iron);}
+ const top=Y+2.5;for(const x of [-W/2,W/2])for(const z of [-2.85,1.45])s.rod([x,Y,z],[x,top,z],.065,wood);s.box([W,.8,.12],[0,Y+.4,-2.85],cream);for(const x of [-W/2,W/2])s.box([.12,.8,4.5],[x,Y+.4,-.7],cream);
+ for(const z of [-2.85,1.45]){s.rod([-W/2,top,z],[W/2,top,z],.065,wood);if(z<0||a.windows==='corner')for(let j=0;j<9;j++){const x=-W/2+j*W/8;s.rod([x,Y+.8,z],[x,top,z],.035,wood);if(a.windows!=='sparse'||j%2===0)s.box([W/8-.07,1.6,.012],[x+W/16,Y+1.65,z],glass);}s.rod([-W/2,Y+.85,z],[W/2,Y+.85,z],.04,wood);}
+ if(a.windows==='bays')for(const x of [-W*.3,0,W*.3]){s.box([1.5,.09,.5],[x,Y+.8,-3.1],wood);for(const xx of [x-.75,x+.75])s.rod([xx,Y+.8,-3.3],[xx,top,-3.3],.035,wood);s.box([1.5,.012,.55],[x,top,-3.1],wood);}for(const x of [-W/2,W/2]){if(a.roof==='flat')s.rod([x,top,-3.1],[x,top,1.7],.09,wood);else{s.rod([x,top,-3],[x,a.roof==='lean'?top+.8:top+1.2,-.7],.07,wood);s.rod([x,a.roof==='lean'?top+.8:top+1.2,-.7],[x,top,1.6],.07,wood);}}if(a.roof==='gable'||a.roof==='hip')s.rod([-W/2,top+1.2,-.7],[W/2,top+1.2,-.7],.08,wood);if(a.roof==='hip')for(const x of [-W/2,W/2])for(const z of [-3,1.6])s.rod([x,top,z],[x*.65,top+1.2,-.7],.065,wood);
+ const ax=W/2+.6;if(a.access==='ladder'){for(const x of [ax-.25,ax+.25])s.rod([x,0,2.2],[x,Y,1.1],.03,iron);for(let j=0;j<8;j++)s.rod([ax-.25,j*Y/8,2.2-j*1.1/8],[ax+.25,j*Y/8,2.2-j*1.1/8],.025,wood);}else{const n=Math.ceil(Y/.22);for(let j=0;j<n;j++)s.box([1,.22*(j+1),.34],[ax,.11*(j+1),2.5-j*.34],wood);s.box([1.25,.1,1],[ax,Y-.05,2.5-n*.34],wood);for(const x of [ax-.55,ax+.55])s.rod([x,.7,2.6],[x,Y+.7,2.5-n*.34],.03,iron);if(a.access==='return')s.box([2,.12,1],[ax-.5,Y-.06,2.5-n*.34],wood);if(a.access==='porch')s.box([2,.12,2],[ax-.2,Y-.06,1],wood);}
+ if(a.locking==='rods'||a.locking==='wires'){for(let j=0;j<5;j++){const z=-1.5+j*.3;s.rod([-W*.45,.16,z],[W*.45,.16,z],a.locking==='rods'?.025:.007,iron);}for(const x of [-W*.4,0,W*.4])s.box([.2,.15,1.7],[x,.075,-.9],wood);}if(a.locking==='chest')s.box([W*.7,.65,1],[0,.325,-.7],wood);
+ if(a.track!=='none')for(const z of a.track==='double'?[2.8,4.4]:[3.1]){for(let j=0;j<18;j++)s.box([.13,.05,1.25],[-W/2+j*W/17,.025,z],wood);for(const dz of [-.45,.45])s.rod([-W/2,.08,z+dz],[W/2,.08,z+dz],.025,iron);}if(a.track==='points')for(const dz of [-.45,.45])s.rod([-1,.08,3.1+dz],[W/2,.08,4.3+dz],.025,iron);
+ if(a.furniture==='shelf'||a.furniture==='bench'){const yy=a.furniture==='shelf'?Y+1:Y+.75;s.box([W*.75,.07,.5],[0,yy,-2.5],wood);for(const x of [-W*.35,W*.35])s.rod([x,Y,-2.5],[x,yy,-2.5],.035,wood);}if(a.furniture==='stove'){s.cylinder(.3,.3,.65,[-W*.4,Y+.325,-2],iron,24);s.tube([[-W*.4,Y+.6,-2],[-W*.4,top+.5,-2]],.06,iron);}if(a.state==='repair')s.box([1.1,.01,.8],[W*.3,Y+.004,-1],dark);if(a.state==='night')for(const x of [-1.5,1.5]){s.rod([x,top,-.7],[x,top-.4,-.7],.008,iron);s.cylinder(.08,.2,.15,[x,top-.45,-.7],cream,16);}if(a.state==='closed')s.box([1.2,.15,.08],[ax,.9,2.7],cream);return world;
+
+  },
+});

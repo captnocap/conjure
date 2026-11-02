@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Mercurian impact ejecta scarp intersection", "summary": "A shallow crater and lobate ejecta surface are cross-cut by a younger scarp, shown as a geometric relative-age teaching section. A crater, proximal ejecta relief and distal lobes are truly offset by a later topographic scarp. This is an explicit geometric relative-age example; ejecta shape and displacement are schematic rather than a named mapped locality.", "scales": ["planetary", "landscape", "tabletop"]});

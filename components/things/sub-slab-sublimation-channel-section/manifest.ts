@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Sub slab sublimation channel section", "summary": "A closed substrate section exposes shallow connected erosion channels underneath a retained ice roof with explicit end supports. An explicitly inferred sublimation-process section shows genuine basal troughs beneath retained seasonal ice, with roof contacts on uneroded flanks; gas-path markers are schematic rather than observed subsurface structure.", "scales": ["planetary", "landscape", "macro"]});

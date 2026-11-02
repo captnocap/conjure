@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Intracellular arbuscule branch tree", "summary": "A trunk enters one cortical cell and branches repeatedly into fine terminal forks, enclosed by the plant interface rather than penetrating organelles. A magnified teaching section for hidden processes, careful observation and scientific discovery.", "scales": ["macro", "tabletop"]});

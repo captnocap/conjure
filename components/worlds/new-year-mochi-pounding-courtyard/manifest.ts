@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind: 'world', title: "New Year mochi pounding courtyard", summary: "A sheltered courtyard prepared for neighbours to pound steamed rice into soft New Year cakes. A permanent stone mortar, steaming hearth and drying rails anchor the gathering while baskets, tools and hands move through the shared work.", scales: ["street", "room", "tabletop"]});

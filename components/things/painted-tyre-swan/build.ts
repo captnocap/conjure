@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Sculpture, choice, defineThing, mix, noul } from '@conjure/kit';
+import { Sculpture, choice, defineThing, mix, noul, score } from '@conjure/kit';
 
 type P3 = [number, number, number];
 
@@ -45,6 +45,38 @@ export default defineThing({
       trowel: 'A trowel stuck upright in the soil and a pair of gloves.',
       fence: 'A tiny knee-high picket fence, freshly painted.',
     }),
+    sculptureSize: score('How large is the tyre sculpture within its bed?', ['Small car tyre among the flowers', 'Ordinary tyre swan', 'Broad truck tyre dominating the bed']),
+    wingSpread: score('How far are the cut sidewalls opened?', ['Wings held close to the hollow body', 'Half-open rubber wings', 'Wings spread almost flat']),
+    featherEdge: choice('How were the rubber wing tips cut?', {
+      pointed: 'Long pointed feathers cut with a knife.',
+      scalloped: 'A row of broad rounded scallops.',
+      sawtooth: 'Many short triangular teeth along the edge.',
+      simple: 'One smooth uncut sidewall flap on each side.',
+    }),
+    neckSupport: choice('What holds the flexible neck in its curve?', {
+      hidden: 'The reinforcement is hidden inside the rubber.',
+      wire: 'A thin visible wire follows the underside of the neck.',
+      strap: 'Three metal straps fasten an exposed reinforcing rod.',
+      prop: 'A slim wooden prop rises from the body to the neck.',
+    }),
+    bedSurface: choice('What dresses the exposed earth around the swan?', {
+      earth: 'Plain dark soil, with the planting growing straight from it.',
+      gravel: 'A close ring of pale pebbles around the central tyre.',
+      bark: 'A ring of rough reddish bark chips.',
+      straw: 'Short straw stems scattered over the earth.',
+    }),
+    approach: choice('How do neighbours approach the little flowerbed?', {
+      plain: 'The surrounding ground is bare.',
+      stones: 'Three flat stepping stones lead to the front of the bed.',
+      boards: 'A short walkway of salvaged boards reaches the front edge.',
+      tiles: 'A small fan of mismatched paving tiles forms an apron.',
+    }),
+    gardenLabel: choice('What small marker belongs to the bed?', {
+      none: 'No marker.',
+      slate: 'A dark slate on two short stakes identifies the flowerbed.',
+      plaque: 'A little enamel swan plaque stands on a single post.',
+      stakes: 'Three coloured plant labels stand in the soil.',
+    }),
   },
 
   build(a, context) {
@@ -62,6 +94,7 @@ export default defineThing({
       for (let i = 0; i < count; i++) {
         const t = random() * 6.283, d = Math.sqrt(random()) * radius, h = 0.1 + random() * 0.14;
         const x = cx + Math.cos(t) * d, z = cz + Math.sin(t) * d;
+        sc.rod([x, y, z], [x, y + h * 0.8, z], 0.006, sc.material('#46783b'));
         leaves.push({ at: [x, y + h * 0.4, z], size: 0.035 + random() * 0.02, color: random() < 0.5 ? '#3f7a3a' : '#57903f' });
         blooms.push({ at: [x + (random() - 0.5) * 0.03, y + h * 0.8, z], size: 0.028 + random() * 0.018, color: bloomColours[Math.floor(random() * bloomColours.length)] });
       }
@@ -72,7 +105,7 @@ export default defineThing({
 
     const swan = (x: number, z: number, turn: number, size: number, neckKind: typeof a.neck) => {
       const g = new Sculpture(context);
-      g.root.position.set(x, 0.03, z); g.root.rotation.y = turn; g.root.scale.setScalar(size);
+      g.root.position.set(x, 0.08, z); g.root.rotation.y = turn; g.root.scale.setScalar(size * mix(0.8, 1.18, a.sculptureSize));
       s.root.add(g.root);
       const bodyColour = faded({ white: '#f1efe8', black: '#1f1f22', pink: '#e58fa8', blue: '#7fb2d9', gold: '#c9a23a', spotted: '#f1efe8' }[a.paint]);
       const body = g.material(bodyColour, { roughness: a.paint === 'gold' ? 0.4 : 0.7, metalness: a.paint === 'gold' ? 0.6 : 0, side: THREE.DoubleSide });
@@ -90,6 +123,18 @@ export default defineThing({
           ? [[0.3, 0.16, 0], [0.46, 0.34, 0], [0.5, 0.58, 0], [0.62, 0.72, 0], [0.75, 0.62, 0], [0.72, 0.46, 0]]
           : [[0.3, 0.16, 0], [0.46, 0.3, lean * 0.03], [0.5, 0.5, lean * 0.1], [0.58, 0.6, lean * 0.22], [0.68, 0.56, lean * 0.34], [0.74, 0.44, lean * 0.4]];
       g.tube(neck, 0.05, body);
+      const reinforcement = g.material('#727778', { metalness: 0.65, roughness: 0.55 });
+      if (a.neckSupport === 'wire' || a.neckSupport === 'strap') {
+        g.tube(neck.map(([nx, ny, nz]) => [nx, ny - 0.047, nz] as P3), a.neckSupport === 'strap' ? 0.011 : 0.006, reinforcement);
+        if (a.neckSupport === 'strap') for (const i of [1, 2, 4]) {
+          const at = new THREE.Vector3(...neck[i]);
+          const tangent = new THREE.Vector3(...neck[i + 1]).sub(new THREE.Vector3(...neck[i - 1])).normalize();
+          const band = g.ring(0.052, 0.005, at.toArray() as P3, reinforcement);
+          band.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), tangent);
+        }
+      } else if (a.neckSupport === 'prop') {
+        g.rod([0.17, 0.17, 0], [neck[2][0], neck[2][1] - 0.04, neck[2][2]], 0.014, g.material('#9e794f'));
+      }
       const end = new THREE.Vector3(...neck[neck.length - 1]), before = new THREE.Vector3(...neck[neck.length - 2]);
       const dir = end.clone().sub(before).normalize();
       const head = g.ball([0.1, 0.07, 0.065], end.clone().addScaledVector(dir, 0.03).toArray() as P3, body, 14);
@@ -100,10 +145,16 @@ export default defineThing({
       for (const side of [-1, 1]) g.ball([0.014, 0.014, 0.014], end.clone().addScaledVector(dir, 0.05).addScaledVector(up, 0.025).add(new THREE.Vector3(0, 0, side * 0.045)).toArray() as P3, rubber, 6);
       g.ball([0.03, 0.025, 0.03], end.clone().addScaledVector(dir, 0.085).addScaledVector(up, 0.03).toArray() as P3, rubber, 8);
       // Wings: sidewall cut into scalloped feathers and bent out and up; a short fan of a tail.
-      const wingShape = new THREE.Shape([[0.2, 0], [0.06, 0.15], [-0.2, 0.25], [-0.54, 0.31], [-0.41, 0.17], [-0.37, 0.21], [-0.27, 0.09], [-0.23, 0.13], [-0.13, 0.02], [-0.09, 0.06], [0, -0.03]].map(([x, y]) => new THREE.Vector2(x, y)));
+      const edges = {
+        pointed: [[0.2, 0], [0.06, 0.15], [-0.2, 0.25], [-0.54, 0.31], [-0.41, 0.17], [-0.37, 0.21], [-0.27, 0.09], [-0.23, 0.13], [-0.13, 0.02], [-0.09, 0.06], [0, -0.03]],
+        scalloped: [[0.2, 0], [0.06, 0.15], [-0.2, 0.25], [-0.49, 0.28], [-0.54, 0.23], [-0.48, 0.16], [-0.37, 0.14], [-0.34, 0.08], [-0.22, 0.07], [-0.18, 0.01], [0, -0.03]],
+        sawtooth: [[0.2, 0], [0.06, 0.15], [-0.2, 0.25], [-0.54, 0.31], [-0.49, 0.17], [-0.43, 0.23], [-0.37, 0.1], [-0.31, 0.17], [-0.25, 0.04], [-0.19, 0.1], [-0.12, -0.01], [-0.07, 0.04], [0, -0.03]],
+        simple: [[0.2, 0], [0.1, 0.12], [-0.14, 0.23], [-0.42, 0.28], [-0.5, 0.23], [-0.4, 0.1], [-0.2, 0.02], [0, -0.03]],
+      };
+      const wingShape = new THREE.Shape(edges[a.featherEdge].map(([x, y]) => new THREE.Vector2(x, y)));
       for (const side of [-1, 1]) {
         const wing = g.mesh(new THREE.ExtrudeGeometry(wingShape, { depth: 0.02, bevelEnabled: false }), body, [0.1, 0.2, side * 0.21 - 0.01]);
-        wing.rotation.x = side * mix(0.55, 0.9, mood.wear * random());
+        wing.rotation.x = side * (mix(0.15, 1.3, a.wingSpread) + mood.wear * random() * 0.08);
         wing.rotation.y = side * -0.18;
       }
       const tailShape = new THREE.Shape([[0, 0], [-0.2, 0.2], [-0.12, 0.08], [-0.24, 0.1], [-0.12, 0.0], [-0.22, -0.04]].map(([x, y]) => new THREE.Vector2(x, y)));
@@ -122,6 +173,35 @@ export default defineThing({
     s.cylinder(BED, BED + 0.06, 0.07, [0, 0.035, 0], soil, 36);
     s.ball([BED * 0.8, 0.09, BED * 0.8], [0, 0.05, 0], soil, 20);
     s.cylinder(BED + 0.28, BED + 0.32, 0.02, [0, 0.0, 0], new THREE.MeshStandardMaterial({ color: snowy ? '#dfe3e6' : a.planting === 'weeds' ? '#6f7650' : '#8a8676', roughness: 1 }), 36);
+    if (a.bedSurface !== 'earth') {
+      const surfaceMat = s.material(a.bedSurface === 'gravel' ? '#c1bba7' : a.bedSurface === 'bark' ? '#79503b' : '#c2ae6b');
+      for (let i = 0; i < 36; i++) {
+        const angle = i * Math.PI * 2 / 36 + random() * 0.08, radius = 0.49 + random() * 0.27;
+        const x = Math.cos(angle) * radius, z = Math.sin(angle) * radius;
+        const floorY = radius < BED * 0.8 ? Math.max(0.07, 0.05 + 0.09 * Math.sqrt(1 - (radius / (BED * 0.8)) ** 2)) : 0.07;
+        if (a.bedSurface === 'gravel') s.ball([0.026, 0.014, 0.019], [x, floorY + 0.01, z], surfaceMat, 6);
+        else if (a.bedSurface === 'bark') s.box([0.055, 0.012, 0.024], [x, floorY + 0.005, z], surfaceMat).rotation.y = angle;
+        else s.rod([x - 0.035, floorY + 0.004, z - 0.02], [x + 0.035, floorY + 0.004, z + 0.02], 0.004, surfaceMat);
+      }
+    }
+    if (a.approach !== 'plain') {
+      const mat = s.material(a.approach === 'boards' ? '#9c8668' : '#a09b8e');
+      if (a.approach === 'stones') for (let i = 0; i < 3; i++) s.cylinder(0.2, 0.22, 0.035, [(i % 2 - 0.5) * 0.1, 0.0075, 1.27 + i * 0.3], mat, 7);
+      else if (a.approach === 'boards') for (let i = 0; i < 5; i++) s.box([0.55, 0.035, 0.16], [0, 0.0075, 1.18 + i * 0.18], mat);
+      else for (let row = 0; row < 2; row++) for (let col = 0; col < 4; col++) s.box([0.2, 0.03, 0.21], [(col - 1.5) * 0.22, 0.005, 1.25 + row * 0.24], s.material((row + col) % 2 ? '#b27659' : '#bdb49c'));
+    }
+    if (a.gardenLabel !== 'none') {
+      const wood = s.material('#8a7050'), face = s.material(a.gardenLabel === 'slate' ? '#3f4545' : '#e8e4d5');
+      const x = -0.66, z = -0.65;
+      if (a.gardenLabel === 'stakes') for (let i = 0; i < 3; i++) {
+        s.box([0.018, 0.18, 0.018], [x + i * 0.11, 0.09, z], wood);
+        s.box([0.07, 0.08, 0.015], [x + i * 0.11, 0.21, z], s.material(['#d9bd58', '#78a7a9', '#d38783'][i]));
+      } else {
+        for (const dx of a.gardenLabel === 'slate' ? [-0.1, 0.1] : [0]) s.box([0.025, 0.32, 0.025], [x + dx, 0.16, z], wood);
+        s.box([0.32, 0.18, 0.025], [x, 0.32, z], face);
+        s.tube([[x - 0.09, 0.3, z + 0.016], [x - 0.02, 0.29, z + 0.016], [x + 0.04, 0.31, z + 0.016], [x + 0.04, 0.37, z + 0.016], [x + 0.09, 0.37, z + 0.016]], 0.007, s.material(a.gardenLabel === 'slate' ? '#dcd8cb' : '#4b6570'));
+      }
+    }
 
     if (a.border === 'tyres') {
       const n = 11, palette = ['#f1efe8', '#d6261c', '#2f62ad', '#e3c22c', '#3f8a4a'];
@@ -149,6 +229,8 @@ export default defineThing({
       for (let i = 0; i < count; i++) {
         const t = random() * 6.283, d = 0.58 + random() * (BED - 0.68), h = 0.1 + random() * 0.1;
         const x = Math.cos(t) * d, z = Math.sin(t) * d;
+        const soilY = d < BED * 0.8 ? Math.max(0.07, 0.05 + 0.09 * Math.sqrt(1 - (d / (BED * 0.8)) ** 2)) : 0.07;
+        s.rod([x, soilY - 0.005, z], [x, 0.08 + h, z], 0.006, s.material('#46783b'));
         leaves.push({ at: [x, 0.08 + h * 0.4, z], size: 0.045 + random() * 0.025, color: random() < 0.5 ? '#3f7a3a' : '#57903f' });
         blooms.push({ at: [x, 0.08 + h, z], size: 0.032 + random() * 0.02, color: bloomColours[Math.floor(random() * bloomColours.length)] });
       }

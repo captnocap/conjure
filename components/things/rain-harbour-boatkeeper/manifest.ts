@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Rain harbour boatkeeper", "summary": "A little harbour keeper in practical rain clothes handles a boat hook, line or boarding record. Waiting out a shower, guiding an unlikely ferry, looking after neighbours and keeping a tiny waterfront in working order.", "scales": ["room", "street", "tabletop"]});

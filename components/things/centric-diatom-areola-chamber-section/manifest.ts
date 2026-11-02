@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Centric diatom areola chamber section", "summary": "An enlarged silica areola has a genuine chamber, external opening and perforated inner sieve with shared walls. A Thalassiosira-type chamber study with external foramina and internal cribra. Actual enlarged pores, shared silica walls and removed sections explain the architecture; this orientation is not universal to all diatoms.", "scales": ["macro", "tabletop"]});

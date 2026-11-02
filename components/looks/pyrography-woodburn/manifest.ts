@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Pyrography woodburn',summary:'A picture burned into a wooden panel: precise nib contours, scorched shading, flowing growth lines and dark char. Patient workshop keepsakes, handmade signs, folk illustration, memory held in the grain.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'craft'});

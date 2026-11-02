@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Wet-plate collodion',summary:'A silver image on a poured collodion plate, with luminous tones, lens falloff, irregular coating edges and protective varnish. Tintype portraits, glass-plate landscapes and intimate early photographic objects.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'optical'});

@@ -65,6 +65,13 @@ function garment(kind: Kind, r: () => number): { shape: THREE.Shape; width: numb
 
 export default defineThing({
   questions: {
+    span: score('How wide is the gap crossed by the washing?', ['A narrow gap','A small alley','A broad lane','A generous canal-side gap']),
+    wallHeight: score('How tall are the wall fragments?', ['Low upper-storey fragments','A modest wall height','Tall wall fragments','High walls over the washing']),
+    tension: score('How tightly are the clotheslines pulled?', ['Deep relaxed curves','Softly sagging lines','Fairly taut lines','Nearly straight under tension']),
+    lineFinish: choice('What are the clotheslines made from?', { hemp:'Pale thick hemp cord.', wire:'Thin dark metal line.', blue:'Blue plastic-coated clothesline.', tape:'Broad-looking pale cotton cord.' }),
+    pegConstruction: choice('What holds the washing to the lines?', { spring:'Plain wooden spring pegs.', split:'Long split wooden dolly pegs.', plastic:'Coloured plastic clips.', wire:'Narrow bent-wire clips.' }),
+    breeze: score('How strongly does the breeze move the washing?', ['Almost completely still','A gentle occasional sway','A steady billowing breeze','Brisk fluttering across the gap']),
+
     load: choice('What kind of wash is hanging?', LOADS),
     palette: choice('What colours is the washing?', PALETTES),
     bright: choice('Which one bright thing stands out among it?', {
@@ -99,7 +106,7 @@ export default defineThing({
   build(a, context) {
     const s = new Sculpture(context);
     const { mood, random } = context;
-    const HW = 2.9, H = 5.3;
+    const HW = mix(2.45,3.55,a.span), H = mix(4.85,6.3,a.wallHeight);
 
     // Stucco with patches peeled back to brick, and damp at the foot.
     const canvas = document.createElement('canvas');
@@ -171,8 +178,13 @@ export default defineThing({
 
     // Lines, pulleys and washing.
     const colours = CLOTH[a.palette];
-    const rope = s.material('#ded6bf');
-    const peg = s.material('#c9a56a');
+    const rope = s.material(a.lineFinish==='wire'?'#62676a':a.lineFinish==='blue'?'#719aab':a.lineFinish==='tape'?'#eee6cd':'#c8b48b',{metalness:a.lineFinish==='wire'?.45:0}), lineRadius=a.lineFinish==='wire'?.006:a.lineFinish==='tape'?.019:a.lineFinish==='blue'?.01:.014;
+    const peg = s.material(a.pegConstruction==='plastic'?'#6f9491':a.pegConstruction==='wire'?'#89908b':'#c9a56a',{metalness:a.pegConstruction==='wire'?.6:0});
+    const drawPeg=(x:number,y:number,z:number)=>{
+      if(a.pegConstruction==='split'){s.ball([.017,.021,.017],[x,y+.056,z],peg,10);for(const sign of[-1,1])s.rod([x+sign*.007,y+.045,z],[x+sign*.009,y-.055,z],.007,peg);}
+      else if(a.pegConstruction==='wire'){for(const sign of[-1,1])s.tube([[x+sign*.008,y-.04,z-.012],[x+sign*.014,y+.04,z-.012],[x,y+.052,z+.01],[x+sign*.008,y-.04,z+.015]],.0035,peg);}
+      else{for(const sign of[-1,1]){const arm=s.box([.017,.1,.022],[x+sign*.009,y,z],peg);arm.rotation.z=sign*.08;}s.ring(.012,.003,[x,y+.01,z+.014],iron);}
+    };
     const swaying: { node: THREE.Object3D; phase: number; amp: number; base: number }[] = [];
     const lineCount = { one: 1, two: 2, three: 3 }[a.lines];
     const heights = [[3.2], [2.75, 4.1], [2.45, 3.5, 4.5]][lineCount - 1];
@@ -181,11 +193,11 @@ export default defineThing({
     const dropped: { kind: Kind; colour: string }[] = [];
     heights.forEach((height, lineIndex) => {
       const z = 0.35 - lineIndex * 0.38;
-      const sag = mix(0.12, 0.34, a.fullness) + random() * 0.05;
+      const sag = (mix(0.12, 0.34, a.fullness) + random() * 0.05)*mix(1.65,.32,a.tension);
       const lineY = (x: number) => height - sag * (1 - (x / HW) ** 2);
       const points = (lift: number) => Array.from({ length: 9 }, (_n, i) => { const x = -HW + (i / 8) * HW * 2; return [x, lineY(x) + lift * (0.4 + 0.6 * (x / HW) ** 2), z] as [number, number, number]; });
-      s.tube(points(0), 0.012, rope);
-      s.tube(points(0.16), 0.012, rope);
+      s.tube(points(0), lineRadius, rope);
+      s.tube(points(0.16), lineRadius, rope);
       for (const side of [-1, 1]) {
         s.box([0.08, 0.05, 0.05], [side * (HW - 0.03), height + 0.08, z], iron);
         const wheel = s.cylinder(0.09, 0.09, 0.03, [side * (HW - 0.1), height + 0.08, z], s.material('#8f8f8a', { metalness: 0.3 }), 14);
@@ -204,7 +216,7 @@ export default defineThing({
           special = a.bright;
           kind = ({ 'red-dress': 'dress', 'football-shirt': 'shirt', 'yellow-sheet': 'sheet', harlequin: 'dress', 'blue-overalls': 'trousers' } as const)[a.bright as Exclude<typeof a.bright, 'none'>];
           colour = ({ 'red-dress': '#e3172d', 'football-shirt': '#f2f2f2', 'yellow-sheet': '#f5c518', harlequin: '#f2f2f2', 'blue-overalls': '#1668e0' } as const)[a.bright as Exclude<typeof a.bright, 'none'>];
-        } else if (hung >= 2 && random() < gapChance) { x += 0.35 + random() * 0.5; if (random() < 0.5) s.box([0.025, 0.09, 0.03], [x - 0.2, lineY(x - 0.2), z], peg); continue; }
+        } else if (hung >= 2 && random() < gapChance) { x += 0.35 + random() * 0.5; if (random() < 0.5) drawPeg(x-.2,lineY(x-.2),z); continue; }
         const { shape, width, drop } = garment(kind, random);
         if (x + width > HW - 0.15) { if (special) brightDone = a.bright === 'none'; break; }
         const cx = x + width / 2;
@@ -227,7 +239,7 @@ export default defineThing({
         const loose = !looseDone && !special && hung >= 1 && kind !== 'sock';
         const pegs = loose ? [-width * 0.42] : width > 0.5 ? [-width * 0.38, width * 0.38] : [0];
         if (loose) { looseDone = true; cloth.position.x = width * 0.42; pivot.position.x -= width * 0.42; pivot.rotation.z = -0.75; }
-        for (const px of pegs) s.box([0.03, 0.1, 0.035], [cx + px, lineY(cx + px) + (special === 'blue-overalls' ? 0 : 0), z], peg);
+        for (const px of pegs) drawPeg(cx+px,lineY(cx+px),z);
         s.root.add(pivot);
         swaying.push({ node: pivot, phase: cx * 0.9 + lineIndex * 1.7 + random(), amp: (kind === 'sheet' ? 0.3 : kind === 'sock' ? 0.12 : 0.2) * (loose ? 1.6 : 1), base: (random() - 0.5) * 0.1 });
         if (dropped.length === 0) dropped.push({ kind, colour });
@@ -246,7 +258,7 @@ export default defineThing({
       s.box([0.03, 0.035, 0.1], [cloth.position.x + 0.3, 0.02, cloth.position.z + 0.25], peg).rotation.y = random() * 3;
     }
 
-    const energy = mix(0.2, 1.5, mood.energy);
+    const energy = mix(0.2, 1.5, mood.energy)*mix(.03,1.65,a.breeze);
     const update = (_dt: number, time: number) => {
       for (const { node, phase, amp, base } of swaying) {
         const gust = Math.sin(time * 0.9 * energy - phase) + 0.4 * Math.sin(time * 2.3 * energy - phase * 1.7);

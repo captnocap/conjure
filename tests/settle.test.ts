@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { choice, noul, score, seeded } from '../kit/index';
-import { settleOne } from '../engine/settle';
+import { representative, settleOne } from '../engine/settle';
 
 const colour = choice('Which colour?', { red: 'Red', green: 'Green', blue: 'Blue' });
 
@@ -103,4 +103,21 @@ test('an exploring settle tours choices, keeps pins, and leaves the other draws 
   assert.equal(plainRandom(), exploringRandom());
   // First choices are untouched by exploring.
   assert.equal(settle('x', questions, verdicts, 0, seeded(1), [], {}, { roll: 4, seed: 5 }).colour, 'green');
+});
+
+test('a score split between its ends settles inside the heavier side, not in the trough between them', () => {
+  const light = score('Where does the light come from?', ['first light', 'morning sun', 'noon', 'afternoon sun', 'last light']);
+  // Measured 2026-10-29: "a mountain village the evening the cable car stopped" settled on noon (2%).
+  const split = { type: 'score' as const, value: 0.47, probabilities: [0.5, 0.02, 0.02, 0.04, 0.42] };
+  const { value, ruling } = settleOne(light, split, 0, seeded(1));
+  assert.equal(ruling.picked, 'first light');
+  assert.ok(Number(value) < 0.1);
+  assert.equal(representative(0.66, [0.31, 0.02, 0.03, 0.04, 0.6]), 1);
+});
+
+test('a score with one hump keeps its expectation', () => {
+  assert.equal(representative(0.14, [0.51, 0.47, 0.01, 0, 0.01]), 0.14);
+  assert.equal(representative(0.5, [0.1, 0.2, 0.4, 0.2, 0.1]), 0.5);
+  // A trough with almost nothing on one side is a lean, not a split.
+  assert.equal(representative(0.62, [0.04, 0.06, 0.05, 0.8, 0.05]), 0.62);
 });

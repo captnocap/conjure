@@ -40,6 +40,42 @@ const NOTES = {
 
 export default defineThing({
   questions: {
+    base: choice('What anchors the upright stand?', {
+      plate: 'A solid rectangular cast-iron plate.',
+      oval: 'A broad oval iron foot.',
+      fork: 'A U-shaped foot leaves room around the receiving vessel.',
+      weighted: 'A rectangular base with two additional iron ballast blocks.',
+    }),
+    clamps: choice('How are the clamps tightened on the support rod?', {
+      screw: 'Plain short screw bosses.',
+      wing: 'Broad wing screws at each boss.',
+      wheel: 'Small spoked tightening handwheels.',
+      lever: 'Long dark quick-clamp levers.',
+    }),
+    receiver: choice('What supports the vessel catching the drops?', {
+      direct: 'The vessel rests directly beneath the apparatus.',
+      jack: 'A small scissor jack raises it toward the delivery tip.',
+      stirrer: 'A compact magnetic stirrer with a front dial.',
+      tray: 'A shallow drip tray surrounds the vessel.',
+    }),
+    backdrop: choice('What is fixed behind the receiving vessel?', {
+      none: 'No comparison backing.',
+      white: 'A small white comparison card on a metal bracket.',
+      black: 'A dark comparison card makes the glass edge visible.',
+      ruler: 'A narrow vertical scale records the height of the receiving vessel.',
+    }),
+    service: choice('What auxiliary fitting is on the stand?', {
+      none: 'Only the working apparatus.',
+      spare: 'A spare support ring is clamped on the unused side.',
+      timer: 'A small round timer hangs from the lower rod.',
+      thermometer: 'A protected glass thermometer is clipped alongside the rod.',
+    }),
+    hoses: choice('If the apparatus has a water jacket, how are its hoses arranged?', {
+      trailing: 'Both water hoses trail loose across the bench.',
+      clipped: 'Two clips keep the hoses close to the support rod.',
+      coiled: 'Spare hose length lies in a loose loop before the ends.',
+      couplings: 'Brass quick-connect couplings finish the hose ends.',
+    }),
     apparatus: choice('What glassware is clamped to the stand?', {
       coil: 'An upright condenser with a glass coil spiralling inside its water jacket.',
       still: 'A small still: a round flask over a spirit lamp, with a slanted condenser running off to one side.',
@@ -70,14 +106,21 @@ export default defineThing({
     const rodX = -0.075, ax = 0.035, baseTop = 0.014;
     const still = a.apparatus === 'still';
     const tipX = still ? ax + 0.3 : ax;
-    const vesselY = still ? 0 : baseTop;
+    const receiverFloor = still || a.base === 'fork' ? 0 : baseTop;
+    const receiverLift = { direct: 0, jack: 0.055, stirrer: 0.028, tray: 0.005 }[a.receiver];
+    const vesselY = receiverFloor + receiverLift;
     const tipBase = still ? 0.15 : 0.17;
     const lift = Math.max(0, vesselY + shape.H + 0.03 - tipBase);
     const tipY = tipBase + lift;
     const rodTop = (a.apparatus === 'burette' ? 0.74 : 0.62) + lift;
 
     // The stand.
-    s.box([0.23, baseTop, 0.14], [0, baseTop / 2, 0], iron);
+    if (a.base === 'oval') s.cylinder(0.075, 0.075, baseTop, [0, baseTop / 2, 0], iron, 28).scale.x = 1.65;
+    else if (a.base === 'fork') {
+      s.box([0.035, baseTop, 0.17], [-0.092, baseTop / 2, 0], iron);
+      for (const z of [-0.07, 0.07]) s.box([0.205, baseTop, 0.026], [0.01, baseTop / 2, z], iron);
+    } else s.box([0.23, baseTop, 0.14], [0, baseTop / 2, 0], iron);
+    if (a.base === 'weighted') for (const z of [-0.05, 0.05]) s.box([0.09, 0.02, 0.025], [-0.035, baseTop + 0.01, z], iron);
     for (const x of [-0.1, 0.1]) for (const z of [-0.055, 0.055]) s.cylinder(0.008, 0.008, 0.003, [x, 0.0005, z], iron, 8);
     s.cylinder(0.007, 0.007, rodTop, [rodX, rodTop / 2, 0], steel, 12);
     s.cylinder(0.011, 0.012, 0.012, [rodX, baseTop + 0.006, 0], iron, 12);
@@ -85,13 +128,38 @@ export default defineThing({
       s.box([0.022, 0.026, 0.022], [rodX, y, 0], iron);
       s.rod([rodX - 0.02, y, 0.006], [rodX, y, 0.006], 0.003, steel);
       s.rod([rodX, y, 0], [ax - radius - 0.002, y, 0], 0.0045, steel);
+      if (a.clamps === 'wing') for (const side of [-1, 1]) s.ball([0.004, 0.008, 0.003], [rodX - 0.021, y + side * 0.008, 0.006], steel, 10);
+      if (a.clamps === 'wheel') {
+        s.ring(0.012, 0.002, [rodX - 0.023, y, 0.006], steel).rotation.y = Math.PI / 2;
+        for (let i = 0; i < 3; i++) {
+          const angle = i * Math.PI * 2 / 3;
+          s.rod([rodX - 0.023, y, 0.006], [rodX - 0.023, y + Math.cos(angle) * 0.012, 0.006 + Math.sin(angle) * 0.012], 0.0015, steel);
+        }
+      }
+      if (a.clamps === 'lever') s.rod([rodX - 0.02, y, 0.006], [rodX - 0.035, y + 0.035, 0.006], 0.003, iron);
       const jaw = s.ring(radius + 0.004, 0.004, [ax, y, 0], ring ? iron : corkMat, ring ? Math.PI * 2 : Math.PI * 1.55);
       jaw.rotation.x = Math.PI / 2;
       jaw.rotation.z = ring ? 0 : Math.PI - Math.PI * 0.775;
       if (!ring) s.rod([ax - radius - 0.012, y, 0.012], [ax - radius - 0.012, y, -0.012], 0.0028, steel);
     };
-    const hose = (from: P3, side: number) =>
-      s.tube([from, [from[0] + 0.03 * side, from[1] - 0.01, from[2] - 0.02], [from[0] + 0.05 * side, Math.max(0.05, from[1] * 0.45), -0.07], [from[0] + 0.03 * side, 0.007, -0.11], [from[0] + (random() - 0.5) * 0.08, 0.007, -0.19]], 0.005, rubber);
+    const hose = (from: P3, side: number) => {
+      const end: P3 = [from[0] + (random() - 0.5) * 0.08, 0.007, -0.19];
+      const route: P3[] = [from, [from[0] + 0.03 * side, from[1] - 0.01, from[2] - 0.02]];
+      if (a.hoses === 'clipped') {
+        route.push([rodX + side * 0.019, from[1] * 0.65, -0.023], [rodX + side * 0.019, 0.05, -0.023]);
+        for (const y of [from[1] * 0.65, 0.05]) {
+          s.rod([rodX, y, 0], [rodX + side * 0.019, y, -0.023], 0.0018, steel);
+          s.ring(0.006, 0.0013, [rodX + side * 0.019, y, -0.023], steel).rotation.x = Math.PI / 2;
+        }
+      } else route.push([from[0] + 0.05 * side, Math.max(0.05, from[1] * 0.45), -0.07]);
+      route.push([from[0] + 0.03 * side, 0.007, -0.11]);
+      if (a.hoses === 'coiled') for (let i = 0; i <= 12; i++) { const angle = i * Math.PI * 2 / 12; route.push([from[0] + 0.04 * Math.cos(angle), 0.007 + i * 0.0005, -0.14 + 0.04 * Math.sin(angle)]); }
+      route.push(end); s.tube(route, 0.005, rubber);
+      if (a.hoses === 'couplings') {
+        s.rod(end, [end[0], 0.007, end[2] - 0.018], 0.007, s.material('#b79b61', { metalness: 0.8 }));
+        s.ring(0.007, 0.0012, [end[0], 0.007, end[2] - 0.014], steel);
+      }
+    };
 
     if (a.apparatus === 'coil') {
       const y0 = tipY + 0.05, y1 = y0 + 0.28;
@@ -252,6 +320,48 @@ export default defineThing({
       tag.rotation.y = -0.2;
       s.rod([rodX, tagY + 0.03, 0.004], [rodX - 0.005, tagY + 0.012, 0.012], 0.0008, s.material('#d8cfae'));
       s.ring(0.0068, 0.001, [rodX, tagY + 0.03, 0], s.material('#d8cfae')).rotation.x = Math.PI / 2;
+    }
+
+    if (a.receiver !== 'direct') {
+      const width = Math.max(0.11, shape.r(shape.H) * 2 + 0.035);
+      s.box([width, 0.005, width], [tipX, receiverFloor + 0.0025, 0], steel);
+      if (a.receiver === 'jack') {
+        s.box([width, 0.005, width], [tipX, vesselY - 0.0025, 0], steel);
+        for (const z of [-width * 0.3, width * 0.3]) {
+          s.rod([tipX - width * 0.35, receiverFloor + 0.007, z], [tipX + width * 0.35, vesselY - 0.007, z], 0.0028, steel);
+          s.rod([tipX + width * 0.35, receiverFloor + 0.007, z], [tipX - width * 0.35, vesselY - 0.007, z], 0.0028, steel);
+        }
+        s.rod([tipX - width * 0.45, receiverFloor + 0.027, 0], [tipX + width * 0.6, receiverFloor + 0.027, 0], 0.0025, iron);
+        s.ring(0.009, 0.002, [tipX + width * 0.6, receiverFloor + 0.027, 0], iron).rotation.y = Math.PI / 2;
+      } else if (a.receiver === 'stirrer') {
+        s.box([width, receiverLift, width], [tipX, receiverFloor + receiverLift / 2, 0], s.material('#728882'));
+        s.cylinder(0.007, 0.007, 0.006, [tipX + width * 0.2, receiverFloor + 0.013, width / 2 + 0.003], iron, 12).rotation.x = Math.PI / 2;
+      } else for (const side of [-1, 1]) {
+        s.box([width, 0.012, 0.003], [tipX, receiverFloor + 0.009, side * width / 2], steel);
+        s.box([0.003, 0.012, width], [tipX + side * width / 2, receiverFloor + 0.009, 0], steel);
+      }
+    }
+    if (a.backdrop !== 'none') {
+      const x = tipX + (a.backdrop === 'ruler' ? 0.066 : 0), z = -0.065, y = vesselY + 0.10;
+      const width = a.backdrop === 'ruler' ? 0.023 : 0.11;
+      s.box([width, 0.18, 0.003], [x, y, z], s.material(a.backdrop === 'black' ? '#263b3f' : '#ebe9d9'));
+      s.rod([rodX, 0.09, 0], [x, 0.09, z - 0.004], 0.0025, steel);
+      s.rod([x, 0.09, z - 0.004], [x, y, z - 0.004], 0.0025, steel);
+      if (a.backdrop === 'ruler') for (let i = 0; i < 14; i++) s.box([i % 5 ? 0.007 : 0.015, 0.0008, 0.0005], [x, vesselY + 0.025 + i * 0.011, z + 0.0018], iron);
+    }
+    if (a.service === 'spare') {
+      s.rod([rodX, 0.18, 0], [rodX - 0.06, 0.18, 0], 0.003, steel);
+      s.ring(0.025, 0.0025, [rodX - 0.085, 0.18, 0], iron).rotation.x = Math.PI / 2;
+    } else if (a.service === 'timer') {
+      s.rod([rodX, 0.16, 0], [rodX - 0.035, 0.14, 0.009], 0.0015, steel);
+      s.cylinder(0.025, 0.025, 0.009, [rodX - 0.035, 0.115, 0.009], iron, 24).rotation.x = Math.PI / 2;
+      s.cylinder(0.022, 0.022, 0.001, [rodX - 0.035, 0.115, 0.014], s.material('#eee9d2'), 24).rotation.x = Math.PI / 2;
+      s.rod([rodX - 0.035, 0.115, 0.015], [rodX - 0.023, 0.126, 0.015], 0.001, iron);
+    } else if (a.service === 'thermometer') {
+      s.box([0.021, 0.21, 0.006], [rodX - 0.027, 0.275, 0], s.material('#e6e1cb'));
+      for (const y of [0.19, 0.36]) s.rod([rodX, y, 0], [rodX - 0.027, y, 0], 0.002, steel);
+      s.rod([rodX - 0.027, 0.18, 0.004], [rodX - 0.027, 0.34, 0.004], 0.0015, solidGlass);
+      s.rod([rodX - 0.027, 0.18, 0.006], [rodX - 0.027, 0.27, 0.006], 0.0008, rubber);
     }
 
     const span = Math.max(0.02, tipY - surface - 0.01);

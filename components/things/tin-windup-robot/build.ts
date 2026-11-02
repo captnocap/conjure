@@ -13,6 +13,30 @@ type Ctx = CanvasRenderingContext2D;
 
 export default defineThing({
   questions: {
+    hands: choice('What tools are fitted at the ends of its arms?', {
+      pincers: 'Red open C-shaped pincers.', paddles: 'Flat silver paddle hands.',
+      magnets: 'Small horseshoe magnets with contrasting poles.', claws: 'Three short articulated metal fingers.',
+    }),
+    feet: choice('What kind of clockwork feet does it have?', {
+      boots: 'Broad flat tin boots.', ribs: 'Boots with heavy transverse tread ribs.',
+      rollers: 'Two small rollers under each shoe.', pointed: 'Long pointed toes printed like rocket fins.',
+    }),
+    joints: choice('How are the arm joints covered?', {
+      plain: 'Plain pressed-tin sleeves.', bellows: 'Closely spaced dark bellows rings.',
+      bands: 'Three broad polished bands around each arm.', bolts: 'Prominent hexagonal shoulder bolts.',
+    }),
+    keyShape: choice('If the key is present, what shape is its grip?', {
+      butterfly: 'Two round open butterfly wings.', oval: 'Two elongated open loops.',
+      bar: 'A solid short T-bar.', clover: 'Four small round loops around the shaft.',
+    }),
+    markings: choice('What extra lithographed markings decorate the tin?', {
+      plain: 'Only the original panel and rivets.', stripes: 'Diagonal warning stripes along the panel borders.',
+      stars: 'Small star emblems in the panel corners.', serial: 'Little inspection stamps and serial numbers.',
+    }),
+    companion: choice('What has been left beside the robot?', {
+      alone: 'The toy stands alone.', instructions: 'A folded cream sheet showing winding instructions.',
+      carton: 'Its open printed cardboard storage tray.', repair: 'A small screwdriver and a pair of spare clockwork gears.',
+    }),
     era: choice('Which toy-robot design is it?', {
       boxhead: 'The 1950s classic: square head, square chest, bulb eyes, a grille mouth and one antenna.',
       atomic: 'An atomic-age model with a barrel body and a clear dome head showing a glowing coil brain.',
@@ -118,6 +142,11 @@ export default defineThing({
         g.fillStyle = 'rgba(245,240,225,0.85)';
         g.beginPath(); g.arc(x, y, 2.8, 0, Math.PI * 2); g.fill();
       }
+      g.save();g.fillStyle=g.strokeStyle=livery.ink;g.lineWidth=3;
+      if(a.markings==='stripes')for(let y=28;y<h-25;y+=18)for(const x of [13,w-24]){g.beginPath();g.moveTo(x,y);g.lineTo(x+10,y+9);g.stroke();}
+      if(a.markings==='stars')for(const x of [23,w-23])for(const y of [32,h-32]){g.beginPath();for(let i=0;i<10;i++){const t=i*Math.PI/5,r=i%2?4:9;g.lineTo(x+Math.cos(t)*r,y+Math.sin(t)*r);}g.closePath();g.fill();}
+      if(a.markings==='serial'){g.font='bold 11px monospace';g.fillText('QC 07',15,h-24);g.fillText('MODEL R',15,31);}
+      g.restore();
     };
     const unit = String(1 + Math.floor(random() * 9));
     const panel = (g: Ctx, x: number, y: number, w: number, h: number) => {
@@ -316,8 +345,15 @@ export default defineThing({
       if (barrel) cyl(arm, 0.008, 0.008, 0.058, [0, -0.029, 0], steel, 'y', 12);
       else box(arm, [0.018, 0.06, 0.022], [0, -0.028, 0], tin);
       cyl(arm, 0.011, 0.011, 0.008, [0, -0.06, 0], trim, 'y', 12);
-      const claw = put(arm, new THREE.Mesh(new THREE.TorusGeometry(0.011, 0.0038, 8, 20, Math.PI * 1.45), s.material('#c5372c', { metalness: 0.2 })), [0, -0.075, 0]);
-      claw.rotation.set(0, Math.PI / 2, Math.PI * 0.78);
+      if(a.hands==='pincers') {
+        const claw = put(arm, new THREE.Mesh(new THREE.TorusGeometry(0.011, 0.0038, 8, 20, Math.PI * 1.45), s.material('#c5372c', { metalness: 0.2 })), [0, -0.075, 0]);
+        claw.rotation.set(0, Math.PI / 2, Math.PI * 0.78);
+      } else if(a.hands==='paddles') {box(arm,[.007,.025,.027],[0,-.075,0],steel);box(arm,[.008,.004,.029],[0,-.084,0],trim);}
+      else if(a.hands==='magnets') {box(arm,[.007,.007,.026],[0,-.069,0],tin);for(const z of [-.01,.01]){box(arm,[.008,.02,.006],[0,-.08,z],tin);box(arm,[.008,.005,.006],[0,-.089,z],steel);}}
+      else for(let i=0;i<3;i++){const z=(i-1)*.01;box(arm,[.007,.018,.005],[0,-.073,z],steel);box(arm,[.013,.005,.005],[.003,-.082,z],trim);}
+      if(a.joints==='bellows')for(let i=0;i<8;i++)cyl(arm,.011,.011,.003,[0,-.012-i*.005,0],dark,'y',12);
+      if(a.joints==='bands')for(let i=0;i<3;i++)cyl(arm,.013,.013,.009,[0,-.013-i*.016,0],steel,'y',14);
+      if(a.joints==='bolts')cyl(arm,.013,.013,.008,[side*.012,0,0],steel,'x',6);
       arms.push(arm);
     }
 
@@ -327,6 +363,9 @@ export default defineThing({
       box(leg, [0.03, 0.07, 0.034], [0, -0.035, 0], tin);
       box(leg, [0.032, 0.008, 0.036], [0, -0.05, 0], trim);
       box(leg, [0.04, 0.016, 0.07], [0, -0.076, 0.012], trim);
+      if(a.feet==='ribs')for(let i=0;i<5;i++)box(leg,[.042,.005,.004],[0,-.067,-.014+i*.012],dark);
+      if(a.feet==='rollers')for(const z of [-.009,.034])cyl(leg,.012,.012,.044,[0,-.083,z],dark,'x',16);
+      if(a.feet==='pointed'){const toe=new THREE.Shape();toe.moveTo(-.02,0);toe.lineTo(.02,0);toe.lineTo(0,.048);toe.closePath();const fin=put(leg,new THREE.Mesh(new THREE.ExtrudeGeometry(toe,{depth:.008,bevelEnabled:false}),tin),[0,-.074,.038]);fin.rotation.x=Math.PI/2;}
       return leg;
     });
 
@@ -336,7 +375,9 @@ export default defineThing({
     cyl(key, 0.009, 0.009, 0.003, [0, 0, -0.001], dark, 'z', 16);
     if (a.key !== 'lost') {
       const brass = s.material('#d9b45a', { metalness: 0.45, roughness: 0.3 });
-      for (const side of [-1, 1]) put(key, new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.0042, 8, 24), brass), [side * 0.026, 0, -0.04]);
+      if(a.keyShape==='bar')box(key,[.07,.014,.007],[0,0,-.04],brass);
+      else if(a.keyShape==='clover')for(let i=0;i<4;i++){const t=i*Math.PI/2;put(key,new THREE.Mesh(new THREE.TorusGeometry(.012,.0035,6,20),brass),[Math.cos(t)*.02,Math.sin(t)*.02,-.04]);}
+      else for (const side of [-1, 1]) {const wing=put(key, new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.0042, 8, 24), brass), [side * 0.026, 0, -0.04]);if(a.keyShape==='oval')wing.scale.set(1.3,.65,1);}
       box(key, [0.016, 0.009, 0.007], [0, 0, -0.04], brass);
       key.rotation.z = 0.5 + random() * 0.6;
     }
@@ -368,6 +409,17 @@ export default defineThing({
     const rate = mix(2.5, 12, mood.energy);
     const rock = a.doing === 'striding' ? 0.07 : a.doing === 'blocked' ? 0.03 : 0;
     robot.rotation.z = rock;
+    if(a.companion==='instructions') {
+      const tex=litho(256,192,g=>{g.fillStyle='#eee1b7';g.fillRect(0,0,256,192);g.fillStyle='#4d5a64';g.font='bold 22px monospace';g.fillText('WIND GENTLY',22,35);g.font='16px monospace';g.fillText('TURN KEY 3 TIMES',16,70);g.fillText('SET ON LEVEL FLOOR',16,100);g.strokeStyle='#4d5a64';g.lineWidth=3;g.strokeRect(91,119,58,51);g.beginPath();g.moveTo(67,146);g.lineTo(91,146);g.moveTo(149,146);g.lineTo(176,146);g.stroke();});
+      s.mesh(new THREE.PlaneGeometry(.13,.0975),tex,[-.14,.001,.02]).rotation.set(-Math.PI/2,0,.1);
+    } else if(a.companion==='carton') {
+      const card=s.material('#bb9a62',{roughness:.9}),x=-.18,z=-.02,w=.14,d=.22,h=.035;
+      s.box([w,.003,d],[x,.0015,z],card);for(const side of [-1,1]){s.box([.003,h,d],[x+side*w/2,h/2,z],card);s.box([w,h,.003],[x,h/2,z+side*d/2],card);}
+      s.label('WALKING ROBOT',.12,.025,[x,.019,z+d/2+.002],livery.ink,livery.body);
+    } else if(a.companion==='repair') {
+      for(let i=0;i<2;i++){const x=-.13+i*.045,r=.014+i*.003;s.cylinder(r,r,.004,[x,.002,.035],steel,20);for(let n=0;n<10;n++){const t=n*Math.PI/5;s.box([.005,.004,.005],[x+Math.cos(t)*r,.002,.035+Math.sin(t)*r],steel).rotation.y=t;}s.cylinder(.004,.004,.006,[x,.003,.035],dark,10);}
+      s.rod([-.15,.005,-.035],[-.07,.005,-.035],.002,steel);s.cylinder(.006,.006,.035,[-.163,.006,-.035],tin,8).rotation.z=Math.PI/2;
+    }
     return s.finish({
       update: wound
         ? (_dt, time) => {

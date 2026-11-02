@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Tubular mitochondrial crista branch", "summary": "A branched tubular inner-membrane fold joins its boundary membrane through a preserved neck, with a visible continuous lumen. A schematic branched inner-membrane fold has continuous lumen through every branch junction and a real boundary opening. Distal ends are closed; exposed roofs are teaching cuts, not intact biological pores.", "scales": ["macro", "tabletop"]});

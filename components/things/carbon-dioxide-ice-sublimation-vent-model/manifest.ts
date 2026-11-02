@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Carbon dioxide ice sublimation vent model", "summary": "An explicitly schematic ice-slab section opens over a vent and retained gas pathway; walls, cover and outlet are actual geometry. An explicit process-model section of seasonal carbon-dioxide ice over an eroded substrate and real vent aperture; the gas paths are inferred teaching references, not directly imaged subsurface structure.", "scales": ["planetary", "landscape", "macro"]});

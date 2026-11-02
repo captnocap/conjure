@@ -1,6 +1,7 @@
 import type { Capture, QuestionSet } from '../kit/contract';
 import { choice, score } from '../kit/questions';
 import { hashText, seeded } from '../kit/random';
+import { type Palette, type PaletteRole, rekey } from '../kit/palette';
 
 /**
  * The house style made physical: after the look (and any accent) has printed the frame, one
@@ -20,14 +21,18 @@ export const RIFTS = {
 } as const;
 export type Rift = keyof typeof RIFTS;
 
+/**
+ * Foreign inks are a character (screen-bright pair, one hot signal, dusty earth, pastels, chrome); with
+ * a palette their hues re-key to it by `roles`, so the acid pair is acid in the idea's own colours.
+ */
 export const RIFT_INKS = {
-  own: { colors: [], description: 'The print’s own paper and ink: the strangeness stays inside the medium, quiet and plausible.' },
-  acid: { colors: ['#3cf08f', '#ff3fa4'], description: 'Acid green and hot pink, like a wireframe glowing on a dead screen.' },
-  signal: { colors: ['#ff3b2f', '#fff1dc'], description: 'Signal red and white heat, like light painted in a long exposure at night.' },
-  ochre: { colors: ['#7d8650', '#c8742e'], description: 'Olive and ochre: a dusty sky over sun-baked earth on another planet.' },
-  candy: { colors: ['#ff8fc7', '#4fd9c4', '#ffd35c'], description: 'Clashing candy pastels, pink, mint and mustard, like an op-art interior.' },
-  chrome: { colors: ['#eef2f4', '#24282e'], description: 'Chrome white and graphite: cold, clinical and early-CGI.' },
-} as const satisfies Record<string, { colors: readonly string[]; description: string }>;
+  own: { colors: [], roles: [], description: 'The print’s own paper and ink: the strangeness stays inside the medium, quiet and plausible.' },
+  acid: { colors: ['#3cf08f', '#ff3fa4'], roles: ['ink', 'second'], description: 'Two screen-bright colours clashing at full strength, like a wireframe glowing on a dead screen.' },
+  signal: { colors: ['#ff3b2f', '#fff1dc'], roles: ['ink'], description: 'One hot signal colour and white heat, like light painted in a long exposure at night.' },
+  ochre: { colors: ['#7d8650', '#c8742e'], roles: ['second', 'ink'], description: 'Dusty, sun-baked earth colours: a hazy sky over baked ground on another planet.' },
+  candy: { colors: ['#ff8fc7', '#4fd9c4', '#ffd35c'], roles: ['ink', 'second', 'second'], description: 'Clashing candy pastels, like an op-art interior.' },
+  chrome: { colors: ['#eef2f4', '#24282e'], roles: [], description: 'Chrome white and graphite: cold, clinical and early-CGI.' },
+} as const satisfies Record<string, { colors: readonly string[]; roles: readonly PaletteRole[]; description: string }>;
 export type RiftInk = keyof typeof RIFT_INKS;
 
 export const OTHERWORLD_QUESTIONS = {
@@ -588,15 +593,17 @@ function colossus(frame: Frame) {
 const EFFECTS: Record<Rift, (frame: Frame) => string> = { plate, echo, tear, wireframe, portal, sky, trails, colossus };
 /** Effects that need a placed thing in frame; without one the picture becomes a plate instead. */
 const NEEDS_SUBJECT: readonly Rift[] = ['echo', 'wireframe', 'portal', 'trails', 'colossus'];
-const PHRASE: Record<RiftInk, string> = { own: 'in the print’s own inks', acid: 'in acid green and hot pink', signal: 'in signal red and white heat', ochre: 'in olive and ochre', candy: 'in candy pastels', chrome: 'in chrome and graphite' };
+const PHRASE: Record<RiftInk, string> = { own: 'in the print’s own inks', acid: 'in an acid pair', signal: 'in a signal colour and white heat', ochre: 'in dusty earth colours', candy: 'in candy pastels', chrome: 'in chrome and graphite' };
 
 /** Apply the settled otherworld to a finished print. Repeatable for the same seed; the input is left untouched. */
-export function applyOtherworld(pixels: Uint8ClampedArray, capture: Capture, world: Otherworld, seed: number, phase = 0): { pixels: Uint8ClampedArray; note: string } {
+export function applyOtherworld(pixels: Uint8ClampedArray, capture: Capture, world: Otherworld, seed: number, phase = 0, palette?: Palette): { pixels: Uint8ClampedArray; note: string } {
   const size = capture.size, count = size * size;
   const source = new Uint8ClampedArray(pixels);
   const out = new Uint8ClampedArray(pixels);
   const own = printInks(source, count);
-  const colors = RIFT_INKS[world.ink].colors.map(hex);
+  const chosen = RIFT_INKS[world.ink];
+  const keyed = rekey(Object.fromEntries(chosen.colors.map((color, n) => [n, hex(color)])), palette, Object.fromEntries(chosen.roles.map((role, n) => [n, role])));
+  const colors = chosen.colors.map((_, n) => keyed[n]);
   const inks = colors.length
     ? { a: colors[0], b: colors[1] ?? colors[0], c: colors[2] ?? colors[0], foreign: true, ...own }
     : { a: own.ink, b: mixRGB(own.ink, own.paper, 0.55), c: own.paper, foreign: false, ...own };

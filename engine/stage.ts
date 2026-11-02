@@ -4,12 +4,18 @@ import type { BuildContext, Capture, LookResult, Placeable, Thing, World } from 
 import { hashText, seeded, visibleBounds } from '@conjure/kit';
 import { loadBuilder, type Entry } from './catalogue';
 import { CaptureRig } from './capture';
+import { RenderCameraPool } from './render-camera';
 import { accentMask, composeAccent } from './accent';
 import { applyOtherworld } from './otherworld';
 import { applyVacui } from './vacui';
 import type { CameraOffset } from './motion';
 import type { CastMember, Plan } from './director';
 import { announce } from './activity';
+import { relight, repaint } from './paint';
+import { refinish } from './material';
+import { applyMaterialize } from './materialize';
+import { prepareAtelierMaterials } from './atelier-materials';
+import { isAtelierMaterial } from '../kit/atelier-materials';
 
 /** Looks are calibrated at this size; the canvas is scaled by CSS for display. */
 export const FRAME_SIZE = 720;
@@ -96,11 +102,19 @@ export class Stage {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene = new THREE.Scene();
   #rig: CaptureRig;
+  readonly #renderCameras = new RenderCameraPool();
   #mounted: Mounted | null = null;
   #clock = new THREE.Clock();
   /** Scene time handed to updates. It only advances once `play()` lets the scene move. */
   #time = 0;
   #held = true;
+  /** A rig for window prints, kept while the window keeps its size. */
+  #wideRig: CaptureRig | null = null;
+  /**
+   * Whether the live stage is on screen. While a print or another picture covers it, frames keep
+   * the scene's time moving but skip drawing it: a hidden stage costs a GPU nothing.
+   */
+  visible = true;
 
   constructor(canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true, alpha: false });
@@ -119,11 +133,12 @@ export class Stage {
 
   #context(plan: Plan, entry: Entry): BuildContext {
     const seed = (plan.seed ^ hashText(entry.id)) >>> 0;
-    return { idea: plan.idea, mood: plan.mood, scale: plan.scale, framing: plan.framing, seed, random: seeded(seed) };
+    return { idea: plan.idea, mood: plan.mood, scale: plan.scale, framing: plan.framing, ...(plan.palette ? { palette: plan.palette } : {}), seed, random: seeded(seed) };
   }
 
   /** Build a plan's world and cast and swap them in. One failing component never takes the scene down. */
   async mount(plan: Plan): Promise<BuildReport[]> {
+    await prepareAtelierMaterials([plan.world.material?.body, ...plan.cast.map((member) => member.material?.body)]);
     const reports: BuildReport[] = [];
     const timed = async <T>(member: CastMember, build: () => Promise<T>): Promise<T | null> => {
       const started = performance.now();
@@ -144,8 +159,36 @@ export class Stage {
       }
     };
 
+    // Colours and materials the idea asked for go over what was built. Dressing never fails a component.
+    const painted = <T extends Thing | World>(built: T, member: CastMember): T => {
+      if (!member.paint && !member.material?.body) return built;
+      try {
+        const frees: (() => void)[] = [];
+        if (member.paint) {
+          frees.push(repaint(built.object, member.paint));
+          if ('background' in built) built.background = relight(built, member.paint);
+        }
+        // The material goes on after the paint, so "a chrome skull" is chrome even where the paint raised nothing.
+        if (member.material?.body) frees.push(refinish(built.object, member.material, 'background' in built));
+        const dispose = built.dispose.bind(built);
+        built.dispose = () => {
+          // Source materials replace geometry as well as shaders. Restore the original
+          // component resources before its own disposer traverses them.
+          if (isAtelierMaterial(member.material?.body)) {
+            for (const free of [...frees].reverse()) free();
+            dispose();
+          } else {
+            dispose();
+            for (const free of frees) free();
+          }
+        };
+      } catch (error) {
+        console.warn(`${member.entry.id} could not be dressed`, error);
+      }
+      return built;
+    };
     const world = await timed(plan.world, async () =>
-      (await loadBuilder(plan.world.entry as Entry & { kind: 'world' })).build(plan.world.answers as never, this.#context(plan, plan.world.entry)),
+      painted(await (await loadBuilder(plan.world.entry as Entry & { kind: 'world' })).build(plan.world.answers as never, this.#context(plan, plan.world.entry)), plan.world),
     );
     if (!world) throw new Error(`The setting ${plan.world.entry.title} could not be built: ${reports.at(-1)!.error}`);
 
@@ -153,7 +196,7 @@ export class Stage {
     const built = await Promise.all(
       members.map((member) =>
         timed(member, async () =>
-          (await loadBuilder(member.entry as Entry & { kind: 'thing' })).build(member.answers as never, this.#context(plan, member.entry)),
+          painted(await (await loadBuilder(member.entry as Entry & { kind: 'thing' })).build(member.answers as never, this.#context(plan, member.entry)), member),
         ),
       ),
     );
@@ -276,7 +319,7 @@ export class Stage {
     this.#time += dt;
     mounted.world.update?.(dt, this.#time);
     for (const { thing } of mounted.things) thing.update?.(dt, this.#time);
-    this.renderer.render(this.scene, mounted.world.camera);
+    if (this.visible) this.renderer.render(this.scene, this.#renderCameras.sync(mounted.world.camera));
   }
 
   /**
@@ -310,10 +353,54 @@ export class Stage {
         camera.updateMatrixWorld(true);
       }
     }
+    return this.#take(this.#rig);
+  }
+
+  /**
+   * Capture the scene through a wider film than the frame: `film` gives the film's edges in the
+   * frame view's normalised device coordinates (the frame spans -1 to 1), and `pixels` its side.
+   * The camera's projection is extended for the one capture and put back exactly afterwards.
+   */
+  captureWide(film: { left: number; right: number; top: number; bottom: number; pixels: number }): Capture {
+    const mounted = this.#mounted;
+    if (!mounted) throw new Error('Nothing is on stage to capture.');
+    if (this.#wideRig?.size !== film.pixels) {
+      this.#wideRig?.dispose();
+      this.#wideRig = new CaptureRig(this.renderer, film.pixels);
+    }
+    const camera = mounted.world.camera as THREE.PerspectiveCamera | THREE.OrthographicCamera;
+    const projection = camera.projectionMatrix.clone();
+    const inverse = camera.projectionMatrixInverse.clone();
+    const width = film.right - film.left, height = film.top - film.bottom;
+    // Map the film's edges to clip space's -1..1; applied after the projection, it widens perspective and orthographic views alike.
+    const widen = new THREE.Matrix4().set(
+      2 / width, 0, 0, -(film.right + film.left) / width,
+      0, 2 / height, 0, -(film.top + film.bottom) / height,
+      0, 0, 1, 0,
+      0, 0, 0, 1,
+    );
+    camera.projectionMatrix.premultiply(widen);
+    camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+    this.renderer.setSize(film.pixels, film.pixels, false);
+    try {
+      const capture = this.#take(this.#wideRig);
+      // The rig measures a pixel against the whole lens; the frame's share of the film sets the true size.
+      capture.pixelWorldSize *= width / 2;
+      return capture;
+    } finally {
+      camera.projectionMatrix.copy(projection);
+      camera.projectionMatrixInverse.copy(inverse);
+      this.renderer.setSize(FRAME_SIZE, FRAME_SIZE, false);
+      if (this.visible) this.renderer.render(this.scene, this.#renderCameras.sync(camera));
+    }
+  }
+
+  #take(rig: CaptureRig): Capture {
+    const mounted = this.#mounted!;
     const ground = mounted.world.ground;
-    const capture = this.#rig.capture(
+    const capture = rig.capture(
       this.scene,
-      mounted.world.camera,
+      this.#renderCameras.sync(mounted.world.camera),
       (mesh) => {
         for (let node: THREE.Object3D | null = mesh; node; node = node.parent) {
           if (node === ground) return GROUND_ID;
@@ -331,6 +418,9 @@ export class Stage {
       if (id < confidence.length && typeof belongs === 'number') confidence[id] = Math.min(1, Math.max(0, belongs));
     }
     capture.confidence = confidence;
+    // The backdrop's material travels with the frame too: a void of glitter, a velvet drape.
+    const sky = mounted.plan.world.material?.sky;
+    if (sky) capture.backdrop = sky;
     return capture;
   }
 
@@ -351,18 +441,24 @@ export class Stage {
     };
     const builder = await loadBuilder(look.entry as Entry & { kind: 'look' });
     const printed = await builder.apply(frame, look.answers as never, boiled(look.entry), signal);
-    // Last, the dead space fills and the print crosses into another dimension, both from the same
-    // capture so they register with it, and both moving with the phase of a loop.
+    // Then the materials show through the medium, the dead space fills and the print crosses into
+    // another dimension, all from the same capture so they register with it, and all moving with
+    // the phase of a loop. A look that renders materials in its own medium is left alone there.
     const otherworld = (result: LookResult & { accent?: Uint8Array }) => {
       let { pixels } = result;
       const notes = [...result.notes];
+      if (mounted.plan.materialize && builder.materials !== 'own') {
+        const shown = applyMaterialize(pixels, frame, mounted.plan.materialize, mounted.plan.seed, phase, mounted.plan.palette);
+        pixels = shown.pixels;
+        notes.push(shown.note);
+      }
       if (mounted.plan.vacui) {
-        const filled = applyVacui(pixels, frame, mounted.plan.vacui, mounted.plan.seed, phase);
+        const filled = applyVacui(pixels, frame, mounted.plan.vacui, mounted.plan.seed, phase, mounted.plan.palette);
         pixels = filled.pixels;
         notes.push(filled.note);
       }
       if (mounted.plan.otherworld) {
-        const crossed = applyOtherworld(pixels, frame, mounted.plan.otherworld, mounted.plan.seed, phase);
+        const crossed = applyOtherworld(pixels, frame, mounted.plan.otherworld, mounted.plan.seed, phase, mounted.plan.palette);
         pixels = crossed.pixels;
         notes.push(crossed.note);
       }

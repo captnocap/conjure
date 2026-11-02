@@ -1,3 +1,13 @@
+/* The colour tokens are typed, so a change of skin eases every colour drawn from them at once,
+   instead of each property snapping or easing on its own. */
+@property --paper { syntax: '<color>'; inherits: true; initial-value: #edf0e5; }
+@property --sheet { syntax: '<color>'; inherits: true; initial-value: #f7f8f1; }
+@property --ink { syntax: '<color>'; inherits: true; initial-value: #20362c; }
+@property --faint { syntax: '<color>'; inherits: true; initial-value: #6f7f73; }
+@property --rule { syntax: '<color>'; inherits: true; initial-value: #cdd3c2; }
+@property --accent { syntax: '<color>'; inherits: true; initial-value: #b4532f; }
+@property --frame-ground { syntax: '<color>'; inherits: true; initial-value: #e5e7de; }
+:root { transition: --paper 0.8s ease, --sheet 0.8s ease, --ink 0.8s ease, --faint 0.8s ease, --rule 0.8s ease, --accent 0.8s ease, --frame-ground 0.8s ease; }
 :root {
   --paper: #edf0e5;
   --sheet: #f7f8f1;
@@ -22,9 +32,11 @@ select { background: transparent; border: 1px solid var(--rule); padding: 5px; }
 .toggle { display: inline-flex; border: 1px solid var(--ink); }
 .toggle button { border: 0; padding: 5px 12px; font-size: 13px; }
 
-/* The page is the prompt until there is an idea: one line, centred, a cursor blinking in it. */
-.prompt-bar { order: 0; margin-top: 0; transition: margin-top 0.7s cubic-bezier(0.2, 0.7, 0.2, 1); }
-body[data-state='idle'] .prompt-bar { margin-top: calc(50dvh - 110px); }
+/* The page is the prompt until there is an idea: the name in block letters over one line, a cursor blinking in it. */
+.prompt-bar { order: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 22px; margin-top: 0; transition: margin-top 0.7s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.prompt-bar .prompt { flex: 1 1 320px; min-width: 0; }
+body[data-state='idle']:not(.history) .prompt-bar { flex-direction: column; align-items: stretch; margin-top: calc(50dvh - 200px); }
+body[data-state='idle']:not(.history) .prompt-bar .prompt { flex: none; }
 .prompt { position: relative; display: flex; align-items: center; gap: 12px; }
 .prompt .mirror { position: absolute; left: 0; top: 0; visibility: hidden; white-space: pre; pointer-events: none; }
 #idea {
@@ -32,7 +44,7 @@ body[data-state='idle'] .prompt-bar { margin-top: calc(50dvh - 110px); }
   font: 30px/1.3 Georgia, 'Times New Roman', serif; text-align: center; caret-color: transparent;
   transition: font-size 0.5s ease, border-color 0.5s ease;
 }
-body:not([data-state='idle']) #idea { font-size: 22px; text-align: left; border-bottom-color: var(--rule); }
+body:not([data-state='idle']) #idea, body.history #idea { font-size: 20px; text-align: left; border-bottom-color: var(--rule); }
 #idea::placeholder { color: var(--faint); opacity: 0; transition: opacity 1.4s ease; }
 body.hinted[data-state='idle'] #idea::placeholder { opacity: 0.55; }
 .prompt .caret { position: absolute; width: 2px; height: 1.2em; background: var(--ink); pointer-events: none; transform: translateY(-50%); animation: blink 1.06s steps(2, start) infinite; }
@@ -43,12 +55,37 @@ body[data-state='thinking'] .prompt .caret { animation-duration: 0.5s; }
 #ask button { font-size: 13px; padding: 7px 14px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
 body[data-state='idle'] #ask button { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
 #ask:has(#idea:not(:placeholder-shown)) button, body:not([data-state='idle']) #ask button { opacity: 1; pointer-events: auto; }
-#status { order: 1; margin: 10px 0 0; font-size: 13px; color: var(--faint); min-height: 1.45em; }
-body[data-state='idle'] #status { display: none; }
+#status { order: 1; flex-basis: 100%; margin: 6px 0 0; font-size: 13px; color: var(--faint); min-height: 1.45em; }
+body[data-state='idle'] #status, body.history #status { display: none; }
 #status.failed { color: var(--failed); }
 
+/* The name: block letters, each a window onto a slice of an earlier print; a line traces them on hover. */
+.wordmark { display: block; line-height: 0; color: inherit; text-decoration: none; }
+.wordmark svg { display: block; height: 30px; width: auto; overflow: visible; transition: height 0.7s cubic-bezier(0.2, 0.7, 0.2, 1); }
+body[data-state='idle']:not(.history) .wordmark { align-self: center; margin-bottom: 30px; }
+body[data-state='idle']:not(.history) .wordmark svg { height: clamp(58px, 12vw, 108px); }
+.wordmark .ground { fill: var(--ink); }
+.wordmark .slice { opacity: 0; transform-box: fill-box; transform-origin: 50% 50%; transition: opacity 1.2s ease, transform 2.6s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.wordmark .filled .slice { opacity: 1; }
+.wordmark:hover .slice, .wordmark:focus-visible .slice { transform: scale(1.22) rotate(-2deg); }
+.wordmark .edge { fill: none; stroke: var(--ink); stroke-width: 0.8; opacity: 0.25; }
+.wordmark .trace { fill: none; stroke: var(--trace, var(--accent)); stroke-width: 2.6; stroke-linejoin: miter; stroke-dasharray: 1 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.15s cubic-bezier(0.65, 0, 0.25, 1) calc(var(--i) * 75ms); }
+.wordmark:hover .trace, .wordmark:focus-visible .trace { stroke-dashoffset: 0; }
+.wordmark:focus-visible { outline: none; }
+.wordmark .hit { fill: transparent; pointer-events: all; }
+/* A hovered letter's print behind the blank page, veiled most where the prompt sits. */
+#backdrop { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0; transition: opacity 0.7s ease; }
+#backdrop > i { position: absolute; inset: 0; background: center / cover no-repeat; opacity: 0; transition: opacity 0.6s ease; }
+#backdrop > i.shown { opacity: 1; }
+#backdrop::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 55% 45% at 50% 50%, color-mix(in srgb, var(--paper) 88%, transparent), color-mix(in srgb, var(--paper) 30%, transparent)); }
+body.backdropped #backdrop { opacity: 1; }
+.wordmark .glyph.swapped .slice { animation: swap-in 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.wordmark .glyph.swapped .trace { animation: swap-trace 0.9s cubic-bezier(0.65, 0, 0.25, 1) both; }
+@keyframes swap-in { from { opacity: 0; transform: scale(1.6) rotate(6deg); } to { opacity: 1; } }
+@keyframes swap-trace { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+
 /* Everything else waits for an idea: the blank page keeps only a faint line of links, and the settings behind one of them. */
-body[data-state='idle'] .stage, body[data-state='idle'] #activity { display: none; }
+body[data-state='idle']:not(.history) .stage { display: none; }
 body[data-state='idle'] .desk { margin: 0; order: 1; opacity: 0; transition: opacity 1.4s ease; }
 body.hinted[data-state='idle'] .desk { opacity: 1; }
 body[data-state='idle'] .desk > :not(.launch):not(.controls), body[data-state='idle'] #catalogue-count { display: none; }
@@ -57,20 +94,68 @@ body[data-state='idle'] .library-actions { gap: 0; }
 body[data-state='idle'] .library-actions > * { border: 0; padding: 0 6px; font-size: 12px; color: var(--faint); text-decoration: underline; text-underline-offset: 2px; background: transparent; }
 body[data-state='idle'] .library-actions > :not(:last-child)::after { content: '·'; margin-left: 12px; text-decoration: none; display: inline-block; }
 body[data-state='idle'] .controls { justify-content: center; margin-top: 14px; }
-body[data-state='idle'] .controls > button { display: none; }
 body[data-state='idle'] .controls label:first-of-type { margin-left: 0; }
 body[data-state='idle']:not(.settings) .controls { display: none; }
 body:not([data-state='idle']) #settings { display: none; }
-.stage { order: 3; margin-top: 22px; animation: appear 0.7s ease both; }
-body:not(.scened) .stage { display: none; }
-#activity { order: 2; }
-body.scened #activity { order: 3; }
+body.history .desk { display: none; }
 body:not(.scened):not([data-state='failed']):not([data-state='idle']) .desk { display: none; }
 .desk { order: 4; }
 @keyframes appear { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
+/* While an idea is decided the feed runs down the middle; once there is a picture the page opens
+   out into the picture and a column beside it, where the feed settles under the idea. */
+main { transition: width 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); padding-bottom: 150px; }
+body.scened main, body.history main { width: min(1340px, 100% - 48px); }
+.stage { order: 2; margin-top: 18px; }
+.picture { display: none; }
+.side > :not(section) { display: none; }
+body.scened .stage, body.history .stage { display: grid; grid-template-columns: minmax(0, max(380px, min(100dvh - 200px, 100% - 400px))) minmax(300px, 1fr); gap: 40px; align-items: start; }
+body.scened .picture, body.history .picture { display: block; animation: appear 0.7s ease both; }
+body.scened .side > #facts, body.scened .side > .under, body.scened .side > .rolls, body.scened .side > #scene-caption, body.history .side > #facts { display: block; }
+body.scened .side > .under, body.scened .side > .rolls { display: flex; }
+body.history .side > :not(#facts):not(#history-facts) { display: none; }
+body.history .side > #history-facts:not([hidden]) { display: block; }
+.side { position: sticky; top: 18px; max-height: calc(100dvh - 130px); overflow-y: auto; scrollbar-width: thin; padding-right: 4px; }
+body:not(.scened):not(.history) .side { position: static; max-height: none; overflow: visible; }
+#facts { margin-bottom: 18px; animation: appear 0.6s ease both; }
+.idea-title { font: 34px/1.12 Georgia, 'Times New Roman', serif; margin: 2px 0 0; overflow-wrap: anywhere; text-wrap: balance; }
+.idea-title::first-letter { text-transform: uppercase; }
+.rolls { gap: 8px; margin-top: 10px; }
+.rolls button { font-size: 12px; padding: 5px 10px; }
+#history-facts { animation: appear 0.5s ease both; }
+#history-facts ol { list-style: none; margin: 0; padding: 18px 0 0; border-top: 1px solid var(--rule); display: grid; gap: 7px; }
+.history-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 22px; font-size: 12px; }
+.history-actions button { font-size: 12px; padding: 5px 10px; }
+.history-actions button:first-child { background: var(--ink); color: var(--paper); }
+#history-print, #history-loop { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; background: var(--frame-ground, #e5e7de); }
+body:not(.history) #history-print, body:not(.history) #history-loop { display: none; }
+body.history .picture > :not(.frame) { display: none; }
+@media (max-width: 860px) {
+  body.scened .stage, body.history .stage { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .side { position: static; max-height: none; overflow: visible; }
+  .idea-title { font-size: 26px; }
+}
+
+/* The gallery: a strip along the bottom, small and faint until the pointer nears it or it takes focus. */
+@property --reveal { syntax: '<number>'; inherits: true; initial-value: 0; }
+#dock { --reveal: var(--near, 0); position: fixed; left: 0; right: 0; bottom: 0; z-index: 4; padding: 26px 0 10px; background: linear-gradient(to top, var(--paper) 55%, transparent); transition: --reveal 0.45s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 1.4s ease; }
+#dock:hover, #dock:has(:focus-visible) { --reveal: 1; }
+#dock.empty { display: none; }
+body[data-state='idle']:not(.hinted):not(.history) #dock { opacity: 0; pointer-events: none; }
+.dock-label { margin: 0 0 6px 16px; font: 10px/1.4 system-ui, sans-serif; text-transform: uppercase; letter-spacing: 1.4px; color: var(--faint); opacity: calc(0.35 + var(--reveal) * 0.65); }
+.dock-label small { font-size: 10px; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+.dock-strip { display: flex; gap: calc(4px + var(--reveal) * 6px); align-items: flex-end; overflow-x: auto; overflow-y: hidden; padding: 0 16px 4px; scrollbar-width: none; outline: none; }
+.dock-strip::-webkit-scrollbar { display: none; }
+.thumb { flex: none; position: relative; padding: 0; border: 0; background: var(--frame-ground, #e5e7de); width: calc(38px + var(--reveal) * 118px); aspect-ratio: 1; opacity: calc(0.42 + var(--reveal) * 0.58); filter: saturate(calc(0.35 + var(--reveal) * 0.65)); transition: transform 0.25s ease, opacity 0.25s ease; cursor: pointer; }
+.thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.thumb:hover, .thumb:focus-visible { transform: translateY(-4px); opacity: 1; filter: none; }
+.thumb[aria-pressed='true'] { outline: 2px solid var(--accent); outline-offset: 2px; opacity: 1; filter: none; }
+.thumb[data-extra]::after { content: attr(data-extra); position: absolute; left: 4px; bottom: 4px; font: 9px/1 system-ui, sans-serif; text-transform: uppercase; letter-spacing: 1px; padding: 2px 4px; background: var(--paper); color: var(--ink); opacity: var(--reveal); }
+.dock-end { flex: none; width: 1px; align-self: stretch; }
+
 /* The live feed: one row per decision, pulsing while asked, settling into the answer. */
-#activity { position: relative; margin-top: 30px; padding-top: 18px; }
+#activity { position: relative; margin-top: 12px; padding-top: 18px; }
+body.scened #activity { margin-top: 22px; }
 #activity::before { content: ''; position: absolute; left: 0; top: 0; height: 1px; width: 100%; background: var(--rule); }
 #activity::after { content: ''; position: absolute; left: 0; top: 0; height: 1px; width: var(--progress, 0%); background: var(--ink); transition: width 0.9s cubic-bezier(0.2, 0.7, 0.2, 1); }
 #activity ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
@@ -99,24 +184,29 @@ body:not(.scened):not([data-state='failed']):not([data-state='idle']) .desk { di
 #activity.failed::after { background: var(--failed); }
 
 /* The picture. */
-.frame { position: relative; aspect-ratio: 1; background: #e5e7de; box-shadow: 0 1px 0 var(--rule), 0 18px 40px -24px #20362c66; }
+.frame { position: relative; aspect-ratio: 1; background: var(--frame-ground, #e5e7de); box-shadow: 0 1px 0 var(--rule), 0 18px 40px -24px #20362c66; }
 .frame canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 #print { opacity: 0; transition: opacity 0.5s ease; pointer-events: none; }
 .frame.printed #print { opacity: 1; }
 #svg-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; }
 .frame.printed.layered #svg-overlay { opacity: 1; }
-.under { display: flex; gap: 12px; align-items: center; margin-top: 12px; min-height: 32px; }
-#scene-caption { flex: 1; margin: 0; font: 12px system-ui, sans-serif; color: var(--faint); }
+.under { flex-wrap: wrap; gap: 8px; align-items: center; min-height: 32px; }
+#scene-caption { margin: 10px 0 0; font: 12px system-ui, sans-serif; color: var(--faint); }
 .save-buttons { display: flex; gap: 6px; }
-#save-picture, #save-series, #save-loop { padding: 4px 9px; font-size: 12px; }
+#save-picture, #save-series, #save-loop, #save-window { padding: 4px 9px; font-size: 12px; }
 .plates { margin-top: 10px; }
 .plates-title { margin: 0 0 6px; font: 12px system-ui, sans-serif; color: var(--faint); }
 .plates-row { display: flex; gap: 8px; }
 .plates-row figure { flex: 1; min-width: 0; margin: 0; cursor: zoom-in; }
 .plates-row img { display: block; width: 100%; aspect-ratio: 1; box-shadow: 0 1px 0 var(--rule); }
 .plates-row figcaption { font: 12px Georgia, serif; color: var(--faint); margin-top: 4px; }
-.loop { margin-top: 10px; }
-.loop video { display: block; width: 100%; aspect-ratio: 1; background: #e5e7de; box-shadow: 0 1px 0 var(--rule); }
+/* Between pictures: the last print breaks up and plays over the frame until the next is ready. */
+#interlude { position: absolute; inset: 0; width: 100%; height: 100%; display: none; pointer-events: none; }
+#interlude.playing { display: block; }
+/* A moving print plays in the picture's own place; Scene still shows the live stage. */
+.loop { position: absolute; inset: 0; pointer-events: none; }
+.loop video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.frame:not(.printed) .loop { display: none; }
 #plate-view { width: min(760px, calc(100vw - 32px)); padding: 16px; border: 1px solid var(--ink); background: var(--paper); color: var(--ink); }
 #plate-view::backdrop { background: #162820aa; backdrop-filter: blur(4px); }
 #plate-view figure { margin: 0 0 10px; }
@@ -179,8 +269,114 @@ body:not(.scened):not([data-state='failed']):not([data-state='idle']) .desk { di
 .trace-card input { font-size: 12px; padding: 3px 4px; border: 1px solid var(--rule); background: transparent; min-width: 0; }
 .trace-card button { font-size: 11px; padding: 2px 6px; align-self: flex-end; }
 
+/* The window print: the scene widened to the whole window, laid behind the page so the frame sits
+   over its own crop of it. The column and the prompt float on frosted paper to stay legible. */
+body { position: relative; }
+main { position: relative; z-index: 1; }
+#window-print { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+#window-print img { position: absolute; display: block; max-width: none; opacity: 0; transition: opacity 1.4s ease; }
+body.windowed #window-print img { opacity: 1; }
+body.windowed .side, body.windowed .prompt-bar, body.windowed .desk { background: color-mix(in srgb, var(--paper) 80%, transparent); -webkit-backdrop-filter: blur(18px) saturate(1.15); backdrop-filter: blur(18px) saturate(1.15); padding: 14px 18px; box-shadow: 0 10px 40px -24px #0008; }
+body.windowed .prompt-bar { margin-left: -18px; margin-right: -18px; }
+body.windowed .side { top: 18px; }
+body.windowed .desk { margin-top: 26px; }
+body.windowed #dock { background: linear-gradient(to top, color-mix(in srgb, var(--paper) 88%, transparent) 50%, transparent); }
+body.window-view main, body.window-view #dock { opacity: 0; pointer-events: none; transition: opacity 0.5s ease; }
+body.window-view { overflow: hidden; }
+body.window-view #window-print { position: fixed; }
+#window-exit { position: fixed; z-index: 30; right: 20px; top: 18px; font-size: 12px; padding: 6px 12px; background: color-mix(in srgb, var(--paper) 80%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+
+/* The skin: the page takes the colours of the picture it shows (src/skin.ts sets the tokens) and the
+   post effects of that picture's medium, on the frame, the title, the buttons, the feed and the strip. */
+:root { --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 1.4 -.4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+body::after { content: ''; position: fixed; inset: 0; z-index: 20; pointer-events: none; opacity: 0; transition: opacity 1s ease; }
+/* Leaving a skin: its overlay fades before the skin itself is taken off. */
+body.skin-leaving::after { opacity: 0 !important; transition-duration: 0.6s; }
+body.dark-skin .frame { box-shadow: 0 1px 0 var(--rule), 0 24px 60px -28px #000c; }
+.idea-title, .row .detail, .frame, .thumb, button { transition: text-shadow 0.8s ease, box-shadow 0.8s ease, border-color 0.8s ease, border-radius 0.6s ease; }
+
+/* Prints: ink a hair off register, a dot screen over the page, hard offset shadows like a mounted poster. */
+body[data-skin='print']::after { opacity: 0.09; background: radial-gradient(circle, var(--ink) 0.7px, transparent 1.2px) 0 0 / 5px 5px; }
+body[data-skin='print'] .idea-title { text-shadow: 2px 1.5px 0 color-mix(in srgb, var(--accent) 65%, transparent); }
+body[data-skin='print'] .row.settled .detail { text-shadow: 1px 0.5px 0 color-mix(in srgb, var(--accent) 45%, transparent); }
+body[data-skin='print'] .frame { box-shadow: 10px 10px 0 color-mix(in srgb, var(--accent) 80%, var(--paper)); }
+body[data-skin='print'] button:not(.thumb) { box-shadow: 2px 2px 0 var(--accent); }
+body[data-skin='print'] .row .mark { border-radius: 0; }
+body[data-look='halftone-comic']::after { opacity: 0.14; background-size: 8px 8px; background-image: radial-gradient(circle, var(--accent) 1.4px, transparent 2px); }
+body[data-look='halftone-comic'] .idea-title { font-family: Impact, 'Arial Black', system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.5px; -webkit-text-stroke: 0.6px var(--ink); }
+body[data-look='xerox-noir']::after { opacity: 0.22; background: var(--grain); mix-blend-mode: hard-light; animation: toner 0.5s steps(3) infinite; }
+body[data-look='xerox-noir'] .idea-title { text-shadow: 3px 0 0 color-mix(in srgb, var(--accent) 70%, transparent), -1px 1px 0 color-mix(in srgb, var(--ink) 40%, transparent); filter: url(#skin-rough); }
+body[data-look='xerox-noir'] .frame { filter: contrast(1.08); box-shadow: 8px 8px 0 #000a; }
+body[data-look='blueprint'] { background-image: linear-gradient(color-mix(in srgb, var(--ink) 9%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--ink) 9%, transparent) 1px, transparent 1px); background-size: 24px 24px; }
+body[data-look='blueprint'] .idea-title, body[data-look='blueprint'] .row .detail { font-family: ui-monospace, 'DejaVu Sans Mono', monospace; letter-spacing: -0.5px; text-shadow: none; }
+body[data-look='blueprint'] .frame { box-shadow: 0 0 0 1px var(--ink), 0 0 0 7px var(--paper), 0 0 0 8px var(--faint); }
+
+/* Optical: scanlines rolling over the page, a red-cyan split on the type, the picture glowing. */
+body[data-skin='optical']::after { opacity: 1; background: repeating-linear-gradient(to bottom, transparent 0 2px, color-mix(in srgb, #000 16%, transparent) 2px 3px); animation: roll 7s linear infinite; }
+body[data-skin='optical'] .idea-title { text-shadow: -1.5px 0 #ff2a6d99, 1.5px 0 #05d9e899, 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent); }
+body[data-skin='optical'] .row.settled .detail { text-shadow: -0.7px 0 #ff2a6d66, 0.7px 0 #05d9e866; }
+body[data-skin='optical'] .frame { box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent), 0 0 70px -10px color-mix(in srgb, var(--accent) 55%, transparent); }
+body[data-skin='optical'] button:not(.thumb) { border-color: var(--accent); box-shadow: 0 0 10px -2px var(--accent); }
+body[data-skin='optical'] .row .mark { box-shadow: 0 0 6px var(--accent); border-color: var(--accent); }
+body[data-skin='optical'] .row.settled .mark { background: var(--accent); }
+body[data-skin='optical'] .thumb[aria-pressed='true'] { box-shadow: 0 0 16px var(--accent); }
+body[data-look='crt-broadcast'] .frame { border-radius: 18px / 14px; overflow: hidden; }
+body[data-look='crt-broadcast']::after { background: repeating-linear-gradient(to bottom, transparent 0 2px, #0003 2px 3px), radial-gradient(ellipse at center, transparent 55%, #0007 100%); animation: roll 5s linear infinite, flicker 0.15s steps(2) infinite; }
+body[data-look='thermal-scan'] .idea-title { font-family: ui-monospace, 'DejaVu Sans Mono', monospace; text-transform: uppercase; letter-spacing: 1px; }
+body[data-look='neon-vaporwave'] .idea-title { font-style: italic; text-shadow: 0 0 6px var(--accent), 0 0 22px var(--accent), 3px 3px 0 #ff2a6d88; }
+
+/* Painting: a wet, deckled edge round the picture, paper tooth over the page, softer everything. */
+body[data-skin='painting']::after { opacity: 0.28; background: var(--grain); mix-blend-mode: multiply; }
+body.dark-skin[data-skin='painting']::after { mix-blend-mode: soft-light; opacity: 0.4; }
+body[data-skin='painting'] .frame::after { content: ''; position: absolute; inset: -7px; border: 9px solid var(--paper); filter: url(#skin-wobble); pointer-events: none; }
+body[data-skin='painting'] .frame { box-shadow: 0 30px 50px -36px color-mix(in srgb, var(--ink) 60%, transparent); }
+body[data-skin='painting'] .idea-title { font-style: italic; letter-spacing: -0.3px; }
+body[data-skin='painting'] button:not(.thumb), body[data-skin='painting'] .toggle { border-radius: 999px; }
+body[data-skin='painting'] .toggle { overflow: hidden; }
+body[data-skin='painting'] .row .mark { filter: blur(0.6px); }
+body[data-skin='painting'] .thumb { border-radius: 3px; overflow: hidden; }
+body[data-look='watercolor-studio'] .idea-title { filter: url(#skin-wobble); }
+
+/* Game graphics: stepped pixel edges, chunky monospace labels, no smoothing on the strip. */
+body[data-skin='game'] .frame { box-shadow: 0 -6px 0 0 var(--ink), 0 6px 0 0 var(--ink), -6px 0 0 0 var(--ink), 6px 0 0 0 var(--ink), 12px 12px 0 0 var(--accent); }
+body[data-skin='game'] .idea-title { font-family: ui-monospace, 'DejaVu Sans Mono', monospace; font-weight: 700; text-transform: uppercase; letter-spacing: -1px; text-shadow: 3px 3px 0 var(--accent); }
+body[data-skin='game'] .row .title, body[data-skin='game'] .eyebrow, body[data-skin='game'] .dock-label { font-family: ui-monospace, 'DejaVu Sans Mono', monospace; }
+body[data-skin='game'] button:not(.thumb) { border-width: 2px; box-shadow: 3px 3px 0 var(--ink); font-family: ui-monospace, 'DejaVu Sans Mono', monospace; text-transform: uppercase; font-size: 11px; }
+body[data-skin='game'] .row .mark { border-radius: 0; }
+body[data-skin='game'] .thumb img { image-rendering: pixelated; }
+body[data-skin='game'] .prompt .caret { width: 0.55em; opacity: 0.8; }
+body[data-skin='game']::after { opacity: 0.06; background: linear-gradient(90deg, var(--ink) 1px, transparent 1px) 0 0 / 4px 4px, linear-gradient(var(--ink) 1px, transparent 1px) 0 0 / 4px 4px; }
+
+/* Craft: stitched seams, cut paper stacked under the picture, chips pinned a little askew. */
+body[data-skin='craft'] .frame { outline: 2px dashed var(--accent); outline-offset: 9px; box-shadow: 7px 8px 0 -1px var(--rule), 14px 16px 0 -2px color-mix(in srgb, var(--accent) 60%, var(--paper)); }
+body[data-skin='craft'] button:not(.thumb) { border-style: dashed; border-width: 1.5px; }
+body[data-skin='craft'] .row .item { display: inline-block; padding: 0 6px; background: var(--sheet); box-shadow: 1px 2px 0 var(--rule); }
+body[data-skin='craft'] .row .item:nth-child(odd) { transform: rotate(-1.4deg); }
+body[data-skin='craft'] .row .item:nth-child(even) { transform: rotate(1.1deg); }
+body[data-skin='craft'] .thumb { box-shadow: 2px 3px 0 var(--rule); }
+body[data-skin='craft']::after { opacity: 0.12; background: var(--grain); mix-blend-mode: multiply; }
+body[data-look='stained-glass'] .frame { outline: 0; box-shadow: 0 0 0 7px #111, 0 0 40px -6px var(--accent); }
+body[data-look='stained-glass'] .thumb { box-shadow: 0 0 0 3px #111; }
+body[data-look='cross-stitch'] .frame { outline-style: dotted; outline-width: 3px; }
+
+/* Photographs: film grain, a vignette, the picture mounted on a white border like a print from the lab. */
+body[data-skin='realism']::after { opacity: 0.18; background: var(--grain), radial-gradient(ellipse at center, transparent 60%, #0004 100%); mix-blend-mode: overlay; animation: toner 0.9s steps(4) infinite; }
+body[data-skin='realism'] .frame { box-shadow: 0 0 0 12px var(--sheet), 0 0 0 13px var(--rule), 0 40px 60px -40px #0009; }
+body[data-skin='realism'] .idea-title { font-family: system-ui, sans-serif; font-weight: 300; letter-spacing: -0.8px; }
+
+/* Mixed media: tape over the picture's corner, a little grain, the column's chips taped down too. */
+body[data-skin='mixed'] .frame::after { content: ''; position: absolute; top: -12px; left: 18%; width: 110px; height: 26px; background: color-mix(in srgb, var(--accent) 35%, #fff6); transform: rotate(-4deg); box-shadow: 0 1px 2px #0002; pointer-events: none; }
+body[data-skin='mixed'] .frame { box-shadow: 6px 8px 0 -2px var(--rule); }
+body[data-skin='mixed']::after { opacity: 0.12; background: var(--grain); mix-blend-mode: multiply; }
+body[data-skin='mixed'] .idea-title { text-shadow: 1px 1px 0 var(--accent); }
+
+@keyframes roll { to { background-position: 0 300px, 0 0; } }
+@keyframes flicker { 50% { filter: brightness(0.8); } }
+@keyframes toner { 33% { background-position: 40px 70px, 0 0; } 66% { background-position: -60px 20px, 0 0; } }
+
 @media (prefers-reduced-motion: reduce) {
-  .prompt-bar, #idea, #activity::after { transition: none; }
+  .prompt-bar, #idea, #activity::after, main, body, .wordmark svg, .wordmark .slice, .wordmark .trace, #dock { transition: none; }
+  body::after { animation: none !important; }
   .row, .row .item, .stage { animation: none; }
   .row.asking .mark { animation: none; opacity: 0.6; }
 }

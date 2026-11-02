@@ -417,3 +417,90 @@ Validation: 9,691 unit tests, typecheck, `check:requests`, `check:styles`, `chec
 Validation: 9,740 unit tests, typecheck, `check:requests`, `check:styles`, `check:directions`, `check:layers`,
 `check:expansion`, `presentation-check approach`; three real walkthroughs (`.data/tour/tour.mjs`) and one
 offline. The laps and the probe asked the real model; nothing else did.
+
+**Materials: gloss, matte, glitter and metal through any medium (Claude, 2026-10-30, at Josiah's request):** a
+portrait of a metal thing should be a metal print, a knife in a stained-glass scene a different glass from the
+scene, glitter on black a sky of stars, rubber on a handle, leather on a chair, matte on nature.
+- `kit/material.ts`: twelve shared materials (`MATERIALS`: chrome, brushed, gloss, satin, matte, velvet, rubber,
+  leather, glass, glitter, wet, glow), `material(ask)` questions, `madeOf(material, name)` for builders,
+  `surfaceAt(capture, index)` / `impliedMaterial(surface)` for looks (a build implies shine, sparkle and light,
+  never flatness) and `sparkleAt` for glitter. `Capture.material` (metalness, roughness, named material, glow per
+  pixel) and `Capture.backdrop`; `LookBuilder.materials: 'own'`.
+- `engine/capture.ts`: a sixth pass writes each surface's material through one small shader per distinct surface
+  (cut-outs, skinning and instancing as the scene), reading physically based materials directly, Phong through its
+  shininess and specular, flat and unlit ones as plain; multi-material meshes keep each slot's surface.
+- `engine/material.ts`: `materialBody` per cast thing and `materialBody` + `materialSky` per setting ride the
+  details request like the paint questions, settle on their own stream at temperature × 0.35, and `refinish`
+  dresses the body (everything for a setting) after the paint: tag, metalness, roughness, opacity, glow, a sparkle
+  or pebble relief, environment intensity. `engine/paint.ts` now exports `surfacesOf`, `bodyOf`, `cloneSurfaces`.
+- `engine/materialize.ts`: the pass after the look and accent, before the dead space and otherworld, in the print's
+  own ink and paper (`printInks`): banded mirror reflections, brushed streaks, hard and broad glints, sheen, chalk
+  tooth, velvet rim light, rubber dullness, leather pebble and creases, glass rims and caustics, glitter facets
+  (stars on a dark backdrop, dark sequins on pale paper), wet streaks, glow halos. One routing score, `materialize`
+  (how much the surfaces show through the medium), scales it; below 12% it is skipped. Glitter twinkles with the
+  loop phase and returns to its first frame.
+- `components/looks/stained-glass`: `materials: 'own'`; each piece takes the material most of its pixels show:
+  silvered mirror glass for metal (reflecting the room instead of transmitting), hammered sheets for brushed metal
+  and leather, seedy glass with flashing bubbles for glitter, water glass for wet, sandblasted milk for matte, dark
+  near-opaque glass for rubber and velvet, clear crown glass for glass, more halation for glow.
+- Plumbing: `Plan.materialize`, `CastMember.material`, the Surfaces branch of the tree, the feed ("of velvet"), the
+  gallery record, `src/replay.ts` and `dev/replay-check.mjs` / `dev/otherworld-sheet.mjs` pin older pictures as built
+  and flat, `dev/laps.mjs` records and tallies materials, `dev/requests-check.mjs` expects the new questions (and
+  now mocks the gallery dock's GET and the two-batch shortlist, both of which had already broken it).
+- `node dev/materialize-sheet.mjs` prints one scene with the hero in each material through several looks.
+- Found by the first sheet: the teapot's default body is glass, which the paint rules skip, so "chrome" landed on
+  a sliver of handle. Materials now include glass surfaces (`surfacesOf(root, { glass: true })`), and a body that
+  was glass turns solid again under any material but glass.
+Validation: 10,161 unit tests (14 new in `tests/material.test.ts`), typecheck, `check:requests`, `check:directions`,
+`check:styles`, `check:layers` (the first three had been failing on the gallery dock's GET and the window attach,
+now mocked), `npm run check looks/stained-glass things/teapot things/chair` (the new capture pass in a real browser),
+zoomed material sheets for a skull and the teapot in `.data/materials/`, and a twelve-idea live lap at first choices
+(`.data/laps/materials-t0`, $0.085): things the sentence does not dress stay as made at 95–100%, "a velvet armchair"
+is velvet 100%, "a wet street after rain" dresses the setting wet 66% while its cart and lamp stay as made, "a black
+velvet cloth" lands on the setting and backdrop, "a chalk cliff" makes the setting matte 100%; the surfaces weight
+settled 0.56–0.82 ("clearly" for most, "fully" for the glitter pumpkin). In three ideas (chrome skull, glass horse,
+glitter pumpkin) casting never put the named subject on stage, so no material could land on it: a casting matter,
+not a material one. The lap's twelve entries and the sheets' two offline ones were moved from the gallery to
+`.data/gallery-probes/materials-2026-10-30/`.
+
+**Doodle sets for the glyph fill: hieroglyphs, ASCII and eleven more (Claude, 2026-10-30, at Josiah's request):**
+- `engine/doodles.ts` (new): the dead-space glyph fill's doodles moved out of `vacui.ts` into fourteen typed sets,
+  `DOODLE_SETS`: machinery (the original eight kinds, kept in pixel space so older prints are bit-identical),
+  hieroglyphs (28), ascii (61: A–Z, 0–9, punctuation, as a 4 × 6 stroke font), anatomy (22), furniture (22),
+  buildings (24), nature (25), gems (20), flowers (21), sacred (24), contours (16 iso-line fields), fractals (19:
+  Koch, Sierpinski, H-tree, dragon, Hilbert, Lévy C, Pythagoras, Cantor, Vicsek, carpet, hexaflake, Apollonian,
+  Mandelbrot and Julia by distance estimate) and fungi (22), plus `notebook`, which draws from any set per cell.
+  Every shape is `draw(u, v, k, r)`: unit distance to its strokes in the cell's frame (solids return 0 inside), `k`
+  the cell's own number for variation, `r` the reach in pixels so contours space their lines at least 4.5 px apart
+  and the densest drawings (flower of life, Metatron, gills, Vicsek) simplify in small cells. Pen primitives:
+  segments, polylines, rings, discs, ovals, arcs, boxes, polygons, stars, waves, zigzags, spirals, lenses, petals,
+  polar outlines, rays. `doodleTurn` keeps letters, chairs, buildings and mushrooms upright (a small lean) while
+  machinery, sacred geometry and contours turn freely; one themed cell in twelve is blank. `doodleText` writes a
+  label in the ASCII font.
+- `engine/vacui.ts`: one more routing question, `vacuiDoodles` (last, so earlier draws of the dead-space stream are
+  unchanged); `Vacui.doodles` (absent in older plans: machinery); the note says "glyphs of hieroglyphs".
+- `dev/doodle-sheet.mjs` (new, no browser): a labelled tile per shape per set in `.data/doodles/<set>.png`, and
+  `--fill` the live pass on a blank print per set. `dev/otherworld-sheet.mjs --doodles [reach]` prints a saved
+  picture with each set. `dev/replay-check.mjs` pins older pictures to machinery; `dev/requests-check.mjs` expects
+  seven dead-space questions; `dev/laps.mjs` tallies the sets.
+- Validation: `tests/doodles.test.ts` (7 tests: every shape inks a drawing and not a blot at reaches 9, 16 and 26,
+  stays inside its cell, repeats, grows in the dead space with every set, machinery turns as before, the notebook
+  reaches every set, timing under 4 s at 720 px), `tests/vacui.test.ts` updated, typecheck, and a bit-identity
+  check of the old `vacui.ts` against the new one for the glyph fill with no set chosen (27 grain × ink × form
+  combinations at 320 px). Sheets in `.data/doodles/`.
+
+**Model-file things and the Tripo crossover (Claude, 2026-10-31, at Josiah's request):**
+- `kit/model.ts`: `loadModel(url, context, { height, footprint?, turn?, shadows? })` loads a GLB with three's
+  GLTFLoader once per URL (cached), clones meshes and materials per build so repaint and dispose stay per
+  cast member, stands it on y = 0 centred on the origin, scales it to the asked height; `modelScene(url)`
+  exposes the cached scene. Exported from `@conjure/kit`; `three/addons/*` was already an allowed import.
+- Private things: `components/things/tripo-*/` (gitignored) are generated by `~/code/jev/tripo/conjure_import.py`
+  from Tripo Studio smart-mesh exports (see `~/code/jev/tripo/README.md`): one thing per prompt line, one
+  `take-N.glb` per model, a `size` score whose rubric follows a keyword class (prop, creature, big), the take
+  drawn from `context.random()` so rerolls tour them, the prompt as the summary. 162 things from 387 models on
+  the first import (90 from prompt lines, 72 from the account's other titles, 35 blocked). The public
+  catalogue is unchanged.
+- Validation: typecheck, `npm test` (17,026, the component rules over the generated folders), `npm run check`
+  on tripo-frog-knight-in-dented-armour and tripo-bakery-that-is-also-a-windmill (3 rolls each, about 2–2.6 s
+  a roll), and `dev/materialize-sheet.mjs` with a Tripo thing as the hero through five looks and every material.
+

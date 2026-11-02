@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Silk ribbon embroidery',summary:'A picture stitched from wide lustrous ribbons with pointed leaves, soft loops, crossing satin bands and a woven cloth ground. Patient hand embroidery, keepsake panels, fabric-covered albums and small shimmering gifts.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'craft'});

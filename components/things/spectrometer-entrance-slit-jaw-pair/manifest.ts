@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Spectrometer entrance slit jaw pair", "summary": "Two supported translating slit jaws retain a real narrow aperture, lead-screw adjustment and a source-side baffle. Two guided jaw bodies leave a genuinely open slit; independent side screws stop at their jaws without crossing the optical aperture. Baffle cuts, exposed guides and travel extensions explain adjustment and service access.", "scales": ["macro", "tabletop"]});

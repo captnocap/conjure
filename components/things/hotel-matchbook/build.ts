@@ -82,6 +82,13 @@ function emblem(c: CanvasRenderingContext2D, venue: keyof typeof VENUES, x: numb
 
 export default defineThing({
   questions: {
+    stock: choice('What is the unprinted card stock?', { ivory: 'Smooth ivory card.', kraft: 'Brown kraft card.', linen: 'Pale card with visible laid fibres.', grey: 'Soft grey recycled card.' }),
+    border: choice('How is the cover framed?', { single: 'A single printed rule.', double: 'Two fine nested rules.', corners: 'Four stepped corner ornaments.', scallop: 'A scalloped ornamental border.' }),
+    binding: choice('How is the match comb fastened?', { steel: 'One silver staple.', brass: 'A broad brass staple.', pair: 'Two smaller staples.', sewn: 'Three visible stitches of dark thread.' }),
+    rows: choice('How many rows make up a full comb?', { single: 'One row of ten.', double: 'Two rows of ten.', triple: 'Three rows of ten.' }),
+    tips: choice('What colour are the unused match heads?', { venue: 'The venue’s house colour.', red: 'Brick-red heads.', white: 'Chalk-white heads.', green: 'Dark green heads.' }),
+    strikerWear: score('How used is the striking strip?', ['Fresh abrasive', 'A few narrow strikes', 'Crisscrossed scrape marks', 'Rubbed pale across its centre']),
+    keepsake: choice('What has been kept beside the matchbook?', { none: 'Nothing else.', ticket: 'A numbered cloakroom ticket.', keytag: 'A brass room-key tag with a small split ring.', coin: 'A coin laid beside the book.' }),
     venue: choice('Where is the matchbook from?', VENUES),
     inside: choice('What is written inside the cover?', {
       number: 'A phone number, hurried.',
@@ -122,11 +129,26 @@ export default defineThing({
     const venue = VENUE[a.venue];
     const fade = (colour: string) => `#${new THREE.Color(colour).lerp(new THREE.Color('#9a8f7c'), mood.wear * 0.35).getHexString()}`;
     const paper = fade(venue.paper);
+    const stockColour = { ivory: '#efe9d8', kraft: '#b99d73', linen: '#e5ddc6', grey: '#b8b8b0' }[a.stock];
     const W = 0.05, L = 0.05, T = 0.0009;
 
     const coverArt = texture(256, 256, (c, w, h) => {
       c.fillStyle = paper; c.fillRect(0, 0, w, h);
-      c.strokeStyle = venue.ink; c.lineWidth = 5; c.strokeRect(12, 12, w - 24, h - 24);
+      c.strokeStyle = venue.ink; c.lineWidth = a.border === 'single' ? 5 : 2;
+      if (a.border === 'single' || a.border === 'double') {
+        c.strokeRect(12, 12, w - 24, h - 24);
+        if (a.border === 'double') c.strokeRect(20, 20, w - 40, h - 40);
+      } else if (a.border === 'corners') {
+        for (const x of [12, w - 12]) for (const y of [12, h - 12]) {
+          const dx = x < w / 2 ? 1 : -1, dy = y < h / 2 ? 1 : -1;
+          c.beginPath(); c.moveTo(x, y + dy * 46); c.lineTo(x, y); c.lineTo(x + dx * 46, y); c.moveTo(x + dx * 8, y + dy * 38); c.lineTo(x + dx * 8, y + dy * 8); c.lineTo(x + dx * 38, y + dy * 8); c.stroke();
+        }
+      } else {
+        for (let i = 0; i < 12; i++) for (const edge of [12, 244]) {
+          c.beginPath(); c.arc(18 + i * 20, edge, 7, 0, Math.PI * 2); c.stroke();
+          c.beginPath(); c.arc(edge, 18 + i * 20, 7, 0, Math.PI * 2); c.stroke();
+        }
+      }
       emblem(c, a.venue, w / 2, a.venue === 'plain' ? h / 2 : 104, a.venue === 'plain' ? 150 : 132);
       c.fillStyle = venue.ink; c.textAlign = 'center'; c.textBaseline = 'middle';
       c.font = 'bold 30px serif'; c.fillText(venue.name[0], w / 2, 192, w - 40);
@@ -143,7 +165,11 @@ export default defineThing({
       blank: [],
     };
     const insideArt = texture(256, 256, (c, w, h) => {
-      c.fillStyle = fade('#efe9d8'); c.fillRect(0, 0, w, h);
+      c.fillStyle = fade(stockColour); c.fillRect(0, 0, w, h);
+      if (a.stock === 'linen') {
+        c.strokeStyle = '#bdb59f'; c.lineWidth = 0.6;
+        for (let i = 5; i < 256; i += 7) { c.beginPath(); c.moveTo(0, i); c.lineTo(256, i + 2); c.stroke(); }
+      }
       c.fillStyle = '#8a8474'; c.textAlign = 'center'; c.textBaseline = 'middle';
       c.font = 'bold 15px sans-serif'; c.fillText('CLOSE COVER BEFORE STRIKING', w / 2, 236, w - 30);
       c.fillRect(20, 220, w - 40, 2);
@@ -157,7 +183,7 @@ export default defineThing({
       if (text.length && text.length < 3) { c.lineWidth = thick ? 8 : 4; c.beginPath(); c.moveTo(-80, text.length * size * 0.62); c.quadraticCurveTo(0, text.length * size * 0.62 + 12, 86, text.length * size * 0.62 - 6); c.stroke(); }
       c.restore();
     });
-    const card = new THREE.MeshStandardMaterial({ color: fade('#efe9d8'), roughness: 0.9 });
+    const card = new THREE.MeshStandardMaterial({ color: fade(stockColour), roughness: 0.9 });
     const outer = new THREE.MeshStandardMaterial({ color: paper, roughness: 0.6 });
     const artMat = new THREE.MeshStandardMaterial({ map: coverArt, roughness: 0.55 });
     const insideMat = new THREE.MeshStandardMaterial({ map: insideArt, roughness: 0.9 });
@@ -173,22 +199,30 @@ export default defineThing({
     boxAt([W - 0.003, 0.0042, 0.011], [0, T + 0.0021, baseZ], card);
     boxAt([W, 0.006, T], [0, 0.003, L / 2], outer);
     boxAt([W, T, 0.013], [0, T + 0.0047, baseZ], outer);
-    boxAt([W - 0.006, 0.0003, 0.0055], [0, T + 0.0053, baseZ + 0.002], new THREE.MeshStandardMaterial({ color: '#4a3526', roughness: 1 }));
-    boxAt([0.011, 0.0005, 0.0012], [0, T + 0.0054, baseZ - 0.0035], new THREE.MeshStandardMaterial({ color: '#c9ccce', metalness: 0.9, roughness: 0.3 }));
+    const striking = texture(256, 48, c => {
+      c.fillStyle = '#4a3526'; c.fillRect(0, 0, 256, 48);
+      c.strokeStyle = '#bca083'; c.lineWidth = 1 + a.strikerWear * 3;
+      for (let i = 0; i < Math.floor(a.strikerWear * 23); i++) { const x = 24 + random() * 195; c.beginPath(); c.moveTo(x, 3); c.lineTo(x + 12 + random() * 24, 45); c.stroke(); }
+      if (a.strikerWear > 0.7) { c.fillStyle = `rgba(180,150,115,${(a.strikerWear - 0.7) * 1.2})`; c.fillRect(32, 7, 192, 34); }
+    });
+    boxAt([W - 0.006, 0.0003, 0.0055], [0, T + 0.0053, baseZ + 0.002], new THREE.MeshStandardMaterial({ map: striking, roughness: 1 }));
+    const fastener = new THREE.MeshStandardMaterial({ color: a.binding === 'brass' ? '#b89543' : a.binding === 'sewn' ? '#43382c' : '#c9ccce', metalness: a.binding === 'sewn' ? 0 : 0.9, roughness: a.binding === 'sewn' ? 1 : 0.3 });
+    const fastenerXs = a.binding === 'pair' ? [-0.012, 0.012] : a.binding === 'sewn' ? [-0.012, 0, 0.012] : [0];
+    for (const x of fastenerXs) boxAt([a.binding === 'sewn' ? 0.001 : a.binding === 'pair' ? 0.008 : 0.013, 0.0005, a.binding === 'sewn' ? 0.006 : 0.0012], [x, T + 0.0054, baseZ - 0.0035], fastener);
 
     // The comb: two rows of ten, torn out from the front as the book empties.
-    const total = 20;
+    const total = { single: 10, double: 20, triple: 30 }[a.rows];
     const remaining = Math.max(1, Math.round(mix(1, total, a.left)));
     const order = Array.from({ length: total }, (_u, i) => i).sort(() => random() - 0.5);
     const present = new Set(order.slice(0, remaining));
     const stickMat = new THREE.MeshStandardMaterial({ color: fade('#e6dcc0'), roughness: 0.95 });
-    const headMat = new THREE.MeshStandardMaterial({ color: venue.head, roughness: 0.55 });
+    const headMat = new THREE.MeshStandardMaterial({ color: a.tips === 'venue' ? venue.head : { red: '#a43d2d', white: '#eee7d2', green: '#325f3c' }[a.tips], roughness: 0.55 });
     const sticks = new THREE.InstancedMesh(new THREE.BoxGeometry(0.0034, 0.0008, 1), stickMat, total);
     const heads = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 8, 6), headMat, remaining);
     const m = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), sc = new THREE.Vector3();
     let h = 0;
     for (let i = 0; i < total; i++) {
-      const row = i < 10 ? 0 : 1, k = i % 10;
+      const row = Math.floor(i / 10), k = i % 10;
       const x = (k - 4.5) * 0.0044 + (row ? 0.0008 : 0), y = T + 0.0008 + row * 0.0013;
       const there = present.has(i);
       const length = there ? 0.034 - row * 0.002 : 0.002 + random() * 0.003;
@@ -285,6 +319,25 @@ export default defineThing({
       smoke.push(wisp);
     }
 
+    if (a.keepsake === 'ticket') {
+      const ticketArt = texture(128, 192, c => {
+        c.fillStyle = '#d6a78c'; c.fillRect(0, 0, 128, 192); c.strokeStyle = '#674635'; c.lineWidth = 3; c.strokeRect(8, 8, 112, 176);
+        c.fillStyle = '#493c31'; c.textAlign = 'center'; c.font = 'bold 20px serif'; c.fillText('CLOAKROOM', 64, 50, 108); c.font = 'bold 60px serif'; c.fillText(String(10 + Math.floor(random() * 80)), 64, 128);
+        c.setLineDash([4, 5]); c.beginPath(); c.moveTo(0, 156); c.lineTo(128, 156); c.stroke();
+      });
+      const ticket = s.box([0.028, 0.0004, 0.043], [0.066, 0.0002, -0.05], new THREE.MeshStandardMaterial({ map: ticketArt, roughness: 1 })); ticket.rotation.y = -0.3;
+    } else if (a.keepsake === 'keytag') {
+      const brass = s.material('#ad8a41', { metalness: 0.75, roughness: 0.45 });
+      s.box([0.022, 0.0014, 0.036], [0.065, 0.0007, -0.052], brass);
+      s.ring(0.005, 0.0008, [0.065, 0.001, -0.071], brass).rotation.x = Math.PI / 2;
+      const tagArt = texture(128, 72, c => { c.fillStyle = '#ad8a41'; c.fillRect(0, 0, 128, 72); c.fillStyle = '#352b19'; c.font = 'bold 54px serif'; c.textAlign = 'center'; c.fillText('214', 64, 56); });
+      const digits = new THREE.Mesh(new THREE.PlaneGeometry(0.016, 0.009), new THREE.MeshStandardMaterial({ map: tagArt, roughness: 0.6 }));
+      s.root.add(digits);
+      digits.position.set(0.065, 0.0015, -0.05); digits.rotation.x = -Math.PI / 2;
+    } else if (a.keepsake === 'coin') {
+      s.cylinder(0.011, 0.011, 0.0014, [0.066, 0.0007, -0.05], s.material('#b99551', { metalness: 0.8, roughness: 0.5 }), 24);
+      s.ring(0.0085, 0.0006, [0.066, 0.0015, -0.05], s.material('#d4b973', { metalness: 0.7, roughness: 0.4 })).rotation.x = Math.PI / 2;
+    }
     const speed = mix(1.5, 6, mood.energy);
     return s.finish(ember ? {
       update: (_dt, time) => {

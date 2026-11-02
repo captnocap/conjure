@@ -13,6 +13,13 @@ const ODD_TINT: Record<Exclude<keyof typeof ODD, 'none'>, string> = { red: '#d83
 
 export default defineThing({
   questions: {
+    handleShape: choice('What shape are the umbrella handles?', { crook: 'Curved J handles.', straight: 'Short straight cylindrical grips.', loop: 'Oval loop handles.', ball: 'Straight grips ending in rounded knobs.' }),
+    filmFinish: choice('What does the umbrella film look like?', { clear: 'Smooth transparent vinyl.', cloudy: 'Softly frosted translucent film.', dotted: 'Transparent film printed with tiny white dots.', grid: 'Transparent film with a fine pale check pattern.' }),
+    spokes: choice('How many ribs divide each canopy?', { six: 'Six broad panels.', eight: 'Eight ordinary panels.', ten: 'Ten smaller panels.', twelve: 'Twelve closely spaced panels.' }),
+    closure: choice('How are the furled umbrellas fastened?', { strap: 'A plain wraparound strap.', snap: 'A strap with a visible snap button.', buckle: 'A dark strap with a small metal buckle.', tie: 'Two short tied ribbons.' }),
+    canopyEdge: choice('How is the canopy edge finished?', { plain: 'An untrimmed edge.', white: 'A fine white sewn border.', dark: 'A fine dark sewn border.', scallop: 'A scalloped edge between the rib tips.' }),
+    dripTray: choice('What catches the drips below the holder?', { plain: 'The holder stands directly on the surface.', ridged: 'A broad shallow tray with ridges.', perforated: 'A low tray with an open slatted insert.', rubber: 'A textured dark rubber mat.' }),
+    identifier: choice('What identifies the umbrella handles?', { plain: 'No identification.', numbers: 'Small numbered tags.', colours: 'Small colour-coded tags.', ribbons: 'A narrow coloured ribbon tied below each handle.' }),
     holder: choice('What holds the umbrellas?', {
       wire: 'A low white wire rack with a grid of holes and a drip tray.',
       bucket: 'A blue plastic bucket pressed into service.',
@@ -46,7 +53,9 @@ export default defineThing({
     const white = s.material('#f2f2ee', { roughness: 0.45 });
     const steel = s.material('#c5cacc', { metalness: 0.7, roughness: 0.3 });
     const clearTint = new THREE.Color('#e6f4fb').lerp(new THREE.Color('#e8dfb8'), mood.wear * 0.6);
-    const film = new THREE.MeshStandardMaterial({ color: clearTint, transparent: true, opacity: 0.5, roughness: 0.15, depthWrite: false, side: THREE.DoubleSide });
+    const film=new THREE.MeshStandardMaterial({color:clearTint,transparent:true,opacity:a.filmFinish==='cloudy'?.65:.5,roughness:a.filmFinish==='cloudy'?.6:.15,depthWrite:false,side:THREE.DoubleSide});
+    if(a.filmFinish==='dotted'||a.filmFinish==='grid'){const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d')!;g.fillStyle='#a7c6d4';g.fillRect(0,0,128,128);g.fillStyle='#ffffff';g.strokeStyle='#ffffff';g.lineWidth=1;for(let i=0;i<8;i++)for(let j=0;j<8;j++){if(a.filmFinish==='dotted'){g.beginPath();g.arc(i*16+8,j*16+8,1.7,0,Math.PI*2);g.fill();}else g.strokeRect(i*16,j*16,16,16);}film.map=new THREE.CanvasTexture(c);film.map.colorSpace=THREE.SRGBColorSpace;film.map.wrapS=film.map.wrapT=THREE.RepeatWrapping;film.map.repeat.set(3,2);}
+    const ribCount={six:6,eight:8,ten:10,twelve:12}[a.spokes];
     const wet = a.water !== 'dry';
 
     /** An umbrella built tip-down at the origin, pointing up +y. `state`: closed, open, inverted. */
@@ -56,22 +65,36 @@ export default defineThing({
       const handle = tint === ODD_TINT.black ? s.material('#8a5a32', { roughness: 0.5 }) : tint ? s.material(tint, { roughness: 0.4 }) : white;
       u.rod([0, 0, 0], [0, length, 0], 0.006, steel);
       u.cylinder(0.008, 0.004, 0.05, [0, 0.025, 0], white, 8);
-      const crook = u.tube([[0, length - 0.02, 0], [0, length + 0.06, 0], [0.025, length + 0.1, 0], [0.065, length + 0.085, 0], [0.075, length + 0.04, 0]], 0.012, handle);
-      crook.rotation.y = random() * Math.PI * 2;
+      const handleGroup=new THREE.Group();
+      if(a.handleShape==='crook')handleGroup.add(u.tube([[0,length-.02,0],[0,length+.06,0],[.025,length+.1,0],[.065,length+.085,0],[.075,length+.04,0]],.012,handle));
+      else if(a.handleShape==='loop'){const loop=u.ring(.035,.009,[0,length+.035,0],handle);loop.scale.y=1.4;handleGroup.add(loop);}
+      else{handleGroup.add(u.cylinder(.014,.016,.095,[0,length+.025,0],handle,12));if(a.handleShape==='ball')handleGroup.add(u.ball([.025,.025,.025],[0,length+.078,0],handle,12));}
+      handleGroup.rotation.y=random()*Math.PI*2;u.root.add(handleGroup);
+      if(a.identifier!=='plain'){
+        const hues=['#d84b47','#4d9b67','#e4ba3d','#4b83b6'],hue=hues[Math.floor(random()*4)];
+        if(a.identifier==='ribbons')for(const side of [-1,1])u.tube([[0,length-.01,0],[side*.02,length-.035,.01],[side*.012,length-.075,.015]],.003,s.material(hue));
+        else{u.ring(.009,.0015,[.018,length-.03,0],steel);const text=a.identifier==='numbers'?String(1+Math.floor(random()*25)):'';u.label(text,.032,.045,[.025,length-.06,0],'#27323a',a.identifier==='numbers'?'#e5ddc4':hue);}
+      }
       if (state === 'closed') {
         const profile: [number, number][] = [[0.008, 0.05], [0.02, 0.09], [0.034, 0.3], [0.043, 0.5], [0.04, 0.62], [0.012, 0.66]];
         u.lathe(profile, skin);
         // Furled pleats and a strap so a clear one still reads against a pale wall.
         const pleat = tint ? s.material(new THREE.Color(tint).multiplyScalar(0.75)) : white;
-        for (let i = 0; i < 4; i++) { const angle = i * Math.PI / 2 + random(); u.rod([Math.sin(angle) * 0.012, 0.07, Math.cos(angle) * 0.012], [Math.sin(angle + 0.9) * 0.042, 0.58, Math.cos(angle + 0.9) * 0.042], 0.003, pleat); }
-        u.cylinder(0.041, 0.039, 0.022, [0, 0.4, 0], tint ? pleat : white, 12);
+        for(let i=0;i<ribCount;i++){const angle=i*Math.PI*2/ribCount; u.rod([Math.sin(angle) * 0.012, 0.07, Math.cos(angle) * 0.012], [Math.sin(angle + 0.9) * 0.042, 0.58, Math.cos(angle + 0.9) * 0.042], 0.003, pleat); }
+        const strap=a.closure==='buckle'?s.material('#333b43'):tint?pleat:white;u.lathe([[.036,.389],[.038,.411]],strap);
+        if(a.closure==='snap')u.ball([.006,.006,.003],[0,.4,.04],steel,8);
+        if(a.closure==='buckle'){for(const side of [-1,1]){u.box([.022,.003,.003],[0,.4+side*.009,.041],steel);u.box([.003,.021,.003],[side*.011,.4,.041],steel);}}
+        if(a.closure==='tie')for(const side of [-1,1])u.tube([[0,.4,.04],[side*.022,.385,.047],[side*.012,.35,.045]],.003,strap);
+        if(a.canopyEdge!=='plain')u.ring(.02,.002,[0,.09,0],s.material(a.canopyEdge==='dark'?'#29333d':'#f4f4eb')).rotation.x=Math.PI/2;
       } else {
         const flip = state === 'inverted' ? -1 : 1;
         const spread = 0.5, rise = state === 'inverted' ? 0.34 : 0.2, apex = 0.12;
-        const dome = new THREE.SphereGeometry(1, 16, 6, 0, Math.PI * 2, 0, Math.PI / 2);
+        const dome = new THREE.SphereGeometry(1,ribCount*4,12, 0, Math.PI * 2, 0, Math.PI / 2);
         const canopy = u.mesh(dome, skin, [0, apex, 0]);
         canopy.scale.set(spread, -rise * flip, spread);
-        canopy.castShadow = false;
+        if(a.canopyEdge==='scallop'){const p=dome.getAttribute('position');for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getZ(i),y=p.getY(i),factor=1-.045*(1-Math.cos(Math.atan2(x,z)*ribCount))*(1-y)**4;p.setXYZ(i,x*factor,y,z*factor);}dome.computeVertexNormals();}
+        canopy.castShadow=false;
+        if(a.canopyEdge!=='plain'){const points:[number,number,number][]=[];for(let i=0;i<=ribCount*12;i++){const theta=i/(ribCount*12)*Math.PI*2,factor=a.canopyEdge==='scallop'?1-.045*(1-Math.cos(theta*ribCount)):1;points.push([Math.sin(theta)*spread*factor,apex,Math.cos(theta)*spread*factor]);}u.tube(points,.0025,s.material(a.canopyEdge==='dark'?'#29333d':'#f4f4eb'));}
         // Tip-down means an open canopy hangs below the apex; inverted flips it into a funnel.
         const ribs = s.material('#eef0ee', { metalness: 0.4, roughness: 0.4 });
         const onDome = (angle: number, along: number, reach = 1): [number, number, number] => [
@@ -79,8 +102,8 @@ export default defineThing({
           apex - flip * rise * Math.cos(along * Math.PI / 2),
           Math.cos(angle) * spread * Math.sin(along * Math.PI / 2) * reach,
         ];
-        for (let i = 0; i < 8; i++) {
-          const angle = i / 8 * Math.PI * 2;
+        for(let i=0;i<ribCount;i++){
+          const angle=i/ribCount*Math.PI*2;
           const snapped = state === 'inverted' && random() > 0.6;
           const end = onDome(angle, 1, snapped ? mix(0.55, 0.8, random()) : 1);
           if (snapped) end[1] += flip * 0.12;
@@ -94,8 +117,8 @@ export default defineThing({
     const settle = (group: THREE.Object3D, x: number, z: number) => {
       group.position.set(x, 0, z);
       s.root.add(group);
-      const box = new THREE.Box3().setFromObject(group);
-      group.position.y = -box.min.y + 0.002;
+      const box = new THREE.Box3().setFromObject(group,true);
+      group.position.y=-box.min.y;
     };
 
     // The holder and the spots an umbrella tip can stand in.
@@ -110,7 +133,7 @@ export default defineThing({
         for (let i = 0; i <= 4; i++) s.rod([-W / 2 + i * W / 4, y, -D / 2], [-W / 2 + i * W / 4, y, D / 2], 0.007, bar);
       }
       s.box([W + 0.03, 0.035, D + 0.03], [0, 0.03, 0], s.material(a.holder === 'wire' ? '#4b4f55' : '#33373c', { roughness: 0.5 }));
-      trayY = 0.05;
+      trayY=.0475;
       for (let i = 0; i < 4; i++) for (const z of [-1, 1]) spots.push({ x: -W / 2 + (i + 0.5) * W / 4, z: z * D / 4, rim: H });
       if (a.holder === 'locker') {
         s.box([W + 0.02, 0.07, 0.02], [0, H + 0.03, D / 2 + 0.01], steel);
@@ -121,7 +144,8 @@ export default defineThing({
       }
     } else if (a.holder === 'bucket') {
       const plastic = s.material('#3f78c8', { roughness: 0.5, side: THREE.DoubleSide });
-      s.lathe([[0, 0.01], [0.13, 0.01], [0.135, 0], [0.175, 0.33], [0.185, 0.33], [0.185, 0.345], [0.165, 0.345]], plastic);
+      s.lathe([[0, 0.01], [0.13, 0.01], [0.135, 0], [0.175, 0.33], [0.185, 0.33], [.185,.345],[.165,.345],[.155,.33],[.12,.015],[0,.015]], plastic);
+      trayY=.015;
       s.ring(0.185, 0.005, [0, 0.3, 0], steel, Math.PI).rotation.set(0.5, 0, Math.PI);
       for (let i = 0; i < 7; i++) { const angle = i / 7 * Math.PI * 2 + random(); spots.push({ x: Math.sin(angle) * 0.07 * (i ? 1 : 0), z: Math.cos(angle) * 0.07 * (i ? 1 : 0), rim: 0.34 }); }
     } else {
@@ -133,7 +157,8 @@ export default defineThing({
         for (let i = 0; i < 6; i++) { const x = i * 256 / 6 + 20; g.beginPath(); g.moveTo(x, 100); g.bezierCurveTo(x - 20, 70, x + 24, 60, x + 4, 28); g.stroke(); for (const [dx, dy] of [[-10, 62], [14, 50], [-2, 36]]) { g.beginPath(); g.ellipse(x + dx, dy, 9, 4, dx * 0.1, 0, Math.PI * 2); g.fill(); } }
         const map = new THREE.CanvasTexture(canvas); map.colorSpace = THREE.SRGBColorSpace; return map;
       })();
-      s.lathe([[0, 0.01], [0.12, 0.01], [0.13, 0], [0.15, 0.1], [0.14, 0.42], [0.16, 0.5], [0.17, 0.52], [0.15, 0.52]], new THREE.MeshStandardMaterial({ map: glaze, roughness: 0.2, side: THREE.DoubleSide }));
+      s.lathe([[0, 0.01], [0.12, 0.01], [0.13, 0], [0.15, 0.1], [0.14, 0.42], [0.16, 0.5], [.17,.52],[.15,.52],[.14,.5],[.125,.42],[.135,.1],[.105,.015],[0,.015]], new THREE.MeshStandardMaterial({ map: glaze, roughness: 0.2, side: THREE.DoubleSide }));
+      trayY=.015;
       for (let i = 0; i < 5; i++) { const angle = i / 5 * Math.PI * 2 + random(); spots.push({ x: Math.sin(angle) * 0.06 * (i ? 1 : 0), z: Math.cos(angle) * 0.06 * (i ? 1 : 0), rim: 0.52 }); }
     }
 
@@ -152,7 +177,7 @@ export default defineThing({
         wreck.rotation.set(Math.PI + (random() - 0.5) * 0.3, random() * 6, (random() - 0.5) * 0.3);
         wreck.scale.setScalar(0.78);
         wreck.position.set(spot.x, trayY + 0.7, spot.z);
-        s.root.add(wreck);
+        s.root.add(wreck);wreck.updateMatrixWorld(true);wreck.position.y+=trayY-new THREE.Box3().setFromObject(wreck,true).min.y;
         return;
       }
       const size = a.odd === 'yellow' && tint ? 0.72 : 1;
@@ -160,10 +185,18 @@ export default defineThing({
       one.scale.setScalar(size * mix(0.96, 1.04, random()));
       one.rotation.set((random() - 0.5) * loose, random() * 6, (random() - 0.5) * loose);
       one.position.set(spot.x, trayY, spot.z);
-      s.root.add(one);
+      s.root.add(one);one.updateMatrixWorld(true);one.position.y+=trayY-new THREE.Box3().setFromObject(one,true).min.y;
       tips.push(new THREE.Vector3(spot.x, trayY, spot.z));
     });
 
+    const rackGroup=new THREE.Group();for(const child of [...s.root.children])rackGroup.add(child);s.root.add(rackGroup);
+    let matHeight=0;
+    if(a.dripTray!=='plain'){
+      const width=a.holder==='wire'||a.holder==='locker'?.76:.48,depth=a.holder==='wire'||a.holder==='locker'?.42:.48;matHeight=a.dripTray==='rubber'?.008:.025;rackGroup.position.y+=matHeight;
+      const mat=s.material('#41494e',{roughness:.8});s.box([width,.008,depth],[0,.004,0],mat);
+      if(a.dripTray==='rubber')for(let i=0;i<16;i++)s.box([width,.002,.005],[0,.007,-depth*.46+i*depth*.92/15],mat);
+      else{for(const side of [-1,1]){s.box([width,.025,.012],[0,.0125,side*depth/2],mat);s.box([.012,.025,depth],[side*width/2,.0125,0],mat);}for(let i=0;i<12;i++)s.box([width-.025,a.dripTray==='ridged'?.017:.009,a.dripTray==='ridged'?.01:.022],[0,a.dripTray==='ridged'?.0165:.0205,-depth*.44+i*depth*.88/11],mat);}
+    }
     const reach = a.holder === 'wire' || a.holder === 'locker' ? 0.5 : 0.36;
     if (a.broken === 'dumped') {
       const wreck = umbrella('inverted', null, 0.8);
@@ -178,7 +211,7 @@ export default defineThing({
     }
     if (a.note !== 'none') {
       const text = { free: 'FREE', price: '¥500', plea: 'PLEASE RETURN' }[a.note];
-      const top = spots[0].rim;
+      const top=spots[0].rim+matHeight;
       const card = s.label(text, a.note === 'plea' ? 0.3 : 0.2, 0.11, [0, top * 0.62, (a.holder === 'wire' || a.holder === 'locker' ? 0.165 : 0.2)], a.note === 'price' ? '#c8261e' : '#1e2a44', a.note === 'plea' ? '#f6efc8' : '#fbfaf5');
       card.rotation.z = (random() - 0.5) * 0.2;
       card.rotation.x = -0.08;

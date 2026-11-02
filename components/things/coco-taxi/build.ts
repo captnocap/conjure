@@ -47,6 +47,54 @@ export default defineThing({
       single: 'One big round scooter headlamp.',
       twin: 'Two bug-eye lamps on stalks, giving it a face.',
     }),
+    wheelFace: choice('How are the wheel centres finished?', {
+      plain: 'Plain pressed metal hubs.',
+      spokes: 'Eight narrow spokes cross each dark hub.',
+      caps: 'Smooth domed chrome hubcaps.',
+      rings: 'Thin pale trim rings surround the hubs.',
+    }),
+    seatStitch: choice('How is the passenger bench upholstered?', {
+      plain: 'Smooth unbroken vinyl.',
+      ribs: 'Closely spaced raised horizontal ribs.',
+      divided: 'Two separately padded seating panels.',
+      quilt: 'A diamond-stitched quilted back and seat.',
+    }),
+    entryRail: choice('What helps passengers climb aboard?', {
+      bare: 'The open sides have no extra rail.',
+      handles: 'Two short upright grab handles flank the bench.',
+      loops: 'Large tubular loops frame both entry openings.',
+      steps: 'Low anti-slip boarding steps project on each side.',
+    }),
+    frontBasket: choice('What is fixed above the front leg shield?', {
+      none: 'The shield is clear.',
+      wire: 'A small open wire basket sits above the headlamp.',
+      crate: 'A shallow slatted wooden carrier.',
+      bag: 'A strapped canvas pouch with a flap.',
+    }),
+    roofRack: choice('What sits on the rear of the roof?', {
+      none: 'A clean roof without a carrier.',
+      rails: 'An empty narrow roof rack.',
+      luggage: 'A suitcase is strapped to the roof rack.',
+      basket: 'A wicker parcel basket is lashed to the roof rack.',
+    }),
+    windscreen: choice('What protects the handlebars from wind?', {
+      open: 'The front opening is clear.',
+      low: 'A low curved transparent wind deflector.',
+      tall: 'A taller clear shield held by two metal stays.',
+      visor: 'A narrow opaque sun visor sits above the handlebars.',
+    }),
+    bumper: choice('What protects the lower body?', {
+      plain: 'The shell has its original narrow trim only.',
+      front: 'A low tubular front bumper follows the leg shield.',
+      sides: 'Long side rub rails protect the shell.',
+      rear: 'A broad rear tubular guard wraps the tail.',
+    }),
+    roadBase: choice('What surface is beneath the taxi?', {
+      bare: 'The taxi stands on the scene ground.',
+      cobbles: 'A patch of small irregular cobblestones.',
+      concrete: 'A rectangular concrete parking pad with joints.',
+      rank: 'A paved taxi-rank space marked with two pale lines.',
+    }),
   },
 
   build(a, context) {
@@ -116,18 +164,45 @@ export default defineThing({
     s.cylinder(0.5, 0.46, 0.06, [0, FY, 0], dark, 24).scale.z = ZS;
     s.box([0.46, 0.06, 0.9], [0, FY, 0.62], dark);
     s.box([1.0, 0.34, 0.42], [0, FY + 0.2, -0.3], dark);
-    s.box([1.04, 0.1, 0.46], [0, FY + 0.42, -0.28], vinyl);
+    s.box([1.04, 0.1, 0.46], [0, FY + 0.42, -0.28], vinyl).name = 'coco-passenger-bench';
     s.box([1.04, 0.5, 0.1], [0, FY + 0.7, -0.56], vinyl).rotation.x = -0.12;
     s.box([0.3, 0.44, 0.5], [0, FY + 0.25, 0.28], shellPaint);
     s.box([0.3, 0.08, 0.5], [0, FY + 0.5, 0.26], vinyl);
     const seatY = FY + 0.47;
+    const stitch=s.material('#b7a183',{roughness:1});
+    if(a.seatStitch==='ribs')for(let i=0;i<8;i++){
+      s.box([.98,.015,.018],[0,FY+.49+i*.06,-.499-i*.0072],stitch);
+      if(i<6)s.box([.98,.012,.013],[0,seatY+.003,-.46+i*.068],stitch);
+    }else if(a.seatStitch==='divided')for(const x of[-.27,.27]){
+      s.box([.48,.015,.42],[x,seatY+.0075,-.28],stitch);
+      s.box([.48,.45,.015],[x,FY+.7,-.5],stitch).rotation.x=-.12;
+    }else if(a.seatStitch==='quilt')for(let i=0;i<5;i++)for(const side of[-1,1]){
+      const x=-.46+i*.19;
+      s.rod([x,FY+.5,-.501],[x+side*.14,FY+.87,-.545],.003,stitch);
+      s.rod([x,seatY+.006,-.47],[x+side*.14,seatY+.006,-.07],.003,stitch);
+    }
+    if(a.entryRail==='handles')for(const side of[-1,1])s.tube([[side*.49,FY+.36,-.1],[side*.49,FY+.7,-.1],[side*.49,FY+.72,-.3],[side*.49,FY+.47,-.3]],.022,chrome);
+    else if(a.entryRail==='loops')for(const side of[-1,1])s.tube([[side*.45,FY,.45],[side*.6,FY+.62,.32],[side*.6,FY+.75,.08],[side*.49,FY+.47,-.1]],.024,chrome);
+    else if(a.entryRail==='steps')for(const side of[-1,1]){
+      s.box([.32,.035,.48],[side*.6,FY-.04,.26],chrome);
+      for(let i=0;i<5;i++)s.box([.27,.008,.025],[side*.6,FY-.018,.07+i*.09],rubber);
+      s.rod([side*.4,FY-.02,.1],[side*.69,FY-.065,.1],.025,dark);s.rod([side*.4,FY-.02,.42],[side*.69,FY-.065,.42],.025,dark);
+    }
 
     // Scooter front end.
     const WR = 0.21;
     const wheel = (x: number, y: number, z: number, lying = false) => {
-      const tyre = s.mesh(new THREE.TorusGeometry(WR - 0.06, 0.06, 10, 22), rubber, [x, y, z]);
+      const tyre = s.mesh(new THREE.TorusGeometry(WR - 0.06, 0.06, 12, 24), rubber, [x, y, z]);
       const hub = s.cylinder(0.11, 0.11, 0.07, [x, y, z], chrome, 14);
       if (lying) { tyre.rotation.x = Math.PI / 2; } else { tyre.rotation.y = Math.PI / 2; hub.rotation.z = Math.PI / 2; }
+      const decorate=(side:number)=>{
+        const group=new THREE.Group();group.position.set(x,y,z);if(lying)group.rotation.x=-Math.PI/2;else group.rotation.y=side*Math.PI/2;
+        const add=(geometry:THREE.BufferGeometry,material:THREE.Material,at:P)=>{const mesh=new THREE.Mesh(geometry,material);mesh.position.set(...at);mesh.castShadow=true;group.add(mesh);return mesh;};
+        if(a.wheelFace==='caps'){const m=add(new THREE.SphereGeometry(.105,16,8),chrome,[0,0,.04]);m.scale.z=.3;}
+        else if(a.wheelFace==='rings')add(new THREE.TorusGeometry(.113,.012,6,24),stitch,[0,0,.04]);
+        else if(a.wheelFace==='spokes')for(let i=0;i<8;i++){const t=i*Math.PI/4;const m=add(new THREE.BoxGeometry(.11,.008,.012),chrome,[Math.cos(t)*.055,Math.sin(t)*.055,.04]);m.rotation.z=t;}
+        s.root.add(group);
+      };decorate(1);if(!lying)decorate(-1);
     };
     const FZ = 1.08;
     wheel(0, WR, FZ);
@@ -149,6 +224,53 @@ export default defineThing({
       s.ball([0.07, 0.07, 0.03], [x, 1.0, 0.945], lampMaterial, 14);
     }
     for (const x of [-1, 1]) { s.rod([x * 0.3, 1.04, 0.7], [x * 0.4, 1.24, 0.68], 0.008, chrome); s.ball([0.06, 0.045, 0.012], [x * 0.4, 1.26, 0.68], chrome, 10); }
+    if(a.frontBasket!=='none'){
+      const x=0,y=1.17,z=.91;
+      for(const side of[-1,1])s.rod([side*.17,.98,.77],[side*.17,y-.09,z],.012,chrome);
+      if(a.frontBasket==='bag'){
+        s.box([.34,.22,.15],[x,y,z],s.material('#7c7961'));s.box([.36,.07,.018],[x,y+.07,z+.085],dark);
+        for(const side of[-1,1])s.tube([[side*.1,y+.1,z],[side*.1,1.04,.7],[side*.1,y-.1,z]],.008,rubber);
+      }else{
+        const material=a.frontBasket==='wire'?chrome:s.material('#a98c60');s.box([.38,.018,.22],[x,y-.11,z],material);
+        for(const side of[-1,1]){
+          for(let i=0;i<7;i++)s.rod([-.18+i*.06,y-.1,z+side*.11],[-.18+i*.06,y+.1,z+side*.11],a.frontBasket==='wire'?.006:.016,material);
+          s.rod([-.19,y+.1,z+side*.11],[.19,y+.1,z+side*.11],.012,material);
+          for(const dx of[-.19,.19])s.rod([dx,y+side*.1,z-.11],[dx,y+side*.1,z+.11],.012,material);
+        }
+      }
+    }
+    if(a.windscreen!=='open'){
+      const top=a.windscreen==='tall'?1.55:1.35,bottom=1.08,z=.72;
+      for(const x of[-.25,.25])s.rod([x,bottom,z],[x,top,z-.08],.009,chrome);
+      const screen=s.box([.51,top-bottom,.009],[0,(top+bottom)/2,z-.04],a.windscreen==='visor'?shellPaint:s.material('#aecacc',{transparent:true,opacity:.28,depthWrite:false,roughness:.15}));screen.rotation.x=-Math.atan2(.08,top-bottom);
+      if(a.windscreen==='visor'){screen.scale.y=.28;screen.position.y=top-.035;}
+    }
+    if(a.roofRack!=='none'){
+      const y=CY+R+.07,z=-.24;
+      for(const x of[-.27,.27])for(const dz of[-.2,.2]){
+        const zz=z+dz,sy=CY+Math.sqrt(R*R-x*x-(zz/ZS)**2);s.rod([x,sy,zz],[x,y,zz],.018,chrome);
+      }
+      for(let i=0;i<5;i++)s.rod([-.31,y,z-.24+i*.12],[.31,y,z-.24+i*.12],.014,chrome);
+      for(const x of[-.31,.31])s.rod([x,y,z-.25],[x,y,z+.25],.018,chrome);
+      if(a.roofRack==='luggage'){
+        s.box([.55,.2,.41],[0,y+.114,z],s.material('#927349'));for(const x of[-.18,.18])s.tube([[x,y-.01,z-.24],[x,y+.22,z-.22],[x,y+.22,z+.22],[x,y-.01,z+.24]],.008,rubber);
+      }else if(a.roofRack==='basket'){
+        const wicker=s.material('#b69b6a');s.box([.53,.018,.42],[0,y+.025,z],wicker);
+        for(let j=0;j<4;j++)for(const side of[-1,1]){s.box([.55,.025,.022],[0,y+.06+j*.045,z+side*.21],wicker);s.box([.022,.025,.42],[side*.265,y+.06+j*.045,z],wicker);}
+        for(const x of[-.265,.265])for(const dz of[-.21,.21])s.rod([x,y+.025,z+dz],[x,y+.21,z+dz],.012,wicker);
+        for(const side of[-1,1])s.tube([[side*.27,y-.015,z-.24],[side*.27,y+.215,z],[side*.27,y-.015,z+.24]],.008,rubber);
+      }
+    }
+    if(a.bumper==='front'){
+      s.tube([[-.45,.48,.65],[-.4,.48,1.2],[0,.48,1.4],[.4,.48,1.2],[.45,.48,.65]],.025,chrome);
+      for(const x of[-.24,.24])s.rod([x,FY,.7],[x,.48,1.22],.02,dark);
+    }else if(a.bumper==='sides')for(const side of[-1,1]){
+      s.tube([[side*.49,.48,.45],[side*.83,.48,.2],[side*.85,.48,-.4],[side*.57,.48,-.65]],.025,chrome);
+      for(const z of[-.45,.25])s.rod([side*.62,FY,z],[side*.82,.48,z],.02,dark);
+    }else if(a.bumper==='rear'){
+      s.tube([[-.72,.45,-.45],[-.63,.45,-.8],[0,.45,-1],[.63,.45,-.8],[.72,.45,-.45]],.03,chrome);
+      for(const x of[-.35,.35])s.rod([x,FY,-.35],[x,.45,-.88],.025,dark);
+    }
 
     // Rear wheels with stubby mudguards.
     const offSide = random() < 0.5 ? -1 : 1;
@@ -194,6 +316,7 @@ export default defineThing({
     }
 
     // What was left on the passenger seat.
+    const seatPropsBefore = new Set(s.root.children);
     const sx = (random() - 0.5) * 0.4;
     if (a.seat === 'hat') {
       s.cylinder(0.2, 0.21, 0.012, [sx, seatY + 0.008, -0.26], s.material('#dcc48a', { roughness: 1 }), 20);
@@ -222,6 +345,14 @@ export default defineThing({
       s.cylinder(0.04, 0.04, 0.07, [sx - 0.15, seatY + 0.045, -0.14], dark, 12).rotation.x = Math.PI / 2;
       s.rod([sx - 0.2, seatY + 0.09, -0.2], [sx - 0.02, seatY + 0.01, -0.3], 0.008, s.material('#8a2f2a'));
       for (let i = 0; i < 3; i++) s.box([0.12, 0.004, 0.24], [sx + 0.12 + i * 0.115, seatY + 0.012 + (i % 2) * 0.012, -0.24], s.material(i % 2 ? '#bfe0d2' : '#e8efda')).rotation.z = (i % 2 ? 1 : -1) * 0.12;
+    }
+
+    if (a.seat !== 'nothing') {
+      const props = new THREE.Group(); props.name = 'coco-seat-props';
+      for (const child of [...s.root.children]) if (!seatPropsBefore.has(child)) props.add(child);
+      s.root.add(props); props.updateMatrixWorld(true);
+      const upholsteredTop = seatY + (a.seatStitch === 'divided' ? .015 : a.seatStitch === 'plain' ? 0 : .009);
+      props.position.y += upholsteredTop - new THREE.Box3().setFromObject(props, true).min.y;
     }
 
     // Decoration.
@@ -253,6 +384,18 @@ export default defineThing({
       for (let i = 0; i < 5; i++) s.ball([0.03, 0.02, 0.03], [-0.3 + i * 0.15, 1.04, 0.74], s.material('#3f9a4a'), 6);
     }
 
+    if(a.roadBase!=='bare'){
+      const vehicle=new THREE.Group();for(const child of[...s.root.children])vehicle.add(child);s.root.add(vehicle);vehicle.updateMatrixWorld(true);
+      const bounds=new THREE.Box3().setFromObject(vehicle,true),size=bounds.getSize(new THREE.Vector3()),centre=bounds.getCenter(new THREE.Vector3()),h=.04;vehicle.position.y+=h;
+      const paving=s.material('#9c9a90');s.box([size.x+.26,h,size.z+.26],[centre.x,h/2,centre.z],paving);
+      if(a.roadBase==='cobbles'){
+        const cols=Math.ceil((size.x+.2)/.18),rows=Math.ceil((size.z+.2)/.2),w=(size.x+.2)/cols,d=(size.z+.2)/rows;
+        const stones=new THREE.InstancedMesh(new THREE.BoxGeometry(w-.008,.02,d-.008),paving,cols*rows);
+        for(let i=0;i<cols;i++)for(let j=0;j<rows;j++)stones.setMatrixAt(i*rows+j,new THREE.Matrix4().makeTranslation(centre.x-(size.x+.2)/2+(i+.5)*w,h+.01,centre.z-(size.z+.2)/2+(j+.5)*d));
+        stones.instanceMatrix.needsUpdate=true;stones.castShadow=stones.receiveShadow=true;s.root.add(stones);vehicle.position.y+=.02;
+      }else if(a.roadBase==='concrete')for(const dx of[-.45,.45])s.box([.009,.002,size.z+.24],[centre.x+dx,h+.001,centre.z],dark);
+      else for(const side of[-1,1])s.box([.045,.003,size.z+.1],[centre.x+side*(size.x/2+.07),h+.001,centre.z],stitch);
+    }
     const energy = mix(0.2, 1, mood.energy), phase = random() * 6, idle = a.state === 'waiting';
     return s.finish({
       update: (_dt, time) => {

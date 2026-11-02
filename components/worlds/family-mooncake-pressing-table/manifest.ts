@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind: 'world', title: "Family mooncake pressing table", summary: "A household pastry room is arranged around a permanent carved-mould pressing station and a rack of patterned mooncakes. Warm timber surfaces, dough preparation and divided gift boxes anchor an autumn family ritual even when no matching object is cast.", scales: ["room", "tabletop", "street"]});

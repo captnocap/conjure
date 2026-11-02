@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type PaletteRole, choice, clamp01, defineLook, mix, rekey, score, seeded } from '@conjure/kit';
 
 type RGB = readonly [number, number, number];
 const INKS: Record<string, { black: RGB; low: RGB; hot: RGB; flash: RGB; drift: RGB }> = {
@@ -9,6 +9,9 @@ const INKS: Record<string, { black: RGB; low: RGB; hot: RGB; flash: RGB; drift: 
   vermilion: { black: [21, 15, 22], low: [57, 38, 47], hot: [229, 57, 64], flash: [250, 161, 133], drift: [132, 126, 164] },
   bone: { black: [13, 17, 23], low: [42, 47, 58], hot: [195, 204, 190], flash: [245, 240, 219], drift: [129, 154, 175] },
 };
+/** Each toner keeps its tonal design and takes the idea's palette; bone stays colourless on a tinted stock. */
+const TONER_ROLES: Record<string, PaletteRole> = { black: 'ground', low: 'ground', hot: 'ink', flash: 'ink', drift: 'second' };
+const ROLES: Record<string, Record<string, PaletteRole>> = { bone: { black: 'ground', low: 'ground', drift: 'second' } };
 const smooth = (lo: number, hi: number, value: number) => {
   const t = clamp01((value - lo) / (hi - lo));
   return t * t * (3 - 2 * t);
@@ -32,13 +35,13 @@ export default defineLook({
       reversal: 'A photographic reversal copied onto black: shadow shapes burn bright while the lights fall into darkness.',
       relief: 'An electrostatic relief copy: surface ridges, folds and boundaries catch the pigment like a rubbed printing plate.',
     }),
-    inks: choice('Which hot pigment burns through the black stock?', {
-      cyan: 'Acid cyan and pale mint on blue-black, with a cold violet separation.',
-      ember: 'Orange ember and incandescent gold on deep plum, with bruised magenta shadows.',
-      acid: 'Sulphur yellow and bone white on graphite, with oxidized turquoise drift.',
-      violet: 'Ultraviolet and pale orchid on aubergine, with a little electric cyan.',
-      vermilion: 'Hot vermilion and pale salmon on soot, with a dusty lilac echo.',
-      bone: 'Chalk-white and dirty silver on blue-black, like a copy room after midnight.',
+    inks: choice('What character has the toner that burns through the black stock? Its colours come from the picture\u2019s palette.', {
+      cyan: 'An electric toner: a vivid ink and a pale, nearly white flash on deep black, with a cold offset separation.',
+      ember: 'A smouldering toner: the ink running hotter and lighter into its flash, on a dark tinted stock with bruised shadows.',
+      acid: 'A sulphurous toner: a bright ink and a bone-pale flash on graphite, with an oxidized drift in the second colour.',
+      violet: 'A fluorescent toner: a mid-bright ink and a pale glowing flash on a dark tinted stock, with a vivid second colour.',
+      vermilion: 'A hot toner: a strong saturated ink and a soft pale flash on soot, with a dusty echo in the second colour.',
+      bone: 'A colourless toner: chalk-white and dirty silver on black, like a copy room after midnight; only the stock and the drift take colour.',
     }),
     shadows: choice('What survives in the dark parts of the copied scene?', {
       crushed: 'Crushed absolute dark: only the strongest pigment and structural edges survive.',
@@ -79,7 +82,7 @@ export default defineLook({
     };
     await pause();
     const { size, color, normal, identity, depth } = capture, count = size * size;
-    const { black, low, hot, flash, drift } = INKS[a.inks];
+    const { black, low, hot, flash, drift } = rekey(INKS[a.inks], context.palette, ROLES[a.inks] ?? TONER_ROLES);
     const random = seeded(context.seed ^ 0x5ea74b3f);
     const luminance = new Float32Array(count), distance = new Float32Array(count);
     const field = new Float32Array(count), edges = new Float32Array(count), pigment = new Float32Array(count);

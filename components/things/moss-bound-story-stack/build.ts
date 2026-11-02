@@ -1,0 +1,44 @@
+import * as THREE from 'three';
+import {choice,defineThing,defineWorld,diorama,mix,score,Sculpture} from '@conjure/kit';
+type P=readonly[number,number,number];
+function leaf(s:Sculpture,at:P,length:number,width:number,mat:THREE.Material,rise=.12){return s.surface((u,v,p)=>{p.set((u-.5)*length,Math.sin(Math.PI*u)*rise-Math.abs(v-.5)*.04,Math.sin(Math.PI*u)*(v-.5)*width);},mat,{segments:[20,8],at});}
+function book(s:Sculpture,x:number,y:number,z:number,w:number,h:number,d:number,cover:THREE.Material,pages:THREE.Material,flat=false){const group=new THREE.Group(),first=s.root.children.length;s.box([w*.8,h*.93,d*.92],[x,y+h/2,z],pages);for(const sign of[-1,1])s.box([w*.12,h,d],[x+sign*w*.44,y+h/2,z],cover);s.box([w,h,.025],[x,y+h/2,z+d*.47],cover);for(const node of s.root.children.slice(first))group.add(node);s.root.add(group);if(flat){const pivot=new THREE.Group();pivot.position.set(x,y,z);group.position.set(-x,-y,-z);pivot.add(group);s.root.add(pivot);pivot.rotation.z=Math.PI/2;pivot.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(pivot,true),centre=bounds.getCenter(new THREE.Vector3());pivot.position.x+=x-centre.x;pivot.position.z+=z-centre.z;pivot.position.y+=y-bounds.min.y;return pivot;}return group;}
+function shell(s:Sculpture,at:P,r:number,h:number,depth:number,material:THREE.Material,inner:THREE.Material){const group=new THREE.Group(),first=s.root.children.length;for(const inset of[0,.075])s.surface((u,v,p)=>{const a=u*Math.PI,b=v*Math.PI;p.set(Math.cos(a)*Math.sin(b)*(r-inset),h+Math.cos(b)*(h-inset),-Math.sin(a)*Math.sin(b)*(depth-inset));},inset?inner:material,{segments:[48,24],at});const rim=s.ring(r,.045,[at[0],at[1]+h,at[2]],material);rim.scale.y=h/r;for(const node of s.root.children.slice(first))group.add(node);s.root.add(group);return group;}
+function ground(node:THREE.Object3D,top:number){node.updateMatrixWorld(true);node.position.y+=top-new THREE.Box3().setFromObject(node,true).min.y;}
+
+export default defineThing({questions:{
+count:score('How many books are in the stack?', ['Three volumes','Five volumes','Seven volumes','Nine volumes']),
+arrangement:choice("How are the volumes stacked?",{"straight": "A neat aligned stack.", "staggered": "Alternating books project to either side.", "spiral": "Each book turns a little farther.", "stepped": "The stack steps back toward the top."}),
+covers:choice("What are the covers made from?",{"leather": "Dark aged leather.", "bark": "Warm bark-like boards.", "cloth": "Green and russet woven cloth.", "shell": "Pale shell-like covers."}),
+moss:choice("Where does the moss grow?",{"spines": "Small cushions follow the spines.", "edges": "A thin green fringe follows the cover edges.", "patches": "A few large soft moss patches.", "little": "Only a little moss at the bottom volume."}),
+pages:choice("How are the page edges finished?",{"cream": "Plain cream paper.", "dark": "Dark deckled edges.", "gilt": "A fine gilt edge.", "uneven": "Uneven protruding page gatherings."}),
+closure:choice("How are the volumes secured?",{"cord": "Two thin cords bind the stack.", "strap": "A broad leather strap with a buckle.", "clasp": "Small individual metal clasps.", "free": "The books lie unbound."}),
+upper:choice("What is the uppermost volume doing?",{"shut": "Closed with its title plate visible.", "open": "Open to two broad pages.", "map": "A folded map spreads over the top.", "note": "A small loose note rests on the cover."}),
+sprouts:choice("What grows from the binding?",{"fern": "Two small fern-like fronds.", "leaves": "Three rounded leaves.", "flower": "One tiny flower on a stem.", "none": "Moss alone."}),
+base:choice("What supports the books?",{"stone": "A flat smooth stone.", "board": "A narrow timber board.", "leaf": "A broad fallen leaf.", "ground": "The bottom book rests on the ground."}),
+markers:choice("What marks the pages?",{"ribbons": "Two long ribbon bookmarks.", "twigs": "Thin twig markers.", "tabs": "Small paper tabs along the fore edges.", "none": "No page markers."}),
+companion:choice("What lies alongside the stack?",{"acorn": "A small fallen acorn.", "key": "A tiny old key.", "lens": "A pair of reading spectacles.", "none": "Nothing beside the books."})
+},build(a,context){
+
+ const s=new Sculpture(context),n=Math.round(mix(3,9,a.count)),wood=s.material('#8c704c'),dark=s.material('#554a38'),moss=s.material('#6c8250',{side:THREE.DoubleSide}),lightMoss=s.material('#91a166',{side:THREE.DoubleSide}),paper=s.material(a.pages==='dark'?'#a59675':'#dfd4b8'),metal=s.material('#b29a60',{metalness:.6}),cover=s.material(a.covers==='leather'?'#69513b':a.covers==='bark'?'#987750':a.covers==='cloth'?'#758168':'#d4c5a6'),rope=s.material('#bba780');
+ const base=a.base==='ground'?0:a.base==='leaf'?.025:.07;if(a.base==='stone')s.box([.95,.07,.73],[0,.035,0],dark);if(a.base==='board')s.box([1.02,.07,.72],[0,.035,0],wood);if(a.base==='leaf'){const l=leaf(s,[0,.018,0],1.12,.85,moss,.015);ground(l,0);}
+ for(let i=0;i<n;i++){const y=base+i*.082,w=.64-i*.018,d=.46-i*.008,x=a.arrangement==='staggered'?(i%2?.07:-.07):a.arrangement==='stepped'?i*.035:0,z=a.arrangement==='stepped'?-i*.025:0,angle=a.arrangement==='spiral'?i*.16:0;const group=new THREE.Group(),first=s.root.children.length;
+ s.box([w-.025,.055,d-.02],[0,.04,0],paper);for(const yy of[.009,.073])s.box([w,.018,d],[0,yy,0],cover);s.box([w,.07,.025],[0,.04,d/2-.008],cover);if(a.pages==='gilt')s.box([.008,.055,d-.03],[w/2-.014,.04,0],metal);if(a.pages==='uneven')for(let k=0;k<5;k++)s.box([w-.015,.006,d-.005+(k%2)*.015],[0,.019+k*.011,-.008],paper);
+ if(a.closure==='clasp')s.box([.07,.045,.018],[0,.045,-d/2-.01],metal);
+ const patches=a.moss==='little'?(i===0?4:0):a.moss==='patches'?3:a.moss==='spines'?6:10;for(let k=0;k<patches;k++){const xx=(k/(Math.max(1,patches-1))-.5)*w*.86,zz=a.moss==='spines'?d/2:a.moss==='edges'?(k%2?d/2:-d/2):(context.random()-.5)*d;const yy=a.moss==='spines'?.04:.087;s.ball([a.moss==='patches'?.07:.04,.025,.035],[xx,yy,zz],k%2?moss:lightMoss,8);}
+ if(a.markers==='tabs')for(let k=0;k<3;k++)s.box([.07,.004,.035],[-w*.25+k*w*.25,.025+k*.012,-d/2-.01],paper);
+ for(const node of s.root.children.slice(first))group.add(node);s.root.add(group);group.rotation.y=angle;group.position.set(x,y,z);
+ }
+ const top=base+n*.082,tx=a.arrangement==='stepped'?(n-1)*.035:0,tz=a.arrangement==='stepped'?-(n-1)*.025:0;
+ if(a.closure==='cord')for(const x of[-.2,.2])s.tube([[x,base+.01,-.24],[x,top+.02,-.24],[x,top+.03,.24],[x,base+.01,.24]],.006,rope,true);if(a.closure==='strap'){for(const z of[-.24,.24])s.box([.075,top-base,.015],[0,(top+base)/2,z],dark);s.box([.075,.012,.5],[0,top+.012,0],dark);s.box([.09,.04,.022],[0,top*.6,.255],metal);}
+ const topFirst=s.root.children.length;
+ if(a.upper==='open'){for(const sign of[-1,1])s.box([.24,.012,.33],[tx+sign*.115,top+.018,tz],paper).rotation.z=sign*.1;}
+ else if(a.upper==='map'){for(let i=0;i<3;i++){const part=new THREE.Group(),first=s.root.children.length;s.box([.21,.006,.4],[0,0,0],paper);for(let k=0;k<3;k++)s.box([.13,.002,.005],[0,.004,-.13+k*.13],wood);for(const node of s.root.children.slice(first))part.add(node);s.root.add(part);part.position.set(tx+(i-1)*.2,top+.014,tz);part.rotation.z=i%2?.12:-.1;ground(part,top);}}
+ else if(a.upper==='note')s.box([.18,.005,.2],[tx+.04,top+.0025,tz],paper).rotation.y=.3;else s.box([.19,.008,.12],[tx,top+.004,tz],metal);
+ if(a.upper==='open'){const opened=new THREE.Group();for(const node of s.root.children.slice(topFirst))opened.add(node);s.root.add(opened);ground(opened,top);}
+ if(a.markers==='ribbons')for(const x of[-.12,.12])s.box([.024,top*.55,.006],[x,top*.65,.25],x<0?cover:moss);if(a.markers==='twigs')for(const x of[-.13,.14])s.rod([x,top-.04,.08],[x+.04,top-.04,.38],.005,wood);
+ if(a.sprouts!=='none'){const x=tx-.22,z=tz+.19;s.rod([x,top-.025,z],[x+.03,top+.24,z],.008,moss);if(a.sprouts==='fern'){for(let k=0;k<5;k++)for(const sign of[-1,1]){const l=leaf(s,[x+sign*.04,top+.06+k*.035,z],.11-k*.01,.035,lightMoss,.012);l.rotation.z=sign*.3;}}else if(a.sprouts==='leaves')for(let i=0;i<3;i++){const l=leaf(s,[x+(i-1)*.05,top+.1+i*.04,z],.14,.075,lightMoss,.03);l.rotation.y=i*.9;}else{for(let i=0;i<5;i++){const t=i*Math.PI*2/5;s.ball([.025,.016,.025],[x+.03+Math.cos(t)*.035,top+.24,z+Math.sin(t)*.035],paper,10);}s.ball([.018,.016,.018],[x+.03,top+.25,z],metal,8);}}
+ if(a.companion==='acorn'){s.ball([.065,.09,.06],[-.64,.09,.1],wood,14);s.lathe([[.067,0],[.074,.025],[.04,.055],[0,.06]],dark,[-.64,.14,.1]);}if(a.companion==='key'){const x=-.64;s.ring(.035,.007,[x,.008,.1],metal).rotation.x=Math.PI/2;s.rod([x,.008,.13],[x,.008,.29],.007,metal);s.box([.05,.012,.025],[x+.015,.008,.27],metal);}if(a.companion==='lens'){for(const z of[.03,.12])s.ring(.035,.005,[-.64,.006,z],metal).rotation.x=Math.PI/2;s.rod([-.64,.006,.065],[-.64,.006,.085],.005,metal);}
+ return s.finish();
+
+}});

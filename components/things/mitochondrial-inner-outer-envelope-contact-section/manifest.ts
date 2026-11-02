@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Mitochondrial inner outer envelope contact section", "summary": "Two distinct closed membrane layers approach at a localized contact site while retaining separate bilayers and intermembrane space. Two distinct membrane shells approach at localized sites while retaining an intermembrane gap. This is an enlarged topology model; braces and section windows are explanatory supports, not fused biological membranes.", "scales": ["macro", "tabletop"]});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Marine snow particle water column", "summary": "A sparse enlarged water-column diagram surrounds sinking aggregates with strong varied suspended forms and low, transparent section boundaries. A persistent settling-particle column, porous aggregate and supported collection cone define the underwater field independently of the cast.", "scales": ["macro", "landscape"]});

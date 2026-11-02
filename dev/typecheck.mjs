@@ -23,5 +23,6 @@ if (!linked) {
   writeFileSync(project, `${JSON.stringify({ extends: '../tsconfig.json', exclude: ['../node_modules', ...excluded] }, null, 2)}\n`);
   console.log(`The ateliers repository is not linked: ${excluded.length} components that require it are left out of the typecheck.`);
 }
-const tsc = spawnSync(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['tsc', '--noEmit', '-p', project], { stdio: 'inherit' });
+// The complete procedural catalogue exceeds Node's default 4 GB TypeScript heap.
+const tsc = spawnSync(process.execPath, ['--max-old-space-size=8192', resolve('node_modules/typescript/bin/tsc'), '--noEmit', '-p', project], { stdio: 'inherit' });
 process.exit(tsc.status ?? 1);

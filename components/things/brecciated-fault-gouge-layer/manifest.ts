@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Brecciated fault gouge layer", "summary": "Angular fragments of varied sizes are embedded in a distinct sheared matrix layer with a cut face. An exposed structural-geology teaching specimen with matching fault surfaces, connected mineral growth and physically cut sections.", "scales": ["tabletop", "macro"]});

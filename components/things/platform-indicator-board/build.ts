@@ -53,6 +53,12 @@ export default defineThing({
       legs: 'On its own pair of steel legs, a freestanding totem.',
     }),
     halts: noul('Does a lower strip list the stations the train will stop at?'),
+    rainHood: choice('What shelters the indicator face?', { none: 'No separate rain hood.', shallow: 'A short straight metal visor.', deep: 'A deep visor with side cheeks.', pitched: 'A small pitched metal roof.' }),
+    caseFasteners: choice('How is the display case fastened?', { plain: 'Plain folded case edges.', screws: 'Small screw heads around the frame.', bolts: 'Large hexagonal corner bolts.', clips: 'Steel clips along the upper and lower edge.' }),
+    rearPanel: choice('What is on the back of the indicator?', { plain: 'A plain dark back.', louvres: 'Two banks of ventilation louvres.', access: 'A square service hatch with a latch.', ribs: 'Four tall stiffening ribs.' }),
+    cableDrop: choice('How does wiring leave the case?', { short: 'Only the original short wiring.', conduit: 'A rigid conduit down a support.', loop: 'A coiled service loop under the case.', junction: 'A small junction box and two cable loops.' }),
+    speaker: choice('What announcement speaker is attached?', { none: 'No attached speaker.', horn: 'A small flared metal horn.', grille: 'A square speaker with a striped grille.', pair: 'Two compact round speakers.' }),
+    caseBraces: choice('What braces the back of the display case?', { plain: 'Plain rear mounting straps.', crossed: 'Two diagonal cross braces.', horizontal: 'Two broad horizontal mounting rails.', frame: 'A rectangular frame with four gussets.' }),
   },
 
   build(a, context) {
@@ -278,14 +284,50 @@ export default defineThing({
     const perchY = a.mount === 'legs' ? by + bh / 2 + 0.05 : beamY + (a.mount === 'truss' ? 0.325 : 0.035);
     const birds = Math.floor(mood.density * 4.5);
     const pigeon = s.material('#6e7582', { roughness: 0.9 });
+    const feet=s.material('#a57768');
+    const perchAt=(x:number)=>a.mount!=='legs'||a.rainHood==='none'?perchY:
+      a.rainHood==='pitched'?by+bh/2+.12+.0125/Math.cos(.1)-(Math.abs(x)-bw*.25)*Math.tan(.1):by+bh/2+.0675;
     for (let i = 0; i < birds; i++) {
       const x = rnd(-bw / 2 + 0.1, bw / 2 - 0.1);
       if (a.mount === 'legs' && a.clock === 'analogue' && Math.abs(x) < 0.45) continue;
+      if (a.mount === 'legs' && a.rainHood === 'pitched' && Math.abs(x) < 0.15) continue;
       const facing = random() < 0.5 ? 1 : -1;
-      s.ball([0.075, 0.06, 0.05], [x, perchY + 0.07, 0], pigeon, 10);
-      s.ball([0.032, 0.034, 0.03], [x + facing * 0.06, perchY + 0.14, 0], pigeon, 8);
-      s.rod([x - facing * 0.06, perchY + 0.07, 0], [x - facing * 0.15, perchY + 0.03, 0], 0.022, pigeon, 0.006);
+      const y=perchAt(x),slope=a.mount==='legs'&&a.rainHood==='pitched'?-Math.sign(x)*.1:0;
+      for(const z of[-.022,.022]){
+        s.rod([x,y+.004,z],[x,y+.035,z],.004,feet);
+        const tx=x+facing*.012,toe=s.box([.04,.004,.008],[tx,perchAt(tx)+.002/Math.cos(slope),z],feet);
+        toe.rotation.z=slope;toe.name='indicator-pigeon-toe';
+      }
+      s.ball([0.075, 0.06, 0.05], [x, y + 0.085, 0], pigeon, 10);
+      s.ball([0.032, 0.034, 0.03], [x + facing * 0.06, y + 0.155, 0], pigeon, 8);
+      s.rod([x - facing * 0.06, y + 0.085, 0], [x - facing * 0.15, y + 0.045, 0], 0.022, pigeon, 0.006);
     }
+
+    const metal=s.material('#929c9b',{metalness:.55,roughness:.45}),rear=-bd/2-.014;
+    if(a.rainHood!=='none'){
+      if(a.rainHood==='pitched')for(const side of[-1,1]){const panel=s.box([bw*.56,.025,.62],[side*bw*.25,by+bh/2+.12,.08],caseMaterial);panel.rotation.z=-side*.1;}
+      else{s.box([bw+.15,.025,a.rainHood==='deep'?.62:.36],[0,by+bh/2+.055,.12],caseMaterial);if(a.rainHood==='deep')for(const x of[-1,1])s.box([.022,.22,.6],[x*(bw/2+.06),by+bh/2-.04,.12],caseMaterial);}
+    }
+    if(a.caseFasteners!=='plain'){
+      if(a.caseFasteners==='screws')for(const y of[-1,1])for(let i=0;i<12;i++)s.ball([.009,.009,.004],[-bw/2+.05+i*(bw-.1)/11,by+y*(bh/2-.025),bd/2+.017],metal,6);
+      else if(a.caseFasteners==='bolts')for(const x of[-1,1])for(const y of[-1,1])s.cylinder(.018,.018,.015,[x*(bw/2-.045),by+y*(bh/2-.045),bd/2+.02],metal,6).rotation.x=Math.PI/2;
+      else for(const y of[-1,1])for(const x of[-.8,-.4,0,.4,.8])s.box([.055,.08,.018],[x,by+y*bh/2,bd/2+.012],metal);
+    }
+    if(a.rearPanel==='louvres')for(const x of[-.65,.65])for(let i=0;i<8;i++){const slat=s.box([.55,.028,.025],[x,by-.23+i*.065,rear],metal);slat.rotation.x=.25;}
+    else if(a.rearPanel==='access'){s.box([.65,.5,.018],[0,by,rear],metal);s.box([.035,.1,.025],[.24,by,rear-.022],dark);}
+    else if(a.rearPanel==='ribs')for(const x of[-.9,-.3,.3,.9])s.box([.045,bh*.8,.045],[x,by,rear],metal);
+    if(a.cableDrop==='conduit'){const x=a.mount==='bracket'?-bw/2-.4:a.mount==='legs'?-bw/2+.25:-bw/2-.45;s.tube([[-bw/2,by-.2,rear],[x,by-.2,rear],[x,.3,rear]],.016,dark);}
+    else if(a.cableDrop==='loop')for(let i=0;i<3;i++)s.ring(.13+i*.012,.008,[.65,by-bh/2-.09,-.06],dark);
+    else if(a.cableDrop==='junction'){s.box([.25,.18,.09],[.7,by-.13,rear-.04],metal);for(const x of[.65,.75])s.tube([[x,by-.2,rear-.08],[x,by-.6,rear-.08],[x-.3,by-.6,rear-.08],[x-.3,by-bh/2,rear]],.009,dark);}
+    if(a.speaker!=='none'){
+      const y=by-bh/2-.18,x=-.75;s.box([.12,.2,.05],[x,y+.12,0],iron);
+      if(a.speaker==='horn'){s.cylinder(.16,.045,.24,[x,y,.12],metal,16).rotation.x=Math.PI/2;s.cylinder(.135,.135,.008,[x,y,.244],dark,16).rotation.x=Math.PI/2;}
+      else if(a.speaker==='grille'){s.box([.31,.23,.16],[x,y,.04],metal);for(let i=0;i<7;i++)s.box([.25,.012,.006],[x,y-.09+i*.03,.124],dark);}
+      else for(const dx of[-.1,.1]){s.cylinder(.075,.075,.1,[x+dx,y,.06],metal,16).rotation.x=Math.PI/2;s.cylinder(.06,.06,.006,[x+dx,y,.113],dark,16).rotation.x=Math.PI/2;}
+    }
+    if(a.caseBraces==='crossed')for(const side of[-1,1])s.rod([-bw*.43,by+side*bh*.4,rear-.025],[bw*.43,by-side*bh*.4,rear-.025],.018,iron);
+    else if(a.caseBraces==='horizontal')for(const y of[-.25,.25])s.box([bw*.9,.07,.045],[0,by+y,rear-.025],iron);
+    else if(a.caseBraces==='frame'){for(const x of[-1,1])s.box([.04,bh*.9,.04],[x*bw*.46,by,rear-.025],iron);for(const y of[-1,1])s.box([bw*.94,.04,.04],[0,by+y*bh*.45,rear-.025],iron);for(const x of[-1,1])for(const y of[-1,1])s.rod([x*bw*.46,by+y*bh*.23,rear-.03],[x*bw*.38,by+y*bh*.45,rear-.03],.015,iron);}
 
     const speed = mix(0.2, 1, mood.energy), jitter = mix(0.05, 0.6, Math.max(mood.wear, mood.energy * 0.7));
     return s.finish({

@@ -1,0 +1,43 @@
+{
+  "source": "Atelier Rendering Studies v83 source export (render recovery and geometry portability)",
+  "files": {
+    "bone-materials.js": "3d300d71903fa200743fefd2a4e56332f880e87b50fe3ad37840f04d5df2b23e",
+    "diffraction-foil-material.js": "679902c49144a6876d604e35edb30be66a439a7accd357207eedfa8cc1d31749",
+    "diffraction-foil-model.js": "e3ba3596bec9bae7342be262713f8e666e186eff230ce8215b5e98a328b46516",
+    "enamel-reserve-config.js": "b2fb8bbf8cbe3c367edc937f28545580455ce10a76ecd0febf29a277a9f58e00",
+    "enamel-reserve-geometry.js": "fdf874315c2a886df694d09d7ddba7d166ab5a968cd096dcac90ffd261ab6982",
+    "enamel-reserve-material.js": "ada4e1d1c4839be1f6df20b005222c17c8845b62e5e4e4102ca538743c6013a7",
+    "frosted-glass-material.js": "5cdfb5249161a94086b710dcc29ab9704a0bf5fdba2d701ffdd0e10d8450bb08",
+    "hammered-impact-field.js": "ee52ac50c23946e03ce7117ce1b801cb8e4d85719b966bd42948643cadd4b6ea",
+    "hammered-metal-material.js": "6c9ff57d48d7852ef18c8c283fb4643935a413b385d3982afc1d567f27045779",
+    "interference-coat-material.js": "0b0a56cd4341f2a34d32ed7b09cae3e62db29dc7ca83141a8f61a2bf92fcdec4",
+    "interference-coat-tables.js": "8fdb0df929a9bcfc8f99f20c369a4918f3d83b6b6b933dfd1c73871336244f33",
+    "material-bake.js": "d988985dad2584ab71f731b4d37ca98cdc4d856029e68087ceca4027c6d4a157",
+    "material-library.js": "12dd9d97fc2eb617c7fac0314381f3852d3d64e75169d5b48c6ee0cf563891ec",
+    "perforated-shell-field.js": "a3d16fa7ef5518913511a74a74e0aed6ed384f6f77db727deabfa6a955f83bdb",
+    "perforated-shell-material.js": "c41003fa3739a7a5f066bf0f2f5ff19f887893db6fecc6bb7be491d04be345ed",
+    "perlage-charts.js": "4bb70d5c119501973cda3b04c7a7ef163365317dae9866749e52c57a75ab0c81",
+    "perlage-geometry.js": "cad64faeb06ce7ab9a6e6279e34297f0dd6c48a7e081a990e103f973a3cc5516",
+    "perlage-material.js": "ac943511f9c43d9c3e0a78c42b5e3064b28bcd4ba46e5b2d232cff0f03d100cb",
+    "perlage-small-geometry.js": "79a5fe118e7be13d43b7d938bd5d1d6ca516da38da493ee98316193f81c56ca3",
+    "ribbed-clay-config.js": "16fda30199bf749385bff45c5c6f03f8066341250dad670f5086e3c1093eda6a",
+    "ribbed-clay-geometry.js": "b176be4161819d964cf539375e6d80681adf399abd61584a8227a1860df484d3",
+    "ribbed-clay-material.js": "66d84981c0601c045b3adbd496aa218c3c1f0bdf810cc333e0c0fb824b9b2a1f",
+    "shingle-relief-config.js": "42c4a68e99c8890cb6a424e265bbf098b9dc057c96b749cb68cf5fdbaef3aae8",
+    "shingle-relief-geometry.js": "83812e5400ec4623d63426c94a9dc3c572971102085b6c2b896a775c49a8d4e5",
+    "shingle-relief-material.js": "561f89be4a97271d1d36db24c2e287d74a3b06c33179aab8d36bdfe378481661",
+    "soft-tissue-materials.js": "17c086a8cc35b31faa6dea580d55a8eda108bfcfc5313aa293fb0adadeadbecd",
+    "spectral-data.js": "5d979ca5a88af588d225c3895884823060ab9352503114b3d7f9ad3a8947f9c9",
+    "steel-material.js": "04bc6c5581795353adfc7d7b55230be141e492d78f132803c6d67a6d66878613",
+    "tiled-surface-material.js": "6335ce49fab89434c615a2d7a0d9db80f27aff696e460caad26b41bbab2e9f1d",
+    "velvet-material.js": "d672732b36936fe67e6e4c73980f81eb18e2d780c9514d9f7906b4ba86f4b984",
+    "wood-material.js": "e2e988dc049a3afb8a0698c444e213e5bbf90d66586322fc88b2f6fef7940cd9",
+    "woven-linen-charts.js": "1caddb445213ce136f1239245c60ef90920e6c3bb55647c6636bf1090a30bdc8",
+    "woven-linen-material.js": "86499918f6288483ca2cbd27ae68a1a3abe9bc5b893e99123fc0f951573a9319",
+    "woven-linen-quadrature.js": "5f759161e353e218a51b6f20a878960da981c1c3ef3dc66e79edc599c38da4b4"
+  },
+  "adaptations": [
+    "Imports bind to the host Three.js package rather than the source r180 vendor.",
+    "Frosted glass uses the host transmission shader with the source orthographic correction; targeted shader statements are validated."
+  ]
+}

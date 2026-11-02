@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Chloroplast double envelope stromal window", "summary": "Two distinct chloroplast envelope layers retain an exposed stromal neighborhood with a true finite cut. Two finite envelope layers bound the stromal compartment, separate from the internal thylakoid membrane. The front opening and cut ends are actual missing sectors; dimensions are enlarged teaching geometry.", "scales": ["macro", "tabletop"]});

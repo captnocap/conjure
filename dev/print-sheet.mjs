@@ -11,6 +11,9 @@ try {
   const page = await browser.newPage();
   let modelRequests = 0;
   await page.route('**/api/decide', (route) => { modelRequests++; return route.abort(); });
+  // A sheet is not a generation to keep: answer the page's save instead of filling the gallery.
+  await page.route('**/api/gallery', (route) => route.request().method() === 'POST' ? route.fulfill({ contentType: 'application/json', body: JSON.stringify({ id: 'sheet', day: '2026-01-01' }) }) : route.fallback());
+  await page.route('**/api/gallery/entry/*/*/window', (route) => route.fulfill({ contentType: 'application/json', body: '{}' }));
   await page.route('**/@vite/client', (route) => route.fulfill({ contentType: 'text/javascript', body: 'export function createHotContext(){return {accept(){},dispose(){},on(){},data:{}}} export function injectQuery(url){return url}' }));
   const query = new URLSearchParams({ offline: '', idea: 'A colourful all-night market at the end of the highway',
     world: 'worlds/gas-station-market', cast: 'things/market-shelf,things/drinks-fridge,things/cash-register', t: '1', roll: '2' });

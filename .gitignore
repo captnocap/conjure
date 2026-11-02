@@ -10,3 +10,5 @@ test-results/
 .DS_Store
 # The Three.js ateliers repository, linked in locally when present (see README).
 ateliers
+# Tripo-generated model things, private to this machine (see tripo/ in the jev workspace).
+components/things/tripo-*/

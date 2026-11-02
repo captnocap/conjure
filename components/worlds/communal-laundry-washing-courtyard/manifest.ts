@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind: 'world', title: "Communal laundry washing courtyard", summary: "A shared stone courtyard keeps a permanent wash trough, hand pump and supported drying lines ready for household laundry. Folded linen, drainage channels and a small wringing station make washing, rinsing and drying visible even when none of the matching equipment is cast.", scales: ["street", "room", "landscape"]});

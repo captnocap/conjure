@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Meteoritic metal sulfide contact assemblage", "summary": "Distinct connected metal and sulfide grains occupy matrix pockets with exposed phase boundaries and triple contacts. A schematic opaque-mineral contact specimen with actual adjacent metal and sulfide volumes; phase boundaries, meteorite mineralogy and cut sections.", "scales": ["macro", "tabletop"]});

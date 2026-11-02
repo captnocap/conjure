@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Synaptic cleft basal lamina mesh", "summary": "A thin perforated extracellular mesh spans an actual narrow cleft between attached membrane lips. A magnified neuromuscular teaching specimen: the meeting of nerve and muscle, movement, signal release and cellular organization.", "scales": ["macro", "tabletop"]});

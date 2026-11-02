@@ -5,6 +5,12 @@ type V3 = [number, number, number];
 
 export default defineThing({
   questions: {
+    finish: choice('What finish covers the vessel?', { earthen: 'Unglazed clay or satin brass.', polished: 'A burnished polished surface.', glazed: 'A clear glossy glaze or polished lacquer over the metal.', smoked: 'A dark smoke-fired surface.' }),
+    piercing: choice('If the censer is pierced, what shape are the openings?', { triangle: 'Triangular openings.', round: 'Small round openings.', diamond: 'Diamond-shaped openings.', slot: 'Narrow vertical slots.' }),
+    rimDetail: choice('How is the lip of the bowl finished?', { plain: 'A simple thickened rim.', braid: 'Two intertwining raised cords.', studs: 'A row of rounded clay or metal studs.', scallops: 'Small scalloped loops around the lip.' }),
+    baseDetail: choice('What surrounds the feet or pedestal?', { plain: 'No additional base.', ring: 'A low round supporting ring.', square: 'A low square ceramic plinth.', petals: 'A six-petalled low clay base.' }),
+    coalLayout: choice('How is the charcoal arranged inside?', { heap: 'A central heap of irregular pieces.', ring: 'A ring of coals around the resin.', split: 'Two side-by-side mounds with a clear central channel.', rows: 'Two orderly rows of short charcoal pieces.' }),
+    underlay: choice('What catches the ash below the burner and its tools?', { bare: 'The surface is bare.', tile: 'A broad terracotta tile.', cloth: 'A folded woven cloth.', sand: 'A shallow tray with an inset sand bed.' }),
     vessel: choice('What kind of censer is it?', {
       tripod: 'A plain terracotta bowl on three stubby feet, the village kind.',
       painted: 'A tripod bowl whitewashed and dotted with bright painted flowers, bought at the market.',
@@ -38,6 +44,23 @@ export default defineThing({
   build(a, context) {
     const s = new Sculpture(context);
     const { mood, random } = context;
+    const ground=(node:THREE.Object3D,floor=0)=>{node.updateMatrixWorld(true);node.position.y+=floor-new THREE.Box3().setFromObject(node,true).min.y;};
+    const seat=(node:THREE.Object3D,support:THREE.Object3D[])=>{node.updateMatrixWorld(true);support.forEach(x=>x.updateMatrixWorld(true));const ray=new THREE.Raycaster(),point=new THREE.Vector3();let gap=Infinity;node.traverse(x=>{if(!(x instanceof THREE.Mesh))return;const p=x.geometry.getAttribute('position');for(let i=0;i<p.count;i++){point.fromBufferAttribute(p,i).applyMatrix4(x.matrixWorld);ray.set(new THREE.Vector3(point.x,1,point.z),new THREE.Vector3(0,-1,0));gap=Math.min(gap,point.y-(ray.intersectObjects(support,true)[0]?.point.y??0));}});if(Number.isFinite(gap))node.position.y-=gap;};
+    const surface=(colour:string,metalness=0)=>s.material(a.finish==='smoked'?'#392d29':colour,{roughness:a.finish==='glazed'?.13:a.finish==='polished'?.28:.8,metalness});
+    const piercedShell=(profile:[number,number][],thickness:number,mat:THREE.Material,windows:[number,number,number,number][])=>{
+      const nx=160,ny=96,y0=profile[0][1],y1=profile[profile.length-1][1],positions:number[]=[],indices:number[]=[];
+      const radius=(y:number)=>{for(let k=1;k<profile.length;k++)if(y<=profile[k][1])return mix(profile[k-1][0],profile[k][0],(y-profile[k-1][1])/(profile[k][1]-profile[k-1][1]));return profile[profile.length-1][0];};
+      const opening=(t:number,y:number)=>windows.some(([tc,yc,tw,yh])=>{const dt=Math.atan2(Math.sin(t-tc),Math.cos(t-tc))/tw,dy=(y-yc)/yh;return a.piercing==='round'?dt*dt+dy*dy<1:a.piercing==='diamond'?Math.abs(dt)+Math.abs(dy)<1:a.piercing==='slot'?Math.abs(dt)<.45&&Math.abs(dy)<1:dy>-.8&&dy<1&&Math.abs(dt)<(1-dy)*.55;});
+      const open=Array.from({length:ny},(_,j)=>Array.from({length:nx},(_,i)=>opening((i+.5)/nx*Math.PI*2,mix(y0,y1,(j+.5)/ny))));
+      const vertex=(i:number,j:number,inner:boolean):V3=>{const t=i/nx*Math.PI*2,y=mix(y0,y1,j/ny),r=Math.max(.0001,radius(y)-(inner?thickness:0));return[Math.sin(t)*r,y,Math.cos(t)*r];};
+      const quad=(p:V3,q:V3,r:V3,t:V3)=>{const k=positions.length/3;positions.push(...p,...q,...r,...t);indices.push(k,k+1,k+2,k,k+2,k+3);};
+      for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){if(open[j][i])continue;quad(vertex(i,j,false),vertex(i+1,j,false),vertex(i+1,j+1,false),vertex(i,j+1,false));quad(vertex(i,j+1,true),vertex(i+1,j+1,true),vertex(i+1,j,true),vertex(i,j,true));
+        if(j===0||open[j-1][i])quad(vertex(i,j,false),vertex(i,j,true),vertex(i+1,j,true),vertex(i+1,j,false));
+        if(j===ny-1||open[j+1][i])quad(vertex(i+1,j+1,false),vertex(i+1,j+1,true),vertex(i,j+1,true),vertex(i,j+1,false));
+        if(open[j][(i+nx-1)%nx])quad(vertex(i,j+1,false),vertex(i,j+1,true),vertex(i,j,true),vertex(i,j,false));
+        if(open[j][(i+1)%nx])quad(vertex(i+1,j,false),vertex(i+1,j,true),vertex(i+1,j+1,true),vertex(i+1,j+1,false));}
+      const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setIndex(indices);geometry.computeVertexNormals();const material=mat.clone();material.side=THREE.DoubleSide;return s.mesh(geometry,material);
+    };
     const heat = Math.min(1, a.embers);
     const glowColour = new THREE.Color('#ff5a14').lerp(new THREE.Color('#ffb02e'), heat);
     const glowMat = (strength: number) => new THREE.MeshStandardMaterial({ color: '#1a120e', emissive: glowColour, emissiveIntensity: strength * heat * 1.6, roughness: 0.9 });
@@ -46,7 +69,7 @@ export default defineThing({
 
     if (a.vessel === 'tripod' || a.vessel === 'painted' || a.vessel === 'effigy') {
       const colour = a.vessel === 'painted' ? '#f1ebdc' : a.vessel === 'effigy' ? '#9a4630' : '#b8663e';
-      const clay = s.material(colour, { roughness: 0.85 });
+      const clay = surface(colour);
       s.lathe([[0, 0.036], [0.04, 0.037], [0.068, 0.06], [0.076, 0.09], [0.071, 0.102], [0.064, 0.102], [0.066, 0.088], [0.058, 0.064], [0, 0.052]], clay);
       for (let i = 0; i < 3; i++) {
         const ang = Math.PI / 2 + i * Math.PI * 2 / 3 + Math.PI;
@@ -64,10 +87,11 @@ export default defineThing({
         }
         s.scatter(new THREE.SphereGeometry(1, 8, 6), s.material('#ffffff', { roughness: 0.5 }), dots);
       } else if (a.vessel === 'effigy') {
-        const face = s.ball([0.036, 0.034, 0.02], [0, 0.074, 0.062], clay, 18);
-        face.rotation.x = -0.25;
+        const face = s.ball([0.036, 0.034, 0.02], [0, 0.074, 0.062], clay, 64);
+        face.geometry.scale(.036,.034,.02);face.scale.setScalar(1);face.geometry.rotateX(-.25);
+        const positions=face.geometry.getAttribute('position');for(let i=0;i<positions.count;i++){const x=positions.getX(i),y=positions.getY(i)+.074,z=positions.getZ(i)+.062;let inset=0;if(z>.064)for(const side of [-1,1]){const q=((x-side*.014)/.010)**2+((y-.082)/.011)**2;if(q<1)inset=Math.max(inset,.011*(1-q)**2);}positions.setZ(i,positions.getZ(i)-inset);}positions.needsUpdate=true;face.geometry.computeVertexNormals();
         for (const side of [-1, 1]) {
-          s.ball([0.009, 0.01, 0.005], [side * 0.014, 0.082, 0.079], glowMat(0.8), 12);
+          s.ball([.007,.008,.002],[side*.014,.082,.071],glowMat(.8),12);
           s.ball([0.016, 0.006, 0.008], [side * 0.014, 0.096, 0.07], clay, 10);
         }
         s.ball([0.004, 0.007, 0.004], [0, 0.07, 0.082], s.material('#2a1410'), 8);
@@ -75,28 +99,20 @@ export default defineThing({
         for (const side of [-1, 1]) s.ball([0.012, 0.018, 0.006], [side * 0.07, 0.082, 0.02], clay, 10);
       } else for (let i = 0; i < 16; i++) { const ang = i / 16 * 6.28; s.ball([0.0045, 0.0045, 0.0045], [Math.sin(ang) * 0.072, 0.102, Math.cos(ang) * 0.072], clay, 8); }
     } else if (a.vessel === 'goblet') {
-      const black = s.material('#1e1c1e', { roughness: 0.25, metalness: 0.25 });
-      s.lathe([[0, 0], [0.048, 0], [0.043, 0.012], [0.019, 0.032], [0.016, 0.06], [0.03, 0.076], [0.06, 0.1], [0.068, 0.14], [0.066, 0.146], [0.06, 0.146], [0.058, 0.108], [0, 0.088]], black);
-      for (let i = 0; i < 8; i++) {
-        const ang = i / 8 * 6.28 + 0.2;
-        const tri = s.mesh(new THREE.CircleGeometry(0.0125, 3), new THREE.MeshBasicMaterial({ color: new THREE.Color('#120a08').lerp(glowColour, heat * 0.95) }), [Math.sin(ang) * 0.0655, 0.122, Math.cos(ang) * 0.0655]);
-        tri.rotation.set(-0.08, ang, i % 2 ? Math.PI / 2 : -Math.PI / 2, 'YXZ'); tri.castShadow = false;
-      }
+      const black = surface('#1e1c1e',.25);
+      s.lathe([[0,0],[.048,0],[.043,.012],[.019,.032],[.016,.06],[.03,.076],[0,.076]],black);
+      const windows:[number,number,number,number][]=Array.from({length:8},(_,i)=>[i*Math.PI/4+.2,.123,.18,.013]);
+      piercedShell([[.03,.076],[.06,.1],[.068,.14],[.066,.146]],.004,black,windows);
       const handle = s.ring(0.026, 0.007, [-0.075, 0.115, 0], black, Math.PI * 1.1); handle.rotation.z = Math.PI / 2 - 0.2;
       rimY = 0.146; rimR = 0.058;
     } else {
-      const brass = s.material('#c9a23a', { metalness: 0.6, roughness: 0.28, emissive: '#5a3c06', emissiveIntensity: 0.35 });
-      s.lathe([[0, 0], [0.04, 0], [0.036, 0.01], [0.014, 0.022], [0.014, 0.034], [0.04, 0.044], [0.062, 0.07], [0.064, 0.092], [0, 0.092]], brass);
+      const brass = surface('#c9a23a',.6);
+      s.lathe([[0, 0], [0.04, 0], [0.036, 0.01], [0.014, 0.022], [0.014, 0.034], [0.04, 0.044], [0.062, 0.07], [0.064, 0.092], [.058,.092],[.057,.073],[.036,.05],[0,.046]], brass);
       s.ring(0.065, 0.004, [0, 0.092, 0], brass).rotation.x = Math.PI / 2;
-      s.lathe([[0.063, 0.094], [0.056, 0.125], [0.036, 0.15], [0.014, 0.162], [0.012, 0.18], [0.02, 0.19], [0, 0.2]], brass);
-      s.box([0.005, 0.032, 0.005], [0, 0.214, 0], brass); s.box([0.02, 0.005, 0.005], [0, 0.218, 0], brass);
-      const holes: { at: V3; size: number }[] = [];
-      for (let row = 0; row < 3; row++) for (let i = 0; i < 10 - row * 2; i++) {
-        const ang = i / (10 - row * 2) * 6.28 + row * 0.3, rr = [0.0595, 0.05, 0.036][row], y = [0.108, 0.133, 0.15][row];
-        holes.push({ at: [Math.sin(ang) * rr, y, Math.cos(ang) * rr], size: 0.0052 });
-        if (row === 1 && i % 3 === 0) vents.push([Math.sin(ang) * rr, y, Math.cos(ang) * rr]);
-      }
-      s.scatter(new THREE.SphereGeometry(1, 8, 6), new THREE.MeshBasicMaterial({ color: new THREE.Color('#150c08').lerp(glowColour, heat * 0.9) }), holes);
+      const windows:[number,number,number,number][]=[];
+      for(let row=0;row<3;row++)for(let i=0;i<10-row*2;i++){const angle=i/(10-row*2)*Math.PI*2+row*.3,y=[.108,.131,.151][row],radius=[.0598,.0512,.0348][row];windows.push([angle,y,.105+row*.03,.0055]);if(row===1&&i%3===0)vents.push([Math.sin(angle)*radius,y,Math.cos(angle)*radius]);}
+      piercedShell([[.063,.094],[.056,.125],[.036,.15],[.014,.162],[.012,.18],[.02,.19],[.001,.2]],.002,brass,windows);
+      s.box([.005,.032,.005],[0,.214,0],brass);s.box([.02,.005,.005],[0,.218,0],brass);
       const chain = s.material('#a8842a', { metalness: 0.6, roughness: 0.35 });
       for (let i = 0; i < 3; i++) {
         const ang = i * 2.094 + 0.5, ex = 0.15 + i * 0.012, ez = 0.07 - i * 0.05;
@@ -106,23 +122,32 @@ export default defineThing({
       rimY = 0.2; rimR = 0.04;
     }
 
-    // Coals and resin.
-    const coalY = rimY - (a.vessel === 'goblet' ? 0.03 : 0.022);
-    if (!lidded) {
-      s.cylinder(rimR * 0.95, rimR * 0.9, 0.006, [0, coalY - 0.008, 0], s.material('#8d8a86', { roughness: 1 }), 20);
+    const body=new THREE.Group();for(const child of [...s.root.children])body.add(child);s.root.add(body);ground(body);
+    const raised=body.position.y;rimY+=raised;vents=vents.map(([x,y,z])=>[x,y+raised,z]);
+    const lipHeight=(lidded?.092:rimY-raised)+raised,lipRadius=lidded?.065:rimR+.008,lipMat=surface(lidded?'#c9a23a':a.vessel==='goblet'?'#1e1c1e':a.vessel==='painted'?'#f1ebdc':'#b8663e',lidded?.6:0);
+    if(a.rimDetail==='braid')for(const side of [-1,1]){const points:V3[]=[];for(let k=0;k<=120;k++){const t=k/120*Math.PI*2,r=lipRadius+Math.cos(t*18)*.0012*side;points.push([Math.sin(t)*r,lipHeight+Math.sin(t*18)*.0012*side,Math.cos(t)*r]);}s.tube(points,.0014,lipMat);}
+    if(a.rimDetail==='studs')for(let i=0;i<28;i++){const t=i*Math.PI/14;s.ball([.0025,.0025,.0025],[Math.sin(t)*lipRadius,lipHeight,Math.cos(t)*lipRadius],lipMat,6);}
+    if(a.rimDetail==='scallops')for(let i=0;i<18;i++){const t=i*Math.PI/9,points:V3[]=[];for(let k=0;k<=8;k++){const u=k/8,q=t+u*Math.PI/9;points.push([Math.sin(q)*lipRadius,lipHeight+Math.sin(u*Math.PI)*.004,Math.cos(q)*lipRadius]);}s.tube(points,.0011,lipMat);}
+    // The ash bed fills the bowl; coals rest on it and one another.
+    const coalY = lidded?.075+raised:rimY-(a.vessel==='goblet'?.03:.022);
+    {
+
+      const ashBed=s.cylinder(rimR*.9,0,coalY-(a.vessel==='goblet'?.076:.046)-raised,[0,(coalY+(a.vessel==='goblet'?.076:.046)+raised)/2-.007,0],s.material('#8d8a86',{roughness:1}),24);
+      const supports:THREE.Object3D[]=[ashBed],coalPoints:V3[]=[];
       const coals = 6 + Math.floor(random() * 4);
       for (let i = 0; i < coals; i++) {
-        const ang = random() * 6.28, d = Math.sqrt(random()) * rimR * 0.62;
+        const ang=a.coalLayout==='ring'?i/coals*Math.PI*2:i*2.399963+random()*.1,d=a.coalLayout==='ring'?rimR*.55:Math.sqrt((i+.5)/coals)*rimR*.55;
         const hot = heat * mix(0.3, 1, random());
-        const lump = s.mesh(new THREE.DodecahedronGeometry(mix(0.011, 0.018, random()), 0), new THREE.MeshStandardMaterial({ color: new THREE.Color('#201a18').lerp(new THREE.Color('#9a9692'), (1 - heat) * 0.6), emissive: glowColour, emissiveIntensity: hot * 1.3, roughness: 0.95, flatShading: true }), [Math.cos(ang) * d, coalY + random() * 0.006, Math.sin(ang) * d]);
-        lump.rotation.set(random() * 3, random() * 3, random() * 3);
+        const lump = s.mesh(new THREE.DodecahedronGeometry(mix(.0065,.009,random()), 0), new THREE.MeshStandardMaterial({ color: new THREE.Color('#201a18').lerp(new THREE.Color('#9a9692'), (1 - heat) * 0.6), emissive: glowColour, emissiveIntensity: hot * 1.3, roughness: 0.95, flatShading: true }), [Math.cos(ang) * d, coalY + random() * 0.006, Math.sin(ang) * d]);
+        if(a.coalLayout==='split'){lump.position.x=(i%2?1:-1)*rimR*.35+(random()-.5)*.008;lump.position.z=(random()-.5)*rimR;}if(a.coalLayout==='rows'){lump.position.x=(i%2?1:-1)*rimR*.3;lump.position.z=(Math.floor(i/2)-(coals/2-1)/2)*.018;}
+        lump.rotation.set(random()*3,random()*3,random()*3);seat(lump,[ashBed]);supports.push(lump);coalPoints.push(lump.position.toArray() as V3);
       }
       const resinColour = { white: '#f4f0e2', gold: '#e0a030', dark: '#3a2418', herbs: '#e0a030' }[a.resin];
       const resin = new THREE.MeshStandardMaterial({ color: resinColour, roughness: 0.3, emissive: a.resin === 'dark' ? '#000000' : resinColour, emissiveIntensity: 0.15 + heat * 0.25, flatShading: true });
-      for (let i = 0; i < 4 + Math.floor(random() * 4); i++) {
-        const ang = random() * 6.28, d = Math.sqrt(random()) * rimR * 0.5;
-        const chunk = s.mesh(new THREE.IcosahedronGeometry(mix(0.006, 0.011, random()), 0), resin, [Math.cos(ang) * d, coalY + 0.014 + random() * 0.006, Math.sin(ang) * d]);
-        chunk.rotation.set(random() * 3, random() * 3, random() * 3);
+      for (let i=0;i<Math.min(coals,4+Math.floor(random()*4));i++) {
+        const [x,,z]=coalPoints[i];
+        const chunk = s.mesh(new THREE.IcosahedronGeometry(mix(.003,.005,random()), 0), resin, [x,coalY+.02,z]);
+        chunk.rotation.set(random()*3,random()*3,random()*3);seat(chunk,supports);supports.push(chunk);
       }
       if (a.resin === 'herbs') for (let i = 0; i < 4; i++) {
         const ang = random() * 3.14, len = rimR * 1.1;
@@ -175,6 +200,8 @@ export default defineThing({
     }
     s.root.add(smoke);
 
+    const censer=new THREE.Group();for(const child of [...s.root.children])censer.add(child);s.root.add(censer);
+
     // Beside it.
     const off = 0.14;
     if (a.beside === 'dish') {
@@ -199,19 +226,33 @@ export default defineThing({
       const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.006, 0.06, 10), s.material('#a8262e'));
       grip.rotation.x = Math.PI / 2; grip.position.set(0, 0.008, 0.02); grip.castShadow = true; fan.add(grip);
       fan.position.set(off + 0.03, 0, 0.06); fan.rotation.y = -0.9 + random() * 0.4;
-      s.root.add(fan);
+      s.root.add(fan);ground(fan);
     } else if (a.beside === 'tongs') {
       const iron = s.material('#3a3c40', { metalness: 0.5, roughness: 0.5 });
       s.rod([off - 0.02, 0.004, 0.0], [off + 0.09, 0.004, 0.09], 0.0028, iron); s.rod([off - 0.02, 0.009, 0.0], [off + 0.095, 0.004, 0.075], 0.0028, iron);
-      for (let i = 0; i < 5; i++) { const lump = s.mesh(new THREE.DodecahedronGeometry(mix(0.012, 0.02, random()), 0), s.material('#1c1a1a', { flatShading: true, roughness: 1 }), [-off + (random() - 0.5) * 0.06, 0.012, 0.04 + (random() - 0.5) * 0.06]); lump.rotation.set(random() * 3, random() * 3, 0); }
+      for (let i = 0; i < 5; i++) { const lump = s.mesh(new THREE.DodecahedronGeometry(mix(0.012, 0.02, random()), 0), s.material('#1c1a1a', { flatShading: true, roughness: 1 }), [-off + (random() - 0.5) * 0.06, 0.012, 0.04 + (random() - 0.5) * 0.06]); lump.rotation.set(random()*3,random()*3,0);ground(lump); }
     }
     if (a.beside === 'ash' || mood.wear > 0.7) {
       const ash = s.material('#9a9794', { roughness: 1 });
-      for (let i = 0; i < 9; i++) { const ang = random() * 6.28, d = mix(0.06, 0.15, random()); s.ball([mix(0.008, 0.024, random()), 0.0025, mix(0.008, 0.02, random())], [Math.cos(ang) * d, 0.002, Math.sin(ang) * d], ash, 8).castShadow = false; }
+      for (let i = 0; i < 9; i++) { const ang = random() * 6.28, d = mix(0.06, 0.15, random()); s.ball([mix(0.008, 0.024, random()), 0.0025, mix(0.008, 0.02, random())], [Math.cos(ang)*d,.0025,Math.sin(ang)*d], ash, 8).castShadow = false; }
       const crumbs = []; for (let i = 0; i < 40; i++) { const ang = random() * 6.28, d = mix(0.05, 0.17, random()); crumbs.push({ at: [Math.cos(ang) * d, 0.003, Math.sin(ang) * d] as V3, size: mix(0.0015, 0.004, random()), color: random() < 0.5 ? '#2a2624' : '#b8b4ae' }); }
       s.scatter(new THREE.IcosahedronGeometry(1, 0), s.material('#ffffff', { roughness: 1 }), crumbs);
     }
 
+    if(a.baseDetail!=='plain'){
+      censer.position.y+=.008;
+      const base=surface('#9d6046');
+      if(a.baseDetail==='ring')s.lathe([[0,0],[.087,0],[.087,.008],[0,.008]],base);
+      else if(a.baseDetail==='square')s.box([.18,.008,.18],[0,.004,0],base);
+      else{for(let i=0;i<6;i++){const t=i*Math.PI/3;s.cylinder(.038,.038,.008,[Math.cos(t)*.05,.004,Math.sin(t)*.05],base,16);}s.cylinder(.055,.055,.008,[0,.004,0],base,24);}
+    }
+    if(a.underlay!=='bare'){
+      const group=new THREE.Group();for(const child of [...s.root.children])group.add(child);s.root.add(group);group.position.y+=.006;
+      censer.remove(smoke);const bounds=new THREE.Box3().setFromObject(group,true);censer.add(smoke);const size=bounds.getSize(new THREE.Vector3()),centre=bounds.getCenter(new THREE.Vector3());const width=size.x+.03,depth=size.z+.03;
+      s.box([width,.006,depth],[centre.x,.003,centre.z],s.material(a.underlay==='cloth'?'#c5a779':'#97543c',{roughness:.9}));
+      if(a.underlay==='cloth'){for(let i=0;i<22;i++){const x=centre.x-width/2+(i+.5)*width/22;s.rod([x,.003,centre.z-depth/2],[x,.003,centre.z-depth/2-.009],.0007,s.material('#e2cba6'));}}
+      if(a.underlay==='sand'){s.box([width-.01,.002,depth-.01],[centre.x,.005,centre.z],s.material('#cab689',{roughness:1}));const border=s.material('#885b37');for(const side of [-1,1]){s.box([width,.012,.005],[centre.x,.006,centre.z+side*depth/2],border);s.box([.005,.012,depth],[centre.x+side*width/2,.006,centre.z],border);}}
+    }
     const speed = mix(0.25, 1.6, mood.energy);
     return s.finish({
       footprint: 0.12,

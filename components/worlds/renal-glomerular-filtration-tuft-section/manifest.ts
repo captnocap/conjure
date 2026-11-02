@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Renal glomerular filtration tuft section", "summary": "A permanent capillary tuft lies inside a genuinely sectioned Bowman capsule, with connected vascular poles and a visible urinary space. An enlarged anatomical teaching section with real connected vascular lumens and a separate urinary outlet. Retained topology is schematic; the side barrier is an explicit enlargement rather than a measured filtration model.", "scales": ["macro", "tabletop"]});

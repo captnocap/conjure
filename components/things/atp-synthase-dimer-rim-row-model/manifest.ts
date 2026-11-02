@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Atp synthase dimer rim row model", "summary": "Explicitly schematic paired ATP-synthase silhouettes form rows along a real curved crista membrane rim, with heads on the matrix side. Schematic ATP-synthase dimers form rows on the curved crista rim with catalytic heads on the matrix side. Angles and stalk proportions are explanatory model controls, not a molecular structure calculation.", "scales": ["macro", "tabletop"]});

@@ -1,3 +1,5 @@
+import type { Palette } from './palette';
+import type { MaterialName } from './material';
 import type * as THREE from 'three';
 
 /**
@@ -125,6 +127,12 @@ export interface BuildContext {
   readonly scale: Scale;
   /** Absent for older callers and conformance checks; the same as NATURAL_FRAMING then. */
   readonly framing?: Framing;
+  /**
+   * The print's own colours, decided once per idea. A look with inks of its own design re-keys them
+   * with `rekey(inks, context.palette, roles)`. Absent in plain studies, conformance checks and
+   * pictures made before palettes existed: print in the look's own inks then.
+   */
+  readonly palette?: Palette;
   /** Stable for one idea and one roll. Derive all randomness from it. */
   readonly seed: number;
   /** A seeded generator in [0, 1). Never use Math.random in a component. */
@@ -200,6 +208,14 @@ export interface Capture {
   identity: Uint8Array;
   /** The scene lit as plain 18% grey: light and shadow without material colour. */
   diffuse: Uint8Array;
+  /**
+   * What each surface is made of: r metalness, g roughness, b the named material (0 as built, else
+   * an index into MATERIAL_NAMES + 1), a how much the surface glows. Read it with `surfaceAt`.
+   * Absent in captures made before materials existed and in conformance checks.
+   */
+  material?: Uint8Array;
+  /** The material the backdrop behind everything was given, when the setting was given one. */
+  backdrop?: MaterialName;
   near: number;
   far: number;
   /** World metres covered by one pixel at the focus distance. */
@@ -214,6 +230,58 @@ export interface Capture {
    * which treat everything as certain. A look may draw doubt as pencil and certainty as ink.
    */
   confidence?: number[];
+  /** Immutable scene evidence for geometry-aware looks; absent in older captures. */
+  atelier?: AtelierCapture;
+}
+
+/** One rendered mesh/material group, after morphing, skinning and instancing. */
+export interface AtelierMesh {
+  id: number;
+  /** Material groups from one original mesh instance share a body for solid topology. */
+  bodyId: string;
+  ground: boolean;
+  position: Float32Array;
+  index: Uint16Array | Uint32Array | null;
+  drawRange: { start: number; count: number };
+  matrix: number[];
+  side: number;
+  castShadow: boolean;
+  material: { color: number[]; metalness: number; roughness: number; transmission: number; alphaTest: number; alphaCutout: boolean; atelierMaterial?: string };
+}
+
+export interface AtelierGeometry {
+  version: 1;
+  source: 'conjure';
+  size: number;
+  view: number[];
+  projection: number[];
+  camera: 'orthographic' | 'perspective';
+  near: number;
+  far: number;
+  /** Captured view width relative to Atelier's 8.2-metre reference view. */
+  worldScale: number;
+  bounds: { min: number[]; max: number[] };
+  meshes: AtelierMesh[];
+}
+
+export interface AtelierCapture {
+  geometry: AtelierGeometry;
+  /** Unlit base pigment in linear-sRGB RGBA8, including maps and procedural Atelier pigment. */
+  albedo?: Uint8Array;
+  /** RGBA8: R is transmission (0–255); G/B are high/low bytes of a material-profile token; A is 255 on surfaces. */
+  transmission?: Uint8Array;
+  /** Capture-local, deterministic material profiles indexed by token; index zero is the backdrop/legacy fallback. */
+  materialProfiles?: string[];
+  /** Crease edges are generated lazily from the immutable snapshot. */
+  readonly edges: number[][][];
+  readonly edgeOwners: number[];
+  metalnesses: number[];
+  transmissions: number[];
+  worldFromClip: number[];
+  sectionRibLighting: { directional: { direction: number[]; color: number[] }[]; shadowMatrix: number[] };
+  cutawayShadowCamera: { view: number[]; projection: number[] };
+  spectralLights: { direction: number[]; color: number[]; intensity: number }[];
+  spectralHemisphere: { sky: number[]; ground: number[]; intensity: number; up: number[] };
 }
 
 /**
@@ -251,6 +319,12 @@ export interface WorldBuilder<Q extends QuestionSet = QuestionSet> extends Asks<
   build(answers: Answers<Q>, context: BuildContext): World | Promise<World>;
 }
 export interface LookBuilder<Q extends QuestionSet = QuestionSet> extends Asks<Q> {
+  /**
+   * 'own' when the look renders each surface's material in its own medium (reading `surfaceAt`):
+   * the engine's materialize pass then leaves its print alone. Absent, the engine shows the
+   * materials through the print afterwards, in the print's own inks.
+   */
+  materials?: 'own';
   apply(
     capture: Capture,
     answers: Answers<Q>,

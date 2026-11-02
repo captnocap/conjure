@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Risograph drum print',summary:'A stencil-duplicated spot-colour image built from separate ink drums, visible halftone grain, transparent overprints and slightly wandering registration. Small-press posters, zines and vivid independent print editions.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'print'});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Ciliary transition zone y link model", "summary": "A short transition-zone model bridges membrane and peripheral doublets with explicitly schematic Y-shaped connectors. A schematic transition-zone section places Y-shaped links between nine peripheral doublets and the ciliary membrane. This selected basal region omits the distal central apparatus; connector shapes and cuts are explanatory.", "scales": ["macro", "tabletop"]});

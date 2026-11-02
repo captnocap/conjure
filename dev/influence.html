@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Conjure · Influence</title>
+    <style>
+      :root {
+        --surface: #fcfcfb; --panel: #f4f3ef; --rule: #e3e1db; --ink: #1f1e1c; --ink-2: #5d5b55; --ink-3: #8f8c84;
+        --mid: #f0efec; --pos: #e34948; --neg: #2a78d6; --seq: #2a78d6; --focus: #1f1e1c;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --surface: #1a1a19; --panel: #232321; --rule: #34332f; --ink: #ecebe6; --ink-2: #b2afa6; --ink-3: #7d7a72;
+          --mid: #383835; --pos: #e66767; --neg: #3987e5; --seq: #3987e5; --focus: #ecebe6;
+        }
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--surface); color: var(--ink); font: 13px/1.4 system-ui, sans-serif; }
+      header { padding: 16px 20px 10px; border-bottom: 1px solid var(--rule); }
+      h1 { margin: 0 0 2px; font-size: 18px; font-weight: 600; }
+      .lede { margin: 0; color: var(--ink-2); max-width: 900px; }
+      .controls { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-top: 10px; }
+      .controls label { display: flex; gap: 6px; align-items: center; color: var(--ink-2); }
+      select, input[type=search] { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; padding: 3px 6px; }
+      nav { display: flex; gap: 2px; margin-top: 12px; }
+      nav button { font: inherit; border: 0; background: none; color: var(--ink-2); padding: 6px 12px; border-bottom: 2px solid transparent; cursor: pointer; }
+      nav button[aria-selected=true] { color: var(--ink); border-bottom-color: var(--ink); }
+      main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; min-height: calc(100vh - 150px); }
+      #view { overflow: auto; padding: 14px 20px 40px; }
+      #detail { border-left: 1px solid var(--rule); background: var(--panel); padding: 14px 16px 40px; overflow: auto; max-height: calc(100vh - 20px); position: sticky; top: 0; }
+      @media (max-width: 900px) { main { grid-template-columns: 1fr; } #detail { border-left: 0; border-top: 1px solid var(--rule); max-height: none; position: static; } }
+      .hint { color: var(--ink-3); }
+      .note { color: var(--ink-2); max-width: 760px; margin: 0 0 12px; }
+
+      table.heat { border-collapse: separate; border-spacing: 2px; }
+      table.heat th { font-weight: 400; color: var(--ink-2); }
+      table.heat thead th { vertical-align: bottom; height: 120px; padding: 0 0 4px; }
+      table.heat thead th > span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; display: inline-block; cursor: pointer; }
+      table.heat thead th > span:hover { color: var(--ink); text-decoration: underline; }
+      table.heat thead th.group { height: auto; text-align: left; font-size: 11px; color: var(--ink-3); border-bottom: 1px solid var(--rule); padding: 0 2px 2px; }
+      table.heat tbody th { text-align: right; padding-right: 8px; white-space: nowrap; position: sticky; left: 0; background: var(--surface); cursor: pointer; }
+      table.heat tbody th:hover { color: var(--ink); text-decoration: underline; }
+      table.heat tbody th.function { font-style: italic; color: var(--ink-3); }
+      table.heat tbody th small { color: var(--ink-3); font-size: 10px; margin-left: 4px; }
+      table.heat td { width: 18px; height: 18px; min-width: 18px; border-radius: 3px; cursor: pointer; }
+      table.heat td.none { background: repeating-linear-gradient(45deg, transparent 0 3px, var(--rule) 3px 4px); cursor: default; }
+      table.heat td.gap { width: 8px; min-width: 8px; background: none; cursor: default; }
+      table.heat td:not(.none):not(.gap):hover, table.heat td.on { outline: 2px solid var(--focus); outline-offset: 1px; }
+      table.heat td.text { width: auto; height: auto; padding: 0 6px; cursor: default; white-space: nowrap; color: var(--ink-2); border-radius: 0; }
+
+      .legend { display: flex; align-items: center; gap: 8px; color: var(--ink-2); margin: 0 0 12px; font-size: 12px; }
+      .legend .ramp { width: 160px; height: 10px; border-radius: 3px; }
+
+      #tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--surface); padding: 6px 8px; border-radius: 4px; font-size: 12px; max-width: 340px; z-index: 10; display: none; }
+      #tip b { font-weight: 600; }
+
+      #detail h2 { font-size: 15px; margin: 0 0 2px; }
+      #detail h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3); margin: 16px 0 6px; font-weight: 600; }
+      #detail .ask { color: var(--ink-2); margin: 0 0 10px; }
+      .bars { display: grid; grid-template-columns: minmax(0, 1fr) 120px 44px; gap: 3px 8px; align-items: center; font-size: 12px; }
+      .bars .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .bars .track { position: relative; height: 12px; }
+      .bars .track i { position: absolute; left: 0; height: 5px; border-radius: 0 3px 3px 0; }
+      .bars .track i.base { top: 0; background: var(--ink-3); }
+      .bars .track i.with { top: 6px; background: var(--seq); }
+      .bars .num { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+      .bars .num.up { color: var(--pos); } .bars .num.down { color: var(--neg); }
+      ul.ideas { list-style: none; margin: 0; padding: 0; font-size: 12px; }
+      ul.ideas li { padding: 3px 0; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; gap: 8px; }
+      ul.ideas li span:last-child { color: var(--ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+      ul.ideas li.pick { cursor: pointer; } ul.ideas li.pick:hover { color: var(--seq); }
+      .key { display: inline-flex; gap: 10px; color: var(--ink-3); font-size: 11px; margin-bottom: 6px; }
+      .key i { display: inline-block; width: 10px; height: 5px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+
+      .flags { display: grid; gap: 22px; max-width: 980px; }
+      .flags section h2 { font-size: 14px; margin: 0 0 2px; }
+      .flags section p { margin: 0 0 8px; color: var(--ink-2); }
+      table.list { border-collapse: collapse; width: 100%; font-size: 12px; }
+      table.list th { text-align: left; color: var(--ink-3); font-weight: 400; border-bottom: 1px solid var(--rule); padding: 3px 8px 3px 0; }
+      table.list td { border-bottom: 1px solid var(--rule); padding: 3px 8px 3px 0; font-variant-numeric: tabular-nums; }
+      table.list tr.pick { cursor: pointer; } table.list tr.pick:hover td { color: var(--seq); }
+      .meter { display: inline-block; height: 6px; border-radius: 0 3px 3px 0; background: var(--seq); vertical-align: middle; margin-right: 6px; }
+
+      .prompt-pick { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+      .prompt-pick input { width: 340px; max-width: 100%; }
+      .prompt-list { max-height: 220px; overflow: auto; border: 1px solid var(--rule); border-radius: 4px; margin-bottom: 14px; max-width: 760px; }
+      .prompt-list div { padding: 3px 8px; cursor: pointer; } .prompt-list div:hover, .prompt-list div.on { background: var(--panel); }
+      .prompt-list div small { color: var(--ink-3); margin-left: 6px; }
+      .sentence { font-size: 20px; margin: 4px 0 14px; display: flex; flex-wrap: wrap; gap: 4px 6px; }
+      .sentence span { padding: 1px 5px; border-radius: 4px; }
+      .sentence span.rare { color: var(--ink-3); }
+
+      table.grid { border-collapse: separate; border-spacing: 2px; margin-bottom: 18px; }
+      table.grid th { font-weight: 400; color: var(--ink-2); text-align: left; padding: 2px 8px 2px 0; white-space: nowrap; }
+      table.grid thead th { color: var(--ink-3); font-size: 12px; text-align: center; padding: 0 4px 4px; }
+      table.grid td { min-width: 92px; text-align: center; padding: 5px 6px; border-radius: 3px; font-variant-numeric: tabular-nums; font-size: 12px; }
+      table.grid td.empty { background: none; color: var(--ink-3); }
+      table.grid td.ink-light { color: #fff; }
+      .probe-group { margin: 0 0 22px; max-width: 980px; }
+      .probe-group h2 { font-size: 14px; margin: 0 0 6px; }
+      .probe-group h2 small { font-weight: 400; color: var(--ink-2); }
+      .probe-row { display: grid; grid-template-columns: 96px minmax(0, 1fr) repeat(var(--targets), 230px); gap: 8px; align-items: center; padding: 3px 0; border-bottom: 1px solid var(--rule); font-size: 12px; }
+      .probe-row .kind { color: var(--ink-3); }
+      .probe-row .kind.original { color: var(--ink); font-weight: 600; }
+      .reading { display: flex; align-items: center; gap: 6px; }
+      .reading .bar { flex: 0 0 70px; height: 6px; background: var(--mid); border-radius: 0 3px 3px 0; position: relative; }
+      .reading .bar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 3px 3px 0; background: var(--seq); }
+      .reading .won { color: var(--ink); font-weight: 600; }
+      .reading .lost { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      @media (max-width: 900px) { .probe-row { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Influence</h1>
+      <p class="lede">Which words of an idea move which decisions. Every saved generation in the gallery is one idea; for each decision, the probabilities the model gave are explained by the words present (ridge regression: words that travel together are separated, rare ones shrink toward nothing, and the day an idea was typed and whether it is a long brief are held apart so they don't pass for words). Read it as correlation across ideas, not proof: a word seen in three ideas is three ideas.</p>
+      <div class="controls">
+        <label>Model <select id="family"></select></label>
+        <label>Since <select id="since"></select></label>
+        <label>Word seen in at least <select id="min"><option>2</option><option selected>3</option><option>4</option><option>6</option><option>10</option></select> ideas</label>
+        <label>Estimate <select id="measure"><option value="ridge" selected>words held apart (ridge)</option><option value="raw">raw with vs without</option></select></label>
+        <label>Shrinkage <select id="lambda"><option>1</option><option selected>3</option><option>10</option></select></label>
+        <label><input type="checkbox" id="functions" checked /> function words</label>
+        <span class="hint" id="count"></span>
+      </div>
+      <nav id="tabs">
+        <button data-tab="map" aria-selected="true">Words × decisions</button>
+        <button data-tab="question">One decision</button>
+        <button data-tab="prompt">One prompt</button>
+        <button data-tab="flags">Too heavily weighted</button>
+        <button data-tab="wording">Wording probe</button>
+      </nav>
+    </header>
+    <main>
+      <section id="view"><p class="hint">Loading…</p></section>
+      <aside id="detail"><p class="hint">Hover a cell to read it; click to pin the evidence here.</p></aside>
+    </main>
+    <div id="tip"></div>
+    <script type="module" src="./influence.js"></script>
+  </body>
+</html>

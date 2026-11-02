@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Coral symbiont gastrodermal cell patch", "summary": "A magnified retained tissue patch contains symbiont cells within host-cell envelopes, with explicit exposed-cell windows. A schematic gastrodermal tissue sample with intracellular symbionts and depleted cells; reef symbiosis, bleaching and microscopic life.", "scales": ["macro", "tabletop"]});

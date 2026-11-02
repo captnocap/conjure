@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Hollow soda straw stalactite", "summary": "A thin hollow mineral tube hanging from an included limestone ceiling fragment, with visible lumen at a broken end. Slow mineral growth, limestone caves, patient field observation and water leaving a trace.", "scales": ["landscape", "tabletop", "macro"]});

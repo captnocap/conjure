@@ -41,6 +41,36 @@ export default defineThing({
       open: 'Lid off beside it, heaped to the brim and overflowing onto the table.',
     }),
     kinds: choice('What kind of buttons are they mostly?', KINDS),
+    buttonSize: choice('What sizes dominate the buttons?', {
+      small: 'Tiny shirt and baby-clothes buttons.',
+      ordinary: 'An ordinary range of garment buttons.',
+      large: 'Large coat and decorative buttons.',
+      graded: 'A conspicuous mixture of tiny and very large buttons.',
+    }),
+    faceDetail: choice('What remains on the flat button faces?', {
+      holes: 'Clean empty sewing holes.',
+      thread: 'Short crosses of old thread still pass through the holes.',
+      rim: 'An extra contrasting ring outlines each button face.',
+      flecked: 'Small pale flecks give the buttons a mottled finish.',
+    }),
+    divider: choice('When the tin is open, how is its interior organised?', {
+      none: 'One undivided space.',
+      cross: 'Two card dividers make four compartments.',
+      trays: 'A pair of small open sorting trays sits in the tin.',
+      packets: 'Paper packets with dark identifying tabs stand against the back of the tin.',
+    }),
+    lining: choice('What lining accompanies the button collection?', {
+      bare: 'Bare tin inside.',
+      felt: 'Soft felt lines the tin, with a matching sorting square outside.',
+      tissue: 'Cream tissue lines the tin and one folded sheet lies outside.',
+      lace: 'A lace scrap lines the tin and a second scrap lies beside it.',
+    }),
+    sortingTool: choice('What tool is being used to sort the buttons?', {
+      none: 'No sorting tool.',
+      tweezers: 'Long steel tweezers lie beside the loose buttons.',
+      magnifier: 'A small hand magnifier rests beside the tin.',
+      brush: 'A soft brush sweeps dust from the old buttons.',
+    }),
     amount: score('How many buttons are there?', ['A thin scatter, the tin nearly used up', 'A good handful', 'Hundreds, generations of them']),
     keepsake: choice('What else turns up among the buttons?', {
       none: 'Nothing, only buttons.',
@@ -187,6 +217,40 @@ export default defineThing({
     floor.rotateX(-Math.PI / 2);
     add(tin, shapeIt(floor, 0, false), inside, 0.002);
     s.root.add(tin);
+    if (a.lining !== 'bare') {
+      const color = a.lining === 'felt' ? '#658a85' : '#eee0bb';
+      const liningMat = s.material(color, { roughness: 1 });
+      const lining = new THREE.CircleGeometry(1, 64); lining.rotateX(-Math.PI / 2);
+      add(tin, shapeIt(lining, -0.003, false), liningMat, 0.003);
+      if (a.state !== 'shut') {
+        const lipCloth = new THREE.Mesh(new THREE.BoxGeometry(ax * 0.5, 0.001, 0.025), liningMat);
+        lipCloth.position.set(-ax * 0.3, H + 0.001, -az + 0.012); tin.add(lipCloth);
+      }
+      const mat = s.box([0.065, 0.001, 0.07], [ax + 0.06, 0.0005, -az - 0.025], liningMat);
+      if (a.lining === 'tissue') { mat.rotation.y = 0.2; s.box([0.06, 0.001, 0.035], [ax + 0.06, 0.0015, -az - 0.01], liningMat); }
+      if (a.lining === 'lace') for (let k = 0; k < 10; k++) for (const side of [-1, 1]) s.ring(0.0035, 0.0007, [ax + 0.029 + k * 0.007, 0.001, -az - 0.025 + side * 0.036], liningMat).rotation.x = -Math.PI / 2;
+    }
+    if (a.state !== 'shut' && a.divider !== 'none') {
+      const card = s.material('#d8c7a3');
+      const attachBox = (w: number, h: number, d: number, x: number, y: number, z: number) => {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), card); m.position.set(x, y, z); m.castShadow = true; tin.add(m);
+      };
+      if (a.divider === 'cross') {
+        attachBox(ax * 1.8, H * 0.85, 0.0015, 0, H * 0.44, 0);
+        attachBox(0.0015, H * 0.85, az * 1.8, 0, H * 0.44, 0);
+      } else if (a.divider === 'trays') for (const side of [-1, 1]) {
+        const x = side * ax * 0.45, w = ax * 0.7, d = az;
+        attachBox(w, 0.001, d, x, H * 0.45, 0);
+        for (const footX of [-1, 1]) for (const footZ of [-1, 1]) attachBox(0.004, H * 0.45, 0.004, x + footX * w * 0.4, H * 0.225 + 0.002, footZ * d * 0.4);
+        for (const edge of [-1, 1]) {
+          attachBox(w, H * 0.4, 0.001, x, H * 0.65, edge * d / 2);
+          attachBox(0.001, H * 0.4, d, x + edge * w / 2, H * 0.65, 0);
+        }
+      } else for (let k = -1; k <= 1; k++) {
+        attachBox(ax * 0.45, H * 0.85, 0.006, k * ax * 0.5, H * 0.45, -az * 0.6);
+        const mark = new THREE.Mesh(new THREE.PlaneGeometry(ax * 0.3, H * 0.25), s.material('#7a6150')); mark.position.set(k * ax * 0.5, H * 0.65, -az * 0.6 + 0.0035); tin.add(mark);
+      }
+    }
 
     const lid = new THREE.Group();
     const cap = new THREE.CylinderGeometry(1, 1, 0.014, 96);
@@ -203,7 +267,11 @@ export default defineThing({
       jet: () => ({ sort: random() < 0.6 ? 'dome' : 'flat2', radius: mix(0.0055, 0.011, random()), color: ['#121114', '#1b1a1f', '#0d0d10'][Math.floor(random() * 3)] }),
     };
     const pools5 = Object.values(pools);
-    const draw = (): Button => (a.kinds === 'mixed' ? pools5[Math.floor(random() * pools5.length)]() : random() < 0.12 ? pools5[Math.floor(random() * pools5.length)]() : pools[a.kinds]());
+    const draw = (): Button => {
+      const b = a.kinds === 'mixed' ? pools5[Math.floor(random() * pools5.length)]() : random() < 0.12 ? pools5[Math.floor(random() * pools5.length)]() : pools[a.kinds]();
+      b.radius *= a.buttonSize === 'small' ? 0.68 : a.buttonSize === 'large' ? 1.35 : a.buttonSize === 'graded' ? (random() < 0.5 ? 0.6 : 1.4) : 1;
+      return b;
+    };
     const lists: Record<Sort, Item[]> = { flat4: [], flat2: [], dome: [], star: [], flower: [] };
     const q = new THREE.Quaternion(), e = new THREE.Euler();
     const put = (button: Button, at: THREE.Vector3, tilt: number, into?: THREE.Matrix4) => {
@@ -241,7 +309,12 @@ export default defineThing({
         const local = tipped
           ? new THREE.Vector3(-ax * mix(0.2, 0.95, random()) , H * mix(0.35, 1, random()), Math.sin(t) * r * 0.7)
           : new THREE.Vector3(Math.cos(t) * r, level + 0.002 + random() * 0.006 + (a.state === 'open' ? (1 - rad) * 0.012 : 0), Math.sin(t) * r);
-        put(draw(), local, 0.5, tinMatrix);
+        const button = draw();
+        const clearance = button.radius + 0.003;
+        if (a.divider === 'cross') { if (Math.abs(local.x) < clearance) local.x = local.x < 0 ? -clearance : clearance; if (Math.abs(local.z) < clearance) local.z = local.z < 0 ? -clearance : clearance; }
+        if (a.divider === 'trays') { const insideHalfWidth = ax * 0.35 - 0.003; button.radius = Math.min(button.radius, insideHalfWidth * 0.85, az * 0.42); local.x = (local.x < 0 ? -1 : 1) * ax * 0.45 + (random() - 0.5) * 2 * Math.max(0, insideHalfWidth - button.radius); local.z = (random() - 0.5) * 2 * Math.max(0, az * 0.5 - button.radius - 0.003); local.y = Math.max(local.y, H * 0.46 + 0.004); }
+        if (a.divider === 'packets' && local.z < -az * 0.4) local.z = -az * 0.25;
+        put(button, local, 0.5, tinMatrix);
       }
     }
 
@@ -290,6 +363,9 @@ export default defineThing({
     const face = (holes: number) => paint(128, 128, (ctx, w) => {
       ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, w);
       ctx.strokeStyle = '#b8b8b8'; ctx.lineWidth = 9; ctx.beginPath(); ctx.arc(w / 2, w / 2, w * 0.36, 0, 7); ctx.stroke();
+      if (a.faceDetail === 'rim') { ctx.strokeStyle = '#444957'; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(w / 2, w / 2, w * 0.44, 0, 7); ctx.stroke(); }
+      if (a.faceDetail === 'flecked') { ctx.fillStyle = '#b7aaa0'; for (let k = 0; k < 20; k++) { const t = k * 2.4, r = Math.sqrt((k + 1) / 20) * w * 0.42; ctx.beginPath(); ctx.arc(w / 2 + Math.cos(t) * r, w / 2 + Math.sin(t) * r, 3, 0, 7); ctx.fill(); } }
+      if (a.faceDetail === 'thread') { ctx.strokeStyle = '#976753'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(w * 0.39, w * 0.39); ctx.lineTo(w * 0.61, w * 0.61); ctx.moveTo(w * 0.61, w * 0.39); ctx.lineTo(w * 0.39, w * 0.61); ctx.stroke(); }
       ctx.fillStyle = '#3a3632';
       for (let i = 0; i < holes; i++) { const t = i / holes * Math.PI * 2 + Math.PI / 4; ctx.beginPath(); ctx.arc(w / 2 + Math.cos(t) * w * 0.11, w / 2 + Math.sin(t) * w * 0.11, w * 0.055, 0, 7); ctx.fill(); }
     });
@@ -370,6 +446,20 @@ export default defineThing({
       s.root.add(key);
     }
 
+    if (a.sortingTool !== 'none') {
+      const x = ax + 0.1, z = -az * 0.7;
+      const steel = s.material('#c7cdd0', { metalness: 0.8, roughness: 0.3 }), handle = s.material('#744b35');
+      if (a.sortingTool === 'tweezers') for (const side of [-1, 1]) s.rod([x, 0.002, z - 0.05], [x + side * 0.006, 0.002, z + 0.045], 0.0012, steel);
+      else if (a.sortingTool === 'magnifier') {
+        s.ring(0.023, 0.002, [x, 0.003, z], steel).rotation.x = -Math.PI / 2;
+        const lens = s.cylinder(0.021, 0.021, 0.001, [x, 0.003, z], s.material('#d5e7ec', { transparent: true, opacity: 0.23, depthWrite: false }), 32);
+        lens.castShadow = false; s.rod([x, 0.003, z + 0.024], [x, 0.003, z + 0.065], 0.004, handle);
+      } else {
+        s.box([0.015, 0.005, 0.055], [x, 0.0025, z], handle);
+        s.box([0.018, 0.006, 0.012], [x, 0.003, z - 0.028], steel);
+        for (let k = 0; k < 9; k++) s.rod([x - 0.008 + k * 0.002, 0.003, z - 0.034], [x - 0.01 + k * 0.0025, 0.002, z - 0.052], 0.0008, s.material('#c9b88e'));
+      }
+    }
     if (tipped) s.root.rotation.y = -0.75 - random() * 0.3;
     return s.finish();
   },

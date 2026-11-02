@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score } from '@conjure/kit';
+import { type PaletteRole, choice, clamp01, defineLook, mix, rekey, score } from '@conjure/kit';
 
 type RGB = readonly [number, number, number];
 const PALETTES: Record<string, { cool: RGB; warm: RGB; green: RGB }> = {
@@ -9,6 +9,13 @@ const PALETTES: Record<string, { cool: RGB; warm: RGB; green: RGB }> = {
   lilac: { cool: [132, 116, 169], warm: [211, 151, 128], green: [111, 157, 147] },
   earth: { cool: [90, 121, 151], warm: [168, 112, 63], green: [111, 132, 88] },
 };
+/**
+ * The three pigments the capture is remapped into take the picture's palette: the cool pigment,
+ * which carries every neutral and shadow, takes the ink; the warm and leaf pigments answer in the
+ * second (keeping their offset, so foliage and warm things still part). Natural keeps the scene's own
+ * colour and its designed pigments.
+ */
+const PIGMENT_ROLES: Record<'cool' | 'warm' | 'green', PaletteRole> = { cool: 'ink', warm: 'second', green: 'second' };
 const smooth = (low: number, high: number, value: number) => {
   const t = clamp01((value - low) / (high - low));
   return t * t * (3 - 2 * t);
@@ -64,11 +71,11 @@ export default defineLook({
     }),
     palette: choice('Which watercolor pigments should carry the colours?', {
       natural: 'Keep the scene\'s own colour relationships, tempered by ultramarine and warm ochre watercolor pigments.',
-      garden: 'Sap green, rose madder and soft ultramarine: rich living foliage and tender rose-coloured accents.',
-      coastal: 'Cerulean, turquoise and golden ochre: clear, sunlit water and open air.',
-      orchard: 'Vermilion, violet-blue and yellow-green: fresh fruit, warm masonry and lively painted colour.',
-      lilac: 'Gentle lavender, peach and pale jade: a tender, airy pastel painting with coloured shadows.',
-      earth: 'Burnt sienna, olive and muted cobalt: warm natural earth pigments and quiet blue shadows.',
+      garden: 'Rich, living pigments with tender, softer accents: lush foliage and gentle flowering colour.',
+      coastal: 'Clear, bright, transparent pigments: sunlit water and open air.',
+      orchard: 'Fresh, vivid, punchy pigments: fruit, sunny masonry and lively painted colour.',
+      lilac: 'Gentle, pale, airy pigments: a tender pastel painting with coloured shadows.',
+      earth: 'Muted, earthy, dusty pigments with quiet, cool shadows: natural and unhurried.',
     }),
     paper: choice('What light paper receives the washes?', {
       cotton: 'Soft warm-white cotton rag with a fine natural tooth.',
@@ -99,8 +106,12 @@ export default defineLook({
     };
     await pause();
     const { size, color, normal, identity, diffuse: lighting } = capture, count = size * size, unit = size / 720;
-    const palette = PALETTES[a.palette];
-    const paper: RGB = a.paper === 'bright' ? [253, 253, 249] : a.paper === 'cream' ? [246, 236, 211] : [250, 247, 237];
+    const colours = a.palette === 'natural' ? undefined : context.palette;
+    const palette = rekey(PALETTES[a.palette], colours, PIGMENT_ROLES);
+    const sheet0: RGB = a.paper === 'bright' ? [253, 253, 249] : a.paper === 'cream' ? [246, 236, 211] : [250, 247, 237];
+    // Toned papers take half the ground's tint; bright white stays white.
+    const tinted = a.paper === 'bright' || !context.palette ? sheet0 : rekey({ sheet0 }, context.palette, { sheet0: 'ground' }).sheet0;
+    const paper: RGB = [mix(sheet0[0], tinted[0], 0.5), mix(sheet0[1], tinted[1], 0.5), mix(sheet0[2], tinted[2], 0.5)];
     const noise = pigmentNoise(context.seed ^ 0x47fa930d);
     const fields = [new Float32Array(count), new Float32Array(count), new Float32Array(count)];
     const tone = new Float32Array(count), clouds = new Float32Array(count), tooth = new Float32Array(count);

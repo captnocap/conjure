@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Sessile drop contact angle section", "summary": "A closed spherical-cap drop meets a solid substrate along a real circular or pinned contact line and can be sectioned through its apex. A true spherical-cap teaching drop meets a solid substrate at its circular contact line; elliptical and tilted variants are explicitly pinned geometric models. Section choices expose the cap volume without implying a measured equilibrium contact angle.", "scales": ["macro", "tabletop"]});

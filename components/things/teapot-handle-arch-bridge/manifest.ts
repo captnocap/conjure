@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Teapot handle arch bridge", "summary": "A great looping teapot handle has become a walkable arch bridge, with fitted steps, railings and two anchored abutments. A porcelain crossing over a garden stream, small-footed journeys and an unusually precious piece of road.", "scales": ["tabletop", "room"]});

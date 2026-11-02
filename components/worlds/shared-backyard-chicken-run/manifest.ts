@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind: 'world', title: "Shared backyard chicken run", summary: "A raised timber coop opens onto a fenced run with a permanent ramp, nest openings and scratching hens. Feed trays, dust baths and low roosts keep the backyard habitat recognizable through every cast, from morning release to egg collection and evening shelter.", scales: ["street", "landscape", "room"]});

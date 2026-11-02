@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Marine snow detritus aggregate", "summary": "An irregular porous aggregate joins fibers, shell fragments and small organic particles through real contacts. A magnified marine-snow specimen: sinking organic matter, open biological skeletons and connected collection hardware.", "scales": ["macro", "tabletop"]});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Presynaptic terminal vesicle section", "summary": "Cut-open axon terminal with internal vesicles and docked rows on an attached release surface. A magnified neuromuscular teaching specimen: the meeting of nerve and muscle, movement, signal release and cellular organization.", "scales": ["macro", "tabletop"]});

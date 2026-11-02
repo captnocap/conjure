@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind: 'world', title: "Backyard soap-curing porch", summary: "An airy household porch is organized around a permanent screened soap-curing cupboard and a modest mixing bench. Spaced drying bars, slatted storage, a wash stand and a sheltered open edge give this slow craft a clear everyday setting.", scales: ["room", "street", "tabletop"]});

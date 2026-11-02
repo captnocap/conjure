@@ -1,0 +1,30 @@
+import * as THREE from 'three';
+import { Sculpture, choice, score, noul, diorama, defineThing, defineWorld, figure } from '@conjure/kit';
+export default defineThing({
+  questions: {
+    tool: choice("What type of setting tool dominates?", {"dogs": "Three short hooked tyre dogs.", "tongs": "A pair of long scissor tyre tongs.", "levers": "Three long hooked tyre levers.", "shoes": "Four compact screw-setting shoes."}),
+    arrangement: choice("How are tools arranged?", {"fan": "Handles spread in a broad fan.", "parallel": "A parallel row on a low rack.", "ring": "Tools surround a sample wheel rim.", "cross": "Two tiers of crossed handles."}),
+    hook: choice("What hook end is fitted?", {"square": "A square overhanging hooked jaw.", "curved": "A rounded curved hooking jaw.", "fork": "A forked two-prong jaw.", "flat": "A broad flat tyre lifting shoe."}),
+    handle: choice("What handle grip is used?", {"wood": "A long wooden sleeve.", "tee": "A transverse T handle.", "loop": "A closed round end loop.", "plain": "A plain forged iron handle."}),
+    length: choice("What handle proportion is used?", {"short": "Short close-work handles.", "medium": "Regular setting handles.", "long": "Long two-person handles.", "mixed": "A mixture of short and long handles."}),
+    jaw: choice("How are the jaws adjusted?", {"fixed": "Fixed forged hooks.", "screw": "Short screw-adjusted hook jaws.", "wedge": "Wooden wedges lock the jaws.", "pin": "Removable cross pins set the gap."}),
+    support: choice("What holds the tools?", {"rack": "A low slotted wooden tool rack.", "board": "A flat carrying board.", "stands": "Individual small iron stands.", "bare": "Tools rest directly on the ground."}),
+    rim: choice("What sample rim lies beside the tools?", {"wood": "A wooden felloe segment.", "iron": "A short iron tyre segment.", "joined": "An iron band fitted to a wooden felloe.", "none": "No rim sample is present."}),
+    wedges: choice("What loose wedges are supplied?", {"three": "Three stout wooden setting wedges.", "pair": "Two slim iron wedges.", "row": "A row of six small wooden shims.", "none": "No loose wedges."}),
+    state: choice("What is ready for the next fit?", {"maul": "A broad wooden setting maul.", "bucket": "A small water bucket.", "rope": "A coiled handling rope.", "clear": "A clear set of tools."}),
+    size: score("How heavy are the setting tools?", ["Light carriage setting tools", "Standard cart tyre tools", "Heavy wagon setting tools"])
+  },
+  build(a,context){
+ const s=new Sculpture(context),wood=s.material('#9a774b'),light=s.material('#c7a576'),iron=s.material('#5b665b',{metalness:.4}),dark=s.material('#414c42'),stone=s.material('#b5b39a'),paper=s.material('#e2d8b7'),water=s.material('#8caba0',{transparent:true,opacity:.55,depthWrite:false}),hot=s.material('#ae6742',{emissive:'#71381f',emissiveIntensity:.15+context.mood.energy*.35});
+
+ const L={short:.55,medium:.85,long:1.2,mixed:.95}[a.length]*(.85+a.size*.25),N=a.tool==='shoes'?4:a.tool==='tongs'?2:3,B=a.support==='rack'?.15:a.support==='board'?.04:a.support==='stands'?.07:0;
+ if(a.support==='board')s.box([1.5,B,1.6],[0,B/2,0],wood);if(a.support==='rack')for(const z of [-.4,.4]){s.box([1.5,.1,.12],[0,.05,z],wood);for(let j=0;j<N;j++)s.box([.06,.15,.1],[-.5+j/(N-1),.125,z],wood);}
+ for(let j=0;j<N;j++){const g=new THREE.Group();s.root.add(g);const prior=s.root.children.slice(),len=a.length==='mixed'?L*(.7+j*.2):L,rr=.015+a.size*.007,headz=len*.5; s.rod([0,.04,-len*.5],[0,.04,headz],rr,iron);if(a.tool==='tongs'){s.rod([-.06,.04,-len*.5],[.06,.04,headz],rr,iron);s.cylinder(.035,.035,.035,[0,.045,0],iron,12);}if(a.hook==='curved')s.tube([[0,.04,headz],[0,.16,headz+.05],[0,.2,headz+.16],[0,.08,headz+.22]],rr,iron);else if(a.hook==='fork')for(const x of [-.05,.05])s.tube([[0,.04,headz],[x,.08,headz+.04],[x,.15,headz+.2]],rr*.8,iron);else{s.box([.12,.12,.035],[0,.09,headz+.02],iron);s.box([.14,.035,a.hook==='flat'?.22:.12],[0,.15,headz+.08],iron);}if(a.tool==='shoes')s.box([.25,.045,.28],[0,.0225,headz],iron);
+ if(a.handle==='wood')s.cylinder(rr*1.7,rr*1.7,.27,[0,.04,-len*.5+.13],wood,12).rotation.x=Math.PI/2;if(a.handle==='tee')s.rod([-.12,.04,-len*.5],[.12,.04,-len*.5],rr*1.3,wood);if(a.handle==='loop')s.ring(.065,.012,[0,.04,-len*.5],iron).rotation.x=Math.PI/2;
+ if(a.jaw==='screw')s.rod([0,.05,headz+.12],[0,.28,headz+.12],.009,iron);if(a.jaw==='wedge')s.box([.05,.08,.17],[0,.13,headz+.12],wood);if(a.jaw==='pin')s.rod([-.09,.14,headz+.12],[.09,.14,headz+.12],.009,iron);for(const o of s.root.children.slice())if(!prior.includes(o))g.add(o);const angle=a.arrangement==='fan'?(j-(N-1)/2)*.34:a.arrangement==='ring'?j*Math.PI*2/N:a.arrangement==='cross'?j*Math.PI/2:0;g.rotation.y=angle;g.position.set(a.arrangement==='ring'?Math.sin(angle)*.45:(j-(N-1)/2)*.4,B-(a.support==='bare'&&a.tool!=='shoes'?Math.max(0,.04-rr):0)+(a.arrangement==='cross'?j*.22:0),a.arrangement==='ring'?Math.cos(angle)*.45:0);
+ if(a.support==='stands'||a.arrangement==='cross')for(const z of [-len*.3,len*.3]){const x=g.position.x+Math.sin(angle)*z,zz=g.position.z+Math.cos(angle)*z,top=g.position.y+.02;s.box([.16,Math.max(.03,top),.12],[x,Math.max(.03,top)/2,zz],wood);}}
+ if(a.arrangement==='ring')s.ring(.43,.035,[0,.035,0],wood).rotation.x=Math.PI/2;if(a.rim!=='none'){const pts:[number,number,number][]=[];for(let j=0;j<=14;j++){const t=-.6+j*1.2/14;pts.push([Math.sin(t)*.5,.05,Math.cos(t)*.5+.8]);}s.tube(pts,a.rim==='iron'?.018:.045,a.rim==='iron'?iron:wood);if(a.rim==='joined')s.tube(pts.map(p=>[p[0],p[1]+.045,p[2]] as [number,number,number]),.012,iron);}
+ if(a.wedges!=='none')for(let j=0;j<(a.wedges==='row'?6:a.wedges==='pair'?2:3);j++){const m=s.box([.07,.04,.2],[-.45+j*.14,.02,-L*.6-.2],a.wedges==='pair'?iron:light);m.rotation.x=.08;}if(a.state==='maul'){s.box([.24,.14,.16],[.95,.07,.2],wood);s.rod([.95,.04,.2],[.95,.04,-.25],.025,wood);}if(a.state==='bucket')s.lathe([[0,0],[.1,0],[.15,.27],[.13,.27],[.08,.02],[0,.02]],wood,[.95,0,.2]);if(a.state==='rope')for(let j=0;j<4;j++)s.ring(.13+j*.014,.007,[.95,.009,.2],light).rotation.x=Math.PI/2;
+return s.finish();
+  },
+});

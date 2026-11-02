@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type Palette, type PaletteRole, choice, clamp01, defineLook, fromOklch, mix, oklch, paintRGB, rekey, score, seeded } from '@conjure/kit';
 
 type RGB = readonly [number, number, number];
 
@@ -116,37 +116,37 @@ const rgb = (r: number, g: number, b: number): RGB => [r / 255, g / 255, b / 255
 
 const PAPERS = {
   blackboard: {
-    say: 'A classroom blackboard: dull green-black slate, hazy with old eraser dust. Everything is drawn in light.',
+    say: 'A classroom blackboard: dull near-black slate, hazy with old eraser dust. Everything is drawn in light.',
     tone: rgb(36, 47, 43),
     grain: 'board',
   },
   black: {
-    say: 'Black pastel paper: velvety and deep, so colours glow like stage lights in the dark.',
+    say: 'Near-black pastel paper: velvety and deep, so colours glow like stage lights in the dark.',
     tone: rgb(27, 26, 30),
     grain: 'pebble',
   },
   kraft: {
-    say: 'Brown kraft or buff sugar paper: warm, humble, fibrous. Lights and darks both show against it.',
+    say: 'Kraft or sugar paper in a middle tone: humble and fibrous. Lights and darks both show against it.',
     tone: rgb(178, 143, 104),
     grain: 'fibre',
   },
   grey: {
-    say: 'Mid-grey Mi-Teintes paper with a honeycomb tooth: cool, studious, the life-drawing room.',
+    say: 'Muted mid-tone Mi-Teintes paper with a honeycomb tooth: quiet, studious, the life-drawing room.',
     tone: rgb(134, 138, 144),
     grain: 'pebble',
   },
   terracotta: {
-    say: 'Terracotta-red sanded paper: hot ground glowing between the strokes, Mediterranean and earthy.',
+    say: 'Strongly coloured mid-tone sanded paper: a ground glowing between the strokes, gritty and earthy.',
     tone: rgb(170, 98, 72),
     grain: 'sand',
   },
   indigo: {
-    say: 'Deep indigo-blue paper: dusk, night air, cool shadow under every colour.',
+    say: 'Deep dark coloured paper: dusk, night air, shadow under every colour.',
     tone: rgb(46, 58, 98),
     grain: 'pebble',
   },
   cream: {
-    say: 'Cream laid paper with faint ribbed lines: pale, airy, antique. Mostly darks and soft tints show.',
+    say: 'Pale laid paper with faint ribbed lines: airy, antique. Mostly darks and soft tints show.',
     tone: rgb(228, 216, 192),
     grain: 'laid',
   },
@@ -156,10 +156,10 @@ const PALETTES = {
   box: 'A full box of soft pastels: every colour available, true to the scene but milky and opaque.',
   chalkCharcoal: 'White chalk and black charcoal only: a tonal study, no colour but the paper.',
   troisCrayons: 'Trois crayons: sanguine red, black and white, like an old master figure study.',
-  schoolroom: 'Schoolroom and pavement chalks: dusty white, yellow, pink, sky blue, mint and orange. Childlike, sunny.',
-  earth: 'Earth sticks: ochre, sienna, umber, olive, cream and slate blue. Autumnal, rustic, quiet.',
+  schoolroom: 'Schoolroom and pavement chalks: dusty white and a spread of soft, bright, sunny colours. Childlike, cheerful.',
+  earth: 'Earth sticks: muted, dusty, low-key colours from light to deep, with a cream. Autumnal, rustic, quiet.',
   fauve: 'Fierce jewel colours pushed past nature: violet shadows, orange lights, emerald and magenta.',
-  nocturne: 'Blues, violets and teal with one pale candle yellow: moonlit, hushed, melancholy.',
+  nocturne: 'Deep sticks in one close cool harmony with one pale glowing accent: moonlit, hushed, melancholy.',
 } as const;
 
 const STICKS: Record<Exclude<keyof typeof PALETTES, 'box' | 'fauve'>, RGB[]> = {
@@ -177,6 +177,35 @@ const STICKS: Record<Exclude<keyof typeof PALETTES, 'box' | 'fauve'>, RGB[]> = {
     rgb(236, 238, 246), rgb(60, 84, 160), rgb(34, 44, 96), rgb(110, 96, 176), rgb(60, 140, 150),
     rgb(150, 180, 220), rgb(250, 226, 150), rgb(22, 22, 40), rgb(170, 130, 190), rgb(232, 150, 96),
   ],
+};
+
+/**
+ * Under the idea's palette the paper takes its ground (keeping its depth: a dark sheet stays dark)
+ * and the designed boxes take its colours, each stick keeping its value and half its hue step from
+ * the rest: the schoolroom's warm chalks and the earth box's warm earths the ink, their cool ones the
+ * second colour; the nocturne's blues the ink and its candle-light the second. White, black and grey
+ * sticks stay. The full box and fauve follow the scene; chalk and charcoal and trois crayons are
+ * fixed traditions.
+ */
+const STICK_ROLES: Partial<Record<keyof typeof STICKS, Record<string, PaletteRole>>> = {
+  schoolroom: { 1: 'ink', 2: 'ink', 5: 'ink', 7: 'ink', 3: 'second', 4: 'second', 6: 'second' },
+  earth: { 1: 'ink', 2: 'ink', 3: 'ink', 4: 'ink', 7: 'ink', 5: 'second', 6: 'second', 8: 'second' },
+  nocturne: { 1: 'ink', 2: 'ink', 3: 'ink', 4: 'ink', 5: 'ink', 8: 'ink', 6: 'second', 9: 'second' },
+};
+/** How much of each stick's hue step from its group survives, so a box stays near the palette's colours. */
+const STICK_SPREAD = 0.5;
+const keyed = (colours: readonly RGB[], palette: Palette | undefined, roles: Record<string, PaletteRole>, spread = 1): RGB[] => {
+  if (!palette) return [...colours];
+  const out = rekey(Object.fromEntries(colours.map((c, i) => [i, [c[0] * 255, c[1] * 255, c[2] * 255] as const])), palette, roles);
+  return colours.map((_, i) => {
+    let c = out[i];
+    const role = roles[i];
+    if (role && spread < 1) {
+      const [L, C, h] = oklch(c), target = oklch(paintRGB(palette[role]))[2];
+      c = fromOklch(L, C, target + Math.atan2(Math.sin(h - target), Math.cos(h - target)) * spread);
+    }
+    return [c[0] / 255, c[1] / 255, c[2] / 255] as const;
+  });
 };
 
 const MARKS = {
@@ -225,8 +254,8 @@ const STATES = {
 
 export default defineLook({
   questions: {
-    paper: choice('What is it drawn on?', Object.fromEntries(Object.entries(PAPERS).map(([k, v]) => [k, v.say])) as Record<keyof typeof PAPERS, string>),
-    palette: choice('Which sticks are in the box?', PALETTES),
+    paper: choice('What is it drawn on? Its colour comes from the picture\u2019s palette.', Object.fromEntries(Object.entries(PAPERS).map(([k, v]) => [k, v.say])) as Record<keyof typeof PAPERS, string>),
+    palette: choice('Which sticks are in the box? Designed boxes take their colours from the picture\u2019s palette.', PALETTES),
     mark: choice('How does the hand move?', Object.fromEntries(Object.entries(MARKS).map(([k, v]) => [k, v.say])) as Record<keyof typeof MARKS, string>),
     weight: score('How heavily is the chalk laid on?', [
       'A whisper: mostly bare sheet',
@@ -254,7 +283,9 @@ export default defineLook({
     const random = seeded((context.seed ^ 0x51c4a1) >>> 0);
     const paper = PAPERS[answers.paper];
     const mark = MARKS[answers.mark];
-    const P = paper.tone;
+    const P = keyed([paper.tone], context.palette, { 0: 'ground' })[0];
+    /** The paper as designed: sticks are chosen against it, so each passage takes the stick it always did. */
+    const PM = paper.tone;
     const paperLum = 0.3 * P[0] + 0.59 * P[1] + 0.11 * P[2];
     const dark = paperLum < 0.3;
     let beats = 0;
@@ -576,6 +607,10 @@ export default defineLook({
         sticks.push([mix(l, s[0], saturation), mix(l, s[1], saturation), mix(l, s[2], saturation)].map(clamp01) as unknown as RGB);
       }
     }
+    // The box as designed picks the stick; the box as re-keyed to the palette lays the colour.
+    const sticksMade = sticks.slice();
+    const stickRoles = (answers.palette === 'schoolroom' || answers.palette === 'earth' || answers.palette === 'nocturne') ? STICK_ROLES[answers.palette] : undefined;
+    if (stickRoles) sticks.splice(0, sticks.length, ...keyed(sticksMade, context.palette, stickRoles, STICK_SPREAD));
     let lightest = sticks[0];
     for (const s of sticks) if (s[0] + s[1] + s[2] > lightest[0] + lightest[1] + lightest[2]) lightest = s;
     const used = new Uint32Array(sticks.length);
@@ -635,18 +670,18 @@ export default defineLook({
       let best = 0;
       let bestCost = Infinity;
       let bestPress = 0;
-      for (let k = 0; k < sticks.length; k++) {
-        const s = sticks[k];
-        const vr = s[0] - P[0];
-        const vg = s[1] - P[1];
-        const vb = s[2] - P[2];
+      for (let k = 0; k < sticksMade.length; k++) {
+        const s = sticksMade[k];
+        const vr = s[0] - PM[0];
+        const vg = s[1] - PM[1];
+        const vb = s[2] - PM[2];
         const vv = vr * vr + vg * vg + vb * vb + 1e-5;
         // the paper always shows through the tooth a little, so no stick reaches its full colour:
         // a colour beyond that reach is found with a deeper stick, not by pressing harder
-        const a = Math.min(reached, clamp01(((t[0] - P[0]) * vr + (t[1] - P[1]) * vg + (t[2] - P[2]) * vb) / vv));
-        const er = P[0] + a * vr - t[0];
-        const eg = P[1] + a * vg - t[1];
-        const eb = P[2] + a * vb - t[2];
+        const a = Math.min(reached, clamp01(((t[0] - PM[0]) * vr + (t[1] - PM[1]) * vg + (t[2] - PM[2]) * vb) / vv));
+        const er = PM[0] + a * vr - t[0];
+        const eg = PM[1] + a * vg - t[1];
+        const eb = PM[2] + a * vb - t[2];
         // value and hue are judged apart, so a dark red stays a red rather than becoming the
         // nearest dark grey
         const el = 0.3 * er + 0.59 * eg + 0.11 * eb;

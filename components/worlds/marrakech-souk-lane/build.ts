@@ -39,6 +39,13 @@ export default defineWorld({
       cobbles: 'Worn grey cobbles.',
       wet: 'Earth just hosed down against the dust, dark with puddles.',
     }),
+    thresholds: choice('How are the shop thresholds finished?', {stone:'Low pale stone sills.',tile:'Alternating glazed tiles along each sill.',wood:'Dark worn timber sills.',plain:'The lane surface continues directly into the stalls.'}),
+    shutters: choice('How are closed shop fronts made?', {boards:'Pairs of broad painted timber doors.',slats:'Narrow horizontal shutter slats.',reed:'Reed screens braced in timber frames.',folding:'Four narrow folding timber panels.'}),
+    frontage: choice('What occupies the upper wall panels?', {shutters:'Pairs of small closed wooden window shutters.',grilles:'Recessed dark vents with iron grilles.',niches:'Shallow boxed niches hold small ceramic bowls.',plain:'Unbroken plaster above the trade signs.'}),
+    signage: choice('How do the shops identify their trade?', {painted:'Painted rectangular trade boards.',hanging:'Small fabric trade flags hanging from rods.',carved:'Dark timber boards with pale carved-looking letters.',none:'The wares identify the shops without signs.'}),
+    drain: choice('Where does surface water drain?', {edge:'A narrow stone drainage channel along the stall fronts.',covered:'A row of iron grates beside the stalls.',centre:'A narrow covered channel across the centre of the lane.',none:'There is no visible constructed drain.'}),
+    gatewayDress: choice('What outlines the gateway arch?', {stone:'Alternating pale stone voussoirs.',band:'A narrow painted green arch band.',incised:'Two thin dark lines incised around the arch.',bare:'The arch is plain plaster.'}),
+    waterpoint: choice('What water provision stands beside the gateway?', {jar:'A tall open terracotta storage jar.',basin:'A low stone basin beneath a wall spout.',urn:'A lidded metal water urn on a stone stand.',buckets:'Two wooden water buckets by the bench.'}),
     end: choice('What shows through the gateway at the end of the lane?', {
       square: 'A blinding sunlit square with a palm.',
       minaret: 'A minaret tower against blue sky.',
@@ -151,10 +158,14 @@ export default defineWorld({
     };
     const centres = [-5.1, -1.7, 1.7, 5.1];
     wall(W, centres.map((cx) => arch(cx, 1.1, 1.35, 1.2))).position.set(0, 0, -D / 2 - 0.4);
-    const gate = wall(D, [arch(0, 1.5, 1.9, 1.75)]);
+    const gate = wall(D, [arch(0, 1.5, 1.7, 1.75)]);
     gate.rotation.y = Math.PI / 2;
     gate.position.set(-W / 2 - 0.4, 0, 0);
     s.box([0.6, WALL, 0.6], [-W / 2 - 0.3, WALL / 2, -D / 2 - 0.3], edge);
+
+    if(a.gatewayDress!=='bare'){const radius=1.75,cy=1.7+Math.sqrt(radius*radius-1.5*1.5),theta=Math.atan2(cy-1.7,1.5),x=-W/2+.012;const trim=s.material(a.gatewayDress==='band'?'#316b56':'#8c7053');
+      if(a.gatewayDress==='stone'){for(let i=0;i<22;i++){const t=-theta+(Math.PI+theta*2)*(i+.5)/22,block=s.box([.045,.19,.19],[x,cy+Math.sin(t)*(radius+.055),Math.cos(t)*(radius+.055)],s.material(i%2?'#c4ab7e':'#e4d1a8'));block.rotation.x=t;}for(const z of[-1.55,1.55])for(let i=0;i<7;i++)s.box([.045,.22,.16],[x,(i+.5)*1.7/7,z],s.material(i%2?'#c4ab7e':'#e4d1a8'));}
+      else for(const extra of a.gatewayDress==='incised'?[.035,.105]:[.055]){const points:Array<[number,number,number]>=[];for(let i=0;i<=44;i++){const t=-theta+(Math.PI+theta*2)*i/44;points.push([x,cy+Math.sin(t)*(radius+extra),Math.cos(t)*(radius+extra)]);}s.tube(points,a.gatewayDress==='band'?.045:.009,trim);for(const z of[-1.5-extra,1.5+extra])s.rod([x,0,z],[x,1.7,z],a.gatewayDress==='band'?.045:.009,trim);}}
 
     // Through the gateway.
     const far = document.createElement('canvas');
@@ -209,11 +220,19 @@ export default defineWorld({
       niche.position.set(cx, 1.6, (zf + zb) / 2);
       niche.receiveShadow = true;
       s.root.add(niche);
-      const shut = (rank[index] + 0.5) / centres.length > a.open;
+      if(a.thresholds!=='plain'){s.box([2.2,.06,.32],[cx,.03,zf+.12],s.material(a.thresholds==='wood'?'#65472c':'#c6bba1'));if(a.thresholds==='tile')for(let k=0;k<11;k++)s.box([.19,.007,.28],[cx+(k-5)*.2,.063,zf+.12],s.material(k%2?'#e8dfc8':'#246d63',{roughness:.35}));}
+      const upperY=3.94,frontZ=-D/2+.028;
+      if(a.frontage==='shutters'){for(const side of[-1,1]){s.box([.32,.58,.045],[cx+side*.17,upperY,frontZ],wood);for(let i=0;i<6;i++)s.box([.31,.025,.015],[cx+side*.17,upperY-.23+i*.09,frontZ+.03],edge);}}
+      else if(a.frontage==='grilles'){s.box([.72,.47,.018],[cx,upperY,frontZ],s.material('#302b24'));for(let k=0;k<7;k++)s.rod([cx-.3+k*.1,upperY-.22,frontZ+.025],[cx-.3+k*.1,upperY+.22,frontZ+.025],.01,brass);for(const yy of[-.16,.16])s.rod([cx-.34,upperY+yy,frontZ+.025],[cx+.34,upperY+yy,frontZ+.025],.01,brass);}
+      else if(a.frontage==='niches'){s.box([.7,.52,.018],[cx,upperY,frontZ],s.material('#4d3d2e'));for(const xx of[-.37,.37])s.box([.05,.6,.24],[cx+xx,upperY,frontZ+.11],edge);for(const yy of[-.275,.275])s.box([.79,.05,.24],[cx,upperY+yy,frontZ+.11],edge);s.lathe([[0,0],[.1,.01],[.14,.08],[.13,.08],[.09,.025],[0,.025]],s.material('#317b78',{roughness:.3}),[cx,upperY-.25,frontZ+.12]);}
+      const shut = (rank[index] + .5) / centres.length > a.open;
       if (shut) {
         const paint = ['#2f7a55', '#2f6fb0', '#8a8f92', '#7a4a2a'][Math.floor(random() * 4)];
         for (const side of [-1, 1]) {
-          s.box([1.12, 3.0, 0.07], [cx + side * 0.57, 1.5, zf - 0.12], s.material(paint, { roughness: 0.8 }));
+          const shutter=s.material(paint,{roughness:.8});if(a.shutters==='boards')s.box([1.12,3,.07],[cx+side*.57,1.5,zf-.12],shutter);
+          else if(a.shutters==='slats')for(let k=0;k<20;k++)s.box([1.12,.135,.075],[cx+side*.57,.075+k*.15,zf-.12],shutter);
+          else if(a.shutters==='folding')for(let k=0;k<2;k++){s.box([.54,3,.065],[cx+side*.57+(k-.5)*.56,1.5,zf-.12],shutter);for(const yy of[.45,2.4])s.box([.06,.11,.02],[cx+side*.57+(k-.5)*.56+.265,yy,zf-.075],brass);}
+          else {s.box([1.12,3,.025],[cx+side*.57,1.5,zf-.14],s.material('#b8a170'));for(let k=0;k<12;k++)s.box([.028,3,.035],[cx+side*.57+(k-5.5)*.09,1.5,zf-.105],wood);for(const yy of[.13,2.87])s.box([1.12,.07,.04],[cx+side*.57,yy,zf-.075],wood);}
           for (const y of [0.5, 1.5, 2.3]) s.box([1.0, 0.07, 0.02], [cx + side * 0.57, y, zf - 0.075], s.material('#2b2a2c', { metalness: 0.6 }));
         }
         s.box([0.14, 0.16, 0.06], [cx, 1.2, zf - 0.05], brass);
@@ -221,10 +240,11 @@ export default defineWorld({
         return;
       }
       const trade: Trade = a.trade === 'mixed' || random() < 0.2 ? TRADES[(index + Math.floor(random() * 4)) % 4] : a.trade;
-      s.label({ fabric: 'TISSUS', pottery: 'POTERIE', metal: 'CUIVRES', food: 'EPICES' }[trade], 1.5, 0.34, [cx, 3.45, -D / 2 + 0.02], '#f3e6c4', ['#7a2a1e', '#23463f', '#2a3f7a'][index % 3]);
+      if(a.signage!=='none'){const text={fabric:'TISSUS',pottery:'POTERIE',metal:'CUIVRES',food:'EPICES'}[trade];if(a.signage==='hanging'){s.rod([cx-.6,3.68,-D/2],[cx+.6,3.68,-D/2+.12],.018,wood);s.label(text,1.08,.3,[cx,3.5,-D/2+.12],'#f0e2c0',['#7a2a1e','#23463f','#2a3f7a'][index%3]);for(const x of[-.48,.48])s.rod([cx+x,3.68,-D/2+.06],[cx+x,3.63,-D/2+.12],.006,wood);}else{s.box([1.54,.38,.035],[cx,3.45,-D/2+.018],wood);s.label(text,1.5,.34,[cx,3.45,-D/2+.038],'#f3e6c4',a.signage==='carved'?'#5c3e28':['#7a2a1e','#23463f','#2a3f7a'][index%3]);}}
       const plenty = mix(0.45, 1, mood.density);
       if (trade === 'fabric') {
         s.box([2.3, 2.3, 0.45], [cx, 1.15, zb + 0.3], wood);
+        for(let row=0;row<4;row++)s.box([2.3,.04,.34],[cx,.28+row*.52,zb+.57],wood);
         const bolts: Dot[] = [];
         for (let row = 0; row < 4; row++) for (let col = 0; col < 6; col++) if (random() < plenty) bolts.push({ at: [cx - 0.92 + col * 0.37, 0.4 + row * 0.52, zb + 0.56], size: 1, color: pickDye() });
         s.scatter(new THREE.BoxGeometry(0.32, 0.2, 0.3), s.material('#ffffff', { roughness: 1 }), bolts);
@@ -252,8 +272,8 @@ export default defineWorld({
         const lamps: Dot[] = [];
         for (let k = 0; k < 6; k++) if (random() < plenty) {
           const x = cx - 0.8 + k * 0.32, y = 1.75 + random() * 0.7;
-          lamps.push({ at: [x, y, zf - 0.1], size: 0.8 + random() * 0.5, color: ['#ffab2e', '#e62a3c', '#2f66ea', '#1fb46c'][Math.floor(random() * 4)] });
-          s.rod([x, y + 0.3, zf - 0.1], [x, 3.0, zf - 0.1], 0.008, wood);
+          const lampSize=.8+random()*.5;lamps.push({at:[x,y,zf-.1],size:lampSize,color: ['#ffab2e', '#e62a3c', '#2f66ea', '#1fb46c'][Math.floor(random() * 4)] });
+          s.rod([x,y+.36*lampSize,zf-.1], [x, 3.0, zf - 0.1], 0.008, wood);
         }
         s.scatter(new THREE.LatheGeometry([[0.03, 0], [0.13, 0.1], [0.14, 0.18], [0.06, 0.32], [0.02, 0.36]].map(([x, y]) => new THREE.Vector2(x, y)), 10), s.material('#ffffff', { emissive: '#ff9a2e', emissiveIntensity: mix(0.3, 0.8, mood.cheer), roughness: 0.4 }), lamps);
       } else {
@@ -277,6 +297,7 @@ export default defineWorld({
     const roofY = WALL + 0.06;
     for (let x = -7; x <= 7.01; x += 14 / 6) s.rod([x, roofY - 0.05, -D / 2 - 0.4], [x, roofY - 0.05, D / 2], 0.065, pole).castShadow = a.roof === 'open';
     for (const z of [-4.5, -3.3, -2.1]) s.rod([-W / 2 - 0.4, roofY, z], [W / 2, roofY, z], 0.05, pole);
+    s.rod([-W/2,roofY-.05,D/2],[W/2,roofY-.05,D/2],.07,pole);for(const x of[-W/2+.1,W/2-.1])s.cylinder(.075,.09,roofY,[x,roofY/2,D/2-.1],pole,10);
     const cover = { z0: -D / 2 - 0.3, z1: -1.9 };
     if (a.roof === 'reed') {
       const reeds: THREE.Matrix4[] = [], tints: THREE.Color[] = [];
@@ -327,11 +348,11 @@ export default defineWorld({
       const items: Dot[] = [];
       for (let k = 0; k < count; k++) {
         const x = mix(-6.4, 6.4, (k + random() * 0.6) / count);
-        if (a.overhead === 'skeins') items.push({ at: [x, 3.55 - random() * 0.08, -3.55], size: 0.85 + random() * 0.4, color: pickDye() });
+        if(a.overhead==='skeins'){const size=.85+random()*.4;items.push({at:[x,3.95-.035-(.2-.085)*1.9*size,-3.55],size,color:pickDye()});}
         else {
           const drop = 0.25 + random() * 0.5;
-          items.push({ at: [x, 3.55 - drop, -3.55], size: 0.9 + random() * 0.5, color: ['#ffc45e', '#ff8a5e', '#ffe0a0', '#9ec4ff', '#8ee0a8'][Math.floor(random() * 5)] });
-          hung(s.rod([x, 3.95, -3.55], [x, 3.9 - drop, -3.55], 0.008, wood));
+          const lampSize=.9+random()*.5;items.push({at:[x,3.55-drop,-3.55],size:lampSize,color: ['#ffc45e', '#ff8a5e', '#ffe0a0', '#9ec4ff', '#8ee0a8'][Math.floor(random() * 5)] });
+          hung(s.rod([x, 3.95, -3.55], [x,3.55-drop+.38*lampSize,-3.55], 0.008, wood));
         }
       }
       if (a.overhead === 'skeins') hung(s.scatter(new THREE.TorusGeometry(0.2, 0.085, 6, 14).scale(0.6, 1.9, 0.75), s.material('#ffffff', { roughness: 1 }), items));
@@ -341,12 +362,8 @@ export default defineWorld({
       const bulb = s.material('#fff3c0', { emissive: '#ffd66a', emissiveIntensity: 1.6 });
       for (let k = 0; k < 4; k++) {
         const x0 = -6 + k * 3.6 + random(), x1 = x0 + (random() - 0.5) * 3, sag = 0.5 + random() * 0.5;
-        s.tube([[x0, 4.3, -D / 2], [mix(x0, x1, 0.35), 4.3 - sag, -1.4], [mix(x0, x1, 0.7), 4.3 - sag * 0.9, 1.6], [x1, 4.35, D / 2]], 0.018, cable);
-        for (const t of [0.3, 0.62]) {
-          const bx = mix(x0, x1, t), bz = mix(-D / 2, D / 2, t);
-          s.rod([bx, 4.3 - sag * 0.95, bz], [bx, 4.05 - sag, bz], 0.01, cable);
-          s.ball([0.07, 0.09, 0.07], [bx, 3.98 - sag, bz], bulb, 8);
-        }
+        const points:Array<[number,number,number]>=[[x0,4.3,-D/2],[mix(x0,x1,.35),4.3-sag,-1.4],[mix(x0,x1,.7),4.3-sag*.9,1.6],[x1,roofY-.05,D/2]],curve=new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p)));s.tube(points,.018,cable);
+        for(const t of[.3,.62]){const anchor=curve.getPoint(t);s.rod(anchor.toArray(),[anchor.x,anchor.y-.2,anchor.z],.01,cable);s.ball([.07,.09,.07],[anchor.x,anchor.y-.28,anchor.z],bulb,8);}
       }
     }
 
@@ -359,7 +376,12 @@ export default defineWorld({
 
     // Fixed dressing by the gateway: a bench and a water jar.
     s.box([0.5, 0.45, 1.9], [-W / 2 + 0.3, 0.225, 2.3], s.material(dado, { roughness: 0.95 }));
-    s.lathe([[0, 0], [0.14, 0], [0.3, 0.3], [0.32, 0.55], [0.2, 0.8], [0.13, 0.9], [0.17, 0.96]], s.material('#b8562e', { roughness: 0.7 }), [-W / 2 + 0.55, 0, -2.6]);
+    const waterX=-W/2+.55,waterZ=-2.6;
+    if(a.waterpoint==='jar')s.lathe([[0,0],[.14,0],[.3,.3],[.32,.55],[.2,.8],[.13,.9],[.17,.96],[.145,.96],[.105,.9],[.17,.8],[.29,.55],[.27,.3],[.12,.04],[0,.04]],s.material('#b8562e',{roughness:.7}),[waterX,0,waterZ]);
+    else if(a.waterpoint==='basin'){const stone=s.material('#bbac8b');s.box([.72,.1,.8],[waterX,.05,waterZ],stone);for(const xx of[-.32,.32])s.box([.08,.25,.8],[waterX+xx,.225,waterZ],stone);for(const zz of[-.36,.36])s.box([.56,.25,.08],[waterX,.225,waterZ+zz],stone);s.box([.55,.015,.63],[waterX,.17,waterZ],s.material('#69918b',{roughness:.15}));s.rod([-W/2,.8,waterZ],[waterX-.08,.8,waterZ],.03,brass);s.rod([waterX-.08,.8,waterZ],[waterX-.08,.69,waterZ],.03,brass);}
+    else if(a.waterpoint==='urn'){s.box([.58,.25,.58],[waterX,.125,waterZ],edge);s.lathe([[0,0],[.18,0],[.22,.07],[.22,.54],[.18,.6],[0,.6]],brass,[waterX,.25,waterZ]);s.ball([.045,.045,.045],[waterX,.88,waterZ],wood,10);s.rod([waterX+.2,.43,waterZ],[waterX+.32,.43,waterZ],.022,brass);}
+    else for(let i=0;i<2;i++){const z=waterZ+(i-.5)*.48;s.lathe([[0,0],[.16,0],[.2,.32],[.18,.32],[.14,.025],[0,.025]],wood,[waterX,0,z]);for(const yy of[.05,.26])s.ring(.16+yy*.125,.012,[waterX,yy,z],brass).rotation.x=Math.PI/2;s.tube([[waterX-.18,.29,z],[waterX-.12,.55,z],[waterX+.12,.55,z],[waterX+.18,.29,z]],.013,brass);}
+    if(a.drain!=='none'){const z=a.drain==='centre'?.05:-3.23,width=W-.6,channel=s.material('#51483b');s.box([width,.008,.18],[0,.005,z],channel);if(a.drain==='edge')for(const zz of[-.12,.12])s.box([width,.032,.05],[0,.016,z+zz],s.material('#c2b393'));else for(let i=0;i<48;i++)s.box([.1,.018,.21],[-width/2+(i+.5)*width/48,.015,z],s.material('#45423b',{metalness:.55}));}
 
     const sway = mix(0.004, 0.035, mood.energy);
     world.update = (_dt, time) => { hang.rotation.x = Math.sin(time * 0.9) * sway; };

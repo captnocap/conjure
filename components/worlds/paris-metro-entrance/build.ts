@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { choice, defineWorld, diorama, mix } from '@conjure/kit';
 
 type G = CanvasRenderingContext2D;
@@ -46,6 +47,13 @@ export default defineWorld({
       gold: 'Autumn gold, thinning.',
       bare: 'Bare pollarded knuckles against the sky.',
     }),
+    rainpipes: choice('What drains the street facade?', { none: 'No visible downpipes.', zinc: 'Two long zinc downpipes.', iron: 'Black iron pipes with bracket collars.', hopper: 'Zinc pipes below wide collecting hoppers.' }),
+    windowBoxes: choice('What sits on the upper window sills?', { bare: 'Bare stone sills.', empty: 'Empty dark green planter boxes.', flowers: 'Planter boxes with red and cream flowers.', herbs: 'Dense green herbs in terracotta boxes.' }),
+    roofGuard: choice('How is the roof edge guarded?', { plain: 'The original cornice alone.', rail: 'A slim iron rail along the roof edge.', crest: 'A repeating row of small iron crests.', spikes: 'Short pointed uprights above the cornice.' }),
+    stationClock: choice('What clock is mounted near the station entrance?', { none: 'No street clock.', round: 'A round cream dial on a wall bracket.', square: 'A square black-framed clock.', double: 'A large round two-sided bracket clock.' }),
+    curbDrain: choice('What drains the kerb?', { plain: 'No separate drain covers.', bars: 'Three rectangular barred drains.', slots: 'Short repeated drainage slots.', covers: 'Two round cast-iron covers near the kerb.' }),
+    wallFittings: choice('What utility fittings are on the narrow wall beside the carriage door?', { plain: 'An unadorned wall.', letterbox: 'A yellow wall-mounted letterbox.', conduit: 'A grey service box and exposed conduit.', bell: 'A brass bell pull and intercom panel.' }),
+    awningEdge: choice('If the shop has an awning, how is its front edge trimmed?', { plain: 'A plain straight valance.', stripes: 'Broad alternating pale stripes.', scallops: 'A row of rounded scallops.', fringe: 'A fine hanging fringe.' }),
   },
 
   build(a, context) {
@@ -404,6 +412,85 @@ export default defineWorld({
       for (let i = 0; i < 3; i++) s.box([1.7, 0.09, 0.03], [bx - 0.2, 0.62 + i * 0.13, bz - 0.24], wood);
       for (const dx of [-0.9, 0.5]) { s.box([0.06, 0.46, 0.4], [bx + dx, 0.23, bz], dark); s.box([0.06, 0.5, 0.05], [bx + dx, 0.7, bz - 0.24], dark); }
     }
+
+    const zinc=s.material('#9ca8a9',{metalness:.6,roughness:.45});
+    if(a.rainpipes!=='none')for(const x of[-7.65,2.05]){
+      const metal=a.rainpipes==='iron'?post:zinc;
+      s.rod([x,.05,FZ+.25],[x,7.15,FZ+.25],.055,metal);
+      s.tube([[x,7.15,FZ+.25],[x,7.35,FZ+.25],[x+.2,7.45,FZ+.25]],.055,metal);
+      for(const y of[.8,2.3,4.1,6.1])s.box([.17,.075,.12],[x,y,FZ+.22],metal);
+      if(a.rainpipes==='hopper')s.cylinder(.16,.065,.24,[x,7.17,FZ+.25],metal,4).rotation.y=Math.PI/4;
+    }
+    if(a.windowBoxes!=='bare')for(let i=0;i<5;i++){
+      const x=-6.4+i*3.2,y=4.08,z=FZ+.24,mat=s.material(a.windowBoxes==='herbs'?'#a56f4f':'#365544');
+      s.box([1.22,.22,.35],[x,y,z],mat);s.box([1.14,.015,.27],[x,y+.1125,z],s.material('#554a37'));
+      if(a.windowBoxes!=='empty')for(let j=0;j<7;j++){const px=x-.5+j/6;const h=a.windowBoxes==='herbs'?.16:.1;s.ball([.11,h,.095],[px,y+.12+h,z],s.material('#52774d'),8);if(a.windowBoxes==='flowers')s.ball([.055,.04,.055],[px,y+.35,z+.04],s.material(j%2?'#b83c34':'#e4d6b1'),8);}
+    }
+    if(a.roofGuard!=='plain'){
+      if(a.roofGuard==='rail')for(const y of[7.37,7.67])s.rod([-7.85,y,FZ+.32],[7.85,y,FZ+.32],.025,post);
+      for(let i=0;i<32;i++){
+        const x=-7.75+i*.5;
+        if(a.roofGuard==='crest')s.tube([[x-.16,7.32,FZ+.32],[x-.13,7.54,FZ+.32],[x,7.7,FZ+.32],[x+.13,7.54,FZ+.32],[x+.16,7.32,FZ+.32]],.016,post);
+        else{s.rod([x,7.26,FZ+.32],[x,7.67,FZ+.32],.018,post);if(a.roofGuard==='spikes')s.cylinder(0,.044,.13,[x,7.735,FZ+.32],post,4);}
+      }
+    }
+    if(a.stationClock!=='none'){
+      const x=2.15,y=3.1,z=FZ+.75,r=a.stationClock==='double'?.4:.32;
+      s.rod([x,y+.2,FZ+.04],[x,y+.2,z],.035,post);s.rod([x,y+.5,FZ+.04],[x,y+.2,z],.025,post);
+      if(a.stationClock==='square')s.box([r*2,r*2,.1],[x,y,z],post);else s.cylinder(r,r,.1,[x,y,z],post,32).rotation.x=Math.PI/2;
+      const face=s.material('#e1d9c2');s.cylinder(r*.89,r*.89,.008,[x,y,z+.055],face,32).rotation.x=Math.PI/2;
+      for(let i=0;i<12;i++){const t=i*Math.PI/6;const tick=s.box([.018,.045,.01],[x+Math.sin(t)*r*.73,y+Math.cos(t)*r*.73,z+.065],post);tick.rotation.z=-t;}
+      s.rod([x,y,z+.08],[x-.09,y+.13,z+.08],.012,post);s.rod([x,y,z+.08],[x+.18,y+.055,z+.08],.009,post);
+      if(a.stationClock==='double'){s.cylinder(r*.89,r*.89,.008,[x,y,z-.055],face,32).rotation.x=Math.PI/2;s.rod([x,y,z-.07],[x+.12,y+.12,z-.07],.012,post);s.rod([x,y,z-.07],[x-.18,y+.05,z-.07],.01,post);}
+    }
+    if(a.curbDrain==='bars')for(const x of[-5,0,5]){
+      s.box([.6,.008,.25],[x,.004,KERB+.25],post);for(let i=0;i<9;i++)s.box([.035,.002,.2],[x-.24+i*.06,.009,KERB+.25],zinc);
+    }else if(a.curbDrain==='slots')for(let i=0;i<27;i++)s.box([.16,.005,.065],[-7.5+i*.56,.0025,KERB+.18],post);
+    else if(a.curbDrain==='covers')for(const x of[-5,5]){s.cylinder(.35,.35,.008,[x,.004,KERB+.75],post,24);for(const r of[.13,.24,.31])s.ring(r,.007,[x,.013,KERB+.75],zinc).rotation.x=Math.PI/2;}
+    if(a.wallFittings==='letterbox'){s.box([.46,.61,.22],[6.95,1.2,FZ+.15],s.material('#c8aa2d'));s.box([.33,.045,.012],[6.95,1.37,FZ+.267],post);s.label('POSTE',.31,.09,[6.95,1.22,FZ+.27],'#304749','#c8aa2d');}
+    else if(a.wallFittings==='conduit'){s.box([.48,.6,.15],[6.95,1.4,FZ+.11],zinc);s.rod([6.95,1.7,FZ+.11],[6.95,3.45,FZ+.11],.018,zinc);s.box([.035,.08,.025],[7.1,1.4,FZ+.2],post);}
+    else if(a.wallFittings==='bell'){s.box([.2,.35,.035],[6.6,1.45,FZ+.1],s.material('#b29b58',{metalness:.6}));for(let i=0;i<4;i++)s.ball([.018,.018,.01],[6.6,1.34+i*.07,FZ+.125],post,8);s.rod([6.95,.95,FZ+.12],[6.95,1.85,FZ+.12],.012,zinc);s.ring(.055,.009,[6.95,.95,FZ+.12],zinc);}
+    if((a.shop==='cafe'||a.shop==='boulangerie'||a.shop==='librairie')&&a.awningEdge!=='plain'){
+      const pale=s.material('#ded2b2');
+      if(a.awningEdge==='stripes')for(let i=0;i<16;i++)s.box([.22,.26,.012],[SHX-SHW/2+.27+i*SHW/16,2.66,FZ+1.585],pale);
+      else if(a.awningEdge==='scallops')for(let i=0;i<24;i++)s.ball([SHW/48,.09,.022],[SHX-SHW/2+(i+.5)*SHW/24,2.52,FZ+1.56],pale,10);
+      else for(let i=0;i<70;i++)s.rod([SHX-SHW/2+i*SHW/70,2.53,FZ+1.56],[SHX-SHW/2+i*SHW/70,2.4,FZ+1.56],.007,pale);
+    }
+
+    // Combine rigid opaque pieces by their original material and shadow flags.
+    // Keep the textured paving, bark, lettering and every instance batch intact.
+    const staticGroups=new Map<THREE.Material,Map<string,THREE.Mesh[]>>();
+    s.root.updateMatrixWorld(true);
+    const originalBounds=new THREE.Box3().setFromObject(s.root,true);
+    for(const child of s.root.children){
+      const part=child as THREE.Mesh;
+      if(!part.isMesh||(part as THREE.InstancedMesh).isInstancedMesh||part===ground||Array.isArray(part.material))continue;
+      const material=part.material as THREE.MeshStandardMaterial;
+      if(material.map||material.transparent||material.vertexColors)continue;
+      const flags=String(part.castShadow)+String(part.receiveShadow);
+      const bucket=staticGroups.get(material)??new Map<string,THREE.Mesh[]>();
+      const list=bucket.get(flags)??[];list.push(part);bucket.set(flags,list);staticGroups.set(material,bucket);
+    }
+    const removedGeometry=new Set<THREE.BufferGeometry>();
+    for(const [material,bucket]of staticGroups)for(const list of bucket.values())if(list.length>1){
+      const parts=list.map(part=>{
+        part.updateMatrix();const clone=part.geometry.clone(),geometry=clone.index?clone.toNonIndexed():clone;
+        if(geometry!==clone)clone.dispose();
+        for(const attribute of Object.keys(geometry.attributes))if(attribute!=='position'&&attribute!=='normal')geometry.deleteAttribute(attribute);
+        geometry.applyMatrix4(part.matrix);return geometry;
+      });
+      const geometry=mergeGeometries(parts);
+      if(!geometry)throw new Error('Paris static merge failed');
+      const joined=new THREE.Mesh(geometry,material);joined.castShadow=list[0].castShadow;joined.receiveShadow=list[0].receiveShadow;
+      for(const part of list){removedGeometry.add(part.geometry);s.root.remove(part);}
+      s.root.add(joined);for(const part of parts)part.dispose();
+    }
+    s.root.updateMatrixWorld(true);
+    const mergedBounds=new THREE.Box3().setFromObject(s.root,true);
+    if(originalBounds.min.distanceTo(mergedBounds.min)>1e-5||originalBounds.max.distanceTo(mergedBounds.max)>1e-5)throw new Error('Paris merge changed bounds');
+    const retainedGeometry=new Set<THREE.BufferGeometry>();
+    s.root.traverse(node=>{if((node as THREE.Mesh).isMesh)retainedGeometry.add((node as THREE.Mesh).geometry);});
+    for(const geometry of removedGeometry)if(!retainedGeometry.has(geometry))geometry.dispose();
 
     // Rain.
     let rain: THREE.InstancedMesh | null = null;

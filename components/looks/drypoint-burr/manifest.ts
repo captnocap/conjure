@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Velvet-burr drypoint',summary:'An intaglio drawing of fine incised lines with soft ink held by the raised burr, crosshatched shadows, wiped plate tone and a pressed paper edge. Intimate studio proofs, smoky interiors, close observation and the fragile richness of an early impression.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'print'});

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Sculpture, choice, defineThing, mix } from '@conjure/kit';
+import { Sculpture, choice, defineThing, mix, score } from '@conjure/kit';
 
 type P3 = [number, number, number];
 type Draw = (ctx: CanvasRenderingContext2D) => void;
@@ -16,6 +16,14 @@ const STONE: Record<keyof typeof STONES, [string, string]> = {
 
 export default defineThing({
   questions: {
+    stature: score('How tall is the well drum?', ['A low compact wellhead','A balanced drum','A tall carved drum','A high slender wellhead']),
+    mouthSpan: score('How broad is the opening and its cover?', ['A narrow drawing mouth','A modest opening','A broad opening','A wide mouth within the carved rim']),
+    footCollar: choice('How is the foot of the drum finished?', { plain:'A plain low stone collar.', stepped:'A double stepped stone collar.', braid:'A carved rope moulding around the foot.', flutes:'A low collar with many narrow vertical flutes.' }),
+    apron: choice('How is the ground immediately around the well paved?', { slabs:'Large square stone slabs.', radial:'A ring of radial stone pavers.', checker:'A small checker of pale and dark stone.', brick:'Closely laid rectangular brick pavers.' }),
+    boundary: choice('How is the wellhead set apart?', { open:'An open apron with no barrier.', posts:'Four low corner bollards.', chain:'Corner bollards carry sagging chains at the sides and rear.', rails:'Low side and rear iron rails leave a clear front entrance.' }),
+    marking: choice('What civic mark is fixed to the drum?', { plain:'The carving has no additional plaque.', date:'A small dated stone tablet.', medallion:'A round bronze civic medallion.', number:'A small numbered iron inventory plate.' }),
+    approach: choice('How does the front approach meet the lowest step?', { clear:'The original front step stays clear.', ramp:'A short gentle stone ramp meets the first step.', treads:'Two broad shallow approach treads.', handrail:'A single iron handrail follows the approach to the first step.' }),
+
     carving: choice('How is the wellhead carved?', {
       byzantine: 'A plain round drum ringed with small arches, crosses and rope mouldings, very old.',
       gothic: 'A capital shape: round below, square on top, with a big curled leaf at each corner and shields between.',
@@ -129,7 +137,7 @@ export default defineThing({
     const stepRadii = tiers.map(([radius]) => radius * (a.steps === 'octagonal' ? 0.92 : 0.7));
 
     // The drum.
-    const H = 0.98;
+    const H = mix(.96, 1.2, a.stature);
     let rim = 0.56;
     if (a.carving === 'byzantine') s.lathe([[0.5, 0], [0.54, 0.03], [0.54, 0.09], [0.5, 0.12], [0.5, H - 0.14], [0.56, H - 0.1], [0.58, H - 0.04], [0.56, H]], skin, [0, base, 0]);
     else if (a.carving === 'gothic') {
@@ -159,7 +167,7 @@ export default defineThing({
       rim = 0.6;
     }
     const top = base + H;
-    const mouth = 0.38;
+    const mouth = mix(.29, .4, a.mouthSpan);
     if (a.carving !== 'gothic') s.cylinder(rim, rim, 0.03, [0, top - 0.015, 0], stone, a.carving === 'octagon' ? 8 : 32).rotation.y = Math.PI / 8;
     // Worn grooves where ropes ran over the rim.
     for (let i = 0; i < 3 + mood.wear * 5; i++) {
@@ -304,6 +312,42 @@ export default defineThing({
       s.root.add(bird);
     }
 
-    return s.finish({ footprint: tiers[0][0] + 0.1 });
+
+    // New detail choices retain the existing sculpture while making its setting and access explicit.
+    const borderR = tiers[0][0] + .55, apronStone = s.material('#b9b2a0'), apronDark = s.material('#8c8b80');
+    if(a.apron==='radial'){
+      s.cylinder(borderR+.15,borderR+.15,.025,[0,.0125,0],apronStone,64);
+      for(let i=0;i<28;i++){const t=i*Math.PI*2/28;s.rod([Math.sin(t)*(tiers[0][0]+.04),.027,Math.cos(t)*(tiers[0][0]+.04)],[Math.sin(t)*(borderR+.13),.027,Math.cos(t)*(borderR+.13)],.005,apronDark);}
+    }else{
+      const n=a.apron==='brick'?12:a.apron==='checker'?8:5,side=borderR*2+.2,unit=side/n;
+      for(let ix=0;ix<n;ix++)for(let iz=0;iz<n;iz++){const x=(ix-(n-1)/2)*unit,z=(iz-(n-1)/2)*unit;if(Math.hypot(x,z)<tiers[0][0]*.64)continue;s.box([unit-.015,.025,unit-.015],[x,.0125,z],a.apron==='checker'?(ix%2===iz%2?apronStone:apronDark):a.apron==='brick'?(iz%3?apronStone:paving):paving);}
+    }
+    const collarProfile: [number,number][] = a.footCollar==='stepped'?[[.35,0],[.61,0],[.61,.035],[.57,.035],[.57,.075],[.35,.075]]:[[.35,0],[.57,0],[.57,.05],[.35,.05]];
+    s.lathe(collarProfile,stone,[0,base,0]);
+    if(a.footCollar==='braid'){const ps:P3[]=[];for(let i=0;i<=100;i++){const t=i*Math.PI*2/100;ps.push([Math.sin(t)*(.555+.012*Math.cos(t*22)),base+.04+.012*Math.sin(t*22),Math.cos(t)*(.555+.012*Math.cos(t*22))]);}s.tube(ps,.018,stone);}
+    if(a.footCollar==='flutes')for(let i=0;i<28;i++){const t=i*Math.PI*2/28;s.rod([Math.sin(t)*.565,base+.015,Math.cos(t)*.565],[Math.sin(t)*.565,base+.095,Math.cos(t)*.565],.018,stone);}
+    if(a.boundary!=='open'){
+      const r=borderR-.12;
+      for(const x of[-r,r])for(const z of[-r,r]){s.box([.2,.025,.2],[x,.0125,z],paving);s.cylinder(.055,.075,.46,[x,.255,z],iron,16);s.ball([.07,.05,.07],[x,.5,z],iron,12);}
+      const sides: [P3,P3][]=[[[-r,.44,-r],[r,.44,-r]],[[-r,.44,-r],[-r,.44,r]],[[r,.44,-r],[r,.44,r]]];
+      if(a.boundary==='chain')for(const[A,B]of sides)s.tube([A,[(A[0]+B[0])/2,.3,(A[2]+B[2])/2],B],.014,iron);
+      if(a.boundary==='rails')for(const[A,B]of sides)for(const yy of[.24,.44])s.rod([A[0],yy,A[2]],[B[0],yy,B[2]],.018,iron);
+    }
+    if(a.marking!=='plain'){
+      const rz=a.carving==='gothic'?.465:a.carving==='renaissance'?.605:a.carving==='octagon'?.55:.5,yy=base+.55;
+      if(a.marking==='medallion'){s.cylinder(.13,.13,.035,[0,yy,rz+.025],s.material('#8f8d65',{metalness:.45}),24).rotation.x=Math.PI/2;s.ring(.09,.012,[0,yy,rz+.05],iron);}
+      else {s.box([.27,.16,.04],[0,yy,rz+.025],a.marking==='date'?stone:iron);s.label(a.marking==='date'?'1748':'C 12',.23,.12,[0,yy,rz+.047],a.marking==='date'?'#625f53':'#ddd3b6',a.marking==='date'?stoneColour:'#2c2b2d');}
+      for(const x of[-.09,.09])s.rod([x,yy,rz-.025],[x,yy,rz+.048],.009,iron);
+    }
+    // The front edge is the actual inradius of the bottom slab, not its circumradius.
+    const firstH=tiers[0][1],frontEdge=tiers[0][0]*(a.steps==='octagonal'?Math.cos(Math.PI/8):Math.SQRT1_2),run=.65;
+    if(a.approach==='ramp'){
+      const shape=new THREE.Shape();shape.moveTo(frontEdge,.025);shape.lineTo(frontEdge,firstH);shape.lineTo(frontEdge+run,.025);shape.closePath();
+      const ramp=s.mesh(new THREE.ExtrudeGeometry(shape,{depth:.65,steps:1,bevelEnabled:false}),paving,[-.325,0,0]);ramp.rotation.y=-Math.PI/2;ramp.position.set(.325,0,0);
+    }
+    if(a.approach==='treads')for(let i=0;i<2;i++){const h=firstH*(2-i)/3;s.box([.75,h,.27],[0,h/2,frontEdge+.135+i*.27],paving);}
+    if(a.approach==='handrail'){for(const [z,y]of [[frontEdge-.06,firstH],[frontEdge+run,.025]])s.rod([.42,y,z],[.42,y+.55,z],.022,iron);s.rod([.42,firstH+.55,frontEdge-.06],[.42,.575,frontEdge+run],.022,iron);}
+
+    return s.finish({ footprint: (borderR+.15)*Math.SQRT2 });
   },
 });

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Daguerreotype silver',summary:'A finely detailed image on mirror-polished silver, shifting between positive and negative-like reflection with the viewing angle. Subtle polishing lines, edge tarnish, protective glass and a small fitted mat evoke a treasured early photographic plate.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'optical'});

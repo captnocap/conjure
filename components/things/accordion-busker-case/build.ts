@@ -61,6 +61,13 @@ export default defineThing({
       thermos: 'A thermos and a half-eaten sandwich in paper.',
       amp: 'A tiny battered battery amplifier.',
     }),
+    grille: choice('What pattern is in the accordion grille?', { zigzag: 'Alternating diagonal vents.', bars: 'Straight horizontal bars.', diamonds: 'A lattice of tiny diamonds.', dots: 'Rows of round perforations.' }),
+    bassLayout: choice('How many columns of bass buttons are fitted?', { two: 'A compact two-column bass.', three: 'Three columns.', four: 'Four close columns.', six: 'A full six-column button field.' }),
+    bellowsFolds: choice('How closely are the bellows pleated?', { broad: 'Eight broad folds.', normal: 'Thirteen folds.', fine: 'Eighteen fine folds.', tight: 'Twenty-four closely packed folds.' }),
+    caseCorners: choice('What protects the corners of the instrument case?', { bare: 'Plain leather corners.', brass: 'Bright brass corner plates.', steel: 'Dull steel corner guards.', stitched: 'Brown leather patches with pale stitches.' }),
+    caseHandle: choice('What handle is on the case?', { none: 'The handle is missing.', leather: 'A curved leather grip.', rigid: 'A squared metal carrying handle.', rope: 'A knotted rope replacement.' }),
+    musicStand: choice('What holds the busker’s music?', { none: 'No music stand.', low: 'A low folding wire stand with one page.', tall: 'A tall black stand carrying an open score.', board: 'A wooden music board propped on a tripod.' }),
+    spareKit: choice('What spare kit waits by the stool?', { none: 'No extra kit.', straps: 'A rolled leather shoulder strap.', metronome: 'A small wooden metronome.', repair: 'An open repair tin with tools and a spare reed plate.' }),
   },
 
   build(a, context) {
@@ -98,8 +105,12 @@ export default defineThing({
       for (const dx of [-0.2, 0.2]) for (const dz of [-0.15, 0.15]) s.box([0.03, 0.3, 0.03], [SX + dx, 0.15, SZ + dz], crate);
     }
 
+    const seatGroup=new THREE.Group();seatGroup.name='accordion-seat';seatGroup.add(...s.root.children);s.root.add(seatGroup);seatGroup.updateMatrixWorld(true);
+    const seatLift=-new THREE.Box3().setFromObject(seatGroup,true).min.y;seatGroup.position.y+=seatLift;
+    seatY=(a.seat==='folding'?.4625:a.seat==='chair'?.47:.3)+seatLift;
+    if(a.state!=='ground'){const board=s.box([1.08,.025,.36],[SX,seatY+.0125,SZ],s.material('#8c6945'));board.name='accordion-support-board';seatY+=.025;}
     // The accordion.
-    const acc = new THREE.Group(), inner = new THREE.Group();
+    const acc = new THREE.Group(), inner = new THREE.Group();acc.name='accordion-instrument';
     acc.add(inner);
     s.root.add(acc);
     const H = 0.42, Dp = 0.2;
@@ -110,7 +121,10 @@ export default defineThing({
     into(treble, s.box([0.15, H, Dp], [-0.075, H / 2, 0], pearl));
     into(treble, s.box([0.11, H * 0.82, 0.012], [-0.075, H / 2, Dp / 2 + 0.006], trim));
     const fret: Piece[] = [];
-    for (let i = 0; i < 9; i++) fret.push({ at: [-0.075, 0.07 + i * 0.035, Dp / 2 + 0.013], size: [0.09, 0.012, 0.004], rot: [0, 0, i % 2 ? 0.5 : -0.5], color: '#22201e' });
+    for (let i = 0; i < 9; i++) {
+      if(a.grille==='dots')for(const x of[-.105,-.075,-.045])fret.push({at:[x,.07+i*.035,Dp/2+.013],size:[.009,.009,.004],color:'#22201e'});
+      else {fret.push({at:[-.075,.07+i*.035,Dp/2+.013],size:[.09,.009,.004],rot:[0,0,a.grille==='bars'?0:i%2?.5:-.5],color:'#22201e'});if(a.grille==='diamonds')fret.push({at:[-.075,.07+i*.035,Dp/2+.013],size:[.09,.006,.004],rot:[0,0,i%2?-.5:.5],color:'#22201e'});}
+    }
     pieces(new THREE.BoxGeometry(1, 1, 1), plain, fret, treble);
     into(treble, s.box([0.035, H * 0.98, 0.075], [-0.165, H / 2 - 0.01, Dp / 2 + 0.01], s.material('#1c1c1e', { roughness: 0.4 })));
     const keys: Piece[] = [];
@@ -120,13 +134,14 @@ export default defineThing({
     // Bass side: body, button field, hand strap.
     into(bass, s.box([0.12, H, Dp], [0.06, H / 2, 0], pearl));
     const buttons: Piece[] = [];
-    for (let c = 0; c < 4; c++) for (let r = 0; r < 12; r++) buttons.push({ at: [0.124, 0.06 + r * 0.027 + c * 0.006, -0.045 + c * 0.03], size: [0.01, 0.014, 0.014], color: c === 1 && r % 4 === 0 ? '#c9a23a' : '#f1ece0' });
+    const bassColumns={two:2,three:3,four:4,six:6}[a.bassLayout];
+    for (let c = 0; c < bassColumns; c++) for (let r = 0; r < 12; r++) buttons.push({ at: [0.124, 0.06 + r * 0.027 + c * 0.006, -.06+c*(.12/(bassColumns-1))], size: [0.01, 0.014, 0.014], color: c === 1 && r % 4 === 0 ? '#c9a23a' : '#f1ece0' });
     pieces(new THREE.SphereGeometry(0.6, 8, 6), plain, buttons, bass);
     into(bass, s.box([0.008, H * 0.86, 0.045], [0.135, H / 2, 0.06], leather));
     into(bass, s.box([0.12, 0.02, Dp + 0.004], [0.06, H - 0.03, 0], trim));
     into(treble, s.box([0.15, 0.02, Dp + 0.004], [-0.075, H - 0.03, 0], trim));
     // Bellows: unit length along x, scaled live.
-    const folds = 13, pleats: Piece[] = [];
+    const folds = {broad:8,normal:13,fine:18,tight:24}[a.bellowsFolds], pleats: Piece[] = [];
     const edge = a.colour === 'black' ? '#b3202a' : a.colour === 'ivory' ? '#7a1f24' : '#e9e0c8';
     for (let i = 0; i < folds; i++) {
       pleats.push({ at: [(i + 0.5) / folds, H / 2, 0], size: [0.62 / folds, H - 0.035, Dp - 0.02], color: '#1e1b1c' });
@@ -256,9 +271,47 @@ export default defineThing({
       s.ball([0.008, 0.008, 0.008], [bx - 0.03, 0.225, bz + 0.075], new THREE.MeshStandardMaterial({ color: '#ff3a2a', emissive: '#ff2a1a', emissiveIntensity: 1.5 }), 6);
     }
 
+    const hardware=s.material(a.caseCorners==='brass'?'#b79854':'#9fa8a9',{metalness:.65,roughness:.4});
+    if(a.caseCorners!=='bare')for(const x of[-1,1])for(const z of[-1,1]) {
+      const mat=a.caseCorners==='stitched'?leather:hardware;
+      box.add(s.box([.07,.045,.012],[x*(CW/2-.035),.03,z*(CD/2+.003)],mat));
+      box.add(s.box([.012,.045,.07],[x*(CW/2+.003),.03,z*(CD/2-.035)],mat));
+      if(a.caseCorners==='stitched')for(let i=0;i<4;i++)box.add(s.box([.006,.002,.003],[x*(CW/2-.06+i*.012),.055,z*(CD/2+.011)],trim));
+    }
+    if(a.caseHandle==='leather')box.add(s.tube([[-.09,.07,CD/2+.02],[-.06,.07,CD/2+.09],[.06,.07,CD/2+.09],[.09,.07,CD/2+.02]],.012,leather));
+    else if(a.caseHandle==='rigid'){box.add(s.rod([-.08,.065,CD/2+.07],[.08,.065,CD/2+.07],.012,hardware));for(const x of[-.08,.08])box.add(s.rod([x,.065,CD/2],[x,.065,CD/2+.07],.01,hardware));}
+    else if(a.caseHandle==='rope'){box.add(s.tube([[-.08,.07,CD/2],[0,.07,CD/2+.11],[.08,.07,CD/2]],.009,s.material('#c3aa7e')));for(const x of[-.08,.08])box.add(s.ball([.015,.015,.015],[x,.07,CD/2+.01],leather,8));}
+    if(a.musicStand!=='none') {
+      const x=.75,z=-.55,h=a.musicStand==='low'?.55:1.05,mat=a.musicStand==='board'?s.material('#9d7953'):s.material('#343a3c');
+      for(let i=0;i<3;i++){const t=i*Math.PI*2/3;s.rod([x,.2,z],[x+Math.sin(t)*.21,.012,z+Math.cos(t)*.21],.012,mat);}
+      s.rod([x,.15,z],[x,h,z],.012,mat);
+      const desk=new THREE.Group();s.root.add(desk);desk.position.set(x,h,z);desk.rotation.x=-.22;
+      if(a.musicStand==='low'){for(const dx of[-.2,.2])desk.add(s.rod([dx,-.12,0],[dx,.13,0],.006,mat));for(const y of[-.12,.13])desk.add(s.rod([-.2,y,0],[.2,y,0],.006,mat));}
+      else desk.add(s.box([.44,.3,.016],[0,0,0],mat));
+      desk.add(s.box([.45,.025,.06],[0,-.14,.025],mat));
+      const music=document.createElement('canvas');music.width=256;music.height=192;const pen=music.getContext('2d')!;pen.fillStyle='#e6dcc6';pen.fillRect(0,0,256,192);pen.strokeStyle=pen.fillStyle='#44413b';pen.lineWidth=1;
+      for(let row=0;row<3;row++)for(let line=0;line<5;line++){const y=25+row*55+line*5;pen.beginPath();pen.moveTo(14,y);pen.lineTo(242,y);pen.stroke();}
+      for(let i=0;i<24;i++){const x=25+(i%8)*28,y=30+Math.floor(i/8)*55+(i%4)*5;pen.beginPath();pen.ellipse(x,y,4,3,-.3,0,Math.PI*2);pen.fill();pen.fillRect(x+3,y-17,1.5,18);}
+      const tex=new THREE.CanvasTexture(music);tex.colorSpace=THREE.SRGBColorSpace;desk.add(s.mesh(new THREE.PlaneGeometry(a.musicStand==='low'?.31:.4,.23),new THREE.MeshStandardMaterial({map:tex,side:THREE.DoubleSide}),[0,-.005,.012]));
+    }
+    if(a.spareKit==='straps'){s.cylinder(.065,.065,.04,[-.75,.02,.1],leather,20);s.box([.045,.005,.18],[-.75,.0025,.2],leather);}
+    else if(a.spareKit==='metronome'){s.cylinder(.035,.075,.19,[-.75,.095,.1],s.material('#9b6c3f'),4).rotation.y=Math.PI/4;s.box([.06,.12,.006],[-.75,.12,.149],trim);s.rod([-.75,.055,.155],[-.72,.185,.155],.003,hardware);}
+    else if(a.spareKit==='repair'){s.box([.24,.025,.16],[-.75,.0125,.1],hardware);s.box([.24,.08,.01],[-.75,.05,.025],hardware);for(let i=0;i<4;i++)s.rod([-.84+i*.05,.03,.045],[-.84+i*.05,.03,.145],.004,hardware);s.box([.08,.007,.04],[-.75,.03,.12],trim);}
+    // The moving instrument stays on its actual support throughout the bellows cycle.
+    const vertex=new THREE.Vector3(),matrix=new THREE.Matrix4(),instance=new THREE.Matrix4();
+    const settleAccordion=()=>{
+      acc.updateWorldMatrix(true,true);s.root.updateWorldMatrix(true,false);
+      const inverse=new THREE.Matrix4().copy(s.root.matrixWorld).invert();let lowest=Infinity;
+      acc.traverse(node=>{const m=node as THREE.Mesh;if(!m.isMesh)return;const p=m.geometry.getAttribute('position');const count=(m as THREE.InstancedMesh).isInstancedMesh?(m as THREE.InstancedMesh).count:1;
+        for(let n=0;n<count;n++){matrix.multiplyMatrices(inverse,m.matrixWorld);if((m as THREE.InstancedMesh).isInstancedMesh){(m as THREE.InstancedMesh).getMatrixAt(n,instance);matrix.multiply(instance);}for(let i=0;i<p.count;i++){vertex.fromBufferAttribute(p,i).applyMatrix4(matrix);lowest=Math.min(lowest,vertex.y);}}
+      });
+      acc.position.y+=(a.state==='ground'?0:seatY)-lowest;
+    };
+    settleAccordion();
+
     const tempo = mix(0.8, 2.6, mood.energy), phase = random() * 6;
     return s.finish({
-      update: (_dt, time) => { if (amplitude) setWidth(baseWidth + Math.sin(time * tempo + phase) * amplitude); },
+      update: (_dt, time) => { if (amplitude) {setWidth(baseWidth + Math.sin(time * tempo + phase) * amplitude);settleAccordion();} },
     });
   },
 });

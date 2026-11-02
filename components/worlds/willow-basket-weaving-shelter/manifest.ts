@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind: 'world', title: "Willow basket-weaving shelter", summary: "An open garden craft shelter keeps soaking willow, graded rods and half-finished baskets within reach. A permanent water channel and overhead rod racks make the place a recognizable basket workshop even between sessions.", scales: ["room", "street", "landscape", "tabletop"]});

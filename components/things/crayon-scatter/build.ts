@@ -46,6 +46,48 @@ export default defineThing({
       newsprint: 'A sheet of old newspaper, drawn straight over the columns.',
     }),
     offPage: noul('Did the drawing run off the edge of the paper onto the floor?'),
+    profile: choice('What shape are the wax crayons?', {
+      round: 'Ordinary narrow round wax sticks.',
+      hexagon: 'Six-sided crayons that resist rolling.',
+      triangle: 'Triangular grip crayons with broad flat sides.',
+      chunky: 'Thick round toddler crayons with large blunt tips.',
+    }),
+    wrappers: choice('How are the crayons wrapped?', {
+      bands: 'Coloured paper sleeves with dark bands near their ends.',
+      plain: 'Plain pale paper sleeves without end bands.',
+      striped: 'Several narrow dark stripes cross each paper sleeve.',
+      bare: 'The paper wrappers have been peeled off, exposing wax.',
+    }),
+    border: choice('What border was drawn around the picture?', {
+      none: 'The drawing has no deliberate border.',
+      frame: 'A wavering coloured rectangular frame surrounds the picture.',
+      scallop: 'A row of little coloured loops borders the page.',
+      boxes: 'Small alternating coloured squares make a homemade frame.',
+    }),
+    guide: choice('What drawing guide remains beneath the crayon marks?', {
+      none: 'A blank sheet without a guide.',
+      dots: 'Pale numbered dots suggest a connect-the-dots outline.',
+      grid: 'A faint square drawing grid sits beneath the picture.',
+      shapes: 'Lightly printed circles, squares and triangles invite colouring.',
+    }),
+    pages: choice('How is the drawing sheet supported?', {
+      single: 'One loose drawing sheet.',
+      pad: 'A thin drawing pad with a glued top edge.',
+      stack: 'Several slightly offset loose sheets sit underneath.',
+      clipboard: 'A small board and a spring clip hold the paper.',
+    }),
+    accessory: choice('Which drawing tool lies beside the crayons?', {
+      sharpener: 'A wide-hole crayon sharpener with a small visible blade.',
+      rubbing: 'A ridged rubbing plate waits beside the drawing.',
+      eraser: 'A soft rectangular eraser with one rounded used end.',
+      stencil: 'A simple open circular stencil frame.',
+    }),
+    leftovers: choice('What was left by the last bit of drawing?', {
+      none: 'The workspace has no extra scraps.',
+      wrapper: 'A peeled paper wrapper curls beside the crayon box.',
+      shavings: 'Small curled wax shavings lie near the sharpener.',
+      test: 'A narrow scrap of paper holds several tested colour strokes.',
+    }),
   },
 
   build(a, context) {
@@ -78,6 +120,23 @@ export default defineThing({
         for (let y = 48; y < H - 10; y += 7) g.fillRect(16 + column * 124, y, 96 + random() * 14, 3);
       g.fillStyle = 'rgba(60,60,60,0.3)';
       g.fillRect(264, 60, 232, 110);
+    }
+    g.strokeStyle = 'rgba(100,105,115,0.23)';
+    g.fillStyle = 'rgba(100,105,115,0.4)';
+    g.lineWidth = 1.5;
+    if (a.guide === 'grid') {
+      for (let x = 30; x < W; x += 30) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
+      for (let y = 30; y < H; y += 30) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
+    }
+    if (a.guide === 'dots') for (let i = 0; i < 18; i++) {
+      const t = i / 18 * Math.PI * 2, x = W / 2 + Math.cos(t) * 180, y = H / 2 + Math.sin(t) * 110;
+      g.beginPath(); g.arc(x, y, 2.8, 0, Math.PI * 2); g.fill(); g.font = '11px sans-serif'; g.fillText(String(i + 1), x + 5, y - 3);
+    }
+    if (a.guide === 'shapes') for (let i = 0; i < 3; i++) {
+      const x = 100 + i * 155;
+      g.strokeRect(x - 38, 100, 76, 76);
+      g.beginPath(); g.arc(x, 230, 37, 0, Math.PI * 2); g.stroke();
+      g.beginPath(); g.moveTo(x - 28, 75); g.lineTo(x, 28); g.lineTo(x + 28, 75); g.closePath(); g.stroke();
     }
     const stroke = (points: XY[], colour: string, width = 6, wobble = 2.4) => {
       g.strokeStyle = colour;
@@ -234,6 +293,15 @@ export default defineThing({
     }
     const done = Math.max(a.drawing === 'scribble' ? 1 : 2, Math.round(mix(0.22, 1, a.finished) * steps.length));
     steps.slice(0, done).forEach((step) => step());
+    if (a.border === 'frame') stroke([[12, 12], [W - 12, 12], [W - 12, H - 12], [12, H - 12], [12, 12]], P(4), 3, 1);
+    if (a.border === 'scallop') {
+      for (let x = 15; x < W - 10; x += 22) { loop(x, 11, 9, 6, P(5), 2); loop(x, H - 11, 9, 6, P(5), 2); }
+      for (let y = 30; y < H - 20; y += 22) { loop(11, y, 6, 9, P(5), 2); loop(W - 11, y, 6, 9, P(5), 2); }
+    }
+    if (a.border === 'boxes') {
+      for (let x = 10, i = 0; x < W - 10; x += 18, i++) { g.fillStyle = P(i); g.fillRect(x, 7, 10, 8); g.fillRect(x, H - 15, 10, 8); }
+      for (let y = 25, i = 0; y < H - 20; y += 18, i++) { g.fillStyle = P(i); g.fillRect(7, y, 8, 10); g.fillRect(W - 15, y, 8, 10); }
+    }
     // Grubby fingers and spills as the scene wears.
     for (let i = 0; i < Math.round(mood.wear * 9); i++) {
       g.fillStyle = `rgba(${Math.round(120 + random() * 40)},${Math.round(90 + random() * 30)},60,${0.08 + random() * 0.12})`;
@@ -264,6 +332,26 @@ export default defineThing({
     sheet.position.set(-0.07, 0, -0.035);
     sheet.rotation.y = jit(0.22);
     s.root.add(sheet);
+    const pageCount = a.pages === 'pad' ? 7 : a.pages === 'stack' ? 4 : 1;
+    const sheetLift = a.pages === 'clipboard' ? 0.007 : (pageCount - 1) * 0.0016;
+    sheet.position.y = sheetLift;
+    if (pageCount > 1) for (let i = 0; i < pageCount - 1; i++) {
+      const backing = new THREE.Mesh(new THREE.BoxGeometry(sheetW, 0.0014, sheetD), s.material('#eee8d6'));
+      backing.position.set(a.pages === 'stack' ? (i % 2 ? 0.004 : -0.003) : 0, -sheetLift + 0.0007 + i * 0.0016, a.pages === 'stack' ? (i % 2) * 0.003 : 0);
+      backing.castShadow = backing.receiveShadow = true; sheet.add(backing);
+    }
+    if (a.pages === 'pad') {
+      const glue = new THREE.Mesh(new THREE.BoxGeometry(sheetW, sheetLift, 0.003), s.material('#596b75'));
+      glue.position.set(0, -sheetLift / 2, -sheetD / 2); sheet.add(glue);
+    }
+    if (a.pages === 'clipboard') {
+      const board = new THREE.Mesh(new THREE.BoxGeometry(sheetW + 0.018, 0.007, sheetD + 0.025), s.material('#b78d56'));
+      board.position.y = -0.0035; sheet.add(board);
+      const clip = new THREE.Mesh(new THREE.BoxGeometry(0.062, 0.005, 0.018), s.material('#aeb8b5', { metalness: 0.5, roughness: 0.3 }));
+      clip.position.set(0, 0.004, -sheetD / 2 + 0.007); sheet.add(clip);
+      const lip = new THREE.Mesh(new THREE.TorusGeometry(0.012, 0.002, 6, 18, Math.PI), s.material('#707a77', { metalness: 0.4 }));
+      lip.rotation.x = -Math.PI / 2; lip.position.set(0, 0.007, -sheetD / 2 + 0.008); sheet.add(lip);
+    }
 
     if (a.offPage) {
       const marks = document.createElement('canvas');
@@ -287,13 +375,14 @@ export default defineThing({
       texture.colorSpace = THREE.SRGBColorSpace;
       const decal = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.15), new THREE.MeshStandardMaterial({ map: texture, transparent: true, depthWrite: false, roughness: 1, polygonOffset: true, polygonOffsetFactor: -2 }));
       decal.rotation.x = -Math.PI / 2;
-      decal.position.set(sheetW / 2 + 0.02, 0.0006, sheetD / 2 - 0.05);
+      decal.position.set(sheetW / 2 + 0.02, 0.0006 - sheetLift, sheetD / 2 - 0.05);
       decal.receiveShadow = true;
       sheet.add(decal);
     }
 
     // ---- Crayons: every stick is merged into one vertex-coloured mesh ------------------
-    const R = 0.006;
+    const R = a.profile === 'chunky' ? 0.009 : 0.006;
+    const segments = a.profile === 'triangle' ? 3 : a.profile === 'hexagon' ? 6 : 10;
     const parts: THREE.BufferGeometry[] = [];
     const tinted = (geometry: THREE.BufferGeometry, colour: THREE.Color, matrix: THREE.Matrix4) => {
       geometry.applyMatrix4(matrix);
@@ -312,12 +401,13 @@ export default defineThing({
       const band = wax.clone().multiplyScalar(0.45);
       const tip = piece === 'butt' ? 0 : 0.011;
       const blunt = mix(0.0009, 0.0034, mood.wear * (0.4 + random() * 0.6));
-      into(new THREE.CylinderGeometry(R, R, length - tip, 10), wax, matrix.clone().multiply(offset(-tip / 2)));
-      if (tip) into(new THREE.CylinderGeometry(blunt, R * 0.94, tip, 10), wax, matrix.clone().multiply(offset(length / 2 - tip / 2)));
+      into(new THREE.CylinderGeometry(R, R, length - tip, segments), wax, matrix.clone().multiply(offset(-tip / 2)));
+      if (tip) into(new THREE.CylinderGeometry(blunt * (a.profile === 'chunky' ? 1.5 : 1), R * 0.94, tip, segments), wax, matrix.clone().multiply(offset(length / 2 - tip / 2)));
       const sleeve = piece === 'whole' ? length * 0.6 : piece === 'tip' ? length * 0.42 : length * 0.86;
       const sleeveAt = piece === 'whole' ? -length * 0.1 : piece === 'tip' ? -length * 0.29 : length * 0.07;
-      into(new THREE.CylinderGeometry(R * 1.1, R * 1.1, sleeve, 10), wrap, matrix.clone().multiply(offset(sleeveAt)));
-      for (const end of piece === 'tip' ? [1] : [-1, 1]) into(new THREE.CylinderGeometry(R * 1.14, R * 1.14, 0.0022, 10), band, matrix.clone().multiply(offset(sleeveAt + end * (sleeve / 2 - 0.004))));
+      if (a.wrappers !== 'bare') into(new THREE.CylinderGeometry(R * 1.1, R * 1.1, sleeve, segments), wrap, matrix.clone().multiply(offset(sleeveAt)));
+      if (a.wrappers === 'bands') for (const end of piece === 'tip' ? [1] : [-1, 1]) into(new THREE.CylinderGeometry(R * 1.14, R * 1.14, 0.0022, segments), band, matrix.clone().multiply(offset(sleeveAt + end * (sleeve / 2 - 0.004))));
+      if (a.wrappers === 'striped') for (let i = 0; i < 4; i++) into(new THREE.CylinderGeometry(R * 1.14, R * 1.14, 0.0018, segments), band, matrix.clone().multiply(offset(sleeveAt + (i / 3 - 0.5) * sleeve * 0.72)));
     };
     const along = (base: THREE.Vector3, direction: THREE.Vector3, length: number) =>
       new THREE.Matrix4().compose(base.clone().addScaledVector(direction, length / 2), new THREE.Quaternion().setFromUnitVectors(up, direction), new THREE.Vector3(1, 1, 1));
@@ -358,11 +448,12 @@ export default defineThing({
       rim.position.y = tinHeight;
       holder.add(cast(can), cast(floor), cast(rim));
       holder.position.set(0.16, 0, -0.06);
-      held = Math.min(total - 3, 7 + Math.floor(random() * 5));
+      held = Math.min(total - 3, a.profile === 'chunky' ? 7 : 7 + Math.floor(random() * 3));
       for (let i = 0; i < held; i++) {
-        const azimuth = (i / held) * Math.PI * 2 + jit(0.3), tilt = 0.12 + random() * 0.2;
+        const azimuth = (i / held) * Math.PI * 2 + jit(0.05), tilt = a.profile === 'chunky' ? 0.04 + random() * 0.06 : 0.07 + random() * 0.09;
         const direction = new THREE.Vector3(Math.sin(tilt) * Math.cos(azimuth), Math.cos(tilt), Math.sin(tilt) * Math.sin(azimuth));
-        const foot = new THREE.Vector3(-Math.cos(azimuth) * 0.006, 0.004, -Math.sin(azimuth) * 0.006).add(holder.position);
+        const footRadius = a.profile === 'chunky' ? 0.024 : 0.021;
+        const foot = new THREE.Vector3(Math.cos(azimuth) * footRadius, 0.004, Math.sin(azimuth) * footRadius).add(holder.position);
         stick(nextColour(), 0.125 + random() * 0.012, along(foot, direction, 0.13), 'whole');
       }
       mouth = holder.position.clone().add(new THREE.Vector3(-0.04, 0, 0.1));
@@ -423,10 +514,11 @@ export default defineThing({
       holder.updateMatrixWorld(true);
       if (a.box !== 'crushed') {
         held = a.box === 'upright' ? Math.min(total - 3, 10 + Math.floor(random() * 5)) : Math.min(total - 4, 4 + Math.floor(random() * 3));
+        if (a.profile === 'chunky') held = Math.min(held, 8);
         for (let i = 0; i < held; i++) {
           const row = i % 2, column = Math.floor(i / 2);
           const slide = lying ? 0.012 + random() * 0.05 : random() * 0.006;
-          const local = new THREE.Vector3(-bw / 2 + 0.008 + column * 0.0128, 0.004 + slide, (row - 0.5) * 0.015);
+          const local = new THREE.Vector3(-bw / 2 + R * 1.35 + column * R * 2.2, 0.004 + slide, (row - 0.5) * R * 2.2);
           const base = local.applyMatrix4(carton.matrixWorld);
           const direction = new THREE.Vector3(jit(lying ? 0.1 : 0.02), 1, 0).normalize().transformDirection(carton.matrixWorld);
           stick(nextColour(), 0.106, along(base, direction, 0.106), 'whole');
@@ -439,14 +531,35 @@ export default defineThing({
     }
 
     // Loose crayons: a fan out of the mouth, a few on the page, the rest wherever they rolled.
-    const lain: THREE.Vector3[] = [];
+    const lain: { x: number; z: number; dx: number; dz: number; length: number }[] = [];
+    const pointSegment = (px: number, pz: number, ax: number, az: number, bx: number, bz: number) => {
+      const dx=bx-ax,dz=bz-az,t=Math.max(0,Math.min(1,((px-ax)*dx+(pz-az)*dz)/(dx*dx+dz*dz)));
+      return Math.hypot(px-ax-dx*t,pz-az-dz*t);
+    };
+    const overlaps = (x: number, z: number, dx: number, dz: number, length: number) => lain.some(other => {
+      const ax=x-dx*length/2,az=z-dz*length/2,bx=x+dx*length/2,bz=z+dz*length/2;
+      const cx=other.x-other.dx*other.length/2,cz=other.z-other.dz*other.length/2,ex=other.x+other.dx*other.length/2,ez=other.z+other.dz*other.length/2;
+      const cross=(px:number,pz:number,qx:number,qz:number,rx:number,rz:number)=>(qx-px)*(rz-pz)-(qz-pz)*(rx-px);
+      if(cross(ax,az,bx,bz,cx,cz)*cross(ax,az,bx,bz,ex,ez)<0&&cross(cx,cz,ex,ez,ax,az)*cross(cx,cz,ex,ez,bx,bz)<0)return true;
+      return Math.min(pointSegment(ax,az,cx,cz,ex,ez),pointSegment(bx,bz,cx,cz,ex,ez),pointSegment(cx,cz,ax,az,bx,bz),pointSegment(ex,ez,ax,az,bx,bz))<R*2.6;
+    });
     const lay = (x: number, z: number, yaw: number, lift: number, hex: string) => {
-      const centre = new THREE.Vector3(x, 0, z);
-      const stacked = lain.some((other) => other.distanceTo(centre) < 0.04);
-      lain.push(centre);
-      const y = R * 1.14 + lift + (stacked ? R * 2.3 : 0);
-      const direction = new THREE.Vector3(Math.cos(yaw), stacked ? 0.03 : 0, Math.sin(yaw)).normalize();
       const length = fullLength();
+      const direction = new THREE.Vector3(Math.cos(yaw), 0, Math.sin(yaw));
+      const originalX=x,originalZ=z,escape=Math.atan2(z-sheet.position.z,x-sheet.position.x)+jit(.15);
+      for(let attempt=0;attempt<50&&overlaps(x,z,direction.x,direction.z,length+.018);attempt++){
+        const distance=(attempt+1)*.016;
+        x=originalX+Math.cos(escape)*distance;z=originalZ+Math.sin(escape)*distance;
+      }
+      lain.push({x,z,dx:direction.x,dz:direction.z,length:length+.018});
+      const local=new THREE.Vector3(x-sheet.position.x,0,z-sheet.position.z).applyAxisAngle(up,-sheet.rotation.y);
+      const onPaper=Math.abs(local.x)<sheetW/2&&Math.abs(local.z)<sheetD/2;
+      lift=onPaper?sheetLift+.0016:0;
+      const turn=new THREE.Quaternion().setFromUnitVectors(up,direction);
+      let support=0;
+      const outer=R*(a.wrappers==='bare'?1:a.wrappers==='plain'?1.1:1.14);
+      for(let i=0;i<segments;i++)support=Math.max(support,-new THREE.Vector3(Math.sin(i/segments*Math.PI*2)*outer,0,Math.cos(i/segments*Math.PI*2)*outer).applyQuaternion(turn).y);
+      const y = support + lift;
       const snapped = random() < mix(0, 0.92, a.broken);
       if (!snapped) return stick(hex, length, along(new THREE.Vector3(x, y, z).addScaledVector(direction, -length / 2), direction, length), 'whole');
       const cut = mix(0.35, 0.62, random()) * length;
@@ -454,7 +567,9 @@ export default defineThing({
       const butt = new THREE.Vector3(x, y, z).addScaledVector(direction, -cut - gap / 2);
       stick(hex, cut, along(butt, direction, cut), 'butt');
       const bent = new THREE.Vector3(Math.cos(yaw + kink), 0, Math.sin(yaw + kink));
-      const start = new THREE.Vector3(x, R * 1.14 + lift, z).addScaledVector(direction, gap / 2).add(new THREE.Vector3(jit(0.008), 0, jit(0.008)));
+      let tipSupport=0;const tipTurn=new THREE.Quaternion().setFromUnitVectors(up,bent);
+      for(let i=0;i<segments;i++)tipSupport=Math.max(tipSupport,-new THREE.Vector3(Math.sin(i/segments*Math.PI*2)*outer,0,Math.cos(i/segments*Math.PI*2)*outer).applyQuaternion(tipTurn).y);
+      const start = new THREE.Vector3(x, tipSupport + lift, z).addScaledVector(direction, gap / 2).add(new THREE.Vector3(jit(0.008), 0, jit(0.008)));
       stick(hex, length - cut, along(start, bent, length - cut), 'tip');
     };
     const loose = Math.max(3, total - held);
@@ -462,7 +577,7 @@ export default defineThing({
       const where = i < 2 ? 'page' : random() < 0.6 ? 'fan' : 'far';
       if (where === 'page') {
         const local = new THREE.Vector3(jit(sheetW * 0.3), 0, jit(sheetD * 0.25) + sheetD * 0.12).applyAxisAngle(up, sheet.rotation.y).add(sheet.position);
-        lay(local.x, local.z, random() * Math.PI * 2, 0.0016, nextColour());
+        lay(local.x, local.z, random() * Math.PI * 2, local.y + 0.0016, nextColour());
       } else if (where === 'fan') {
         const angle = spillHeading + jit(0.7), distance = 0.02 + random() * 0.13;
         lay(mouth.x + Math.cos(angle) * distance, mouth.z + Math.sin(angle) * distance, angle + jit(0.9), 0, nextColour());
@@ -488,14 +603,50 @@ export default defineThing({
       rollerParts.push(geometry);
     });
     const track = new THREE.Group();
-    track.position.set(-0.1 + jit(0.05), R * 1.14, 0.15 + jit(0.015));
+    track.position.set(-0.1 + jit(0.05), R * (a.profile === 'triangle' ? .5 : 1) * (a.wrappers==='bare'?1:a.wrappers==='plain'?1.1:1.14), 0.15 + jit(0.015));
     track.rotation.y = jit(0.5);
     const roller = new THREE.Mesh(mergeGeometries(rollerParts), waxMaterial);
+    roller.geometry.computeBoundingBox();
+    track.position.y = -roller.geometry.boundingBox!.min.y;
     roller.castShadow = roller.receiveShadow = true;
     track.add(roller);
     s.root.add(track);
     for (const part of rollerParts) part.dispose();
-    const travel = mix(0, 0.022, mood.energy), pace = mix(0.6, 2.4, mood.energy);
+    const travel = a.profile === 'triangle' || a.profile === 'hexagon' ? 0 : mix(0, 0.022, mood.energy), pace = mix(0.6, 2.4, mood.energy);
+
+    const tool = new THREE.Group(); tool.position.set(0.225, 0, -0.16); tool.rotation.y = jit(0.25); s.root.add(tool);
+    const localBox = (dimensions: [number, number, number], at: [number, number, number], material: THREE.Material) => {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(...dimensions), material); mesh.position.set(...at); mesh.castShadow = mesh.receiveShadow = true; tool.add(mesh); return mesh;
+    };
+    if (a.accessory === 'sharpener') {
+      const shell = new THREE.Shape([new THREE.Vector2(-0.024, 0), new THREE.Vector2(0.024, 0), new THREE.Vector2(0.024, 0.025), new THREE.Vector2(-0.024, 0.025)]);
+      const bore = new THREE.Path(); bore.absarc(0, 0.013, 0.008, 0, Math.PI * 2, true); shell.holes.push(bore);
+      const mesh = new THREE.Mesh(new THREE.ExtrudeGeometry(shell, { depth: 0.029, bevelEnabled: false, curveSegments: 18 }), s.material('#617d81'));
+      mesh.position.z = -0.0145; mesh.castShadow = mesh.receiveShadow = true; tool.add(mesh);
+      localBox([0.031, 0.0015, 0.009], [0, 0.0257, 0], s.material('#bfc6c1', { metalness: 0.6, roughness: 0.25 }));
+    } else if (a.accessory === 'rubbing') {
+      localBox([0.065, 0.004, 0.054], [0, 0.002, 0], s.material('#bd9562'));
+      for (let i = 0; i < 8; i++) localBox([0.053, 0.002, 0.002], [0, 0.005, -0.021 + i * 0.006], s.material('#d5b77d'));
+    } else if (a.accessory === 'eraser') {
+      localBox([0.047, 0.014, 0.026], [0, 0.007, 0], s.material('#dca8a0'));
+      localBox([0.024, 0.0147, 0.0267], [0.006, 0.00735, 0], s.material('#eee8d4'));
+    } else {
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.017, 0.03, 32), s.material('#759b88', { side: THREE.DoubleSide }));
+      ring.rotation.x = -Math.PI / 2; ring.position.y = 0.001; tool.add(ring);
+      localBox([0.018, 0.002, 0.022], [0.032, 0.001, 0], s.material('#759b88'));
+    }
+    if (a.leftovers === 'wrapper') {
+      const scrap = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.045, 16, 1, true, 0, Math.PI * 1.35), s.material('#e4c99b', { side: THREE.DoubleSide }));
+      scrap.rotation.z = Math.PI / 2; scrap.position.set(0.18, 0.009, 0.17); s.root.add(scrap);
+    }
+    if (a.leftovers === 'shavings') for (let i = 0; i < 7; i++) {
+      const curl = new THREE.Mesh(new THREE.TorusGeometry(0.005 + random() * 0.003, 0.0013, 5, 13, Math.PI * 1.35), s.material(P(i)));
+      curl.rotation.x = -Math.PI / 2; curl.rotation.z = random() * 5; curl.position.set(0.18 + jit(0.024), 0.0015, -0.17 + jit(0.026)); s.root.add(curl);
+    }
+    if (a.leftovers === 'test') {
+      s.box([0.072, 0.001, 0.025], [0.17, 0.0005, 0.17], s.material('#efe8d5'));
+      for (let i = 0; i < 5; i++) s.box([0.003, 0.0006, 0.017], [0.145 + i * 0.012, 0.0012, 0.17], s.material(P(i))).rotation.y = 0.2;
+    }
 
     return s.finish({
       update: (_dt, time) => {

@@ -34,6 +34,13 @@ const TYPES = ['6V6', '12AX7', 'EL84', '5U4', '6L6', 'ECC83', '80', '6SN7', 'KT6
 
 export default defineThing({
   questions: {
+    stock: score('How many tray positions are occupied?', ['Only a few left', 'A partial tray', 'Most positions filled', 'Every position filled']),
+    order: choice('How is the assortment sorted?', { random: 'Mixed without an obvious order.', rows: 'Like envelope shapes together in rows.', columns: 'Matching types in columns.', alternating: 'Alternating shapes in a checkerboard arrangement.' }),
+    cartons: choice('How are the carton tops closed?', { sealed: 'Tucked closed.', open: 'Open with short flaps standing up.', folded: 'Open with the flaps folded outward.', banded: 'Closed with a narrow paper band around each carton.' }),
+    pins: choice('What pin bases do the loose tubes have?', { octal: 'Eight pins round a central key.', miniature: 'A close ring of nine fine pins.', four: 'Four thick old-style pins.', loctal: 'Eight thin pins with a prominent locking spigot.' }),
+    getter: choice('Where is the getter deposit visible?', { top: 'A bright silver flash near the crown.', side: 'A silver patch on the side.', dark: 'A dark mirror-like crown.', clear: 'Little visible deposit, a clearer envelope.' }),
+    lining: choice('What lines the bottom of the tray?', { card: 'Plain buff card.', felt: 'A green felt pad.', corrugated: 'Corrugated packing card.', tissue: 'Pale folded tissue paper.' }),
+    records: choice('What test record lies alongside?', { none: 'No paperwork.', card: 'A test-results card with ticks and crosses.', sockets: 'A socket-pin reference sheet.', book: 'A small open valve-data booklet.' }),
     shapes: choice('What shapes are the tubes?', {
       mixed: 'An assortment: fat shouldered bottles, straight tubulars, little miniatures, the odd black metal one.',
       bottles: 'Big old shouldered "coke bottle" valves on brown bakelite bases.',
@@ -93,8 +100,14 @@ export default defineThing({
 
     const valve = (kind: number, state: State) => {
       const k = KINDS[kind], g = new THREE.Group();
+      const pinCount = a.pins === 'four' ? 4 : a.pins === 'miniature' ? 9 : 8;
+      const pins = new THREE.InstancedMesh(new THREE.CylinderGeometry(a.pins === 'four' ? 0.0014 : 0.0008, a.pins === 'four' ? 0.0014 : 0.0008, 0.007, 6), brass, pinCount);
+      const pinMatrix = new THREE.Matrix4();
+      for (let i = 0; i < pinCount; i++) { const t = i / pinCount * Math.PI * 2, r = Math.min(0.011, k.r * 0.7); pinMatrix.makeTranslation(Math.sin(t) * r, 0.0035, Math.cos(t) * r); pins.setMatrixAt(i, pinMatrix); }
+      g.add(pins);
+      if (a.pins === 'octal' || a.pins === 'loctal') { const key = new THREE.Mesh(new THREE.CylinderGeometry(0.0028, 0.0022, a.pins === 'loctal' ? 0.009 : 0.006, 8), bakelite); key.position.y = 0.0045; g.add(key); }
       const put = (geometry: THREE.BufferGeometry, material: THREE.Material, y: number) => {
-        const m = new THREE.Mesh(geometry, material); m.position.y = y; m.castShadow = true; g.add(m); return m;
+        const m = new THREE.Mesh(geometry, material); m.position.y = y + 0.007; m.castShadow = true; g.add(m); return m;
       };
       const lift = k.base ? 0.018 : 0.004;
       if (k.base) put(new THREE.CylinderGeometry(k.base, k.base, 0.02, 14), kind === 4 ? blackMetal : bakelite, 0.01);
@@ -110,7 +123,10 @@ export default defineThing({
       put(new THREE.LatheGeometry(shell, 16), material, lift);
       put(new THREE.CylinderGeometry(k.r * 0.5, k.r * 0.5, k.tall * 0.55, 10), plate, lift + k.tall * 0.4);
       put(new THREE.CylinderGeometry(0.003, 0.003, k.tall * 0.2, 6), state === 'on' ? heaterOn : plate, lift + k.tall * 0.74);
-      if (state !== 'cracked') put(new THREE.SphereGeometry(k.r * 0.42, 10, 6, 0, Math.PI * 2, 0, 1.1), silver, lift + k.tall - k.r * 0.55);
+      if (state !== 'cracked' && a.getter !== 'clear') {
+        if (a.getter === 'side') { const patch = put(new THREE.SphereGeometry(1, 10, 8), silver, lift + k.tall * 0.63); patch.scale.set(k.r * 0.55, k.tall * 0.17, 0.001); patch.position.z = k.r * 0.92; }
+        else put(new THREE.SphereGeometry(k.r * 0.42, 10, 6, 0, Math.PI * 2, 0, 1.1), a.getter === 'dark' ? blackMetal : silver, lift + k.tall - k.r * 0.55);
+      }
       if (kind === 2 || kind === 5) put(new THREE.CylinderGeometry(0.0045, 0.0045, 0.012, 8), brass, lift + k.tall + 0.004);
       return g;
     };
@@ -137,7 +153,15 @@ export default defineThing({
     }
     if (a.tray === 'wooden') s.ball([0.012, 0.012, 0.009], [0, wall / 2, TD / 2 + 0.006], brass, 12);
     if (a.tray === 'crate' || a.tray === 'wooden') s.label(a.tray === 'crate' ? 'VALVES N.O.S.' : 'TUBES', 0.09, 0.02, [a.tray === 'crate' ? -TW * 0.2 : TW * 0.25, wall * 0.55, TD / 2 + 0.0008], '#2a241c', '#eadfc0');
-    if (a.tray === 'tin') s.box([TW + 0.004, 0.004, TD + 0.004], [0, wall, 0], s.material('#c9b46a', { metalness: 0.7, roughness: 0.3 })).scale.set(1, 1, 1);
+    if (a.tray === 'tin') {
+      const lip = s.material('#c9b46a', { metalness: 0.7, roughness: 0.3 });
+      for (const z of [-TD / 2, TD / 2]) s.box([TW + 0.004, 0.004, 0.004], [0, wall, z], lip);
+      for (const x of [-TW / 2, TW / 2]) s.box([0.004, 0.004, TD + 0.004], [x, wall, 0], lip);
+    }
+    const liner = s.material(a.lining === 'felt' ? '#3e674f' : a.lining === 'tissue' ? '#e0d7c1' : '#c0a176', { roughness: 1 });
+    s.box([TW - 0.012, 0.001, TD - 0.012], [0, 0.0045, 0], liner);
+    if (a.lining === 'corrugated') for (let x = -TW / 2 + 0.012; x < TW / 2 - 0.01; x += 0.006) s.rod([x, 0.005, -TD / 2 + 0.008], [x, 0.005, TD / 2 - 0.008], 0.001, liner);
+    if (a.lining === 'tissue') for (let i = 0; i < 5; i++) s.box([TW * 0.7, 0.0007, TD * 0.26], [(random() - 0.5) * TW * 0.15, 0.005 + i * 0.0004, (i - 2) * TD * 0.13], liner).rotation.y = (i % 2 ? 1 : -1) * 0.08;
     const divided = a.packing !== 'loose' && a.packing !== 'upright';
     if (divided) {
       const card = s.material('#c2a06c', { roughness: 0.95 });
@@ -175,7 +199,20 @@ export default defineThing({
     const boxGeo = new THREE.BoxGeometry(size, boxTall, size);
     const box = (dead: boolean, at: P, turn: number, lying = false) => {
       const mat = dead ? cartons[2] : cartons[random() < 0.5 ? 0 : 1];
-      const m = new THREE.Mesh(boxGeo, [mat, mat, dead ? lidPaper : lidGood, lidPaper, mat, mat]);
+      const m = new THREE.Group();
+      if (a.cartons === 'open' || a.cartons === 'folded') {
+        for (const side of [-1, 1]) {
+          const xwall = new THREE.Mesh(new THREE.BoxGeometry(0.0007, boxTall, size), mat); xwall.position.x = side * size / 2; m.add(xwall);
+          const zwall = new THREE.Mesh(new THREE.BoxGeometry(size, boxTall, 0.0007), mat); zwall.position.z = side * size / 2; m.add(zwall);
+          const flap = new THREE.Mesh(new THREE.BoxGeometry(size, 0.0007, 0.012), lidPaper); flap.position.set(0, boxTall / 2 + (a.cartons === 'open' ? 0.006 : 0.0005), side * (size / 2 + (a.cartons === 'folded' ? 0.006 : 0))); flap.rotation.x = a.cartons === 'open' ? Math.PI / 2 : side * 0.05; m.add(flap);
+        }
+        const bottom = new THREE.Mesh(new THREE.BoxGeometry(size, 0.0007, size), lidPaper); bottom.position.y = -boxTall / 2; m.add(bottom);
+        const inner = new THREE.Mesh(new THREE.CylinderGeometry(size * 0.25, size * 0.25, boxTall * 0.7, 10), plate); inner.position.y = -boxTall * 0.1; m.add(inner);
+      } else {
+        m.add(new THREE.Mesh(boxGeo, [mat, mat, dead ? lidPaper : lidGood, lidPaper, mat, mat]));
+        if (a.cartons === 'banded') { for (const side of [-1, 1]) { const band = new THREE.Mesh(new THREE.BoxGeometry(size + 0.001, boxTall * 0.12, 0.0008), lidPaper); band.position.set(0, boxTall * 0.12, side * size / 2); m.add(band); } }
+      }
+      m.traverse(o => { o.castShadow = o.receiveShadow = true; });
       m.castShadow = m.receiveShadow = true;
       m.position.set(...at);
       if (lying) { m.rotation.order = 'YXZ'; m.rotation.set(Math.PI / 2, turn, 0); } else m.rotation.y = turn;
@@ -184,12 +221,12 @@ export default defineThing({
     };
 
     // ---- Fill the cells.
-    const fill = mix(0.55, 1, mood.density);
+    const fill = mix(0.2, 1, a.stock);
     const crackCell = a.cracked === 'tray' ? Math.floor(random() * cols) + (rows - 1) * cols : -1;
     let index = 0;
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++, index++) {
       const x = -TW / 2 + 0.006 + (c + 0.5) * pitch, z = -TD / 2 + 0.006 + (r + 0.5) * pitch;
-      const kind = pool[Math.floor(random() * pool.length)];
+      const kind = pool[a.order === 'rows' ? r % pool.length : a.order === 'columns' ? c % pool.length : a.order === 'alternating' ? (r + c) % pool.length : Math.floor(random() * pool.length)];
       const dead = random() < Math.pow(a.dead, 1.4) * 0.9;
       if (index !== crackCell && random() > fill) continue;
       const boxed = index !== crackCell && (a.packing === 'boxed' || (a.packing === 'half' && random() < 0.5));
@@ -275,6 +312,18 @@ export default defineThing({
       s.tube([[TW / 2 + 0.1, 0.03, -0.06], [TW / 2 + 0.11, 0.004, -0.1], [TW / 2 + 0.05, 0.004, -TD / 2 - 0.035], [TW / 2 - 0.05, 0.004, -TD / 2 - 0.03]], 0.0028, s.material('#2a2a2c', { roughness: 0.7 }));
     }
 
+    if (a.records !== 'none') {
+      const data = paint(256, 192, c => {
+        c.fillStyle = '#e1d7b9'; c.fillRect(0, 0, 256, 192); c.fillStyle = '#37433b'; c.textAlign = 'center'; c.font = 'bold 22px monospace'; c.fillText(a.records === 'sockets' ? 'SOCKET BASES' : a.records === 'book' ? 'VALVE DATA' : 'TEST RESULTS', 128, 32);
+        if (a.records === 'sockets') { for (let n = 0; n < 3; n++) { c.strokeStyle = '#43564e'; c.lineWidth = 2; c.beginPath(); c.arc(48 + n * 80, 105, 29, 0, Math.PI * 2); c.stroke(); for (let i = 0; i < 8; i++) { const t = i / 8 * Math.PI * 2; c.beginPath(); c.arc(48 + n * 80 + Math.sin(t) * 22, 105 + Math.cos(t) * 22, 3, 0, Math.PI * 2); c.fill(); } } }
+        else { c.font = '19px monospace'; ['6V6   82   PASS', '12AX7 74   PASS', 'EL84  21   FAIL', '6L6   91   PASS'].forEach((line, i) => c.fillText(line, 128, 72 + i * 31)); }
+      });
+      const h = a.records === 'book' ? 0.008 : 0.001;
+      const at: P = [-0.035, h / 2, -TD / 2 - 0.075];
+      s.box([0.16, h, 0.11], at, s.material('#a99770'));
+      const page = s.mesh(new THREE.PlaneGeometry(0.16, 0.11), new THREE.MeshStandardMaterial({ map: data, roughness: 1 }), [at[0], h + 0.0003, at[2]]); page.rotation.x = -Math.PI / 2;
+      if (a.records === 'book') s.rod([at[0], h + 0.0005, at[2] - 0.055], [at[0], h + 0.0005, at[2] + 0.055], 0.0008, bakelite);
+    }
     const energy = mood.energy, phase = random() * 10, base = pointer[0]?.rotation.y ?? 0;
     const live = a.tester === 'good' || a.tester === 'weak';
     return s.finish({

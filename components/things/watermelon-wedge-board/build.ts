@@ -26,6 +26,13 @@ function canvasTexture(width: number, height: number, paint: (ctx: CanvasRenderi
 
 export default defineThing({
   questions: {
+    size: choice('How large was the melon?',{small:'A small personal melon.',medium:'A medium picnic melon.',large:'A large family melon.',giant:'An oversized melon that fills the chopping board.'}),
+    pith: choice('How broad is the pale layer beneath the rind?',{thin:'A very thin pale rind layer.',regular:'A familiar pale band around the flesh.',broad:'A broad pale rind under the flesh.',thick:'A thick pale rind with a smaller juicy centre.'}),
+    seedForm: choice('What are the seeds like?',{plump:'Plump broad dark seeds.',slim:'Long narrow dark seeds.',pale:'Cream-coloured immature seeds.',mixed:'A mixture of dark and pale seeds.'}),
+    wedgeWidth: choice('How wide are the serving wedges?',{slim:'Thin delicate crescent wedges.',regular:'Even hand-sized wedges.',thick:'Thick generous wedges.',varied:'Uneven narrow and broad wedges from casual cutting.'}),
+    fleshMarks: choice('What texture is visible on the cut flesh?',{smooth:'Smooth wet freshly cut flesh.',grain:'Fine sugary flecks in the flesh.',radial:'Pale radial fibres run toward the rind.',knife:'Fine parallel knife strokes cross the wet surface.'}),
+    garnish: choice('What accompanies the cut fruit?',{lime:'Two small lime slices.',mint:'A little cluster of mint leaves.',chilli:'A tiny dish of red chilli salt.',napkin:'A folded cloth for wiping sticky hands.'}),
+    serving: choice('What is used to serve the melon?',{fork:'A small two-pronged fruit fork.',tongs:'A pair of narrow serving tongs.',scoop:'A round melon baller with a wooden handle.',picks:'Several short wooden fruit picks.'}),
     fruit: choice('What kind of melon is it?', FRUITS),
     cut: choice('How has it been cut?', {
       half: 'Half the melon stands at the back, cut face showing, with wedges fanned out in front.',
@@ -60,8 +67,8 @@ export default defineThing({
   build(a, context) {
     const s = new Sculpture(context);
     const { mood, random } = context;
-    const f = SPEC[a.fruit];
-    const R = f.r * mix(0.94, 1.06, random()), long = f.long;
+    const original=SPEC[a.fruit];const f={...original,seed:a.seedForm==='pale'?'#e8d69c':original.seed};
+    const R = f.r * {small:.78,medium:1,large:1.18,giant:1.36}[a.size] * mix(.97,1.03,random()), long = f.long;
     const hollow = a.fruit === 'cantaloupe' || a.fruit === 'honeydew';
 
     // The cut face: half an ellipse painted rind, pith, flesh and seeds.
@@ -69,19 +76,25 @@ export default defineThing({
       const disc = (radius: number, colour: string) => { ctx.fillStyle = colour; ctx.beginPath(); ctx.arc(0, 256, radius, 0, 7); ctx.fill(); };
       ctx.fillStyle = f.rind; ctx.fillRect(0, 0, 256, 512);
       disc(246, f.pith);
-      const flesh = ctx.createRadialGradient(0, 256, 30, 0, 256, 226);
+      const fleshRadius={thin:239,regular:228,broad:210,thick:190}[a.pith];
+      const flesh = ctx.createRadialGradient(0, 256, 30, 0, 256, fleshRadius);
       flesh.addColorStop(0, f.deep); flesh.addColorStop(0.75, f.flesh); flesh.addColorStop(1, new THREE.Color(f.flesh).lerp(new THREE.Color(f.pith), 0.45).getStyle());
-      ctx.fillStyle = flesh; ctx.beginPath(); ctx.arc(0, 256, 228, 0, 7); ctx.fill();
+      ctx.fillStyle = flesh; ctx.beginPath(); ctx.arc(0, 256, fleshRadius, 0, 7); ctx.fill();
+      ctx.save();ctx.beginPath();ctx.arc(0,256,fleshRadius,0,Math.PI*2);ctx.clip();
+      if(a.fleshMarks==='grain')for(let i=0;i<320;i++){ctx.fillStyle=i%3?'rgba(255,241,205,.18)':'rgba(130,48,22,.1)';ctx.fillRect(random()*256,random()*512,1.5+random()*2,1+random()*2);}
+      if(a.fleshMarks==='radial'){ctx.strokeStyle='rgba(255,243,216,.3)';ctx.lineWidth=2;for(let i=0;i<22;i++){const t=-1.5+i*3/21;ctx.beginPath();ctx.moveTo(Math.cos(t)*30,256+Math.sin(t)*30);ctx.quadraticCurveTo(Math.cos(t+.03)*110,256+Math.sin(t+.03)*110,Math.cos(t)*fleshRadius,256+Math.sin(t)*fleshRadius);ctx.stroke();}}
+      if(a.fleshMarks==='knife'){ctx.strokeStyle='rgba(255,237,211,.27)';ctx.lineWidth=1.5;for(let y=0;y<512;y+=15){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(256,y+54);ctx.stroke();}}
+      ctx.restore();
       if (hollow) {
         ctx.save(); ctx.translate(0, 256); ctx.scale(0.42, 1);
         ctx.fillStyle = new THREE.Color(f.deep).offsetHSL(0, 0, -0.1).getStyle(); ctx.beginPath(); ctx.arc(0, 0, 150, 0, 7); ctx.fill(); ctx.restore();
-        for (let i = 0; i < 46; i++) { ctx.fillStyle = f.seed; ctx.beginPath(); ctx.ellipse(random() * 52, 256 + (random() - 0.5) * 250, 7, 3.5, random() * 3, 0, 7); ctx.fill(); }
+        for (let i = 0; i < 46; i++) { ctx.fillStyle = a.seedForm==='mixed'&&i%2?'#735334':f.seed; ctx.beginPath(); ctx.ellipse(random() * 52, 256 + (random() - 0.5) * 250, 7, 3.5, random() * 3, 0, 7); ctx.fill(); }
       } else {
         for (const [ring, count] of [[150, 13], [100, 8]] as const)
           for (let i = 0; i < count; i++) {
             const angle = -1.35 + (i + random() * 0.6) * (2.7 / count), r = ring + (random() - 0.5) * 34;
             ctx.save(); ctx.translate(Math.cos(angle) * r, 256 + Math.sin(angle) * r); ctx.rotate(angle);
-            ctx.fillStyle = f.seed; ctx.beginPath(); ctx.ellipse(0, 0, 11, 5.5, 0, 0, 7); ctx.fill(); ctx.restore();
+            ctx.fillStyle = a.seedForm==='mixed'&&i%2?'#e8d69c':f.seed; ctx.beginPath(); ctx.ellipse(0, 0, a.seedForm==='slim'?13:11, a.seedForm==='slim'?3:5.5, 0, 0, 7); ctx.fill(); ctx.restore();
           }
       }
     });
@@ -154,6 +167,7 @@ export default defineThing({
       holder.add(tip);
       holder.position.set(x, 0, z);
       holder.rotation.y = turn;
+      holder.updateMatrixWorld(true);holder.position.y-=new THREE.Box3().setFromObject(holder,true).min.y;
       s.root.add(holder);
       return holder;
     };
@@ -168,18 +182,20 @@ export default defineThing({
       outer.rotation.set(lean, turn, 0);
       outer.add(mid);
       outer.position.set(x, R, z);
+      outer.updateMatrixWorld(true);outer.position.y-=new THREE.Box3().setFromObject(outer,true).min.y;
       s.root.add(outer);
       return outer;
     };
 
-    const wedgeArc = 0.52;
+    const wedgeArc={slim:.32,regular:.52,thick:.76,varied:.38+random()*.36}[a.wedgeWidth];
+    const wedgePitch=Math.max(.66,Math.sin(wedgeArc)*1.45);
     const spots: THREE.Vector3[] = [];
     let extent = { x: 0.3, z: 0.25 }, knifeTop: THREE.Vector3 | null = null;
     const row = (count: number, cx: number, cz: number) => {
       for (let i = 0; i < count; i++) {
         const order = count - 1 - i;
         const eaten = clamp01(a.eaten * 3 * Math.max(1, count / 3) - order * 1.0) ** 1.5;
-        const x = cx + (i - (count - 1) / 2) * R * 0.66 + R * 0.5;
+        const x = cx + (i - (count - 1) / 2) * R * wedgePitch + R * 0.5;
         const gnawed = eaten > 0.8;
         laid(wedgeArc, eaten, x + (gnawed ? (random() - 0.5) * 0.04 : 0), cz + (random() - 0.5) * 0.02 + (gnawed ? (random() - 0.5) * 0.06 : 0), (random() - 0.5) * (gnawed ? 1.2 : 0.16), i === 0 ? 0 : 0.2);
         spots.push(new THREE.Vector3(x - R * 0.45, R * 0.3, cz + (random() - 0.5) * R));
@@ -200,7 +216,7 @@ export default defineThing({
     } else if (a.cut === 'wedges') {
       const count = 4 + Math.floor(mood.density * 3.99);
       row(count, 0, 0);
-      extent = { x: R * (count * 0.66 + 1.4), z: R * 3.4 };
+      extent = { x: R * (count * wedgePitch + 1.4), z: R * 3.4 };
     } else {
       laid(Math.PI / 2, 0, -R * 0.3, -R * 0.9, Math.PI / 2 + (random() - 0.5) * 0.4);
       laid(Math.PI / 2, 0, R * 1.5, -R * 0.2, -0.35 + (random() - 0.5) * 0.4);
@@ -225,8 +241,7 @@ export default defineThing({
     else if (a.board === 'paddle') {
       const paint = wood('#b98552');
       s.box([half.x * 2, 0.018, half.z * 2], [cx, -0.009, cz], paint);
-      s.box([0.12, 0.018, 0.045], [cx + half.x + 0.06, -0.009, cz], paint);
-      s.cylinder(0.011, 0.011, 0.019, [cx + half.x + 0.09, -0.009, cz], s.material('#2a2018'), 12);
+      const handleShape=new THREE.Shape();handleShape.moveTo(0,-.0225);handleShape.lineTo(.12,-.0225);handleShape.lineTo(.12,.0225);handleShape.lineTo(0,.0225);handleShape.closePath();const hole=new THREE.Path();hole.absarc(.09,0,.011,0,Math.PI*2,true);handleShape.holes.push(hole);const handleGeometry=new THREE.ExtrudeGeometry(handleShape,{depth:.018,bevelEnabled:false,curveSegments:20});handleGeometry.rotateX(-Math.PI/2);s.mesh(handleGeometry,paint,[cx+half.x,-.018,cz]);
     } else if (a.board === 'slab') s.box([half.x * 2, 0.045, half.z * 2], [cx, -0.0225, cz], wood('#5a3a26'));
     else if (a.board === 'enamel') {
       s.box([half.x * 2 + 0.03, 0.01, half.z * 2 + 0.03], [cx, -0.005, cz], s.material('#f4f2ea', { roughness: 0.25 }));
@@ -267,7 +282,7 @@ export default defineThing({
         const dummy = new THREE.Object3D();
         seeds.forEach((seed, i) => {
           dummy.position.set(seed.x, Math.abs(seed.z) > half.z || Math.abs(seed.x - cx) > half.x ? (a.board === 'slab' ? -0.043 : a.board === 'newspaper' ? -0.003 : -0.016) : 0.002, cz + seed.z);
-          dummy.rotation.y = seed.turn; dummy.scale.set(0.0062, 0.0022, 0.0038); dummy.updateMatrix();
+          dummy.rotation.y = seed.turn; dummy.scale.set(a.seedForm==='slim'?.007:.0062,.0022,a.seedForm==='slim'?.0025:.0038); dummy.updateMatrix();
           mesh.setMatrixAt(i, dummy.matrix);
         });
         mesh.castShadow = true;
@@ -303,6 +318,22 @@ export default defineThing({
       s.root.add(knife);
     }
 
+    // Keep the garnish and serving tool on a clear side strip of the board.
+    const garnish=new Sculpture(context),gx=cx-half.x+.045,gz=cz+half.z-.055,steel=garnish.material('#ccd2d0',{metalness:.85,roughness:.25});
+    if(a.garnish==='lime')for(let i=0;i<2;i++){
+      const x=(i-.5)*.042;garnish.cylinder(.021,.021,.005,[x,.0025,0],garnish.material('#69923e'),24);garnish.cylinder(.018,.018,.0007,[x,.0055,0],garnish.material('#d4df91'),24);
+      for(let j=0;j<8;j++){const t=j*Math.PI/4;garnish.rod([x,.006,0],[x+Math.cos(t)*.017,.006,Math.sin(t)*.017],.00055,garnish.material('#eef1c4'));}
+    }
+    if(a.garnish==='mint')for(let i=0;i<6;i++){const t=i*Math.PI/3;const leaf=garnish.ball([.008,.0012,.016],[Math.sin(t)*.013,.002+Math.floor(i/3)*.002,Math.cos(t)*.013],garnish.material(i%2?'#4b7f3e':'#648e48'),12);leaf.rotation.y=t;garnish.rod([0,.003,0],[Math.sin(t)*.026,.003,Math.cos(t)*.026],.0005,garnish.material('#9eb678'));}
+    if(a.garnish==='chilli'){garnish.lathe([[0,0],[.019,0],[.025,.009],[.026,.016],[.023,.016],[.017,.004],[0,.004]],garnish.material('#ede5cf',{roughness:.35,side:THREE.DoubleSide}));garnish.cylinder(.021,.021,.001,[0,.009,0],garnish.material('#ab5131'),24);}
+    if(a.garnish==='napkin'){garnish.box([.068,.003,.046],[0,.0015,0],garnish.material('#d9e6dc'));garnish.box([.033,.002,.046],[-.016,.004,0],garnish.material('#eef0dc'));}
+    garnish.root.position.set(gx,0,gz);garnish.root.rotation.y=-.18;s.root.add(garnish.root);
+    const tool=new Sculpture(context),handle=tool.material('#ab784b');
+    if(a.serving==='fork'){tool.rod([0,.003,-.045],[0,.003,.035],.002,steel);tool.rod([-.007,.003,.032],[.007,.003,.032],.002,steel);for(const x of [-.007,.007])tool.rod([x,.003,.032],[x,.003,.054],.0012,steel);}
+    if(a.serving==='tongs')tool.tube([[-.01,.003,.052],[-.008,.003,-.043],[0,.003,-.052],[.008,.003,-.043],[.01,.003,.052]],.0025,steel);
+    if(a.serving==='scoop'){tool.rod([0,.005,-.056],[0,.005,.023],.004,handle);const cup=tool.lathe([[0,0],[.004,0],[.011,.004],[.015,.011],[.013,.011],[.009,.005],[0,.002]],steel,[0,.001,.035]);cup.rotation.x=.4;}
+    if(a.serving==='picks')for(let i=0;i<6;i++){const x=(i-2.5)*.007;tool.rod([x,.001,-.035],[x+.007,.001,.035],.0008,handle);}
+    tool.root.position.set(cx+half.x+.035,-(a.board==='slab'?.045:a.board==='newspaper'?.004:a.board==='enamel'?.01:.018),cz);tool.root.rotation.y=.05;tool.root.updateMatrixWorld(true);tool.root.position.y+=-(a.board==='slab'?.045:a.board==='newspaper'?.004:a.board==='enamel'?.01:.018)-new THREE.Box3().setFromObject(tool.root,true).min.y;s.root.add(tool.root);
     // Visitors.
     const fliers: { node: THREE.Object3D; home: THREE.Vector3; phase: number }[] = [];
     if (a.visitors !== 'nothing') {

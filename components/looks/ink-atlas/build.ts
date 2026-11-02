@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type PaletteRole, choice, clamp01, defineLook, mix, rekey, score, seeded } from '@conjure/kit';
 
 type RGB = readonly [number, number, number];
 const PALETTES: Record<string, { ink: RGB; paper: RGB; wash: RGB; accent: RGB }> = {
@@ -9,6 +9,8 @@ const PALETTES: Record<string, { ink: RGB; paper: RGB; wash: RGB; accent: RGB }>
   graphite: { ink: [43, 45, 45], paper: [237, 233, 219], wash: [159, 163, 147], accent: [159, 101, 79] },
   plum: { ink: [62, 39, 68], paper: [242, 232, 222], wash: [172, 135, 166], accent: [83, 135, 133] },
 };
+/** The pen ink and its wash carry the picture, the accent answers it, the paper takes the ground's tint. */
+const ROLES: Record<string, PaletteRole> = { ink: 'ink', wash: 'ink', accent: 'second', paper: 'ground' };
 const css = (color: RGB, alpha: number) => `rgba(${color.join(',')},${alpha})`;
 
 export default defineLook({
@@ -16,7 +18,7 @@ export default defineLook({
     plate: choice('What kind of atlas plate describes this scene?', {
       survey: 'A topographic survey: crisp nesting contour bands and restrained colour washes.',
       engraving: 'An expedition engraving: fine flowing strokes model the shaded forms, with sparse contours.',
-      currents: 'A chart of currents: long wandering streamlines and blue-green pigment pools.',
+      currents: 'A chart of currents: long wandering streamlines and pooled washes of pigment.',
       fieldbook: 'A hand-painted field study: luminous mineral washes with only a few delicate pen marks.',
     }),
     measure: choice('What imaginary quantity do the contour lines measure?', {
@@ -24,13 +26,13 @@ export default defineLook({
       radiance: 'The fall of light: shadows become valleys and highlights become summits.',
       substance: 'The colour and density of material: ink maps the interior character of each object.',
     }),
-    palette: choice('Which mineral inks belong in this atlas?', {
-      pelagic: 'Deep ocean ink, pale turquoise wash and rust-red notes on warm ivory.',
-      lichen: 'Moss ink and lichen green wash, with a little burnt sienna.',
-      cinnabar: 'Wine-red ink and cinnabar wash, with a cool verdigris accent.',
-      ultramarine: 'Ultramarine ink and faded blue wash, with small ochre accents.',
-      graphite: 'Soft graphite and grey-green wash on old bone-coloured paper.',
-      plum: 'Aubergine ink and muted violet wash, with a blue-green counterpoint.',
+    palette: choice('What character have the mineral inks in this atlas? Their colours come from the picture\u2019s palette.', {
+      pelagic: 'A deep, cool ink and a pale clear wash, with small warm notes on warm ivory.',
+      lichen: 'A dark organic ink and a soft earthy wash, with a little burnt counter-note.',
+      cinnabar: 'A rich wine-dark ink and a strong warm wash, with a cool contrasting accent.',
+      ultramarine: 'A saturated deep ink and a faded wash, with small bright accents.',
+      graphite: 'A soft, nearly colourless ink and a muted wash on old bone-coloured paper.',
+      plum: 'A dusky ink and a muted smoky wash, with a quiet answering counterpoint.',
     }),
     interval: choice('How closely spaced are the survey intervals?', {
       close: 'Many fine close contours, an intricate detailed survey.',
@@ -65,7 +67,7 @@ export default defineLook({
     };
     await pause();
     const { size, color, depth, normal, identity } = capture, count = size * size;
-    const { ink, paper, wash, accent } = PALETTES[a.palette];
+    const { ink, paper, wash, accent } = rekey(PALETTES[a.palette], context.palette, ROLES);
     const random = seeded(context.seed ^ 0x6829fbad), phase = random() * 6.283;
     const rawField = new Float32Array(count), field = new Float32Array(count), horizontal = new Float32Array(count);
     const luminance = new Float32Array(count), z = new Float32Array(count);

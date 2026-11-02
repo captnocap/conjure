@@ -31,7 +31,7 @@ function hexagon(ctx: Ctx, x: number, y: number, s: number) {
 }
 const EQUATIONS = ['2H₂ + O₂ → 2H₂O', 'PV = nRT', 'CuSO₄·5H₂O', 'ΔG = ΔH − TΔS', 'pH = −log[H⁺]', 'C₆H₁₂O₆', 'E = mc²', 'NaCl + AgNO₃ →', 'k = Ae^(−Ea/RT)', 'n = m / M'];
 
-function paintPage(side: 0 | 1, content: string, last: string, stains: string, paper: string, ink: string, wear: number, r: Rnd, torn: boolean) {
+function paintPage(side: 0 | 1, content: string, last: string, stains: string, paper: string, ink: string, wear: number, r: Rnd, torn: boolean, ruling: string, annotations: string) {
   const canvas = document.createElement('canvas');
   canvas.width = PW; canvas.height = PH;
   const ctx = canvas.getContext('2d')!;
@@ -44,9 +44,16 @@ function paintPage(side: 0 | 1, content: string, last: string, stains: string, p
   ctx.fillStyle = shade; ctx.fillRect(0, 0, PW, PH);
   // Feint rules and a margin.
   ctx.strokeStyle = 'rgba(90,130,170,0.35)'; ctx.lineWidth = 1;
-  for (let y = 60; y < PH - 10; y += 26) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(PW, y); ctx.stroke(); }
-  ctx.strokeStyle = 'rgba(200,70,70,0.4)';
-  ctx.beginPath(); ctx.moveTo(side === 0 ? 46 : PW - 46, 0); ctx.lineTo(side === 0 ? 46 : PW - 46, PH); ctx.stroke();
+  if (ruling === 'lined' || ruling === 'grid') for (let y = 60; y < PH - 10; y += ruling === 'grid' ? 20 : 26) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(PW, y); ctx.stroke(); }
+  if (ruling === 'grid') for (let x = 4; x < PW; x += 20) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, PH); ctx.stroke(); }
+  if (ruling === 'dots') {
+    ctx.fillStyle = 'rgba(90,130,170,0.55)';
+    for (let y = 20; y < PH; y += 20) for (let x = 14; x < PW; x += 20) { ctx.beginPath(); ctx.arc(x, y, 1.4, 0, Math.PI * 2); ctx.fill(); }
+  }
+  if (ruling !== 'plain') {
+    ctx.strokeStyle = 'rgba(200,70,70,0.4)';
+    ctx.beginPath(); ctx.moveTo(side === 0 ? 46 : PW - 46, 0); ctx.lineTo(side === 0 ? 46 : PW - 46, PH); ctx.stroke();
+  }
 
   ctx.strokeStyle = ink; ctx.fillStyle = ink; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
   const L = 58, W = PW - 100;
@@ -116,6 +123,23 @@ function paintPage(side: 0 | 1, content: string, last: string, stains: string, p
     ctx.font = 'bold 34px Georgia, serif'; ctx.fillText('BORED', L + 40, PH - 40);
   }
 
+  if (annotations !== 'none') {
+    ctx.save(); ctx.strokeStyle = ctx.fillStyle = '#46734b'; ctx.lineWidth = 2;
+    if (annotations === 'arrows') for (let i = 0; i < 3; i++) {
+      const y = 125 + i * 103;
+      ctx.beginPath(); ctx.moveTo(20, y - 18); ctx.quadraticCurveTo(56, y - 28, 90, y); ctx.lineTo(77, y - 1); ctx.moveTo(90, y); ctx.lineTo(86, y - 13); ctx.stroke();
+    }
+    if (annotations === 'marginal') for (let i = 0; i < 4; i++) {
+      ctx.save(); ctx.translate(PW - 24, 90 + i * 93); ctx.rotate(-Math.PI / 2); scrawl(ctx, 0, 0, 62, r, 3); ctx.restore();
+    }
+    if (annotations === 'revision') {
+      ctx.font = 'bold 19px Georgia, serif'; ctx.fillText('REPEAT  /  CHECK', 55, 36);
+      ctx.lineWidth = 3; ctx.strokeRect(43, 12, 287, 35);
+      for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(PW - 30, 170 + i * 87, 10, 0, Math.PI * 2); ctx.stroke(); }
+    }
+    ctx.restore();
+  }
+
   // The last thing written, in red.
   if (side === 1 && last !== 'nothing') {
     ctx.strokeStyle = ctx.fillStyle = '#b3201c'; ctx.lineWidth = 5;
@@ -177,6 +201,42 @@ function marbled(r: Rnd) {
 
 export default defineThing({
   questions: {
+    ruling: choice('What printed guides are on the pages?', {
+      lined: 'Faint horizontal lines with a red margin.',
+      grid: 'Fine square graph ruling for figures and measurements.',
+      dots: 'An understated regular dot grid.',
+      plain: 'Unruled paper for freehand notes and drawings.',
+    }),
+    annotations: choice('What later annotations accompany the writing?', {
+      none: 'The original writing stands alone.',
+      arrows: 'Green curved arrows point to passages worth revisiting.',
+      marginal: 'Small sideways notes crowd the outside margins.',
+      revision: 'A green REPEAT / CHECK heading and circled items mark a revision.',
+    }),
+    insert: choice('What loose insert is kept with the notebook?', {
+      none: 'No loose insert.',
+      graph: 'A small graph slip peeks over the top edge.',
+      blotter: 'A pink blotting sheet protrudes from the lower pages.',
+      photograph: 'A small monochrome specimen photograph is tucked above the pages.',
+    }),
+    markers: choice('How are useful pages marked?', {
+      none: 'No added page markers.',
+      tabs: 'Three coloured index tabs project from the fore-edge.',
+      clips: 'Small brass paper clips grip two page edges.',
+      thread: 'A long blue thread trails out from a marked page.',
+    }),
+    hold: choice('What keeps the open notebook in place?', {
+      none: 'Nothing holds down the open pages.',
+      weight: 'A narrow brass page weight rests across the lower margin.',
+      clip: 'A black binder clip grips the far outer corner.',
+      band: 'A green elastic band crosses the low margin of the pages.',
+    }),
+    station: choice('What supports the notebook?', {
+      bare: 'The book rests directly on the work surface.',
+      board: 'A small dark writing board lies beneath it.',
+      folder: 'An open buff document folder holds the book.',
+      pad: 'A dark green desk blotter supports the notebook.',
+    }),
     content: choice('What fills the open pages?', {
       formulae: 'Chemical formulae and equations, benzene rings, an arrow to a question mark.',
       sketches: 'A careful labelled drawing of apparatus: a flask on a tripod over a flame.',
@@ -250,7 +310,7 @@ export default defineThing({
       geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
       geometry.setIndex(index);
       geometry.computeVertexNormals();
-      s.mesh(geometry, new THREE.MeshStandardMaterial({ map: paintPage(side, a.content, a.last, a.stains, paper, ink, mood.wear, random, a.torn), roughness: 0.92, side: THREE.DoubleSide }));
+      s.mesh(geometry, new THREE.MeshStandardMaterial({ map: paintPage(side, a.content, a.last, a.stains, paper, ink, mood.wear, random, a.torn, a.ruling, a.annotations), roughness: 0.92, side: THREE.DoubleSide }));
       // Fore-edge of the block.
       s.box([0.002, T * 0.7, d - 0.001], [sign * (w - 0.001), coverT + T * 0.35, 0], edge);
     }
@@ -332,6 +392,41 @@ export default defineThing({
     }
     if (a.stains === 'burns') for (let i = 0; i < 4; i++) s.cylinder(0.006 + random() * 0.006, 0.006, 0.0008, [(random() - 0.5) * 0.4, 0.0004, d / 2 + 0.015 + random() * 0.03], s.material('#3a2a14', { roughness: 1 }), 10);
     if (a.stains === 'scorched') for (let i = 0; i < 12; i++) s.box([0.004 + random() * 0.008, 0.0008, 0.004 + random() * 0.006], [(random() - 0.5) * 0.36, 0.0006, d / 2 + 0.008 + random() * 0.03], s.material('#141210', { roughness: 1 })).rotation.y = random() * 3;
+    const brass = s.material('#bd9b53', { metalness: 0.75, roughness: 0.33 });
+    if (a.insert !== 'none') {
+      const insert = s.box([0.09, 0.0008, 0.09], [0.06, coverT + 0.002, -d / 2 - 0.016], s.material(a.insert === 'blotter' ? '#cfa6ab' : '#e8e1ca'));
+      if (a.insert === 'graph') {
+        for (let i = 0; i < 5; i++) {
+          s.box([0.075, 0.0003, 0.0004], [0.06, insert.position.y + 0.0005, -d / 2 - 0.055 + i * 0.009], s.material('#7b9a9d'));
+          s.box([0.0004, 0.0003, 0.04], [0.029 + i * 0.015, insert.position.y + 0.0005, -d / 2 - 0.035], s.material('#7b9a9d'));
+        }
+      } else if (a.insert === 'photograph') {
+        s.box([0.075, 0.0004, 0.043], [0.06, insert.position.y + 0.0006, -d / 2 - 0.035], s.material('#4c5250'));
+        for (let i = 0; i < 5; i++) s.ball([0.006, 0.0004, 0.011], [0.035 + i * 0.012, insert.position.y + 0.001, -d / 2 - 0.036], s.material(i % 2 ? '#9baca0' : '#c4cbc0'), 10);
+      }
+    }
+    if (a.markers === 'tabs') for (let i = 0; i < 3; i++) s.box([0.02, 0.0007, 0.023], [w + 0.005, coverT + 0.004 + i * 0.002, -0.06 + i * 0.05], s.material(['#a75542', '#d3b54c', '#5b918d'][i]));
+    if (a.markers === 'clips') for (const z of [-0.06, 0.04]) s.tube([[w - 0.025, height(0.85) + 0.002, z], [w + 0.006, height(1) + 0.002, z], [w + 0.009, height(1) + 0.002, z + 0.008], [w - 0.022, height(0.85) + 0.002, z + 0.008], [w - 0.022, height(0.85) + 0.002, z + 0.004], [w + 0.003, height(1) + 0.002, z + 0.004]], 0.0007, brass);
+    if (a.markers === 'thread') s.tube([[-0.11, coverT + 0.003, 0], [-w - 0.01, coverT + 0.003, 0.004], [-w - 0.035, 0.001, 0.055], [-w - 0.01, 0.001, 0.11]], 0.001, s.material('#3b7185'));
+    if (a.hold === 'weight') s.box([0.21, 0.004, 0.012], [0, height(0.7) + 0.002, 0.085], brass);
+    if (a.hold === 'clip') {
+      s.box([0.024, 0.018, 0.017], [w - 0.005, 0.012, -0.074], s.material('#30383c'));
+      for (const z of [-0.08, -0.067]) s.tube([[w - 0.013, 0.019, z], [w - 0.013, 0.039, z], [w + 0.005, 0.039, z], [w + 0.005, 0.019, z]], 0.0008, brass);
+    }
+    if (a.hold === 'band') {
+      const band = s.material('#56806b');
+      s.box([w * 2 + 0.012, 0.0008, 0.007], [0, height(0.7) + 0.001, 0.08], band);
+      for (const side of [-1, 1]) s.box([0.001, 0.018, 0.007], [side * (w + 0.006), 0.009, 0.08], band);
+    }
+    if (a.station !== 'bare') {
+      const supportT = a.station === 'board' ? 0.006 : a.station === 'pad' ? 0.003 : 0.0015;
+      // Raise the whole assembly with the supporting board, including loose paper and tools.
+      const assembly = new THREE.Group();
+      for (const child of [...s.root.children]) assembly.add(child);
+      assembly.position.y = supportT; s.root.add(assembly);
+      s.box([0.48, supportT, 0.38], [0, supportT / 2, 0.005], s.material(a.station === 'board' ? '#66513b' : a.station === 'pad' ? '#355f54' : '#c8b486'));
+      if (a.station === 'folder') s.box([0.08, 0.001, 0.022], [-0.13, 0.0005, -0.192], s.material('#c8b486'));
+    }
     return s.finish();
   },
 });

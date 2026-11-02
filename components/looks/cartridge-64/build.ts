@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score } from '@conjure/kit';
+import { choice, clamp01, defineLook, mix, rekey, rekeyOne, score } from '@conjure/kit';
 
 type RGB = readonly [number, number, number];
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
@@ -6,6 +6,9 @@ const FOG: Record<string, RGB> = {
   sky: [159, 199, 226], cream: [229, 218, 176], lavender: [174, 161, 204],
   sea: [115, 180, 170], silver: [194, 203, 210], midnight: [31, 42, 76],
 };
+/** Under the idea's palette the fog takes its ground (keeping its depth; neutral silver stays) and the life gems its ink. */
+const GEM: RGB = [232, 71, 85], GEM_GLINT: RGB = [255, 194, 162];
+const css = (c: RGB) => `rgb(${c.map(Math.round).join(',')})`;
 const smooth = (lo: number, hi: number, value: number) => {
   const t = clamp01((value - lo) / (hi - lo));
   return t * t * (3 - 2 * t);
@@ -40,13 +43,13 @@ export default defineLook({
       faceted: 'Stepped light on sculpted facets, emphasizing the angular construction.',
       ambient: 'Simple bright ambient lighting, as though soft shadows were painted into the textures.',
     }),
-    fog: choice('Which colour fills the distant draw limit?', {
-      sky: 'Clear blue-sky haze, airy and outdoors.',
-      cream: 'Warm cream haze, sandy and sunlit.',
-      lavender: 'Pale lavender mist, enchanted and slightly unreal.',
-      sea: 'Blue-green haze, like a lagoon or submerged temple.',
+    fog: choice('What kind of haze fills the distant draw limit? Its colour comes from the picture\u2019s palette.', {
+      sky: 'A clear light airy haze, bright and outdoors.',
+      cream: 'A pale warm haze, soft, dusty and sunlit.',
+      lavender: 'A soft mid-pale mist, enchanted and slightly unreal.',
+      sea: 'A deeper coloured haze, rich and heavy, like a lagoon or submerged temple.',
       silver: 'Neutral silver fog, cool and overcast.',
-      midnight: 'Deep midnight-blue fog, suitable for a night stage.',
+      midnight: 'Deep, dark fog, suitable for a night stage.',
     }),
     haze: score('How much does distance disappear into the console fog?', ['No distance fog', 'A little at the far edge', 'Soft distant haze', 'Noticeably short draw distance', 'A thick atmospheric draw limit']),
     dither: choice('How are the five-bit colour channels rounded?', {
@@ -98,7 +101,7 @@ export default defineLook({
       }
     }
     const depthRange = Math.max(0.001, far - near);
-    const fog = FOG[a.fog];
+    const fog = a.fog === 'silver' ? FOG.silver : rekeyOne(FOG[a.fog], context.palette, 'ground');
     const saturation = { adventure: 1.28, storybook: 1.05, racer: 1.18, dream: 1.02, stealth: 0.75 }[a.direction];
     const exposure = { adventure: 1.045, storybook: 1.035, racer: 1, dream: 1.045, stealth: 0.84 }[a.direction];
     const tint: RGB = a.direction === 'storybook' ? [4, 1, -3] : a.direction === 'dream' ? [3, -2, 5] : a.direction === 'stealth' ? [-3, 0, 3] : [0, 0, 0];
@@ -179,11 +182,12 @@ export default defineLook({
       const unit = size / 180;
       if (a.hud === 'adventure') {
         const top = bar + unit * 5;
+        const gems = rekey({ gem: GEM, glint: GEM_GLINT }, context.palette, { gem: 'ink', glint: 'ink' });
         for (let gem = 0; gem < 3; gem++) {
           const left = unit * (5 + gem * 9);
           pen.fillStyle = 'rgba(14,25,48,0.76)'; pen.fillRect(left + unit, top + unit, unit * 6, unit * 6);
-          pen.fillStyle = '#e84755'; pen.beginPath(); pen.moveTo(left + unit * 3, top); pen.lineTo(left + unit * 6, top + unit * 3); pen.lineTo(left + unit * 3, top + unit * 6); pen.lineTo(left, top + unit * 3); pen.closePath(); pen.fill();
-          pen.fillStyle = '#ffc2a2'; pen.fillRect(left + unit * 2, top + unit, unit * 2, unit);
+          pen.fillStyle = css(gems.gem); pen.beginPath(); pen.moveTo(left + unit * 3, top); pen.lineTo(left + unit * 6, top + unit * 3); pen.lineTo(left + unit * 3, top + unit * 6); pen.lineTo(left, top + unit * 3); pen.closePath(); pen.fill();
+          pen.fillStyle = css(gems.glint); pen.fillRect(left + unit * 2, top + unit, unit * 2, unit);
         }
       } else {
         pen.strokeStyle = 'rgba(247,242,206,0.82)'; pen.lineWidth = Math.max(1, unit * 0.6);

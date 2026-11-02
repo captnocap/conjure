@@ -1,0 +1,30 @@
+import * as THREE from 'three';
+import { Sculpture, choice, score, noul, diorama, defineThing, defineWorld, figure } from '@conjure/kit';
+export default defineThing({
+  questions: {
+    rack: choice("How is the rack arranged?", {"bays": "Four vertical sorting bays.", "shelves": "Three wide horizontal shelves.", "afan": "An angled fan of upright dividing bars.", "steps": "Three ascending open storage steps."}),
+    frame: choice("What is the rack made of?", {"wood": "Heavy square timber framing.", "iron": "A slender iron angle frame.", "mixed": "Wood shelves in an iron frame.", "stone": "Low stone dividing piers with timber shelves."}),
+    tiles: choice("What tiles are being sorted?", {"square": "Rectangular roofing slates.", "point": "Pointed decorative slates.", "clipped": "Tiles with clipped lower corners.", "mixed": "Mixed rectangular and pointed tiles."}),
+    grading: choice("How are the sizes distributed?", {"ascending": "The tiles grow taller from left to right.", "descending": "The tallest tiles are at the left.", "equal": "All bays hold tiles of one size.", "pairs": "Alternating bays carry two standard sizes."}),
+    load: choice("How full is the rack?", {"full": "Every bay has a dense stack.", "half": "Each bay holds a short stack.", "empty": "One bay is completely empty.", "single": "Only one bay remains loaded."}),
+    orientation: choice("How do tiles sit in the rack?", {"flat": "Tiles lie in horizontal layers.", "edge": "Tiles stand upright on their lower edges.", "lean": "Upright tiles lean against retaining bars.", "offset": "Horizontal layers are stepped forward."}),
+    retainer: choice("What holds the stacks in place?", {"lip": "A raised front retaining lip.", "bars": "A pair of front cross bars.", "strap": "A flat retaining strap across each stack.", "none": "Open access to the tile edges."}),
+    labels: choice("What marks the grades?", {"plates": "Small metal plates on the bays.", "chalk": "Short pale tally marks on a front rail.", "samples": "A tiny tile-shaped marker for each grade.", "blank": "Plain unmarked bays."}),
+    base: choice("What supports the rack?", {"feet": "Four stout corner feet.", "skids": "Two long timber skids.", "slab": "A low stone footing slab.", "rails": "Two shallow iron base rails."}),
+    state: choice("What is being moved?", {"bundle": "A strapped slate bundle waits in front.", "loose": "Three loose tiles lie beside the rack.", "reject": "Two broken rejects lie apart.", "clear": "The loading area is clear."}),
+    capacity: score("How much slate can the rack hold?", ["Small sorting rack", "Workshop grading rack", "Large shipping rack"])
+  },
+  build(a,context){
+ const s=new Sculpture(context),wood=s.material('#9a805c'),light=s.material('#cab999'),iron=s.material('#586965',{metalness:.4}),dark=s.material('#384b47'),slate=s.material('#647a7b'),edge=s.material('#a0aaa0'),rope=s.material('#b5a276');
+ const leaf=(w:number,d:number,t:number,x:number,y:number,z:number,form='square',mat=slate)=>{const sh=new THREE.Shape();sh.moveTo(-w/2,-d/2);sh.lineTo(w/2,-d/2);if(form==='point'){sh.lineTo(w/2,d*.2);sh.lineTo(0,d/2);sh.lineTo(-w/2,d*.2);}else if(form==='clipped'){sh.lineTo(w/2,d*.33);sh.lineTo(w*.3,d/2);sh.lineTo(-w*.3,d/2);sh.lineTo(-w/2,d*.33);}else if(form==='rough'){sh.lineTo(w*.46,d*.15);sh.lineTo(w*.38,d*.47);sh.lineTo(-w*.3,d*.5);sh.lineTo(-w*.52,d*.22);}else{sh.lineTo(w/2,d/2);sh.lineTo(-w/2,d/2);}sh.closePath();const m=s.mesh(new THREE.ExtrudeGeometry(sh,{depth:t,bevelEnabled:false}),mat,[x,y,z]);m.rotation.x=-Math.PI/2;return m;};
+
+ const W=1.1+a.capacity*.65,D=.65,H=1.1,B=a.base==='slab'?.06:.07,mat=a.frame==='iron'||a.frame==='mixed'?iron:a.frame==='stone'?edge:wood;if(a.base==='slab')s.box([W+.15,B,D+.15],[0,B/2,0],edge);else for(const x of [-W*.42,W*.42])s.box([.1,B,D+.15],[x,B/2,0],a.base==='rails'?iron:wood);for(const x of [-W/2,W/2])for(const z of [-D/2,D/2])s.box([.055,H,.055],[x,B+H/2,z],mat);
+ const bays=4,bw=W/bays;for(let k=0;k<4;k++){const x=-W/2+bw*(k+.5),floor=B+(a.rack==='steps'?k*.18:0),sz=a.grading==='equal'?.36:a.grading==='ascending'?.28+k*.06:a.grading==='descending'?.46-k*.06:.3+(k%2)*.14,n=a.load==='full'?9:a.load==='half'?4:a.load==='empty'&&k===1?0:a.load==='single'&&k!==0?0:6;s.box([bw-.02,.04,D],[x,floor+.02,0],wood);if(a.rack==='bays'||a.rack==='afan')s.rod([x-bw/2,floor,-D*.3],[x-bw/2+(a.rack==='afan'?.12:0),B+H,-D*.3],.025,mat);if(a.rack==='steps')for(const z of [-D*.35,D*.35])s.box([.045,floor-B+.02,.045],[x,B+(floor-B+.02)/2,z],mat);
+ for(let j=0;j<n;j++){const form=a.tiles==='mixed'?(k%2?'point':'square'):a.tiles,m=leaf(bw*.8,sz,.009,x,floor+.04+j*.012,(a.orientation==='offset'?j*.008:0),form);if(a.orientation==='edge'||a.orientation==='lean'){m.rotation.x=a.orientation==='lean'?-.15:0;m.position.set(x,0,-D*.35+j*.025);m.updateMatrixWorld(true);m.position.y=floor+.04-new THREE.Box3().setFromObject(m,true).min.y;}}
+ if(a.retainer==='strap'&&n>0)s.box([.025,a.orientation==='flat'||a.orientation==='offset'?n*.012+.03:sz,.025],[x,floor+.04+(a.orientation==='flat'||a.orientation==='offset'?n*.012:sz)/2,D*.31],iron);if(a.labels==='plates')s.box([bw*.6,.06,.015],[x,B+.08,D*.53],iron);if(a.labels==='samples')leaf(.07,.09,.006,x,B+.055,D*.57,'point');if(a.labels==='chalk')for(let j=0;j<k+1;j++)s.box([.006,.04,.003],[x-.04+j*.02,B+.08,D*.53],edge);}
+ if(a.rack==='shelves')for(let k=1;k<3;k++){const y=B+k*.36;s.box([W,.035,D],[0,y,0],wood);for(let j=0;j<4;j++)for(let n=0;n<3;n++)leaf(bw*.8,.32,.009,-W*.375+j*bw,y+.018+n*.012,0,a.tiles==='mixed'?'square':a.tiles);}
+ if(a.retainer==='lip')s.box([W,.09,.035],[0,B+.07,D*.52],wood);if(a.retainer==='bars')for(const y of [B+.15,B+.6])s.rod([-W/2,y,D*.52],[W/2,y,D*.52],.018,iron);s.rod([-W/2,B+H,-D/2],[W/2,B+H,-D/2],.03,mat);
+ if(a.state==='bundle'){for(let j=0;j<8;j++)leaf(.3,.45,.01,0,j*.012,.7);for(const x of [-.09,.09])s.box([.015,.1,.47],[x,.05,.7],rope);}if(a.state==='loose')for(let j=0;j<3;j++)leaf(.25,.35,.01,W*.7+j*.03,j*.012,0,'clipped');if(a.state==='reject')for(let j=0;j<2;j++)leaf(.16,.3,.012,W*.7,j*.014,j*.07,'rough');
+return s.finish();
+  },
+});

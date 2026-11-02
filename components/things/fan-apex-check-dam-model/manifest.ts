@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Fan apex check dam model", "summary": "A small permeable check dam with attached abutments intercepts a canyon mouth and retains a sloping deposit. A geometric field-process specimen showing actual sediment relief, channel cuts and connected surveying structures.", "scales": ["landscape", "tabletop"]});

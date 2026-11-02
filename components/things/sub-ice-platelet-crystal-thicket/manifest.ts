@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Sub ice platelet crystal thicket", "summary": "Thin plates grow from an ice underside, sharing attachment points and changing inclination without becoming isolated shards. Attached thin ice platelets beneath a supported underside section; Antarctic sea-ice growth and porous crystal layers.", "scales": ["macro", "tabletop"]});

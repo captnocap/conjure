@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Brushed ink monotype',summary:'A one-off impression pulled from a painted plate, with bristle grooves, soft wiped lights, tacky ink islands and broad overlapping masses. Painterly studio experiments, a fleeting first impression and the pale echo of a second pull.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'print'});

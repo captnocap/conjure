@@ -1,5 +1,5 @@
 import type { BuildContext, Capture } from '@conjure/kit';
-import { PALETTES, surface } from './studio';
+import { settle, surface } from './studio';
 
 type Options={pigment:string;vocabulary:string;hierarchy:number;region?:'cutaway'};
 type Motif={x:number;y:number;w:number;h:number;angle:number;kind:number};
@@ -9,7 +9,7 @@ const rgb=(v:string)=>[1,3,5].map(i=>parseInt(v.slice(i,i+2),16));
 /** Dense micrographic drawing: coarse tones remain the image; light tissue becomes inhabited ink. */
 export async function micrograph(input:Uint8ClampedArray,cap:Capture,ctx:BuildContext,signal:AbortSignal,o:Options,foundation:Uint8ClampedArray){
  const n=cap.size;
- const p=PALETTES[o.pigment]??PALETTES.bone,ink=rgb(p.ink),stock=rgb(p.paper).map(v=>Math.min(248,v+23)),r=ctx.random;
+ const p=settle(o.pigment,ctx),ink=rgb(p.ink),stock=rgb(p.paper).map(v=>Math.min(248,v+23)),r=ctx.random;
  const lum=new Float32Array(n*n),domain=new Uint8Array(n*n),base=new Uint8ClampedArray(input.length),maskData=new Uint8ClampedArray(input.length);
  // An endless studio floor is negative space, whereas a bounded world's floor is a surface.
  let groundRim=0;for(let q=0;q<n;q++)for(const i of [q,(n-1)*n+q,q*n,q*n+n-1])if(cap.identity[i*4]===1)groundRim++;

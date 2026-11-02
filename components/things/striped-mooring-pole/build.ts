@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Sculpture, choice, defineThing, disposeTree, mix, score, visibleBounds } from '@conjure/kit';
+import { Sculpture, choice, defineThing, mix, score, visibleBounds } from '@conjure/kit';
 
 const COLOURS = {
   'red-white': 'Red and white candy spirals, the postcard palina.',
@@ -78,6 +78,28 @@ export default defineThing({
       wreath: 'A weathered wreath of flowers hung on one pole.',
     }),
     tide: score('Where is the tide?', ['Dead low: a tall dark band of weed and barnacles exposed', 'Mid tide', 'High: water up over the weed line']),
+    shaftHeight: score('How tall are the driven poles?', ['Low working moorings', 'Full-height landing poles', 'Tall ceremonial paline']),
+    spacing: score('If several poles are present, how widely do they mark the berth?', ['A tightly gathered cluster', 'A working berth', 'A broad landing entrance']),
+    collars: choice('What collars reinforce the shafts?', {
+      bare: 'Painted timber with no extra collars.', iron: 'Two narrow black iron straps around each pole.',
+      rope: 'Three close rope turns around the lower shaft.', brass: 'Broad brass bands with a row of rivets.',
+    }),
+    cleats: choice('What fastening is fitted to each pole?', {
+      none: 'No extra fastening.', horns: 'A small two-horned cleat on the front.',
+      eye: 'A round iron mooring eye on a short bracket.', cross: 'A transverse timber pin through the pole.',
+    }),
+    fenders: choice('What hangs between the boat and the pole?', {
+      none: 'No fenders.', tyre: 'An old dark tyre on a short hanging line.',
+      timber: 'A long narrow timber rubbing block.', rope: 'A fat wrapped rope fender with rounded ends.',
+    }),
+    waterPatch: choice('What shape of water surrounds this small mooring study?', {
+      round: 'A circular patch of green canal.', square: 'A square-cut section of canal.',
+      octagon: 'An eight-sided canal section.', oval: 'An elongated oval patch of canal.',
+    }),
+    landing: choice('What little landing stands beside the berth?', {
+      none: 'Only poles and water.', timber: 'A narrow planked landing on two piles.',
+      stone: 'A raised stone ledge on two square piers.', ladder: 'A short timber landing with a water ladder.',
+    }),
   },
 
   build(a, context) {
@@ -97,14 +119,14 @@ export default defineThing({
       5: [[-0.85, 0.3], [0.8, 0.35], [0, -0.5], [-0.35, 0.75], [0.95, -0.4]],
     };
     const weedTop = mix(1.15, 0.2, a.tide);
-    const poles: { group: THREE.Group; height: number; x: number; z: number }[] = [];
+    const poles: { group: THREE.Group; height: number; radius: number; x: number; z: number }[] = [];
     layouts[n].forEach(([px, pz], index) => {
       const group = new THREE.Group();
-      const x = px + (random() - 0.5) * 0.15, z = pz + (random() - 0.5) * 0.15;
+      const spread = mix(0.72, 1.4, a.spacing), x = px * spread + (random() - 0.5) * 0.15, z = pz * spread + (random() - 0.5) * 0.15;
       group.position.set(x, 0, z);
       s.root.add(group);
       const G = <T extends THREE.Object3D>(node: T) => { group.add(node); return node; };
-      const height = mix(3.3, 4.5, random()) * (index === 0 ? 1.05 : 1), radius = 0.15 + random() * 0.025;
+      const height = mix(3.3, 4.5, random()) * mix(.95, 1.18, a.shaftHeight) * (index === 0 ? 1.05 : 1), radius = 0.15 + random() * 0.025;
       const material = striped.clone();
       material.map = striped.map!.clone();
       material.map.repeat.set(index % 2 ? -2 : 2, height / 0.75);
@@ -129,7 +151,21 @@ export default defineThing({
           for (let i = 0; i < 6; i++) G(s.cylinder(0, 0.04, 0.13, [Math.cos(i * 1.047) * 0.15, top + 0.25, Math.sin(i * 1.047) * 0.15], gilt, 6));
         } else G(s.lathe([[0.06, 0], [0.16, 0.12], [0.13, 0.26], [0.05, 0.42], [0, 0.5]], gilt, [0, top + 0.05, 0]));
       } else G(s.cylinder(radius * 0.9, radius * 0.9, 0.012, [0, top + 0.006, 0], s.material('#b89f78'), 20));
-      poles.push({ group, height: top, x, z });
+      if (a.collars === 'iron' || a.collars === 'brass') for (const y of [1.32, top * .78]) {
+        G(s.cylinder(radius + .015, radius + .015, a.collars === 'brass' ? .16 : .075, [0, y, 0], a.collars === 'brass' ? gilt : iron, 20));
+        if (a.collars === 'brass') for (let i = 0; i < 8; i++) { const t = i * Math.PI / 4; G(s.ball([.012, .012, .012], [Math.sin(t) * (radius + .018), y, Math.cos(t) * (radius + .018)], gilt, 6)); }
+      } else if (a.collars === 'rope') for (let i = 0; i < 3; i++) G(s.ring(radius + .02, .02, [0, 1.25 + i * .045, 0], ropeMat)).rotation.x = Math.PI / 2;
+      if (a.cleats === 'horns') { G(s.box([.1, .2, .04], [0, 1.5, radius + .012], iron)); G(s.rod([0, 1.5, radius], [0, 1.5, radius + .14], .025, iron)); G(s.tube([[-.15, 1.55, radius + .13], [-.08, 1.5, radius + .13], [.08, 1.5, radius + .13], [.15, 1.55, radius + .13]], .024, iron)); }
+      else if (a.cleats === 'eye') { G(s.rod([0, 1.5, radius], [0, 1.5, radius + .11], .025, iron)); G(s.ring(.09, .02, [0, 1.42, radius + .11], iron)); }
+      else if (a.cleats === 'cross') G(s.rod([-.31, 1.5, 0], [.31, 1.5, 0], .04, s.material('#8a6d4d')));
+      if (a.fenders !== 'none') {
+        const zf = radius + .14, fy = .9;
+        G(s.rod([0, 1.7, radius], [0, fy + .25, zf], .012, ropeMat));
+        if (a.fenders === 'tyre') { G(s.ring(.19, .065, [0, fy, zf], s.material('#333a36'))); G(s.rod([0, fy + .25, zf], [0, fy + .18, zf], .012, ropeMat)); }
+        else if (a.fenders === 'timber') G(s.box([.16, .66, .15], [0, fy - .08, zf], s.material('#88755a')));
+        else { G(s.cylinder(.08, .08, .45, [0, fy, zf], ropeMat, 16)); for (const y of [fy - .225, fy + .225]) G(s.ball([.08, .07, .08], [0, y, zf], ropeMat, 10)); for (let i = 0; i < 9; i++) G(s.ring(.082, .012, [0, fy - .2 + i * .05, zf], s.material('#aa9b78'))).rotation.x = Math.PI / 2; }
+      }
+      poles.push({ group, height: top, radius, x, z });
     });
 
     // Stance.
@@ -146,7 +182,19 @@ export default defineThing({
         group.rotation.set(-Math.sin(out) * lean, 0, Math.cos(out) * lean);
       }
     });
-    if (a.stance === 'lashed' && n > 1) for (let i = 0; i < 4; i++) s.ring(0.3 + n * 0.035, 0.03, [0, 2.75 + i * 0.065, 0], ropeMat).rotation.x = Math.PI / 2;
+    if (a.stance === 'lashed' && n > 1) for (let turn = 0; turn < 4; turn++) {
+      const y = 2.3 + turn * .065, points: [number, number][] = [];
+      for (const pole of poles) {
+        pole.group.updateMatrixWorld(true);
+        const direction = new THREE.Vector3(0, 1, 0).applyQuaternion(pole.group.quaternion), p = new THREE.Vector3(pole.x, 0, pole.z).addScaledVector(direction, y / direction.y);
+        for (let j = 0; j < 12; j++) { const t = j * Math.PI / 6, r = pole.radius + .04; points.push([p.x + Math.cos(t) * r, p.z + Math.sin(t) * r]); }
+      }
+      points.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+      const cross = (a: number[], b: number[], c: number[]) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+      const half = (ps: [number, number][]) => { const h: [number, number][] = []; for (const p of ps) { while (h.length > 1 && cross(h[h.length - 2], h[h.length - 1], p) <= 0) h.pop(); h.push(p); } return h; };
+      const lo = half(points), hi = half([...points].reverse()); lo.pop(); hi.pop();
+      s.tube([...lo, ...hi].map(([x, z]) => [x, y, z] as P3), .026, ropeMat, true);
+    }
 
     // The rope and whatever else is on the tallest pole.
     const main = poles[0], M = <T extends THREE.Object3D>(node: T) => { main.group.add(node); return node; };
@@ -154,8 +202,9 @@ export default defineThing({
     if (a.rope !== 'none') {
       for (let i = 0; i < 3; i++) M(s.ring(0.185, 0.022, [0, tieY + i * 0.04, 0], ropeMat)).rotation.x = Math.PI / 2;
       if (a.rope === 'nothing') {
-        M(s.tube([[0.16, tieY, 0.05], [0.3, tieY - 0.5, 0.25], [0.45, 0.25, 0.5], [0.5, 0.02, 0.6]], 0.022, ropeMat));
-        s.tube([[main.x + 0.5, 0.02, main.z + 0.6], [main.x + 0.9, 0.02, main.z + 0.95], [main.x + 0.5, 0.02, main.z + 1.35], [main.x + 1.1, 0.02, main.z + 1.6], [main.x + 1.5, 0.02, main.z + 1.3]], 0.022, ropeMat);
+        main.group.updateMatrixWorld(true);
+        const anchor = main.group.localToWorld(new THREE.Vector3(.16, tieY, .05)), end: P3 = [main.x + .5, .025, main.z + .6];
+        s.tube([anchor.toArray() as P3, [anchor.x + .2, anchor.y * .55, anchor.z + .25], end, [main.x + .9, .025, main.z + .95], [main.x + .5, .025, main.z + 1.35], [main.x + 1.1, .025, main.z + 1.6], [main.x + 1.5, .025, main.z + 1.3]], .022, ropeMat);
       } else if (a.rope === 'coil') {
         for (let i = 0; i < 5; i++) {
           const loop = M(s.ring(0.24, 0.024, [0.03, tieY - 0.28, 0.17 + i * 0.012], ropeMat));
@@ -197,10 +246,29 @@ export default defineThing({
       M(s.box([0.07, 0.4, 0.008], [0.06, y - 0.42, 0.24], s.material(c1))).rotation.z = 0.15;
     }
 
-    // The ring of canal they stand in.
-    const reach = n === 1 ? 1.35 : n === 5 ? 2.3 : 1.85;
-    const water = new THREE.MeshStandardMaterial({ color: new THREE.Color('#4f8372').lerp(new THREE.Color('#6c7f58'), mood.wear * 0.6), roughness: 0.2, metalness: 0.1, transparent: true, opacity: 0.6, depthWrite: false });
-    const pond = s.cylinder(reach, reach, 0.01, [0, 0.006, 0], water, 48);
+    if (a.landing !== 'none') {
+      const px = -1.65, pz = .8, timber = s.material('#9d815d'), stone = s.material('#c5bba3'), surface = a.landing === 'stone' ? stone : timber;
+      s.box([.72, .12, 2.0], [px, .22, pz], surface);
+      for (const z of [pz - .75, pz + .75]) {
+        if (a.landing === 'stone') s.box([.5, .61, .35], [px, -.145, z], stone);
+        else s.cylinder(.075, .085, .61, [px, -.145, z], timber, 12);
+      }
+      if (a.landing !== 'stone') for (let i = 0; i < 12; i++) s.box([.73, .012, .018], [px, .286, pz - .92 + i * .167], ropeMat);
+      if (a.landing === 'ladder') {
+        for (const z of [pz - .23, pz + .23]) s.rod([px + .43, -.4, z], [px + .43, .65, z], .025, iron);
+        for (let i = 0; i < 5; i++) s.rod([px + .43, -.3 + i * .18, pz - .23], [px + .43, -.3 + i * .18, pz + .23], .022, iron);
+        for (const z of [pz - .23, pz + .23]) s.rod([px + .43, .28, z], [px + .28, .28, z], .022, iron);
+      }
+    }
+    // A real volume of water contains the embedded pole feet and landing piles.
+    const contentBounds = visibleBounds(s.root), centre = contentBounds.getCenter(new THREE.Vector3()), size = contentBounds.getSize(new THREE.Vector3());
+    const reach = Math.max(1.35, Math.hypot(size.x, size.z) / 2 + .22);
+    const water = new THREE.MeshStandardMaterial({ color: new THREE.Color('#4f8372').lerp(new THREE.Color('#6c7f58'), mood.wear * .6), roughness: .24, metalness: .12 });
+    const waterRadius = a.waterPatch === 'octagon' ? reach / Math.cos(Math.PI / 8) : reach;
+    const pond = a.waterPatch === 'square'
+      ? s.box([reach * 2, .5, reach * 2], [centre.x, -.25, centre.z], water)
+      : s.cylinder(waterRadius, waterRadius, .5, [centre.x, -.25, centre.z], water, a.waterPatch === 'octagon' ? 8 : 48);
+    if (a.waterPatch === 'oval') pond.scale.set(1.17, 1, 1);
     pond.castShadow = false;
     const rippleMaterial = new THREE.MeshBasicMaterial({ color: '#d9ece2', transparent: true, opacity: 0.6, depthWrite: false });
     const ripples = [0, 1, 2].map((k) => {
@@ -211,10 +279,6 @@ export default defineThing({
       return ring;
     });
 
-    const centre = visibleBounds(s.root).getCenter(new THREE.Vector3());
-    const offset = new THREE.Vector3(-centre.x, 0, -centre.z);
-    s.root.position.copy(offset);
-    pond.position.x = centre.x; pond.position.z = centre.z;
     const energy = mix(0.25, 1.3, mood.energy), phase = random() * 6;
     const update = (_dt: number, time: number) => {
       for (const ring of ripples) {
@@ -224,6 +288,6 @@ export default defineThing({
       }
     };
     update(0, 0);
-    return { object: s.root, footprint: reach, update, dispose: () => disposeTree(s.root) };
+    return s.finish({ footprint: reach * (a.waterPatch === 'oval' ? 1.17 : a.waterPatch === 'square' ? Math.SQRT2 : a.waterPatch === 'octagon' ? 1 / Math.cos(Math.PI / 8) : 1), update });
   },
 });

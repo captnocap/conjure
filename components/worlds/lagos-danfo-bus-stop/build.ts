@@ -1,7 +1,24 @@
 import * as THREE from 'three';
-import { type Placeable, choice, defineWorld, diorama, mix, visibleBounds } from '@conjure/kit';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+import { type Placeable, choice, defineWorld, diorama, figure as makeFigure, mix, visibleBounds } from '@conjure/kit';
 
 type P = [number, number, number];
+
+// The posed people remain rigid within this component. Merge by material after
+// solving their contacts, retaining the kit's geometry while reducing draw calls.
+function compactFigure(root:THREE.Group){
+ root.updateMatrixWorld(true);const before=new THREE.Box3().setFromObject(root,true),inverse=root.matrixWorld.clone().invert();
+ const groups=new Map<THREE.Material,THREE.BufferGeometry[]>(),originals=new Set<THREE.BufferGeometry>();
+ root.traverse(node=>{const mesh=node as THREE.Mesh;if(!mesh.isMesh)return;if(Array.isArray(mesh.material))throw new Error('Unexpected figure material array');
+  const clone=mesh.geometry.clone();let g=clone.index?clone.toNonIndexed():clone;if(g!==clone)clone.dispose();
+  for(const name of Object.keys(g.attributes))if(name!=='position'&&name!=='normal')g.deleteAttribute(name);
+  g.applyMatrix4(inverse.clone().multiply(mesh.matrixWorld));const list=groups.get(mesh.material)??[];list.push(g);groups.set(mesh.material,list);originals.add(mesh.geometry);
+ });
+ root.clear();for(const[material,parts]of groups){const geometry=mergeGeometries(parts);if(!geometry)throw new Error('Figure mesh merge failed');const mesh=new THREE.Mesh(geometry,material);mesh.castShadow=mesh.receiveShadow=true;root.add(mesh);for(const part of parts)part.dispose();}
+ for(const geometry of originals)geometry.dispose();root.updateMatrixWorld(true);const after=new THREE.Box3().setFromObject(root,true);
+ if(before.min.distanceTo(after.min)>1e-5||before.max.distanceTo(after.max)>1e-5)throw new Error('Figure merge moved its support bounds');
+}
+
 const W = 18, D = 11;
 
 /** A long stretch of painted wall: stains first, then whatever the street has put on it. */
@@ -144,6 +161,34 @@ function signMaterial(lines: readonly string[], w: number, h: number, ink: strin
 
 export default defineWorld({
   questions: {
+    crossings: choice('What spans the open drain?', {
+      slabs: 'Broad irregular concrete slabs.', boards: 'Closely laid timber boards on two beams.',
+      grates: 'Steel grates in rectangular frames.', paired: 'Pairs of narrow concrete strips with an open gap between.',
+    }),
+    roadMarking: choice('What painted marks guide the buses?', {
+      none: 'Only the ordinary faded lane dashes.', bay: 'A long pale bus-bay outline.',
+      arrows: 'Three worn directional arrows.', bars: 'A band of short yellow stopping bars.',
+    }),
+    waitingRail: choice('What separates the waiting corner from the road?', {
+      none: 'No barrier.', rope: 'A sagging rope between squat posts.',
+      steel: 'Two short steel railing sections with an entrance gap.', bollards: 'A row of short painted concrete bollards.',
+    }),
+    roofEquipment: choice('What occupies the shop building’s flat roof?', {
+      both: 'One black water tank and a small dish.', tank: 'Only the water tank.',
+      dish: 'Only the dish and its support.', pair: 'Two water tanks joined by a low pipe.',
+    }),
+    windowCover: choice('What projects from the upper windows?', {
+      bare: 'Only the original louvres and bars.', shutters: 'Open timber shutters on either side.',
+      awnings: 'Short sloping metal sunshades.', screens: 'Boxed wire screens standing off the wall.',
+    }),
+    wallCoping: choice('What finishes the wall above the painted panels?', {
+      plain: 'The ordinary concrete cap.', blocks: 'A row of low block piers.',
+      tiles: 'A row of curved red coping tiles.', railing: 'A short metal railing between piers.',
+    }),
+    leftAtKerb: choice('What has been left at the far kerb?', {
+      clear: 'A clear strip beside the road.', luggage: 'Two travel cases and a tied bundle.',
+      cart: 'A small empty handcart.', crates: 'A stack of worn wooden delivery crates.',
+    }),
     wall: choice('What covers the long wall behind the stop?', {
       adverts: 'Hand-painted adverts in clashing panels: cold minerals, GSM repairs, barbing salon.',
       posters: 'Row upon row of pasted posters, crusades and candidates, peeling at the corners.',
@@ -272,9 +317,15 @@ export default defineWorld({
     s.box([W, 0.02, 0.94], [0, level, dz], liquid).castShadow = false;
     s.box([W, 0.012, 0.94], [0, 0.012, dz], s.material('#3a3832')).castShadow = false;
     // Slabs bridging the drain where people cross.
-    for (const x of [-6.3, -1.2 + random(), 4.2 + random() * 0.5]) {
-      const slab = s.box([0.9 + random() * 0.5, 0.09, 1.34], [x, lip + 0.045, dz], random() > 0.5 ? darkConcrete : wood);
-      slab.rotation.y = (random() - 0.5) * 0.12;
+    for(const x of[-6.3,-1.2+random(),4.2+random()*.5]){
+      const w=.9+random()*.5;
+      if(a.crossings==='slabs')s.box([w,.09,1.34],[x,lip+.045,dz],darkConcrete);
+      else if(a.crossings==='paired')for(const dx of[-w*.3,w*.3])s.box([w*.32,.09,1.34],[x+dx,lip+.045,dz],concrete);
+      else{
+        const mat=a.crossings==='boards'?wood:s.material('#737a78',{metalness:.4});
+        for(const dx of[-w*.4,w*.4])s.box([.07,.08,1.34],[x+dx,lip+.04,dz],mat);
+        const count=a.crossings==='boards'?8:14;for(let i=0;i<count;i++)s.box([w,a.crossings==='boards'?.045:.025,a.crossings==='boards'?.145:.035],[x,lip+.08+(a.crossings==='boards'?.0225:.0125),dz-.59+i*1.18/(count-1)],mat);
+      }
     }
     const flotsam: { at: P; scale: P; turn: P; colour: string }[] = [];
     const flotsamCount = a.drain === 'black' ? 26 : a.drain === 'dry' ? 16 : 8;
@@ -299,6 +350,11 @@ export default defineWorld({
     s.box([wallW, wallH, 0.24], [wallX0 + wallW / 2, wallH / 2, wz], s.material(wallBase));
     s.mesh(new THREE.PlaneGeometry(wallW, wallH), wallTexture(a.wall, wallBase, mood.wear, mood.cheer, random), [wallX0 + wallW / 2, wallH / 2, wz + 0.125]);
     s.box([wallW, 0.1, 0.34], [wallX0 + wallW / 2, wallH + 0.05, wz], darkConcrete);
+    if(a.wallCoping!=='plain'){
+      const top=wallH+.1;
+      if(a.wallCoping==='tiles')for(let x=wallX0+.2;x<W/2-.1;x+=.32){const tile=s.mesh(new THREE.CylinderGeometry(.19,.19,.29,10,1,true,0,Math.PI),s.material('#a66e4c',{side:THREE.DoubleSide}),[x,top,wz]);tile.rotation.z=Math.PI/2;}
+      else for(let x=wallX0+.3;x<W/2-.1;x+=1.1){s.box([.2,.35,.28],[x,top+.175,wz],darkConcrete);if(a.wallCoping==='railing'&&x+1.1<W/2)for(const y of[top+.12,top+.3])s.rod([x,y,wz],[x+1.1,y,wz],.018,black);}
+    }
     // Broken bottle glass and a leaning zinc sheet on the coping; a gap patched with zinc.
     const shards: { at: P; scale: P; turn: P; colour: string }[] = [];
     for (let x = wallX0 + 0.2; x < W / 2 - 0.1; x += 0.16 + random() * 0.12) shards.push({ at: [x, wallH + 0.14, wz + (random() - 0.5) * 0.14], scale: [0.02, 0.06 + random() * 0.06, 0.03], turn: [random(), random() * 3, random() - 0.5], colour: pick(['#5a8a4a', '#8a5a2a', '#cfe0d8']) });
@@ -331,7 +387,11 @@ export default defineWorld({
     // Upper floor: louvred windows, a balcony with washing, an air conditioner that drips.
     const louvre = s.material('#4a5a60', { roughness: 0.3 });
     for (const x of [bx - 2.0, bx + 1.9]) {
-      s.box([1.0, 1.2, 0.06], [x, 4.6, bz + 0.27], louvre);
+      s.box([1.0,1.2,.06],[x,4.6,bz+.27],louvre);
+      if(a.windowCover==='shutters')for(const dx of[-.78,.78]){const shutter=s.box([.48,1.25,.045],[x+dx,4.6,bz+.32],wood);shutter.rotation.y=Math.sign(dx)*.24;for(let j=0;j<5;j++)s.box([.46,.035,.025],[x+dx,4.12+j*.24,bz+.36],black);}
+      else if(a.windowCover==='awnings'){const shade=s.box([1.3,.035,.7],[x,5.3,bz+.6],s.material('#8e9a94',{metalness:.35}));shade.rotation.x=.22;for(const dx of[-.55,.55])s.rod([x+dx,4.96,bz+.28],[x+dx,5.22,bz+.9],.018,black);}
+      else if(a.windowCover==='screens'){for(const dx of[-.54,.54]){s.rod([x+dx,4,bz+.3],[x+dx,4,bz+.57],.015,black);s.rod([x+dx,5.24,bz+.3],[x+dx,5.24,bz+.57],.015,black);s.rod([x+dx,4,bz+.57],[x+dx,5.24,bz+.57],.015,black);}for(let j=0;j<7;j++)s.rod([x-.54,4.03+j*.195,bz+.57],[x+.54,4.03+j*.195,bz+.57],.006,black);}
+
       for (let i = 0; i < 6; i++) s.box([1.0, 0.03, 0.1], [x, 4.1 + i * 0.2, bz + 0.3], s.material('#b9c4c8'));
       for (let i = 0; i < 5; i++) s.rod([x - 0.4 + i * 0.2, 4.0, bz + 0.36], [x - 0.4 + i * 0.2, 5.2, bz + 0.36], 0.012, black);
     }
@@ -343,10 +403,13 @@ export default defineWorld({
     for (let i = 0; i < washing; i++) s.box([0.26 + random() * 0.12, 0.4 + random() * 0.25, 0.02], [bx - 0.75 + i * (1.5 / washing) + 0.1, 4.2 - random() * 0.1, bz + 1.1], s.material(pick(['#d8342c', '#f2c21a', '#1f52b4', '#f4f0e0', '#d86a9a', '#2aa0b0']))).rotation.z = (random() - 0.5) * 0.1;
     s.box([0.7, 0.45, 0.3], [bx + 1.9, 3.75, bz + 0.4], s.material('#d0d0c8'));
     // Roof clutter: a water tank, a dish.
-    s.cylinder(0.55, 0.6, 1.1, [bx - 1.6, bh + 0.7, bz - 0.0], black, 14);
-    const dish = s.mesh(new THREE.SphereGeometry(0.42, 14, 6, 0, Math.PI * 2, 0, 0.9), s.material('#c9cdd0', { side: THREE.DoubleSide, metalness: 0.4 }), [bx + 1.7, bh + 0.6, bz + 0.1]);
-    dish.rotation.set(-1.9, 0.5, 0);
-    s.rod([bx + 1.7, bh + 0.16, bz + 0.1], [bx + 1.7, bh + 0.5, bz + 0.1], 0.03, black);
+    if(a.roofEquipment!=='dish'){
+      s.cylinder(.55,.6,1.1,[bx-1.6,bh+.71,bz],black,14);
+      if(a.roofEquipment==='pair'){s.cylinder(.5,.55,.9,[bx+.1,bh+.61,bz],black,14);s.rod([bx-1.6,bh+.28,bz+.55],[bx+.1,bh+.28,bz+.5],.035,black);}
+    }
+    if(a.roofEquipment==='both'||a.roofEquipment==='dish'){
+      const dish=s.mesh(new THREE.SphereGeometry(.42,14,6,0,Math.PI*2,0,.9),s.material('#c9cdd0',{side:THREE.DoubleSide,metalness:.4}),[bx+1.7,bh+.6,bz+.1]);dish.rotation.set(-1.9,.5,0);s.rod([bx+1.7,bh+.16,bz+.1],[bx+1.7,bh+.5,bz+.1],.03,black);
+    }
 
     // ---- Poles and the tangle of wires.
     const pole = (x: number, z: number, height: number, tilt: number) => {
@@ -400,27 +463,17 @@ export default defineWorld({
 
     // ---- Trade along the drain.
     const stalls = a.trade === 'bare' ? [] : [-7.3, -0.1, 5.1].slice(0, 1 + Math.round(mood.density * 2));
-    const figure = (x: number, z: number, facing: number, carry: 'none' | 'bag' | 'basin') => {
-      const group = new THREE.Group();
-      const shirt = s.material(pick(['#c8402e', '#2f6fb0', '#e8e2d0', '#2c8a56', '#e0a020', '#7a3a8a', '#d86a9a', '#2aa0b0']));
-      const lower = s.material(pick(['#30383f', '#4a4030', '#27405a', '#7a2a4a', '#3a6a4a']));
-      const flesh = s.material(pick(['#5a3a28', '#6b4630', '#4a2f20']));
-      const tall = 0.9 + random() * 0.15;
-      for (const dx of [-0.08, 0.08]) group.add(s.rod([dx, 0, 0], [dx * 0.9, 0.82, 0], 0.06, lower));
-      group.add(s.rod([0, 0.8, 0], [0, 1.4, 0.02], 0.16, shirt, 0.14), s.ball([0.1, 0.115, 0.1], [0, 1.6, 0.03], flesh, 10));
-      group.add(s.rod([-0.18, 1.36, 0], [-0.22, 0.88, 0.05], 0.04, flesh));
-      if (carry === 'basin') {
-        group.add(s.rod([0.18, 1.36, 0], [0.2, 1.74, 0.02], 0.04, flesh));
-        group.add(s.cylinder(0.3, 0.2, 0.16, [0, 1.8, 0.03], s.material(pick(['#d8342c', '#2a62c8', '#f2f0e8'])), 12));
-        group.add(s.ball([0.24, 0.1, 0.24], [0, 1.9, 0.03], s.material(pick(['#e88a1c', '#e8dcc0', '#3f7a35'])), 8));
-      } else {
-        group.add(s.rod([0.18, 1.36, 0], [0.22, 0.88, 0.05], 0.04, flesh));
-        if (carry === 'bag') group.add(s.box([0.3, 0.3, 0.12], [0.25, 0.68, 0.05], s.material(pick(['#1e1e20', '#d8342c', '#2a62c8', '#e8dcc0']))));
+    const figure=(x:number,z:number,facing:number,carry:'none'|'bag'|'basin')=>{
+      const H=mix(1.5,1.8,random()),f=makeFigure(s,{height:H,pose:'standing',style:'doll',hair:pick(['short','bun','cap']),top:pick(['#c8402e','#2f6fb0','#e8e2d0','#2c8a56','#e0a020','#7a3a8a']),bottom:pick(['#30383f','#4a4030','#27405a','#7a2a4a']),skin:pick(['#5a3a28','#6b4630','#4a2f20']),shoes:'#2b302c',face:'dots'});
+      root.add(f.root);f.root.position.set(x,z>=edge?.045:0,z);f.root.rotation.y=facing;f.root.updateMatrixWorld(true);
+      if(carry==='bag'){
+        const bag=new THREE.Group(),mat=s.material(pick(['#1e1e20','#d8342c','#2a62c8','#e8dcc0']));bag.add(s.box([.28,.26,.12],[0,-.23,0],mat));bag.add(s.ring(.1,.012,[0,-.1,0],mat,Math.PI));f.hands.right.add(bag);
+      }else if(carry==='basin'){
+        const at=f.root.localToWorld(new THREE.Vector3(0,H*.61,H*.16)),g=new THREE.Group();g.position.copy(at);g.rotation.y=facing;
+        const mat=s.material(pick(['#d8342c','#2a62c8','#f2f0e8']));g.add(s.lathe([[0,0],[.19,0],[.28,.15],[.26,.15],[.17,.02],[0,.02]],mat));g.add(s.ball([.2,.065,.2],[0,.12,0],s.material('#c69b5a'),10));root.add(g);g.updateMatrixWorld(true);
+        const gaps=[f.reach('left',g.localToWorld(new THREE.Vector3(.26,.13,0)),{space:root}),f.reach('right',g.localToWorld(new THREE.Vector3(-.26,.13,0)),{space:root})];if(Math.max(...gaps)>1e-5)throw new Error('Bus-stop basin contact');
       }
-      group.scale.setScalar(tall);
-      group.position.set(x, 0, z);
-      group.rotation.y = facing;
-      root.add(group);
+      compactFigure(f.root);
     };
     stalls.forEach((x, index) => {
       const z = -3.15;
@@ -471,6 +524,26 @@ export default defineWorld({
       }
     });
 
+    if(a.roadMarking!=='none'){
+      const ink=s.material(a.roadMarking==='bars'?'#cfb33d':'#d8d1b3'),y=.055,z=4.35;
+      if(a.roadMarking==='bay'){for(const zz of[3.5,5.1])s.box([11,.006,.07],[0,y,zz],ink);for(const x of[-5.5,5.5])s.box([.07,.006,1.6],[x,y,4.3],ink);}
+      else if(a.roadMarking==='bars')for(let i=0;i<13;i++)s.box([.13,.006,1.15],[-5.4+i*.85,y,z],ink);
+      else for(const x of[-4,0,4]){s.box([1.6,.006,.09],[x,y,z],ink);for(const sign of[-1,1]){const bar=s.box([.65,.006,.09],[x+.5,y,z+sign*.2],ink);bar.rotation.y=sign*.62;}}
+    }
+    if(a.waitingRail!=='none'){
+      const z=2.92,xs=[-8.5,-7.7,-6.9,-5.8];
+      for(const x of xs){if(a.waitingRail==='bollards'){s.cylinder(.09,.12,.65,[x,.325,z],concrete,10);s.cylinder(.092,.092,.12,[x,.46,z],black,10);}else s.rod([x,0,z],[x,.85,z],.025,a.waitingRail==='rope'?wood:rust);}
+      if(a.waitingRail==='rope')for(let i=0;i<xs.length-1;i++)s.tube([[xs[i],.76,z],[(xs[i]+xs[i+1])/2,.62,z],[xs[i+1],.76,z]],.018,wood);
+      else if(a.waitingRail==='steel')for(const pair of[[xs[0],xs[1]],[xs[2],xs[3]]])for(const y of[.4,.8])s.rod([pair[0],y,z],[pair[1],y,z],.022,rust);
+    }
+    if(a.leftAtKerb!=='clear'){
+      const x=7.9,z=4.3,floor=.045;
+      if(a.leftAtKerb==='luggage'){for(const dx of[-.28,.28]){s.box([.4,.5,.27],[x+dx,floor+.25,z],s.material(dx<0?'#74644e':'#56675f'));s.tube([[x+dx-.07,floor+.5,z],[x+dx-.07,floor+.57,z],[x+dx+.07,floor+.57,z],[x+dx+.07,floor+.5,z]],.012,black);}s.box([.35,.22,.3],[x,floor+.11,z+.43],wood);}
+      else if(a.leftAtKerb==='crates')for(let j=0;j<3;j++){s.box([.8,.03,.55],[x,floor+j*.32+.015,z],wood);for(const dz of[-.26,.26])s.box([.8,.29,.025],[x,floor+j*.32+.175,z+dz],wood);for(const dx of[-.385,.385])s.box([.025,.29,.55],[x+dx,floor+j*.32+.175,z],wood);}
+      else{
+        s.box([1.1,.08,.65],[x,.44,z],wood);for(const dx of[-.38,.38]){const wheel=s.cylinder(.18,.18,.055,[x+dx,floor+.18,z+.15],black,14);wheel.rotation.z=Math.PI/2;s.rod([x+dx,.36,z+.15],[x+dx,.4,z],.025,rust);s.rod([x+dx,floor,z-.24],[x+dx,.4,z-.24],.022,wood);s.rod([x+dx,.44,z-.25],[x+dx,.8,z-.8],.022,wood);}
+      }
+    }
     // ---- The moment.
     const litter: { at: P; scale: P; turn: P; colour: string }[] = [];
     const litterCount = Math.round(mix(14, 70, mood.wear * 0.6 + mood.density * 0.4)) + (a.moment === 'raid' ? 30 : 0);

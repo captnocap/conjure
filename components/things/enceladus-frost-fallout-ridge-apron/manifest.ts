@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Enceladus frost fallout ridge apron", "summary": "An icy deposition apron follows a real fissure-ridge surface with finite draped strata and exposed source-side boundaries. A conceptual deposition section follows an icy fissure flank while leaving the source open. Finite draped units illustrate the loading process proposed in tiger-stripe studies without claiming measured stratigraphy.", "scales": ["planetary", "landscape", "tabletop"]});

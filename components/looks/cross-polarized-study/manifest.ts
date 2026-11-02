@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Cross polarized study',summary:'A photographic surface-colour study with subdued broad reflected glare, controlled white balance, fine material detail and restrained contrast. Museum-object records, specimens, painted surfaces and clear neutral product studies.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'realism'});

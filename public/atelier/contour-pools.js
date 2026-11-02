@@ -154,7 +154,7 @@ export function prepareContourPools(f) {
         nx,
         ny,
         nz,
-        clamp((depth[i] - 6) / 15),
+        f.normalizedDepth ? f.normalizedDepth(depth[i]) : clamp((depth[i] - 6) / 15),
         seed,
         settings,
       );

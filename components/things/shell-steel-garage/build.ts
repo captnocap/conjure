@@ -89,6 +89,48 @@ export default defineThing({
       pair: 'Shoulder to shoulder with a neighbour of another colour.',
     }),
     snow: score('How much snow is on the roof?', ['None', 'Frost in the ribs', 'A white cap', 'A heavy sagging load']),
+    ventilation: choice('What ventilation is cut into the fixed shell?', {
+      blank: 'Unbroken sheet steel.',
+      slots: 'A rectangular louvred grille on each side.',
+      round: 'A round capped wall vent with a mesh face.',
+      chimney: 'A short capped flue rises through the rear roof.',
+    }),
+    lidSupport: choice('If the shell is raised, what supports its weight?', {
+      arms: 'Two simple hinged steel stay arms.',
+      struts: 'Paired telescoping support struts.',
+      chain: 'Chains hold the lid at its opening limit.',
+      timber: 'A temporary timber prop braces the raised front corner.',
+    }),
+    roofCarrier: choice('What is mounted over the fixed rear roof?', {
+      bare: 'The curved roof is bare.',
+      rails: 'Two raised longitudinal luggage rails.',
+      ladder: 'A timber ladder is tied across a pair of roof bars.',
+      boards: 'Three salvaged planks are lashed to a small roof rack.',
+    }),
+    wallBracing: choice('What reinforces the fixed sidewalls?', {
+      plain: 'Only the corrugated sheet and its low sill.',
+      crossed: 'Diagonal steel straps cross both sidewalls.',
+      uprights: 'Three extra vertical angle-iron stiffeners on each side.',
+      belt: 'A broad horizontal reinforcing band runs around the shell.',
+    }),
+    floorLining: choice('What covers the floor inside?', {
+      concrete: 'Bare dark concrete.',
+      boards: 'Narrow timber boards run the length of the garage.',
+      tracks: 'Two metal tyre tracks cross the concrete.',
+      checker: 'A worn grid of light and dark workshop tiles.',
+    }),
+    apron: choice('How is the approach to the door finished?', {
+      flat: 'A plain concrete approach.',
+      tracks: 'Two short steel wheel ramps bridge the threshold.',
+      slabs: 'A row of broad paving slabs forms an apron.',
+      drain: 'An open metal drainage grate crosses the entrance.',
+    }),
+    sideStorage: choice('What hangs from the outer left side?', {
+      empty: 'Nothing is stored outside.',
+      hose: 'A green hose loop hangs from a wall hook.',
+      broom: 'A long yard broom hangs from a bracket.',
+      cable: 'A cable reel is bolted beside the rear corner.',
+    }),
   },
 
   build(a, context) {
@@ -152,6 +194,84 @@ export default defineThing({
         g.box([0.2, 0.05, 0.03], [0, 0.3, Z1 - SLANT * 0.14 + 0.02], iron);
       }
       for (const x of [-HALF - 0.03, HALF + 0.03]) g.cylinder(0.05, 0.05, 0.08, [x, TOP - 0.42, ZH], iron, 10).rotation.z = Math.PI / 2;
+      if (a.ventilation === 'chimney') {
+        g.cylinder(0.095, 0.095, 0.52, [0.3, TOP + 0.2, -1.55], iron, 12);
+        g.cylinder(0.2, 0.1, 0.12, [0.3, TOP + 0.52, -1.55], iron, 12);
+      } else if (a.ventilation !== 'blank') for (const sideX of [-1, 1]) {
+        const x = sideX * (HALF + 0.015), y = 1.22, z = -1.3;
+        if (a.ventilation === 'slots') {
+          g.box([0.035, 0.3, 0.44], [x, y, z], iron);
+          for (let row = 0; row < 5; row++) g.box([0.045, 0.018, 0.37], [x + sideX * 0.024, y - 0.11 + row * 0.055, z], g.material('#9ca2a0', { metalness: 0.5 }));
+        } else {
+          const ring = g.ring(0.16, 0.025, [x, y, z], iron); ring.rotation.y = Math.PI / 2;
+          const cap = g.cylinder(0.14, 0.14, 0.03, [x, y, z], g.material('#454c4c'), 16); cap.rotation.z = Math.PI / 2;
+          for (const offset of [-0.1, -0.05, 0, 0.05, 0.1]) { const span = Math.sqrt(0.14 ** 2 - offset ** 2); g.rod([x + sideX * 0.02, y + offset, z - span], [x + sideX * 0.02, y + offset, z + span], 0.005, iron); }
+        }
+      }
+      if (a.wallBracing !== 'plain') for (const sideX of [-1, 1]) {
+        const x = sideX * (HALF + 0.02);
+        if (a.wallBracing === 'crossed') {
+          g.rod([x, 0.12, Z0 + 0.1], [x, 1.45, ZH - 0.1], 0.022, iron);
+          g.rod([x, 1.45, Z0 + 0.1], [x, 0.12, ZH - 0.1], 0.022, iron);
+        } else if (a.wallBracing === 'uprights') for (const z of [-1.9, -0.8, 0.3]) g.box([0.045, 1.46, 0.065], [x, 0.73, z], iron);
+        else g.box([0.035, 0.12, ZH - Z0], [x, 0.75, (ZH + Z0) / 2], iron);
+      }
+      if (a.floorLining === 'boards') for (let i = 0; i < 12; i++) g.box([0.2, 0.018, 4.25], [-1.15 + i * 0.21, 0.039, 0.02], g.material(i % 3 ? '#81735b' : '#6d6352'));
+      else if (a.floorLining === 'tracks') for (const x of [-0.72, 0.72]) {
+        g.box([0.31, 0.018, 4.25], [x, 0.039, 0.02], iron);
+        for (let j = 0; j < 16; j++) g.box([0.31, 0.01, 0.02], [x, 0.053, -1.98 + j * 0.26], iron);
+      } else if (a.floorLining === 'checker') for (let i = 0; i < 6; i++) for (let j = 0; j < 10; j++) g.box([0.4, 0.015, 0.42], [-1.025 + i * 0.41, 0.0375, -1.91 + j * 0.43], g.material((i + j) % 2 ? '#938d7e' : '#535854'));
+      if (a.roofCarrier !== 'bare') {
+        for (const x of [-0.75, 0.75]) for (const z of [-1.8, 0.25]) g.rod([x, 1.92, z], [x, 2.18, z], 0.018, iron);
+        for (const z of [-1.8, 0.25]) g.rod([-0.87, 2.18, z], [0.87, 2.18, z], 0.022, iron);
+        for (const x of [-0.75, 0.75]) g.rod([x, 2.18, -1.95], [x, 2.18, 0.38], 0.022, iron);
+        if (a.roofCarrier === 'ladder') {
+          const timber = g.material('#b19a6b');
+          for (const x of [-0.33, 0.33]) g.box([0.065, 0.06, 2.4], [x, 2.232, -0.75], timber);
+          for (let j = 0; j < 9; j++) g.box([0.66, 0.045, 0.045], [0, 2.232, -1.75 + j * 0.25], timber);
+          for (const z of [-1.8, 0.25]) g.tube([[-0.36, 2.18, z], [-0.36, 2.27, z], [0.36, 2.27, z], [0.36, 2.18, z]], 0.008, g.material('#c8bd9e'));
+        } else if (a.roofCarrier === 'boards') {for (let i = 0; i < 3; i++) {
+          g.box([0.32, 0.06, 2.25], [-0.36 + i * 0.36, 2.232, -0.75], g.material(i % 2 ? '#938464' : '#b09a73'));}
+          for (const z of [-1.7, 0.15]) g.tube([[-0.54, 2.18, z], [-0.54, 2.27, z], [0.54, 2.27, z], [0.54, 2.18, z]], 0.008, iron);
+        }
+      }
+      if (hero && a.sideStorage !== 'empty') {
+        const x = -HALF - 0.12, z = -0.7;
+        g.rod([-HALF, 1.4, z], [x - 0.08, 1.4, z], 0.015, iron);
+        if (a.sideStorage === 'hose') {
+          for (let i = 0; i < 3; i++) { const loop = g.ring(0.32 + i * 0.012, 0.014, [x - i * 0.03, 1.08 - i * 0.012, z], g.material('#3e6551')); loop.rotation.y = Math.PI / 2; }
+        } else if (a.sideStorage === 'broom') {
+          g.rod([x, 0.35, z], [x, 1.47, z], 0.018, g.material('#ab8755'));
+          g.box([0.1, 0.25, 0.29], [x, 0.28, z], g.material('#8a7549'));
+          g.ring(0.035, 0.006, [x, 1.43, z], iron).rotation.y = Math.PI / 2;
+        } else {
+          for (const dx of [-0.06, 0.06]) { const flange = g.cylinder(0.23, 0.23, 0.018, [x + dx, 1.15, z], iron, 14); flange.rotation.z = Math.PI / 2; }
+          for (let i = 0; i < 5; i++) { const coil = g.ring(0.17, 0.012, [x - 0.05 + i * 0.025, 1.15, z], g.material('#333735')); coil.rotation.y = Math.PI / 2; }
+          g.rod([-HALF, 1.15, z], [x - 0.07, 1.15, z], 0.025, iron);
+        }
+      }
+      if (hero && a.apron !== 'flat') {
+        if (a.apron === 'tracks') for (const x of [-0.72, 0.72]) {
+          const ramp = g.box([0.36, 0.035, 0.85], [x, 0.023, 2.44], iron); ramp.rotation.x = 0.025;
+        } else if (a.apron === 'slabs') for (let i = 0; i < 5; i++) g.box([0.49, 0.03, 0.62], [-1.0 + i * 0.5, 0.015, 2.53], g.material(i % 2 ? '#a7a293' : '#93978e'));
+        else {
+          g.box([2.5, 0.025, 0.28], [0, 0.0125, 2.56], g.material('#292e2c'));
+          for (let i = 0; i < 35; i++) g.box([0.025, 0.012, 0.28], [-1.19 + i * 0.07, 0.031, 2.56], iron);
+        }
+      }
+      if (door !== 'locked') {
+        lid.updateMatrix();
+        const joint = (x: number) => new THREE.Vector3(x, 1.2 - TOP, Z1 - ZH - SLANT * 1.2 / TOP).applyMatrix4(lid.matrix).toArray() as P3;
+        for (const side of [-1, 1]) {
+          const x = side * (HALF - 0.05), from: P3 = [x, 0.7, ZH - 0.15], end = joint(x);
+          if (a.lidSupport === 'timber') { if (side < 0) g.rod([end[0], 0, end[2] - 0.2], end, 0.035, g.material('#ad8b59')); }
+          else if (a.lidSupport === 'chain') g.tube([from, [x, (from[1] + end[1]) / 2 - 0.08, (from[2] + end[2]) / 2], end], 0.011, iron);
+          else {
+            g.rod(from, end, 0.016, iron);
+            if (a.lidSupport === 'struts') g.rod(from, new THREE.Vector3(...from).lerp(new THREE.Vector3(...end), 0.55).toArray() as P3, 0.033, g.material('#aeb7b7', { metalness: 0.8 }));
+          }
+        }
+      }
       if (a.snow > 0.3) {
         const depth = mix(0.02, 0.2, (a.snow - 0.3) / 0.7);
         const cap = (z0: number, z1: number, parent: THREE.Object3D, oy: number, oz: number) => { const r = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), snowMat); r.scale.set(HALF * 0.9, depth * 1.2 + 0.14, (z1 - z0) * 0.5); r.position.set(0, TOP - 0.1 - oy, (z0 + z1) / 2 - oz); r.castShadow = true; parent.add(r); };

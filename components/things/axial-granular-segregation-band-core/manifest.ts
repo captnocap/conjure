@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Axial granular segregation band core", "summary": "A cylindrical grain assembly has distinct axial bands and a retained radial core exposed through a real section. A sectioned cylindrical specimen resolves transverse grain-rich bands and a retained fine core. It is a labeled geometric segregation model with supported bulk regions; the bands and exposed grain counts do not represent a computed DEM state.", "scales": ["macro", "tabletop"]});

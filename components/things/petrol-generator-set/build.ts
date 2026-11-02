@@ -5,6 +5,38 @@ type P = [number, number, number];
 
 export default defineThing({
   questions: {
+    foundation: choice('What keeps the set clear of the ground?', {
+      feet: 'Its own rubber feet on the ground.', skids: 'Two stout timber skids.',
+      slabs: 'A pair of low concrete sleepers.', tray: 'A shallow steel drip tray beneath the feet.',
+    }),
+    sideGuard: choice('What guards the exposed engine sides?', {
+      open: 'Open sides with the engine visible.', rails: 'Two horizontal protective rails.',
+      lattice: 'An open diamond lattice on each side.', sheet: 'Louvered metal side panels.',
+    }),
+    meter: choice('What extra instrument is fixed above the sockets?', {
+      none: 'Only the original pilot light.', round: 'One round analog voltmeter.',
+      paired: 'Two small analog meters side by side.', digital: 'One rectangular digital display.',
+    }),
+    serviceTools: choice('What maintenance equipment lies nearby?', {
+      none: 'No tools left out.', spanner: 'Two spanners and a folded rag on a board.',
+      spark: 'A socket wrench and spare spark plugs in a little tray.', oil: 'An oil bottle and small pouring cup.',
+    }),
+    cableRoute: choice('How does the extension lead cross the ground?', {
+      direct: 'A broad direct curve.', loop: 'A loose service loop before the appliance.',
+      edge: 'A squared route along the edge of the working area.', zigzag: 'A gently zigzagging lead.',
+    }),
+    exhaustShield: choice('What protects the hot silencer?', {
+      bare: 'The bare cylindrical silencer.', hoops: 'Three protective hoops and two rails.',
+      sleeve: 'A raised sheet-metal heat shield.', cage: 'A narrow open wire cage.',
+    }),
+    canopy: choice('What shades the generator?', {
+      open: 'Nothing overhead.', sheet: 'A sloping sheet on four steel posts.',
+      cloth: 'A low stretched cloth on timber posts.', pitched: 'A small pitched corrugated shelter.',
+    }),
+    starter: choice('What starting equipment is fitted?', {
+      recoil: 'Only the original pull starter.', battery: 'A small battery and electric starter cable.',
+      jump: 'An electric starter with a loose pair of jumper leads coiled beside the battery.',
+    }),
     size: choice('How big is the generator?', {
       tiny: 'The smallest there is, a two-stroke lunchbox with a carry handle: "I better pass my neighbour".',
       medium: 'A mid-size set in a tubular steel frame.',
@@ -75,6 +107,42 @@ export default defineThing({
     for (const x of [-0.24, -0.15]) g.box([0.045, 0.045, 0.01], [x, 0.17, 0.218], dark);
     g.box([0.03, 0.02, 0.012], [-0.24, 0.245, 0.218], g.material('#c8281e'));
     g.ball([0.012, 0.012, 0.008], [-0.15, 0.245, 0.218], g.material('#3aff7a', { emissive: '#3aff7a', emissiveIntensity: running ? 2 : 0 }), 8);
+    // Extra controls sit on a small bracket attached to the existing panel.
+    if(a.meter!=='none'){
+      g.box([.22,.1,.025],[-.19,.315,.208],frameMat);
+      if(a.meter==='digital'){
+        g.box([.16,.06,.012],[-.19,.315,.228],dark);
+        for(let i=0;i<3;i++)for(const dy of[-.017,0,.017])g.box([.025,.004,.005],[-.235+i*.045,.315+dy,.237],g.material(running?'#7cde8c':'#57625a'));
+      }else{
+        const xs=a.meter==='paired'?[-.245,-.135]:[-.19];
+        for(const x of xs){const face=g.cylinder(.036,.036,.014,[x,.315,.229],steel,20);face.rotation.x=Math.PI/2;
+          const dial=g.cylinder(.029,.029,.016,[x,.315,.232],g.material('#e8e1cf'),20);dial.rotation.x=Math.PI/2;
+          g.rod([x,.315,.242],[x+.017,.33,.242],.002,dark);}
+      }
+    }
+    if(a.sideGuard!=='open')for(const side of[-1,1]){
+      const z=side*.245;for(const x of[-.33,.33]){g.rod([x,.06,z],[x,.38,z],.012,frameMat);g.rod([Math.sign(x)*.26,.06,side*.2],[x,.06,z],.012,frameMat);}
+      if(a.sideGuard==='rails')for(const y of[.13,.32])g.rod([-.33,y,z],[.33,y,z],.012,frameMat);
+      else if(a.sideGuard==='lattice')for(let i=0;i<5;i++)for(const sign of[-1,1])g.rod([-.32+i*.125,.08,z],[Math.max(-.32,Math.min(.32,-.32+i*.125+sign*.1)),.36,z],.006,frameMat);
+      else{g.box([.6,.25,.014],[0,.21,z],tank);for(let i=0;i<6;i++){const louver=g.box([.075,.018,.028],[-.25+i*.1,.235,z+side*.014],frameMat);louver.rotation.x=side*.35;}}
+    }
+    if(a.exhaustShield!=='bare'){
+      if(a.exhaustShield==='sleeve'){
+        g.box([.15,.012,.34],[.27,.275,-.02],steel);for(const z of[-.14,.1])for(const x of[.21,.33])g.rod([x,.19,z],[x,.275,z],.006,steel);
+      }else{
+        for(const z of[-.17,-.02,.13])g.ring(.074,.005,[.27,.2,z],steel);
+        for(let i=0;i<(a.exhaustShield==='cage'?8:2);i++){const t=i*Math.PI*2/(a.exhaustShield==='cage'?8:2);g.rod([.27+Math.cos(t)*.074,.2+Math.sin(t)*.074,-.17],[.27+Math.cos(t)*.074,.2+Math.sin(t)*.074,.13],.005,steel);}
+        for(const z of[-.14,.1])g.rod([.22,.15,z],[.25,.08,z],.007,frameMat);
+      }
+    }
+    if(a.starter!=='recoil'){
+      g.box([.22,.018,.18],[-.13,.068,-.15],frameMat);
+      g.box([.17,.12,.13],[-.13,.137,-.15],dark);
+      for(const x of[-.18,-.08])g.cylinder(.012,.012,.025,[x,.209,-.15],steel,8);
+      g.tube([[-.18,.22,-.15],[-.22,.23,-.05],[-.1,.16,.02]],.006,g.material('#ba3027'));
+      g.tube([[-.08,.22,-.15],[.02,.2,-.12],[.08,.12,-.1]],.006,dark);
+      if(a.starter==='jump')for(let i=0;i<2;i++){const coil=g.ring(.06,.006,[-.12,.215+i*.013,-.15],i?dark:g.material('#ba3027'));coil.rotation.x=Math.PI/2;}
+    }
     // Tank with cap and gauge.
     g.box([0.54, 0.1, 0.38], [0, 0.44, 0], tank);
     g.ball([0.27, 0.07, 0.19], [0, 0.49, 0], tank, 16);
@@ -108,9 +176,28 @@ export default defineThing({
     // Wear: rust, a rag stuffed in, tape on the tank.
     if (mood.wear > 0.4) for (let i = 0; i < Math.round(mood.wear * 6); i++) g.ball([0.03 + random() * 0.03, 0.02, 0.004], [(random() - 0.5) * 0.5, 0.4 + random() * 0.08, 0.192], g.material('#7a4a2c'), 6);
     if (mood.wear > 0.65) g.box([0.56, 0.03, 0.39], [0.16, 0.44, 0], g.material('#8a8f92')).scale.x = 0.1;
+    const foundationY=a.foundation==='feet'?0:a.foundation==='tray'?.018:.09;
+    if(a.foundation==='skids'||a.foundation==='slabs')for(const z of[-.2,.2])s.box([.78*k,foundationY,.14*k],[0,foundationY/2,z*k],s.material(a.foundation==='skids'?'#836345':'#96958b'));
+    else if(a.foundation==='tray'){
+      const tray=s.material('#697479',{metalness:.45});s.box([.9*k,.018,.7*k],[0,.009,0],tray);
+      for(const x of[-.45,.45])s.box([.012,.055,.7*k],[x*k,.0275,0],tray);
+      for(const z of[-.35,.35])s.box([.9*k,.055,.012],[0,.0275,z*k],tray);
+    }
+    g.root.position.y=foundationY;
     g.root.scale.setScalar(k);
     g.root.rotation.y = (random() - 0.5) * 0.5;
-    s.root.add(g.root);
+    s.root.add(g.root);g.root.updateMatrixWorld(true);
+    if(a.canopy!=='open'){
+      const mat=s.material(a.canopy==='cloth'?'#b9a37c':'#9ba4a3',{metalness:a.canopy==='cloth'?0:.35});
+      const wood=s.material(a.canopy==='cloth'?'#785f42':'#495556');const rx=.53*k,rz=.43*k,h=1.08*k+foundationY;
+      for(const x of[-rx,rx])for(const z of[-rz,rz])s.rod([x,0,z],[x,h+(a.canopy==='pitched'?0:z*.16),z],.018,wood);
+      if(a.canopy==='pitched'){
+        for(const sign of[-1,1]){const panel=s.box([rx*2+.1,.025,Math.hypot(rz,.2*k)+.05],[0,h+.1*k,sign*rz/2],mat);panel.rotation.x=sign*Math.atan2(.2*k,rz);
+          for(let i=0;i<9;i++)s.rod([-rx+i*rx/4,h+.2*k,0],[-rx+i*rx/4,h,sign*rz],.008,mat);}
+        for(const x of[-rx,rx]){s.rod([x,h,-rz],[x,h+.2*k,0],.015,wood);s.rod([x,h+.2*k,0],[x,h,rz],.015,wood);}
+      }else{const roof=s.box([rx*2+.1,.025,rz*2+.1],[0,h,0],mat);roof.rotation.x=-Math.atan(.16);}
+      for(const z of[-rz,rz])s.rod([-rx,h+(a.canopy==='pitched'?0:z*.16),z],[rx,h+(a.canopy==='pitched'?0:z*.16),z],.015,wood);
+    }
 
     // Oil stain.
     if (a.stain > 0.08) {
@@ -151,7 +238,7 @@ export default defineThing({
       }
     }
     const loopY = a.post === 'block' ? 0.12 : a.post === 'iron' ? 0.1 : 0.28;
-    const anchor: P = [-0.33 * k, 0.22 * k, -0.22 * k];
+    const anchor=g.root.localToWorld(new THREE.Vector3(a.size==='tiny'?-.26:-.345,a.size==='tiny'?.03:.22,-.2)).toArray() as P;
     const path = new THREE.CatmullRomCurve3([
       new THREE.Vector3(...anchor), new THREE.Vector3((anchor[0] + px) / 2, 0.02, (anchor[2] + pz) / 2 + 0.1),
       new THREE.Vector3(px + postR + 0.03, loopY * 0.6, pz + 0.05), new THREE.Vector3(px, loopY, pz + postR + 0.02), new THREE.Vector3(px - postR - 0.02, loopY, pz),
@@ -186,6 +273,7 @@ export default defineThing({
     } else {
       funnel.position.set(kegAt[0] - 0.25, 0.09, kegAt[2] + 0.12);
       funnel.rotation.set(Math.PI / 2 + 0.2, 0, random() * 3);
+      funnel.updateMatrixWorld(true);funnel.position.y-=new THREE.Box3().setFromObject(funnel,true).min.y;
     }
     s.root.add(funnel);
     const keg = s.box([0.24, 0.34, 0.16], [kegAt[0], 0.17, kegAt[2]], s.material(pick(['#e8c020', '#e8c020', '#2a5fc0', '#f0efe8']), { roughness: 0.5 }));
@@ -197,6 +285,20 @@ export default defineThing({
     const orange = s.material('#e87a1c');
     const socket = g.root.localToWorld(new THREE.Vector3(-0.24, 0.17, 0.23)).toArray() as P;
     const ex = 0.8 + 0.25 * k, ez = 0.0;
+    if(a.serviceTools!=='none'){
+      const x=kegAt[0],z=kegAt[2]+.48,wood=s.material('#8c7150');
+      s.box([.5,.025,.26],[x,.0125,z],wood);
+      if(a.serviceTools==='spanner'){
+        for(const dz of[-.06,.06]){s.rod([x-.15,.037,z+dz],[x+.13,.037,z+dz],.012,steel);for(const dx of[-.17,.15]){const jaw=s.ring(.033,.009,[x+dx,.037,z+dz],steel,Math.PI*1.45);jaw.rotation.x=Math.PI/2;}}
+        s.box([.1,.025,.09],[x+.14,.042,z+.08],s.material('#ac9d7c'));
+      }else if(a.serviceTools==='spark'){
+        s.rod([x-.16,.04,z-.07],[x+.09,.04,z-.07],.011,steel);s.rod([x+.09,.04,z-.07],[x+.09,.04,z+.06],.011,steel);
+        for(const dx of[-.1,0,.1]){s.cylinder(.014,.014,.06,[x+dx,.055,z+.06],steel,8);s.cylinder(.012,.012,.04,[x+dx,.105,z+.06],s.material('#e5dfcf'),8);}
+      }else{
+        s.box([.11,.19,.08],[x-.1,.12,z],s.material('#b6a039'));s.cylinder(.018,.018,.04,[x-.1,.235,z],dark,8);
+        s.lathe([[0,0],[.055,0],[.065,.09],[.055,.09],[.045,.012],[0,.012]],steel,[x+.1,.025,z]);
+      }
+    }
     const spinner: THREE.Object3D[] = [];
     const glows: THREE.MeshStandardMaterial[] = [];
     const on = running;
@@ -206,7 +308,12 @@ export default defineThing({
       s.ring(0.12, 0.012, [ex - 0.29, 0.035, 0.31], orange).rotation.x = Math.PI / 2;
       s.box([0.05, 0.03, 0.04], [ex - 0.12, 0.02, 0.36], s.material('#f0efe8'));
     } else {
-      s.tube([socket, [socket[0], 0.03, socket[2] + 0.25], [0.35, 0.012, 0.75 + random() * 0.15], [ex - 0.3, 0.012, 0.45], [ex - 0.05, 0.012, ez + 0.22]], 0.009, orange);
+      const lead:P[]=[socket,[socket[0],.03,socket[2]+.25]];
+      if(a.cableRoute==='direct')lead.push([.35,.012,.75],[ex-.3,.012,.45]);
+      else if(a.cableRoute==='loop')for(let i=0;i<=12;i++){const t=i*Math.PI*2/12;lead.push([.36+Math.sin(t)*.2,.012,.76+Math.cos(t)*.2]);}
+      else if(a.cableRoute==='edge')lead.push([socket[0],.012,1.05],[ex+.25,.012,1.05],[ex+.25,.012,.4]);
+      else for(let i=0;i<6;i++)lead.push([.05+i*.15,.012,.65+(i%2)*.16]);
+      lead.push([ex-.05,.012,ez+.22]);s.tube(lead,.009,orange);
       s.box([0.06, 0.035, 0.05], [ex - 0.05, 0.02, ez + 0.2], s.material('#f0efe8'));
     }
     if (a.powers === 'bulb') {
@@ -217,7 +324,7 @@ export default defineThing({
     if (a.powers === 'tv') {
       const stool = s.material(pick(['#2a62c8', '#c8322a', '#f0f0e8']));
       s.cylinder(0.17, 0.21, 0.44, [ex, 0.22, ez], stool, 12);
-      s.box([0.42, 0.32, 0.3], [ex, 0.61, ez], s.material('#2a2a2e'));
+      s.box([0.42, 0.32, 0.3], [ex, 0.60, ez], s.material('#2a2a2e'));
       s.box([0.34, 0.25, 0.01], [ex, 0.62, ez + 0.152], emit('#3aa04a', 1.3));
       s.box([0.004, 0.25, 0.012], [ex, 0.62, ez + 0.153], emit('#f0fff0', 1.3));
       s.ring(0.045, 0.003, [ex, 0.62, ez + 0.158], emit('#f0fff0', 1.3));
@@ -284,9 +391,8 @@ export default defineThing({
     const shake = !running ? 0 : (heavy ? 0.007 : 0.003) * mix(0.6, 1.6, mood.energy);
     const base = glows.map((m) => m.emissiveIntensity);
     return s.finish({
-      footprint: 1.1,
       update: (dt, time) => {
-        g.root.position.set(Math.sin(time * 61) * shake, Math.abs(Math.sin(time * 47)) * shake, Math.cos(time * 53) * shake);
+        g.root.position.set(Math.sin(time * 61) * shake, foundationY + Math.abs(Math.sin(time * 47)) * shake, Math.cos(time * 53) * shake);
         if (heavy) g.root.rotation.z = Math.sin(time * 23) * 0.01;
         place(time);
         for (const item of spinner) item.rotation.z += dt * 14;

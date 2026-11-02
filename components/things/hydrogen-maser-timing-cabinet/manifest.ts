@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Hydrogen maser timing cabinet", "summary": "A timing rack exposes a nested cylindrical physics package, attached electronics and clock-distribution patch lines. Remote radio astronomy, precise timing, quiet signals and field maintenance in desert arrays.", "scales": ["landscape", "tabletop", "room"]});

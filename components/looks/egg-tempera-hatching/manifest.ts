@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Egg tempera hatching',summary:'Fine layered tempera brushwork over pale gesso, restrained pigments, small luminous highlights and visible underdrawing. Carefully modelled portraits, devotional panels, delicate still lifes and formal landscapes.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'painting'});

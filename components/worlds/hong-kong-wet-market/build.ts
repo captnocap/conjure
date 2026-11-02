@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { type Placeable, choice, defineWorld, disposeTree, mix } from '@conjure/kit';
 
 type V3 = [number, number, number];
@@ -71,6 +72,12 @@ export default defineWorld({
       low: 'Low, at basket height, the lamps and signs towering.',
       high: 'Raised, as if from a step or a footbridge, looking down the lane.',
     }),
+    bayMarkers: choice('How are the market bays numbered?', { none: 'No separate bay markers.', enamel: 'Small blue enamel number plates on the front posts.', round: 'Round cream number discs.', hanging: 'Narrow numbered boards hanging beside each opening.' }),
+    drainCover: choice('What covers the lane drain?', { slots: 'The usual slotted metal cover.', bars: 'Heavy transverse grate bars.', plates: 'Square steel access plates along the channel.', stone: 'Pale stone covers with narrow joints.' }),
+    overheadUtility: choice('What service line runs above the stalls?', { none: 'No additional line.', cable: 'A supported black cable tray.', pipes: 'Twin painted water pipes with valve boxes.', duct: 'A broad metal ventilation duct.' }),
+    entranceFrame: choice('What frames the market entrance?', { open: 'An open mouth to the lane.', posts: 'Two square tiled entrance piers.', roller: 'A rolled shutter overhead between narrow posts.', folding: 'Folded lattice gates at the two sides.' }),
+    threshold: choice('How is the entry floor marked?', { plain: 'The same floor continues out.', stripe: 'A faded yellow line across the entrance.', chevrons: 'Two striped corner panels leave the centre clear.', mosaic: 'A broad cream mosaic threshold.' }),
+    wallServices: choice('What fittings serve the stall row?', { plain: 'Unadorned wall panels.', taps: 'Wall taps over small wash basins.', meters: 'Electric meter boxes and vertical conduits.', vents: 'Louvred extraction grilles high on the walls.' }),
   },
 
   build(a, context) {
@@ -510,6 +517,82 @@ export default defineWorld({
       root.add(stand);
       stands[index] = stand;
     }
+
+    // Fixed entrance and service details remain when a bay receives a cast object.
+    const serviceDark=flat('#4b5353'),enamel=flat('#d6ddce'),ochre=flat('#c6ab57');
+    const tube=(points:V3[],radius:number,material:THREE.Material)=>mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points.map(p=>new THREE.Vector3(...p))),Math.max(8,points.length*5),radius,6,false),material,[0,0,0]);
+    if(a.bayMarkers!=='none')for(const side of[-1,1])BAYS.forEach((z,index)=>{
+      const x=side*1.53,y=a.bayMarkers==='hanging'?2.32:1.7;
+      const map=paint(64,96,ctx=>{ctx.fillStyle=a.bayMarkers==='enamel'?'#3b617d':'#e7ddbb';ctx.fillRect(0,0,64,96);ctx.fillStyle=a.bayMarkers==='enamel'?'#f4ecd9':'#5f4c32';ctx.font='bold 48px sans-serif';ctx.textAlign='center';ctx.fillText(String(index+1+(side>0?8:0)),32,66);});
+      if(a.bayMarkers==='round'){const plaque=mesh(new THREE.CircleGeometry(.14,20),new THREE.MeshStandardMaterial({map,side:THREE.DoubleSide}),[x,y,z+1.03]);plaque.rotation.y=side*Math.PI/2;}
+      else {const plaque=box([.035,a.bayMarkers==='hanging'?.44:.22,.19],[x,y,z+1.03],new THREE.MeshStandardMaterial({map}));if(a.bayMarkers==='hanging'){box([.035,.18,.025],[x,y+.31,z+1.03],steel);box([.22,.025,.025],[x+side*.1,y+.4,z+1.03],steel);}else box([.13,.03,.04],[x+side*.04,y,z+1.03],steel);}
+    });
+    if(a.drainCover!=='slots') {
+      const count=a.drainCover==='bars'?80:a.drainCover==='plates'?32:26;
+      for(let i=0;i<count;i++) {
+        const z=FAR+(i+.5)*(NEAR-FAR)/count;
+        if(a.drainCover==='bars')box([.24,.012,.035],[-.15,.006,z],steel);
+        else {box([.22,.009,(NEAR-FAR)/count-.025],[-.15,.0045,z],a.drainCover==='plates'?steel:flat('#c9c3ae'));if(a.drainCover==='plates')for(const dx of[-.075,.075])box([.014,.004,.09],[-.15+dx,.011,z],serviceDark);}
+      }
+    }
+    if(a.overheadUtility!=='none')for(const side of[-1,1]) {
+      const x=side*2.85,y=a.cover==='hall'?2.82:3.05;
+      if(a.overheadUtility==='cable'){box([.2,.06,22],[x,y,-4],serviceDark);for(const dx of[-.09,.09])box([.018,.1,22],[x+dx,y+.06,-4],steel);}
+      else if(a.overheadUtility==='pipes')for(const dx of[-.085,.085])tube([[x+dx,y,6.5],[x+dx,y,-14.5]],.035,dx>0?flat('#759789'):flat('#b99b79'));
+      else {box([.45,.25,22],[x,y,-4],steel);for(let i=0;i<8;i++)box([.46,.26,.03],[x,y,5.7-i*2.65],serviceDark);}
+      for(let i=0;i<8;i++){const z=5-i*2.6;box([WALL-Math.abs(x),.035,.035],[side*(WALL+Math.abs(x))/2,y-.06,z],steel);}
+    }
+    if(a.entranceFrame!=='open') {
+      const x=2.6,z=6.35,top=3.15;
+      for(const side of[-1,1])box([a.entranceFrame==='posts'?.32:.12,top,.22],[side*x,top/2,z],a.entranceFrame==='posts'?enamel:steel);
+      if(a.entranceFrame==='roller'){box([5.3,.32,.34],[0,top-.04,z],steel);for(let i=0;i<8;i++)box([5.28,.016,.012],[0,top-.18+i*.04,z+.177],serviceDark);}
+      else if(a.entranceFrame==='folding')for(const side of[-1,1])for(let i=0;i<5;i++){const gx=side*(x-.08-i*.07);box([.025,2.65,.035],[gx,1.325,z],steel);for(let j=0;j<6;j++){const bar=box([.11,.018,.025],[gx, .28+j*.42,z],steel);bar.rotation.z=(i%2?1:-1)*.7;}}
+    }
+    if(a.threshold==='stripe')box([4.5,.004,.12],[0,.002,6.8],ochre);
+    else if(a.threshold==='mosaic')for(let i=0;i<20;i++)for(let j=0;j<3;j++)box([.219,.004,.14],[-2.1375+i*.225,.002,6.55+j*.15],(i+j)%4?enamel:serviceDark);
+    else if(a.threshold==='chevrons')for(const side of[-1,1])for(let i=0;i<6;i++){const panel=box([.09,.004,.4],[side*(1.6+i*.12),.002,6.7],i%2?serviceDark:ochre);panel.rotation.y=side*.45;}
+    if(a.wallServices!=='plain')for(const side of[-1,1])for(const z of[3.7,-1.5,-6.7,-11.9]) {
+      const x=side*(WALL-.08);
+      if(a.wallServices==='meters'){box([.16,.48,.32],[x,1.9,z],enamel);box([.012,.12,.2],[x-side*.09,1.97,z],serviceDark);tube([[x,2.14,z],[x,2.8,z]],.018,steel);}
+      else if(a.wallServices==='vents'){box([.08,.42,.8],[x,2.5,z],serviceDark);for(let i=0;i<7;i++)box([.1,.025,.75],[x-side*.03,2.34+i*.05,z],steel);}
+      else {box([.3,.12,.42],[x-side*.12,.9,z],steel);tube([[x,1.2,z],[x-side*.2,1.2,z],[x-side*.2,1.08,z]],.025,steel);tube([[x-side*.12,.85,z],[x-side*.12,.5,z],[x,.5,z]],.035,serviceDark);}
+    }
+
+    // Merge rigid untextured metalwork. Moving fans, removable bay fillers,
+    // raised stands, lights, painted signs and transparent water keep their
+    // original objects and materials.
+    const staticGroups=new Map<THREE.Material,Map<string,THREE.Mesh[]>>();
+    root.updateMatrixWorld(true);
+    const originalBounds=new THREE.Box3().setFromObject(root,true);
+    for(const child of root.children){
+      const part=child as THREE.Mesh;
+      if(!part.isMesh||(part as THREE.InstancedMesh).isInstancedMesh||part===floor||Array.isArray(part.material))continue;
+      const material=part.material as THREE.MeshStandardMaterial;
+      if(material.map||material.transparent||material.vertexColors)continue;
+      const flags=String(part.castShadow)+String(part.receiveShadow);
+      const bucket=staticGroups.get(material)??new Map<string,THREE.Mesh[]>();
+      const list=bucket.get(flags)??[];list.push(part);bucket.set(flags,list);staticGroups.set(material,bucket);
+    }
+    const removedGeometry=new Set<THREE.BufferGeometry>();
+    for(const [material,bucket]of staticGroups)for(const list of bucket.values())if(list.length>1){
+      const parts=list.map(part=>{
+        part.updateMatrix();const clone=part.geometry.clone(),geometry=clone.index?clone.toNonIndexed():clone;
+        if(geometry!==clone)clone.dispose();
+        for(const attribute of Object.keys(geometry.attributes))if(attribute!=='position'&&attribute!=='normal')geometry.deleteAttribute(attribute);
+        geometry.applyMatrix4(part.matrix);return geometry;
+      });
+      const geometry=mergeGeometries(parts);
+      if(!geometry)throw new Error('Market static merge failed');
+      const joined=new THREE.Mesh(geometry,material);joined.castShadow=list[0].castShadow;joined.receiveShadow=list[0].receiveShadow;
+      for(const part of list){removedGeometry.add(part.geometry);root.remove(part);}
+      root.add(joined);for(const part of parts)part.dispose();
+    }
+    root.updateMatrixWorld(true);
+    const mergedBounds=new THREE.Box3().setFromObject(root,true);
+    if(originalBounds.min.distanceTo(mergedBounds.min)>1e-5||originalBounds.max.distanceTo(mergedBounds.max)>1e-5)throw new Error('Market merge changed bounds');
+    const retainedGeometry=new Set<THREE.BufferGeometry>();
+    root.traverse(node=>{if((node as THREE.Mesh).isMesh)retainedGeometry.add((node as THREE.Mesh).geometry);});
+    for(const geometry of removedGeometry)if(!retainedGeometry.has(geometry))geometry.dispose();
 
     // Camera.
     const view = { eye: { at: [0.35, 1.6, 8.2], to: [-0.15, 1.25, -3], fov: 56 }, low: { at: [0.5, 0.85, 8.1], to: [-0.2, 1.4, -3], fov: 58 }, high: { at: [0.25, 2.45, 8.7], to: [-0.1, 0.8, -3], fov: 54 } }[a.view];

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Granulating watercolour',summary:'Translucent washes on textured paper, with settling pigment grains, soft wet edges, dry-brush skips and pale water blooms. Gentle landscapes, travel sketches and luminous painted still lifes.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'painting'});

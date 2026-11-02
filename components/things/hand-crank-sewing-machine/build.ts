@@ -121,6 +121,42 @@ export default defineThing({
       case: 'The bottom of a bentwood carrying case, with brass catches at the ends.',
       none: 'Nothing: the iron bed sits straight on the table.',
     }),
+    presser: choice('Which presser foot is installed?', {
+      plain: 'A normal two-toed presser foot.',
+      zipper: 'A narrow one-sided zipper foot.',
+      roller: 'A small brass roller foot for difficult cloth.',
+      hemmer: 'A curled hemmer foot with a guiding scroll.',
+    }),
+    plate: choice('How is the stitch plate detailed?', {
+      plain: 'A plain polished plate.',
+      ruled: 'Fine parallel seam allowance lines are engraved into it.',
+      ribbed: 'Prominent rows of feed-dog teeth rise through its slots.',
+      inset: 'A contrasting rectangular inset outlines the needle area.',
+    }),
+    facePlate: choice('How is the machine’s end plate finished?', {
+      plain: 'A plain polished face plate.',
+      stripes: 'Fine vertical flutes run down the end plate.',
+      scroll: 'A curved decorative scroll is embossed on the plate.',
+      vents: 'Three narrow dark inspection slots cross the plate.',
+    }),
+    wheelForm: choice('What is the hand wheel construction?', {
+      spokes: 'A bright rim with six open spokes.',
+      solid: 'A solid enamel disc inside the metal rim.',
+      four: 'Four broad cast spokes with large openings.',
+      toothed: 'An exposed toothed rim with narrow internal spokes.',
+    }),
+    guard: choice('What protects the hand-wheel side?', {
+      none: 'No additional guard.',
+      arch: 'A slim curved steel finger guard follows the upper rim.',
+      half: 'A half-round enamel shield protects the upper half of the wheel.',
+      clear: 'A clear circular guard shows the wheel through it.',
+    }),
+    guide: choice('What guide is fitted to the bed?', {
+      none: 'No extra guide.',
+      fence: 'An adjustable seam fence stands to the right of the needle.',
+      quilting: 'A long bent quilting bar follows a parallel seam.',
+      binder: 'A folded strip binder guides a narrow band into the foot.',
+    }),
     notions: noul('Are an oil can, spare bobbins and a reel left beside it?'),
   },
 
@@ -181,11 +217,41 @@ export default defineThing({
     const needleX = -0.148;
     const needleUp = a.state === 'finished' || a.state === 'empty';
     s.box([0.004, 0.1, 0.06], [-0.189, y0 + 0.14, 0], chrome);
+    const darkMetal = s.material('#4b5053', { metalness: 0.6, roughness: 0.4 });
+    if (a.facePlate === 'stripes') for (let k = -3; k <= 3; k++) s.box([0.001, 0.085, 0.001], [-0.1915, y0 + 0.14, k * 0.007], darkMetal);
+    else if (a.facePlate === 'vents') for (let k = -1; k <= 1; k++) s.box([0.001, 0.006, 0.04], [-0.1915, y0 + 0.14 + k * 0.022, 0], darkMetal);
+    else if (a.facePlate === 'scroll') {
+      const points: [number, number, number][] = [];
+      for (let k = 0; k <= 24; k++) { const t = k / 24 * Math.PI * 3, r = 0.022 * (1 - k / 34); points.push([-0.192, y0 + 0.14 + Math.cos(t) * r * 1.6, Math.sin(t) * r]); }
+      s.tube(points, 0.0011, brass);
+    }
     s.rod([needleX, y0 + 0.09, 0.006], [needleX, y0 + (needleUp ? 0.05 : 0.03), 0.006], 0.004, chrome);
     s.rod([needleX, y0 + (needleUp ? 0.05 : 0.03), 0.006], [needleX, y0 + (needleUp ? 0.018 : 0.0), 0.006], 0.0012, chrome, 0.0004);
     s.rod([needleX + 0.014, y0 + 0.09, -0.008], [needleX + 0.014, y0 + 0.016, -0.008], 0.003, chrome);
-    s.box([0.022, 0.004, 0.03], [needleX + 0.008, y0 + 0.012, 0.002], chrome);
+    if (a.presser === 'plain') {
+      for (const side of [-1, 1]) s.box([0.007, 0.004, 0.03], [needleX + side * 0.006, y0 + 0.012, 0.002], chrome);
+      s.box([0.026, 0.004, 0.007], [needleX + 0.006, y0 + 0.012, -0.012], chrome);
+    } else if (a.presser === 'zipper') s.box([0.006, 0.004, 0.034], [needleX + 0.014, y0 + 0.012, 0.004], chrome);
+    else if (a.presser === 'roller') {
+      s.cylinder(0.009, 0.009, 0.012, [needleX + 0.014, y0 + 0.013, 0.006], brass, 20).rotation.z = Math.PI / 2;
+      s.box([0.005, 0.004, 0.018], [needleX + 0.014, y0 + 0.018, -0.006], chrome);
+    } else {
+      s.box([0.022, 0.003, 0.026], [needleX + 0.008, y0 + 0.01, 0], chrome);
+      s.tube([[needleX + 0.005, y0 + 0.012, 0.012], [needleX + 0.018, y0 + 0.014, 0.025], [needleX + 0.012, y0 + 0.022, 0.027], [needleX + 0.005, y0 + 0.018, 0.02]], 0.002, chrome);
+    }
     s.box([0.07, 0.002, 0.1], [needleX + 0.01, y0 + 0.001, 0], chrome);
+    if (a.plate === 'ruled') for (let k = 1; k <= 5; k++) s.box([0.0007, 0.0005, 0.08], [needleX + k * 0.007, y0 + 0.0023, 0], darkMetal);
+    else if (a.plate === 'ribbed') for (const side of [-1, 1]) for (let k = 0; k < 7; k++) s.box([0.003, 0.001, 0.002], [needleX + side * 0.005, y0 + 0.0025, -0.018 + k * 0.006], darkMetal);
+    else if (a.plate === 'inset') for (const side of [-1, 1]) { s.box([0.054, 0.0006, 0.002], [needleX + 0.01, y0 + 0.0024, side * 0.04], brass); s.box([0.002, 0.0006, 0.08], [needleX + 0.01 + side * 0.027, y0 + 0.0024, 0], brass); }
+    if (a.guide === 'fence') {
+      s.box([0.052, 0.002, 0.025], [needleX + 0.047, y0 + 0.003, 0.02], chrome);
+      s.box([0.003, 0.012, 0.07], [needleX + 0.035, y0 + 0.009, 0.015], chrome);
+      s.cylinder(0.004, 0.004, 0.003, [needleX + 0.06, y0 + 0.006, 0.02], brass, 12);
+    } else if (a.guide === 'quilting') s.tube([[needleX + 0.014, y0 + 0.035, -0.008], [needleX + 0.09, y0 + 0.035, -0.008], [needleX + 0.09, y0 + 0.008, 0.028]], 0.0018, chrome);
+    else if (a.guide === 'binder') {
+      s.box([0.02, 0.002, 0.07], [needleX + 0.025, y0 + 0.003, 0.04], chrome);
+      s.tube([[needleX + 0.035, y0 + 0.004, 0.072], [needleX + 0.018, y0 + 0.016, 0.055], [needleX + 0.018, y0 + 0.006, 0.02], [needleX + 0.006, y0 + 0.006, 0.012]], 0.002, chrome);
+    }
     const tension = s.cylinder(0.014, 0.014, 0.012, [-0.148, y0 + 0.15, faceZ + 0.005], chrome, 16);
     tension.rotation.x = Math.PI / 2;
     s.rod([-0.16, y0 + 0.2, 0], [-0.16, y0 + 0.222, 0], 0.004, chrome);
@@ -244,10 +310,18 @@ export default defineThing({
     const rim = new THREE.Mesh(new THREE.TorusGeometry(0.056, 0.011, 10, 40), a.finish === 'mint' ? enamel : chrome);
     rim.rotation.y = Math.PI / 2;
     wheel.add(rim);
-    for (let i = 0; i < 6; i++) {
-      const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.1, 0.008), enamel);
-      spoke.rotation.x = i * Math.PI / 6;
-      wheel.add(spoke);
+    if (a.wheelForm === 'solid') {
+      const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.052, 0.006, 36), enamel); disc.rotation.z = Math.PI / 2; wheel.add(disc);
+    } else {
+      const spokes = a.wheelForm === 'four' ? 2 : 3;
+      for (let i = 0; i < spokes; i++) {
+        const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.1, a.wheelForm === 'four' ? 0.016 : 0.008), enamel);
+        spoke.rotation.x = i * Math.PI / spokes; wheel.add(spoke);
+      }
+      if (a.wheelForm === 'toothed') for (let k = 0; k < 24; k++) {
+        const t = k / 24 * Math.PI * 2;
+        const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.008, 0.006), chrome); tooth.position.set(0, Math.cos(t) * 0.068, Math.sin(t) * 0.068); tooth.rotation.x = t; wheel.add(tooth);
+      }
     }
     const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.02, 0.05, 16), chrome);
     hub.rotation.z = Math.PI / 2;
@@ -273,6 +347,24 @@ export default defineThing({
       crank.rotation.x = random() * Math.PI * 2;
       crank.traverse((node) => { node.castShadow = true; });
       s.root.add(crank);
+    }
+
+    if (a.guard !== 'none') {
+      const gx = 0.3, gy = y0 + 0.16;
+      // The guard and its upright sit beyond the crank knob's full x extent (.2855).
+      // Its mounting foot crosses underneath the crank's lowest sweep.
+      s.rod([0.17, y0 + 0.002, -0.07], [gx, y0 + 0.002, -0.1], 0.003, chrome);
+      s.rod([gx, y0 + 0.002, -0.1], [gx, gy, -0.1], 0.003, chrome);
+      s.rod([gx, gy, -0.1], [gx, gy, -0.077], 0.003, chrome);
+      if (a.guard === 'arch') {
+        const arc = s.mesh(new THREE.TorusGeometry(0.078, 0.003, 6, 36, Math.PI), chrome, [gx, gy, 0]);
+        arc.rotation.y = Math.PI / 2;
+        s.rod([gx, gy, -0.077], [gx, gy, -0.078], 0.003, chrome);
+      } else {
+        const mat = a.guard === 'clear' ? s.material('#c5dce0', { transparent: true, opacity: 0.22, depthWrite: false, side: THREE.DoubleSide }) : enamel;
+        const shield = s.mesh(new THREE.CircleGeometry(0.077, 40, 0, a.guard === 'half' ? Math.PI : Math.PI * 2), mat, [gx, gy, 0]); shield.rotation.y = Math.PI / 2;
+        s.cylinder(0.005, 0.005, 0.006, [gx + 0.003, gy, 0], brass, 12).rotation.z = Math.PI / 2;
+      }
     }
 
     // Reel on the spool pin and the thread path down to the needle.

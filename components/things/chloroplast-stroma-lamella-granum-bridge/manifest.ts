@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Chloroplast stroma lamella granum bridge", "summary": "A broad intergranal thylakoid sheet joins two unequal granum stack margins through visible continuous necks. The sheets and disk lumens join through real open necks. Simplified rear peripheral channels show continuing connectivity; this enlarged schematic is distinct from the detailed helical granum reconstruction.", "scales": ["macro", "tabletop"]});

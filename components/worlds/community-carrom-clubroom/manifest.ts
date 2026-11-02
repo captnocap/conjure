@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind: 'world', title: "Community carrom clubroom", summary: "A modest clubroom is anchored by a permanent square carrom table with open corner pockets, marked baselines and a visible coin position. Board storage, score pegs, waiting seats and a tea corner create a place for patient local matches.", scales: ["room", "street", "tabletop"]});

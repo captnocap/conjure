@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Low reynolds microfluidic junction bench", "summary": "A permanent chip with genuinely connected open channels, three fitted reservoirs and a pressure line identifies the place with every cast. A permanent enlarged chip network, supported feed shelf and connected reservoir tubes identify the microfluidic bench; exposed channels show schematic low-Reynolds flow states rather than a numerical simulation.", "scales": ["tabletop", "tabletop"]});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Ciliary basal body triplet barrel", "summary": "A nine-triplet basal-body barrel has a real central cavity, attached basal foot and a cut surface patch for orientation. Nine shared-wall basal triplets surround an open central cavity below an attached apical membrane reference. A single basal foot and lateral links anchor the model; missing triplets and short distal ends are teaching cuts.", "scales": ["macro", "tabletop"]});

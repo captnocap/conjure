@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Photospheric granule upflow cell", "summary": "A broad domed granule top is attached to a cut convective plume, with a closed cell wall section and a raised center. An explicitly schematic solid relief and inferred subsurface convection model, not a solar image or fluid simulation; photospheric granulation and stellar heat transport.", "scales": ["planetary", "macro"]});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Proximal tubule brush border section", "summary": "A curved proximal-tubule wall retains dense apical microvilli facing a genuine open lumen, with a visible basal surface. The dense brush border projects into a true open lumen while the basal layer remains outside. Cell sectors and organelle profiles are enlarged teaching sections, with no implied disease state.", "scales": ["macro", "tabletop"]});

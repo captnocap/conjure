@@ -20,7 +20,8 @@ const PALETTES: Record<keyof typeof SCHEMES, [string, string][]> = {
 };
 const VALUES = ['1', '5', '25', '100', '500'];
 
-function chipMaterials(base: string, stripe: string, value: string, wear: number) {
+type ChipDetails={finish:string;inlay:string;edgeStyle:string};
+function chipMaterials(base: string, stripe: string, value: string, wear: number, detail: ChipDetails) {
   const grime = (hex: string) => '#' + new THREE.Color(hex).lerp(new THREE.Color('#6d6455'), wear * 0.35).getHexString();
   const b = grime(base), st = grime(stripe);
   const side = document.createElement('canvas');
@@ -28,25 +29,29 @@ function chipMaterials(base: string, stripe: string, value: string, wear: number
   let ctx = side.getContext('2d')!;
   ctx.fillStyle = b; ctx.fillRect(0, 0, 384, 8);
   ctx.fillStyle = st;
-  for (let i = 0; i < 6; i++) ctx.fillRect(i * 64 + 8, 0, 30, 8);
+  const spots=detail.edgeStyle==='six'?6:detail.edgeStyle==='eight'?8:detail.edgeStyle==='triple'?12:4;
+  for(let i=0;i<spots;i++){const x=i*384/spots;ctx.fillRect(x+3,0,detail.edgeStyle==='thin'?5:384/spots*.4,8);if(detail.edgeStyle==='triple'){ctx.fillStyle=b;ctx.fillRect(x+9,0,2,8);ctx.fillStyle=st;}}
   const top = document.createElement('canvas');
   top.width = top.height = 128;
   ctx = top.getContext('2d')!;
   ctx.fillStyle = b; ctx.fillRect(0, 0, 128, 128);
   ctx.fillStyle = st;
-  for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * Math.PI * 2;
-    ctx.beginPath(); ctx.moveTo(64, 64); ctx.arc(64, 64, 66, a, a + 0.5); ctx.closePath(); ctx.fill();
+  for (let i = 0; i < spots; i++) {
+    const a = (i / spots) * Math.PI * 2;
+    ctx.beginPath(); ctx.moveTo(64, 64); ctx.arc(64, 64, 66, a, a + (detail.edgeStyle==='thin'?.09:2.6/spots)); ctx.closePath(); ctx.fill();
   }
   ctx.fillStyle = b; ctx.beginPath(); ctx.arc(64, 64, 46, 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = st; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(64, 64, 36, 0, Math.PI * 2); ctx.stroke();
   ctx.fillStyle = st; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.font = `bold ${value.length > 2 ? 26 : 36}px sans-serif`;
-  ctx.fillText(value, 64, 66);
+  if(detail.inlay==='value')ctx.fillText(value,64,66);
+  if(detail.inlay==='suit'){ctx.font='bold 45px serif';ctx.fillText('♠',64,66);}
+  if(detail.inlay==='star'){ctx.beginPath();for(let i=0;i<10;i++){const t=i*Math.PI/5-Math.PI/2,r=i%2?10:23;ctx.lineTo(64+Math.cos(t)*r,64+Math.sin(t)*r);}ctx.closePath();ctx.fill();}
+  if(detail.inlay==='ring'){ctx.lineWidth=3;ctx.beginPath();ctx.arc(64,64,21,0,7);ctx.stroke();}
   const make = (canvas: HTMLCanvasElement) => {
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
-    return new THREE.MeshStandardMaterial({ map: texture, roughness: 0.7 + wear * 0.2 });
+    return new THREE.MeshStandardMaterial({ map: texture, roughness: detail.finish==='gloss'?.16:detail.finish==='metal'?.3:detail.finish==='ceramic'?.4:.7+wear*.2, metalness:detail.finish==='metal'?.7:0 });
   };
   const sideMat = make(side), topMat = make(top);
   return [sideMat, topMat, topMat];
@@ -54,6 +59,12 @@ function chipMaterials(base: string, stripe: string, value: string, wear: number
 
 export default defineThing({
   questions: {
+    profile: choice('What shape is each chip?', { round: 'Ordinary round chips.', scalloped: 'Round chips with shallow scalloped edges.', octagon: 'Eight-sided gaming tokens.', square: 'Square gaming plaques.' }),
+    thickness: choice('How thick are the chips?', { thin: 'Thin light counters.', usual: 'Standard gaming-chip thickness.', thick: 'Thick heavy chips.', deep: 'Extra-deep chunky tokens.' }),
+    finish: choice('What finish do the chips have?', { clay: 'Matte clay-composite surfaces.', gloss: 'Glossy coloured plastic.', ceramic: 'Smooth ceramic surfaces.', metal: 'Metallic enamelled counters.' }),
+    inlay: choice('What is on the centre inlay?', { value: 'A printed denomination.', suit: 'A large spade emblem.', star: 'A five-point star.', ring: 'A simple concentric ring.' }),
+    edgeStyle: choice('How are the coloured edge spots arranged?', { six: 'Six broad edge spots.', eight: 'Eight evenly spaced spots.', triple: 'Twelve narrow split spots.', thin: 'Four thin contrasting markers.' }),
+    marker: choice('What counting aid is nearby?', { tally: 'A small handwritten tally card.', pencil: 'A short yellow counting pencil.', counter: 'A brass numbered counter.', beads: 'A short string of wooden counting beads.' }),
     stake: score('How big is the stake?', ['A loser\'s last three chips', 'A short stack', 'A decent buy-in', 'A healthy pile', 'A fortune in towers']),
     state: choice('What state are the chips in?', {
       tidy: 'Squared-off towers of equal height, counted and recounted by a careful player.',
@@ -80,6 +91,7 @@ export default defineThing({
 
   build(a, context) {
     const s = new Sculpture(context);
+    const H={thin:.0023,usual:.0034,thick:.0046,deep:.006}[a.thickness];
     const { mood, random } = context;
     const palette = PALETTES[a.scheme];
     const lists: THREE.Matrix4[][] = palette.map(() => []);
@@ -185,11 +197,13 @@ export default defineThing({
       put(colourPick(), x, floor + H / 2 + (floor > 0 ? 0.0012 : 0), z, (random() - 0.5) * tilt, random() * 6.28, (random() - 0.5) * tilt);
     }
 
-    const geometry = new THREE.CylinderGeometry(R, R, H, 28);
+    const geometry = new THREE.CylinderGeometry(R, R, H, a.profile==='square'?4:a.profile==='octagon'?8:40);
+    if(a.profile==='square')geometry.rotateY(Math.PI/4);
+    if(a.profile==='scalloped'){const pos=geometry.attributes.position;for(let i=0;i<pos.count;i++){const x=pos.getX(i),z=pos.getZ(i),r=Math.hypot(x,z);if(r>R*.8){const factor=.96+.04*Math.cos(Math.atan2(z,x)*10);pos.setX(i,x*factor);pos.setZ(i,z*factor);}}geometry.computeVertexNormals();}
     lists.forEach((list, index) => {
       if (!list.length) return;
       const [base, stripe] = palette[index];
-      const mesh = new THREE.InstancedMesh(geometry, chipMaterials(base, stripe, VALUES[index], mood.wear), list.length);
+      const mesh = new THREE.InstancedMesh(geometry, chipMaterials(base, stripe, VALUES[index], mood.wear, a), list.length);
       list.forEach((matrix, i) => mesh.setMatrixAt(i, matrix));
       mesh.instanceMatrix.needsUpdate = true;
       mesh.castShadow = mesh.receiveShadow = true;
@@ -240,6 +254,11 @@ export default defineThing({
       band.rotation.x = Math.PI / 2;
     }
 
+    const mx=Math.min(...spots.map(([x])=>x))-R-.045,mz=-.045;
+    if(a.marker==='tally'){s.box([.055,.001,.07],[mx,.0005,mz],s.material('#eee5cc'));const label=s.label('||||  |||',.046,.029,[mx,.0012,mz],'#35352e','#eee5cc');label.rotation.x=-Math.PI/2;}
+    if(a.marker==='pencil'){s.rod([mx-.035,.003,mz],[mx+.032,.003,mz],.003,s.material('#d5a52d'));s.rod([mx+.032,.003,mz],[mx+.042,.003,mz],.003,s.material('#dabd8e'),.0005);}
+    if(a.marker==='counter'){s.cylinder(.017,.017,.004,[mx,.002,mz],s.material('#b89847',{metalness:.7,roughness:.35}),24);const label=s.label('20',.021,.015,[mx,.0042,mz],'#453824','#b89847');label.rotation.x=-Math.PI/2;}
+    if(a.marker==='beads'){s.rod([mx-.04,.004,mz],[mx+.04,.004,mz],.001,s.material('#b5a47f'));for(let i=0;i<8;i++)s.ball([.0045,.0045,.0045],[mx-.034+i*.009,.0045,mz],s.material(i<4?'#a06634':'#65452b'),8);}
     return s.finish();
   },
 });

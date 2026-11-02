@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Lensing time delay surface", "summary": "A smoothly curved delay surface has visible minima and saddles, section cuts and anchored path markers. An explicitly diagrammatic thin-lens teaching model; curves and image multiplicity follow its stated mathematical mapping.", "scales": ["tabletop", "cosmic"]});

@@ -42,15 +42,17 @@ Any host of that protocol will do, and any number at once; set the key of each i
 | --- | --- | --- |
 | [TypeSafe AI](https://typesafe.ai) directly | `TYPESAFE_API_KEY` | `jev-latest`, `jev-preview` (Jev, $0.042 per million input tokens) |
 | [OpenRouter](https://openrouter.ai/models?output_modalities=decisions) | `OPENROUTER_API_KEY` | every decision model it lists: Jev, Liquid d1, Perplexity Decider, OpenAI Luna, Microsoft Decision-1, Cloudflare Clef, free tiers… |
-| [NanoGPT](https://nano-gpt.com) | `NANO_GPT_API_KEY` | `typesafe/jev-latest` and the decision models it carries |
+| [NanoGPT](https://nano-gpt.com) | `NANO_GPT_API_KEY` | twenty decision models: Jev 1.13/1.14, eu/jev Jeff, Rune, SubQ Snap, PPLX Decider, d3 (vLLM Semantic Router), Clef, Kev, Luna, Liquid D1, Decider 0.8B–4B |
 | Anything else | `CONJURE_API_KEY` + `CONJURE_BASE_URL` | whatever answers `POST /v1/systemone` |
 
 Every model is offered as `<provider>:<model>` in the model menu, so the **two critics**
 presentation can read one idea with two providers. `CONJURE_MODEL`, `CONJURE_MODELS` and
 `CONJURE_PROVIDER` narrow the menu (see `.env.example`); TypeSafe and OpenRouter are asked for their
-current decision models at startup. Without any key the studio still runs: add `?offline` to the
-address and every question settles as an even draw; catalogue studies and every check ask no model.
-`?idea=…&t=1&roll=2` conjures on load.
+current decision models at startup. Smaller models take less per request (d3 at most 64 questions and
+26 options and a plain-text state, eu/jev Jeff eight questions, Clef about 1,800 tokens), and
+`engine/decision-limits.ts` shrinks the batches to fit each one. Without any key the studio still runs:
+add `?offline` to the address and every question settles as an even draw; catalogue studies and every
+check ask no model. `?idea=…&t=1&roll=2` conjures on load; `&model=nanogpt:liquid/d1` picks an offered model.
 
 Six things (chair, tree, robot, staircase, street sign, hover-car) wrap builders from the Three.js
 ateliers repository, which is not part of this one. Link it as `./ateliers` (or set
@@ -72,8 +74,8 @@ model menu, the decision tree, the layer lab and the trace library, sits under t
 this component** builds a free random variation, using Graphic press unless **Next look**
 selects another treatment; the ledger
 labels it as a catalogue study. **Use this idea** fills the prompt for you to edit and
-conjure with the selected model. **Invent an idea** combines 140 authored starting points
-with scale-specific details, emotional direction and framing: 71,680 possible briefs.
+conjure with the selected model. **Invent an idea** combines 280 authored starting points
+with scale-specific details, emotional direction and framing: 143,360 possible briefs.
 
 For reproducible offline compositions use `?offline&idea=…&world=worlds/…&cast=things/…,things/…&t=1&roll=2`.
 An explicit world starts a catalogue study. Its cast is filtered to compatible things.
@@ -120,10 +122,11 @@ An explicit world starts a catalogue study. Its cast is filtered to compatible t
 6. **Build.** The world and things are built from their answers; the world places and frames
    them, honouring the decided framing when it is built on the diorama helper. A component
    that throws is reported on the sheet and left out.
-7. **Print.** The frame is captured as colour, normals, depth, object identity and plain
-   lighting, and the look redraws it from those. The settled vector decisions generate
+7. **Print.** The frame is captured as colour, normals, depth, object identity, plain
+   lighting and what each surface is made of, and the look redraws it from those. The settled vector decisions generate
    one to three SVG sheets over the print, using that same capture for placement masks.
-   The finished composition is shown and saved to the gallery automatically. A series
+   The finished composition is shown and saved to the gallery automatically, unless the
+   same picture, byte for byte, is already kept. A series
    prints its other plates from the same settled decisions, with each plate's own light,
    wear or framing, and saves them on one mat beside the primary plate.
 
@@ -148,7 +151,7 @@ limit; the complete SVG request is checked against the actual server schema in t
 | `src/` | The page: prompt, live activity feed, stage, decision tree |
 | `dev/` | Conformance check, treatment contact sheet, scaffold, screenshot helpers, browser checks |
 | `types/` | Ambient types for the Vite environment |
-| `public/atelier/` | The Atelier rendering kit's runtime, served unmodified |
+| `public/atelier/` | Atelier's rendering runtime, with explicit adapters for Conjure's variable scenes |
 | `tests/` | Independence rules for components; direction shape rules; unit tests for settling |
 
 ## What is in the catalogue
@@ -161,12 +164,27 @@ colour, small details and movement change with their answers and the shared mood
 
 Six legacy things wrap builders from the ateliers repository (optional, see Run). The growing procedural
 catalogue uses the project's `Sculpture` geometry vocabulary, the `diorama` setting helper
-and the `figure` helper for stylised, poseable people (see [COMPONENTS.md](COMPONENTS.md)).
+and the `figure` helper for stylised, poseable people (see [COMPONENTS.md](COMPONENTS.md)). A thing can
+also be a model file in its own folder, loaded with `loadModel`; the public catalogue keeps none, but a
+private, gitignored set of generated models can sit beside it and be cast like anything else.
 `node dev/gaps.mjs` lists the gallery's ideas whose cast belonged weakly, as briefs for the
 next content wave.
+`node dev/gallery-dupes.mjs` lists older entries whose picture repeats an earlier one, and
+`--move` moves them to `.data/gallery-duplicates/`. The strip of pictures along the page shows
+312 px thumbnails that the server makes with ffmpeg on first request into `.data/gallery-thumbs/`;
+without ffmpeg it sends the full print.
 
-**Atelier print** supports 72 of Atelier's 84 treatments, layered two deep with a finish.
-The other twelve are listed with reasons in `components/looks/atelier/unsuitable.ts`.
+**Atelier print** offers all 84 Atelier studies as a base or overlay, layered two deep with a
+finish. Captures now carry immutable mesh geometry, ownership, camera, lights, crease edges and
+material evidence. Sections, voxels, surface dots, ribs, cutaways, interior lattices, thickness
+exposures and chromatic shadows therefore draw the actual scene. Continuous thread, upright paper,
+Wholetoning and Directional color use their original image mechanisms. Source-specific geometry
+limits and the complete port inventory are documented in [the Atelier port notes](docs/atelier-port.md).
+
+The material choices also include 22 separate `atelier-*` source shaders, with their curvature,
+occlusion and surface-chart dependencies. These supplement the original twelve Conjure materials
+without changing their recipe IDs. Four materials whose shell charts belong specifically to the
+original Garden are documented as unavailable; they are not offered as generic substitutes.
 **Graphic press** adds blueprint, cyanotype, risograph, comic, woodcut, stencil, stained
 glass, thermal, pixel and engraving processes, with ink palettes, contours, pattern,
 grain, paper and registration choices.
@@ -254,14 +272,46 @@ subjects, like mosaic andamento, so the fill grows out of the subject; warped no
 landforms light and dark like soft graphite, with the cell walls crisp on top; and where light
 meets dark the cells close up into comb-like tubules. Typed decisions choose the fill (living
 **tissue**, **terrain** seen from above, fine **lace**, or **glyphs**: every cell holds a tiny drawn
-doodle, a circuit block, ring, ladder, hatching or glyph), the grain (finest hugging the subject and
-opening out, a halo of fine detail far out, or even), the reach, and what it all adds up to from
-across the room: landforms, a **vast hidden skull** (sockets, nose and teeth, anchored so the hero
-sits on its nose) or **one vast eye** (the hero as its pupil), outlined where the shading turns dark.
-A yes/no lets the solid dark forms **drip**. The inks are the print's own colours (its dark marks
-stay drawn over the growth), **graphite** on pale paper, or **blacklight**: fluorescent pink and
-violet lines glowing on deep indigo. `node dev/otherworld-sheet.mjs <entry> <out-dir> --vacui
-[reach]` prints the fills and grains; `--forms [reach] [fill]` prints each form in each ink.
+doodle), the grain (finest hugging the subject and opening out, a halo of fine detail far out, or
+even), the reach, and what it all adds up to from across the room: landforms, a **vast hidden
+skull** (sockets, nose and teeth, anchored so the hero sits on its nose) or **one vast eye** (the
+hero as its pupil), outlined where the shading turns dark. A yes/no lets the solid dark forms
+**drip**. The inks are the print's own colours (its dark marks stay drawn over the growth),
+**graphite** on pale paper, or **blacklight**: fluorescent pink and violet lines glowing on deep
+indigo. `node dev/otherworld-sheet.mjs <entry> <out-dir> --vacui [reach]` prints the fills and
+grains; `--forms [reach] [fill]` prints each form in each ink.
+
+What the glyph fill's cells draw is one more typed decision, from fourteen **doodle sets**
+(`engine/doodles.ts`): the original **machinery** (circuit blocks, rings, ladders, hatching and
+three-stroke glyphs), **hieroglyphs** (a wedjat eye, ankhs, ibises, cobras, scarabs, reeds, water,
+walking legs, seated figures, cartouches), **ASCII** (capitals, digits and punctuation in a stroke
+font, one character per cell), **body parts**, **furniture**, **buildings**, **nature**, **gems and
+crystals**, **flowers**, **sacred geometry**, **contours** (small maps: topographic rings, whorls,
+wood grain, isobars), **fractals** (Koch, Sierpinski, H-trees, dragon and Hilbert curves, a filled
+Mandelbrot set) and **fungi**, or a **notebook** that mixes them all. Each shape is a distance to
+its pen strokes in the cell's own frame, so the same drawing inks at any cell size; letters, chairs
+and mushrooms stay upright while machinery and geometry turn freely, one cell in twelve stays
+blank, and dense drawings thin out in small cells. Pictures saved before the sets existed draw
+machinery, exactly as they did. `node --import tsx dev/doodle-sheet.mjs [set …]` prints every
+shape of a set with its name, no browser or model needed, and `--fill` grows a blank print with
+each set at the live cell sizes; `node dev/otherworld-sheet.mjs <entry> <out-dir> --doodles
+[reach]` prints a saved picture with each set.
+
+Between the look and those passes, every surface's **material** shows through the medium
+(`engine/materialize.ts`). Each cast thing is asked what the idea says it is made of, and each
+setting what its stuff and its backdrop are, from twelve shared materials: chrome, brushed metal,
+gloss, satin, matte, velvet, rubber, leather, glass, glitter, wet and glow. "A chrome skull" is built
+as chrome, "a velvet armchair" as velvet, "a glitter void of stars" puts stars behind everything, and
+things nobody dressed still say what they are from how they were built: polished metal shines, a
+lacquer glints, a neon tube haloes. The capture carries the material per pixel and the pass renders
+it in the print's own lightest and darkest colours, so a watercolour stays a watercolour: mirror
+metal takes banded reflections, chalk loses its highlights and gains a tooth, velvet darkens where
+it faces you and lights along its edges, glitter twinkles round a loop, glass rims with light. One
+typed routing decision says how far the surfaces show through the medium at all, and tours on
+rerolls. A look that renders materials in its own medium declares so and is left alone: stained
+glass glazes a chrome blade in silvered mirror glass, a glitter pumpkin in seedy glass full of
+flashing bubbles, a wet street in water glass. `node dev/materialize-sheet.mjs` prints one scene
+with the hero in every material through several looks.
 
 ### Framing and presentation
 
@@ -407,20 +457,21 @@ development log of the first weeks, kept for the record.
 
 ```bash
 npm run export -- .data/export        # inventory, every decision question, grammar, scene seeds
-npm run export -- .data/export --all  # also writes all 71,680 scene briefs as JSONL
+npm run export -- .data/export --all  # also writes all 143,360 scene briefs as JSONL
 ```
 
 The running dev server supplies the actual auto-discovered catalogue, so exported questions
 stay in sync with new content. `conjure-inventory.json` includes manifests, scale tags, all
 component questions, art-medium questions and family descriptions, automatic vector-design
-questions and motifs, and the compact scene grammar. `scene-seeds.jsonl` contains 140 authored
+questions and motifs, and the compact scene grammar. `scene-seeds.jsonl` contains 280 authored
 premises; `scene-briefs.jsonl` contains the full compositional corpus. Exporting asks no model.
 
 ## Verify
 
 ```bash
 npm test                 # component independence rules + settling
-npm run typecheck
+npm run typecheck        # allows an 8 GB Node heap for the complete catalogue
+npm run build            # typecheck and production bundle; each allows an 8 GB Node heap
 npm run check            # builds every component six times in a headless browser (needs npm run dev); rolls walk every option and sweep the mood
 npm run check:expansion  # scene library, thirteen compositions, ten processes, mobile; no paid calls
 npm run check:layers     # vector controls, recipes, SVG/PNG export, new looks, mobile; no paid calls
@@ -432,9 +483,15 @@ node dev/replay-check.mjs <gallery-entry.json> <out> '{"direction::accent":"deta
 node dev/otherworld-sheet.mjs <gallery-entry.json> .data/otherworld/name own 0.5         # the same generation through each otherworld effect; mocked model
 node dev/laps.mjs ideas.txt --parallel 2        # conjure a spread of ideas with the real model and keep what each decided; asks and spends like the studio
 node dev/laps.mjs --tally .data/laps/<run>      # what recurred across that spread: directions, settings, looks, cast, finishes; free
+node dev/influence.mjs                          # gather every saved idea's decisions by word for /dev/influence.html; free
+node dev/wording.mjs .data/wording/probe.json --model nanogpt:liquid/d1   # reword the ideas behind each locked decision (synonyms, paraphrases, antonyms, other senses) and see whether the answer follows; spends like laps
+node --env-file=.env dev/critic.mjs --recent 3 --critics nanogpt:openai/gpt-6-luna-decisions --loop 2   # show prints to an image-reading decision model, ask whether they are what the idea meant, pin what it says is missing and conjure again
 ```
 
-`/dev/looks.html` draws every Atelier treatment on one scene. `node dev/snap.mjs "<idea>"
+`/dev/looks.html` draws every Atelier treatment on one scene. `/dev/influence.html` (after
+`node dev/influence.mjs`) is a heatmap of which words of an idea move which decisions across the
+gallery, per model: words held apart by ridge regression against decoy words for a noise floor,
+one decision's answers, one prompt's words, and what looks too heavily weighted. `node dev/snap.mjs "<idea>"
 out/name` saves the scene and the print for an idea.
 
 Conformance uses lightweight compatible fixtures and keeps its browser stable while other

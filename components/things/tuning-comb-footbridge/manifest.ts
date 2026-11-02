@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Tuning comb footbridge", "summary": "The tuned steel tongues of a music box become a little footbridge, with a heavy comb spine, real support piers and railings. Walking across a melody, delicate metalwork enlarged into civic architecture and a bridge that could sing.", "scales": ["tabletop", "room"]});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Dichroic interference film',summary:'A picture assembled from thin iridescent coatings whose colour changes with surface tilt, film thickness, folds and overlapping layers. Optical sample books, coated glass, reflective packaging and quiet shifting metallic colour.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'optical'});

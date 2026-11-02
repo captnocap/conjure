@@ -1,4 +1,4 @@
-import { type Capture, choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type Capture, type PaletteRole, choice, clamp01, defineLook, mix, rekey, score, seeded } from '@conjure/kit';
 
 /**
  * Ancient wall: the frame repainted the way an ancient workshop would have painted it.
@@ -26,6 +26,20 @@ const smooth = (from: number, to: number, x: number) => {
 
 const GLAZE = '#1b120d';
 const CLAY = 'clay';
+
+/**
+ * Under the idea's palette the tradition keeps its earths, black, white and gold; the costly minerals
+ * and touches take the palette instead: the blues (Egyptian blue, lapis) its ink, the greens (Egyptian
+ * green, turquoise, malachite) and the purple-reds its second colour. The bare surface is tinted
+ * toward its ground.
+ */
+const ACCENT_ROLES: Record<string, PaletteRole> = {
+  '#2a58a8': 'ink', '#2f5f8f': 'ink', '#5a86b0': 'ink',
+  '#2e8a55': 'second', '#3fa6a0': 'second', '#3f8f6e': 'second', '#6ab08e': 'second',
+  '#8a2a37': 'second', '#4a2c34': 'second',
+};
+/** How far the bare surface turns to the palette's ground; a vase's terracotta only takes a hint. */
+const WALL_TINT = { cave: 0.5, egypt: 0.5, blackfigure: 0.3, redfigure: 0.3, dunhuang: 0.5 } as const;
 
 /** The bare surface: its base tone, a darker mottle and a third patch colour. */
 const WALLS: Record<Tradition, Record<Ground, [string, string, string]>> = {
@@ -1001,7 +1015,7 @@ export default defineLook({
     palette: choice('How many pigments did the painter have?', {
       sparse: 'Barely any: one colour and black on the bare surface, more drawing than painting.',
       earth: 'The plain earths: red and yellow ochre, soot black and chalk white, sober and warm.',
-      mineral: 'The costly minerals too: malachite green, lapis or Egyptian blue, gold, purple and white where the tradition allows.',
+      mineral: 'The costly minerals too: brilliant precious pigments beside the earths, with gold, a deep accent and white where the tradition allows.',
     }),
     ground: choice('What is the bare surface like?', {
       pale: 'Pale: bare limestone, white gesso, buff clay or white plaster, bright and clean.',
@@ -1047,7 +1061,14 @@ export default defineLook({
     };
 
     // ── Colours ─────────────────────────────────────────────────────────────────────────────
+    const { palette } = context;
     const walls = WALLS[T][a.ground as Ground].map(hex);
+    if (palette) {
+      const tinted = rekey({ base: walls[0], mottle: walls[1], patch: walls[2] }, palette, { base: 'ground', mottle: 'ground', patch: 'ground' });
+      [tinted.base, tinted.mottle, tinted.patch].forEach((c, i) => (walls[i] = mixRGB(walls[i], c as RGB, WALL_TINT[T])));
+    }
+    const used = Object.keys(ACCENT_ROLES).filter((h) => Object.values(PIGMENTS[T]).some((list) => list.includes(h)));
+    const accents = rekey(Object.fromEntries(used.map((h) => [h, hex(h)])) as Record<string, RGB>, palette, ACCENT_ROLES);
     for (const w of walls) {
       w[0] = Math.min(255, Math.max(0, w[0] + (mood.warmth - 0.5) * 10));
       w[2] = Math.min(255, Math.max(0, w[2] - (mood.warmth - 0.5) * 12));
@@ -1056,16 +1077,16 @@ export default defineLook({
     // Cheer keeps the pigments fresh; age sinks them toward the ground they were laid on.
     const fresh = 0.68 + 0.32 * mood.cheer;
     const fade = vase ? 0 : 0.05 + mood.wear * 0.2 + (T === 'dunhuang' ? 0.16 : 0);
-    const pigment = (name: string): RGB => {
+    const pigment = (name: string, asMade = false): RGB => {
       if (name === CLAY) return [clay[0], clay[1], clay[2]];
-      const c = hex(name);
+      const c = (!asMade && (accents[name] as RGB | undefined)) || hex(name);
       if (name === GLAZE) return c;
       const g = c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11;
       return mixRGB(mixRGB([g, g, g], c, fresh), walls[0], fade * 0.55);
     };
     const names = [...PIGMENTS[T][a.palette as Palette]];
     const count = names.length;
-    const pigs = names.map(pigment);
+    const pigs = names.map((n) => pigment(n));
     const BLACK = names.indexOf(GLAZE);
     const ink = hex(LINE[T]);
 
@@ -1087,7 +1108,9 @@ export default defineLook({
     }
 
     // ── 2. Match every surface to a pigment ─────────────────────────────────────────────────
-    const labs = pigs.map((c) => oklab(c[0], c[1], c[2]));
+    // Surfaces are matched to the pigments as the tradition mixed them, so a re-keyed mineral lands
+    // where the original one would have.
+    const labs = (palette ? names.map((n) => pigment(n, true)) : pigs).map((c) => oklab(c[0], c[1], c[2]));
     const wallLab = oklab(walls[0][0], walls[0][1], walls[0][2]);
     const bias = BIAS[T] ?? [];
     // A pigment that vanishes into the wall is a poor choice for a figure (white on Egyptian

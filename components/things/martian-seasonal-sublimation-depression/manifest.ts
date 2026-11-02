@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Martian seasonal sublimation depression", "summary": "An irregular inset depression retains a stepped seasonal-ice edge and actual underlying terrain, distinct from a generic crater. A schematic seasonal-cover retreat section exposes substrate between thin ice remnants; this teaching patch is distinct from the deeper perennial south-polar residual-cap pits and carries no impact-crater rim.", "scales": ["planetary", "landscape", "macro"]});

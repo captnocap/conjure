@@ -9,7 +9,7 @@ export default defineLook({questions:{
  story:choice('What happened to the nursery?',{abandoned:'The house has been abandoned with every room still watching.',unpacked:'The rooms hang from strings as if recently unpacked.',sealed:'Some rooms have been crossed shut with thin timber strips.',remembering:'Small photographs of the cast remain in the rooms they left.'}),
  descent:score('How far inward does childhood recede?',['Two rooms inside a room','Four diminishing rooms','Six nested rooms']),
  aperture:score('How large is the enclosing dollhouse?',['Narrow side cupboards','A house looming over the scene','A huge cutaway whose roof almost leaves the frame']),
- pigment:choice('What material holds this domestic dream?',{bone:'Bone white painted wood and brown graphite.',rust:'Old red nursery paint and tobacco paper.',ink:'Cold ink, chalk and faded blue grey.',acid:'Sallow wallpaper and green stained wood.'})
+ pigment:choice('What material holds this domestic dream?',{bone:'Pale painted wood and soft dark graphite.',rust:'Deep toned nursery paint and heavy shadow.',ink:'Cold, quiet chalk and faded even tones.',acid:'Sickly wallpaper and sour stained wood.'})
 },async apply(c,a,context,signal){
  const t=prepare(c,context,signal,a.pigment),{g,p,source,boxes}=t,r=context.random,m=context.mood;
  // Rebuild the macro image as a cutaway: the source scene is the inhabited central room.

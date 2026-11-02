@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Chondritic matrix compaction fabric", "summary": "Fine irregular grains wrap around rigid inclusions and retain a directional fabric in a closed cut matrix slab. A schematic closed matrix slab with grain fabric wrapping rigid inclusions and true pore windows; chondritic compaction and primitive rock textures.", "scales": ["macro", "tabletop"]});

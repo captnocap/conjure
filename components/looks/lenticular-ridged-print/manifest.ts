@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Lenticular ridged print',summary:'A novelty picture seen through close cylindrical lens ribs, with interlaced views, small parallax echoes, shifting colour and a shiny card surface. Souvenir postcards, optical toys and a printed scene that changes as it tilts.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'optical'});

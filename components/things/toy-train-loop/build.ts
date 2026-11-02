@@ -55,6 +55,42 @@ export default defineThing({
       station: 'A little station house with a platform and a signal.',
       forest: 'A cluster of lollipop trees.',
     }),
+    wheels: choice('What kind of toy wheels run under the train?', {
+      solid: 'Simple solid painted wooden wheels.',
+      spokes: 'Open spoked wheels with narrow rims.',
+      white: 'Painted wheels with bright white outer rims.',
+      tyres: 'Dark rubber-like tyres around coloured hubs.',
+    }),
+    coupling: choice('How are the toy vehicles coupled?', {
+      magnets: 'Round metal magnets meet between the cars.',
+      loops: 'Small metal loops hang from short coupling stems.',
+      pegs: 'Painted peg-and-socket couplings join the cars.',
+      chain: 'Short visible chains hang between coupling mounts.',
+    }),
+    trackbed: choice('How is the little railway track constructed?', {
+      wood: 'Plain grooved wooden track pieces.',
+      sleepers: 'Broad wooden sleepers sit beneath the grooved track.',
+      rails: 'Two bright metal rails run along the grooves.',
+      studs: 'Small coloured connecting studs mark the track edges.',
+    }),
+    coachRoof: choice('If there are passenger coaches, how are their roofs shaped?', {
+      flat: 'Plain flat dark coach roofs.',
+      barrel: 'Smooth curved barrel roofs.',
+      ribs: 'Raised transverse ribs cross the roofs.',
+      clerestory: 'A narrow raised clerestory runs along each roof.',
+    }),
+    marker: choice('Which line-side play marker has been set out?', {
+      crossing: 'A small white railway crossing cross.',
+      flag: 'A flag on a low stand marks the start of the game.',
+      mile: 'A chunky numbered milestone stands beside the line.',
+      gate: 'A striped hinged crossing gate stands on a foot.',
+    }),
+    playwork: choice('What was left beside the little railway?', {
+      tickets: 'A small book of pretend tickets.',
+      tools: 'A toy spanner and screwdriver for railway repairs.',
+      parcels: 'Two tiny tied parcels await a goods train.',
+      timetable: 'A folded timetable with coloured route lines.',
+    }),
   },
 
   build(a, context) {
@@ -156,6 +192,15 @@ export default defineThing({
       const joint = box(s.root, [0.0402 * K, 0.0125 * K, 0.0014], [p.x, p.y + 0.0063 * K, p.z], dark);
       joint.rotation.y = yawAt(t);
     }
+    if(a.trackbed==='sleepers'||a.trackbed==='studs')for(let i=0;i<Math.round(length/.035);i++){
+      const p=curve.getPointAt(i/Math.round(length/.035)),t=curve.getTangentAt(i/Math.round(length/.035));
+      if(a.trackbed==='sleepers'){const tie=box(s.root,[.071,.003,.009],[p.x,p.y+.0015,p.z],s.material('#a6814d'));tie.rotation.y=yawAt(t);}
+      else for(const side of [-1,1])cyl(s.root,.0035,.0035,.003,[p.x+t.z*side*.026,p.y+.017,p.z-t.x*side*.026],trim,'y',8);
+    }
+    if(a.trackbed==='rails')for(const side of [-1,1]){
+      const points=Array.from({length:151},(_,i)=>{const p=curve.getPointAt(i/150),t=curve.getTangentAt(i/150);return new THREE.Vector3(p.x+t.z*side*.0132,p.y+.0138,p.z-t.x*side*.0132);});
+      const rail=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points,closed),180,.0014,6,closed),steel);rail.castShadow=true;s.root.add(rail);
+    }
     if (a.shape === 'eight') {
       const pier = paint('#c9362c');
       for (let i = 0; i < 40; i++) {
@@ -176,11 +221,23 @@ export default defineThing({
     // ---- Rolling stock: origin at the groove floor, nose toward +z ------------------------
     const wheels = (car: THREE.Object3D, places: readonly (readonly [number, number])[]) => {
       for (const [z, radius] of places) for (const x of [-1, 1]) {
-        cyl(car, radius, radius, 0.005, [x * 0.0172, radius, z], wheelPaint, 'x');
+        if(a.wheels==='spokes'){
+          const rim=put(car,new THREE.Mesh(new THREE.TorusGeometry(radius*.85,radius*.15,6,20),wheelPaint),[x*.0172,radius,z]);rim.rotation.y=Math.PI/2;
+          for(let i=0;i<4;i++){const angle=i/4*Math.PI,spoke=box(car,[.003,radius*1.6,.002],[x*.0172,radius,z],wheelPaint);spoke.rotation.x=angle;}
+        }else cyl(car, radius, radius, 0.005, [x * 0.0172, radius, z], a.wheels==='tyres'?dark:wheelPaint, 'x');
+        if(a.wheels==='white'){const rim=put(car,new THREE.Mesh(new THREE.TorusGeometry(radius*.87,radius*.12,6,20),s.material('#f1ead7')),[x*.0202,radius,z]);rim.rotation.y=Math.PI/2;}
         cyl(car, radius * 0.4, radius * 0.4, 0.0056, [x * 0.0172, radius, z], trim, 'x', 8);
       }
     };
-    const magnets = (car: THREE.Object3D, half: number) => { for (const end of [-1, 1]) cyl(car, 0.0048, 0.0048, 0.005, [0, 0.015, end * half], steel, 'z', 12); };
+    const magnets = (car: THREE.Object3D, half: number) => { for (const end of [-1, 1]) {
+      if(a.coupling==='magnets')cyl(car,0.0048,0.0048,0.005,[0,0.015,end*half],steel,'z',12);
+      else if(a.coupling==='pegs'){box(car,[.007,.004,.007],[0,.014,end*half],trim);cyl(car,.002,.002,.006,[0,.017,end*half],wheelPaint,'y',10);}
+      else {
+        box(car,[.003,.003,.005],[0,.015,end*half],steel);
+        const count=a.coupling==='chain'?3:1;
+        for(let i=0;i<count;i++){const ring=put(car,new THREE.Mesh(new THREE.TorusGeometry(a.coupling==='chain'?.002:.004,.0008,5,12),steel),[0,.014-i*.001,end*(half+.003+i*.0018)]);ring.rotation.x=Math.PI/2;ring.rotation.z=i%2*Math.PI/2;}
+      }
+    }};
     const body = paint(livery.engine);
     const engine = new THREE.Group();
     const moving = a.state === 'running' || a.state === 'uncoupled';
@@ -254,7 +311,14 @@ export default defineThing({
         map.colorSpace = THREE.SRGBColorSpace;
         const side = new THREE.MeshStandardMaterial({ map, roughness: 0.55 });
         box(car, [0.03, 0.026, 0.062], [0, 0.034, 0], [side, side, coat, coat, coat, coat]);
-        box(car, [0.033, 0.004, 0.066], [0, 0.049, 0], dark);
+        if(a.coachRoof==='barrel'){
+          const shape=new THREE.Shape();shape.moveTo(-.017,0);shape.absarc(0,0,.017,Math.PI,0,true);shape.closePath();
+          put(car,new THREE.Mesh(new THREE.ExtrudeGeometry(shape,{depth:.066,bevelEnabled:false,curveSegments:18}),dark),[0,.047,-.033]);
+        }else{
+          box(car, [0.033, 0.004, 0.066], [0, 0.049, 0], dark);
+          if(a.coachRoof==='ribs')for(let i=0;i<6;i++)box(car,[.033,.0018,.002],[0,.052,-.027+i*.011],trim);
+          if(a.coachRoof==='clerestory'){box(car,[.016,.009,.05],[0,.055,0],trim);box(car,[.018,.002,.053],[0,.0605,0],dark);}
+        }
       } else if (a.cargo === 'coal' || a.cargo === 'marbles' || a.cargo === 'empty') {
         for (const x of [-1, 1]) box(car, [0.003, 0.016, 0.062], [x * 0.0135, 0.029, 0], coat);
         for (const z of [-1, 1]) box(car, [0.03, 0.016, 0.003], [0, 0.029, z * 0.0295], coat);
@@ -383,6 +447,34 @@ export default defineThing({
     }
     const trees = (a.scenery === 'forest' ? 3 : 0) + Math.round(mood.density * 3 + random() * 0.6);
     for (let i = 0; i < trees && nextSpot < spots.length; i++) { const [x, z] = spots[nextSpot++]; tree(x + jit(0.012), z + jit(0.012)); }
+
+    const marker=put(s.root,new THREE.Group(),[a.shape==='eight'?.48:.34,0,.02]);
+    cyl(marker,.014,.017,.004,[0,.002,0],wood,'y',12);
+    if(a.marker==='mile'){
+      box(marker,[.022,.038,.016],[0,.023,0],trim);
+      const sign=s.label('1',.014,.022,[0,0,0],'#2a2a29',livery.trim);sign.position.set(0,.025,.0085);marker.add(sign);
+    }else{
+      cyl(marker,.0025,.0025,.065,[0,.036,0],dark,'y',8);
+      if(a.marker==='crossing')for(const side of [-1,1]){const cross=box(marker,[.036,.006,.003],[0,.063,.002],trim);cross.rotation.z=side*.65;}
+      if(a.marker==='flag')box(marker,[.029,.017,.002],[.014,.059,0],body);
+      if(a.marker==='gate'){
+        const hinge=put(marker,new THREE.Group(),[0,.043,0]);hinge.rotation.z=a.state==='running'?.15:1.1;
+        box(hinge,[.068,.005,.004],[.028,0,0],trim);for(let i=0;i<5;i++)box(hinge,[.006,.0054,.0044],[.003+i*.012,0,0],body);
+      }
+    }
+    const play=put(s.root,new THREE.Group(),[0,0,-.31]);
+    if(a.playwork==='tickets'){
+      box(play,[.064,.005,.036],[0,.0025,0],trim);
+      for(let i=0;i<3;i++){const ticket=s.label('TICKET',.017,.027,[0,0,0],'#334252','#f1e6bf');ticket.rotation.x=-Math.PI/2;ticket.position.set((i-1)*.02,.0057,0);play.add(ticket);}
+    }else if(a.playwork==='tools'){
+      box(play,[.048,.004,.008],[0,.002,0],steel);const jaw=put(play,new THREE.Mesh(new THREE.TorusGeometry(.008,.002,6,16,Math.PI*1.45),steel),[-.029,.002,0]);jaw.rotation.x=-Math.PI/2;
+      cyl(play,.003,.003,.034,[.018,.003,.022],steel,'z',10);cyl(play,.005,.005,.022,[.018,.005,.046],body,'z',12);
+    }else if(a.playwork==='parcels')for(let i=0;i<2;i++){
+      box(play,[.028,.022,.027],[(i-.5)*.036,.011,0],wood);box(play,[.003,.0224,.0274],[(i-.5)*.036,.011,0],trim);box(play,[.0284,.0224,.003],[(i-.5)*.036,.011,0],trim);
+    }else{
+      box(play,[.074,.001,.045],[0,.0005,0],trim);
+      for(let i=0;i<4;i++)box(play,[.06,.0005,.002],[0,.0013,-.014+i*.009],paint(cargoColours[i]));
+    }
 
     const speed = mix(0.08, 0.5, mood.energy) / length;
     const lead = a.state === 'uncoupled' ? start + (closed ? 0.32 : 0.3) : start;

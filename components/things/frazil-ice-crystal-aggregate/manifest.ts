@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Frazil ice crystal aggregate", "summary": "Fine disk-like ice crystals form a porous attached aggregate, distinct from the large underside platelet field. A retained connected frazil aggregate with many small disk-like crystals and porous contacts; freezing seawater and early sea-ice growth.", "scales": ["macro", "tabletop"]});

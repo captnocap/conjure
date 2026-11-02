@@ -2,8 +2,9 @@ import { sameDrawSurface } from "./clean-studies.js";
 
 /**
  * Naturalist plate: a seeded, hierarchical vein graph on the original mesh samples.
- * The graph uses orthographic x/y in world units plus view depth, whose Euclidean
- * distances are invariant under camera rotation. It is a point-cloud surface
+ * The source graph uses orthographic x/y in world units plus view depth. Conjure
+ * perspective captures reconstruct true world points and reproject their curves.
+ * Both use camera-independent Euclidean distances. It is a point-cloud surface
  * approximation, not an anatomical simulation or an exact triangle geodesic.
  * No new scene geometry, offscreen canvas, private renderer, or mutable frame data.
  */
@@ -22,7 +23,19 @@ const hash = (a, b = 0, c = 0) => {
 };
 const freeze = (a) => Object.freeze(a);
 const distance = (a, b, scale) =>
-  Math.hypot((a.x - b.x) * scale, (a.y - b.y) * scale, a.z - b.z);
+  a.worldMetric && b.worldMetric
+    ? Math.hypot(a.world[0] - b.world[0], a.world[1] - b.world[1], a.world[2] - b.world[2])
+    : Math.hypot((a.x - b.x) * scale, (a.y - b.y) * scale, a.z - b.z);
+const perspectiveCapture = f => {
+  const snapshot = f.geometrySnapshot?.();
+  return snapshot?.source === 'conjure' && snapshot.projection?.[11] !== 0 ? snapshot : null;
+};
+function projectWorld(point, capture, size) {
+  const v = capture.view, p = capture.projection;
+  const q = [0, 1, 2, 3].map(k => v[k] * point[0] + v[k + 4] * point[1] + v[k + 8] * point[2] + v[k + 12]);
+  const c = [0, 1, 2, 3].map(k => p[k] * q[0] + p[k + 4] * q[1] + p[k + 8] * q[2] + p[k + 12] * q[3]);
+  return { x: (c[0] / c[3] + 1) * size / 2, y: (1 - c[1] / c[3]) * size / 2, z: -q[2] / q[3] };
+}
 const ease = (t) => t * t * (3 - 2 * t);
 
 /** Recover the capture's affine orthographic world transform from its public frame.
@@ -30,6 +43,12 @@ const ease = (t) => t * t * (3 - 2 * t);
  * fit and remains orthographically invariant even if a synthetic frame lacks it.
  */
 export function naturalistWorldTransform(f) {
+  if (perspectiveCapture(f)) {
+    if (typeof f.worldAtDepth !== 'function') throw Error('Perspective Naturalist plate needs captured world reconstruction');
+    // Samples use projected edge coordinates; worldAtDepth accepts pixel indices
+    // whose centers are offset by half a pixel. Hidden samples keep their own z.
+    return freeze({ point: (x, y, z) => f.worldAtDepth(x - .5, y - .5, z) });
+  }
   const rows = [],
     outputs = [];
   for (const v of [0.02, 0.2, 0.4, 0.6, 0.8, 0.98])
@@ -84,14 +103,15 @@ export function buildNaturalistGraph(f) {
   const samples = f.surfacePoints(),
     groups = new Map(),
     scale = f.pixelWorldSize,
-    worldTransform = naturalistWorldTransform(f);
+    worldTransform = naturalistWorldTransform(f),
+    perspective = perspectiveCapture(f);
   if (!(scale > 0 && Number.isFinite(scale)))
     throw Error("Naturalist plate needs finite pixelWorldSize");
   for (let k = 0; k + 5 < samples.length; k += 6) {
     const [x, y, z, id, index, facing] = samples.subarray
       ? samples.subarray(k, k + 6)
       : samples.slice(k, k + 6);
-    if (id <= 1 || ![x, y, z, id, index, facing].every(Number.isFinite))
+    if (id <= 1 || (perspective && z <= (perspective.near || 0)) || ![x, y, z, id, index, facing].every(Number.isFinite))
       continue;
     if (!groups.has(id)) groups.set(id, []);
     groups
@@ -104,6 +124,7 @@ export function buildNaturalistGraph(f) {
         index,
         facing,
         world: worldTransform ? freeze(worldTransform.point(x, y, z)) : null,
+        ...(perspective ? { worldMetric: true } : {}),
         rank: hash(index, id, f.seed),
       });
   }
@@ -288,14 +309,31 @@ export function naturalistVisibleIntervals(
   const dx = b.x - a.x,
     dy = b.y - a.y,
     cuts = [0, 1],
-    out = [];
+    out = [],
+    perspective = perspectiveCapture(f);
+  if (perspective) {
+    if (!(a.z > 0 && b.z > 0)) return freeze(out);
+    // Clip before enumerating pixel-cell crossings: offscreen world geometry
+    // may project many screen widths away, but it cannot contribute outside.
+    let lo = 0, hi = 1;
+    for (const [origin, delta] of [[a.x, dx], [a.y, dy]]) {
+      if (Math.abs(delta) < 1e-12) { if (origin < 0 || origin >= f.w) return freeze(out); }
+      else {
+        const x = -origin / delta, y = (f.w - origin) / delta;
+        lo = Math.max(lo, Math.min(x, y)); hi = Math.min(hi, Math.max(x, y));
+      }
+    }
+    if (hi <= lo) return freeze(out);
+    cuts[0] = lo; cuts[1] = hi;
+  }
   if (Math.hypot(dx, dy) < 1e-7) return freeze(out);
   const surfaceIntervals = f.materialVisibility
     ? f.surfaceVisibility().intervals([a.x,a.y,a.z], [b.x,b.y,b.z], a.id, tolerance)
     : null;
   if (surfaceIntervals) {
     if (!surfaceIntervals.length) return freeze(out);
-    for (const interval of surfaceIntervals) cuts.push(...interval);
+    for (const interval of surfaceIntervals)
+      for (const t of interval) if (!perspective || (t > cuts[0] && t < cuts[1])) cuts.push(t);
   }
   // Exact pixel-cell intervals prevent thin occluders being skipped by sampling.
   for (const [origin, delta] of [
@@ -303,8 +341,8 @@ export function naturalistVisibleIntervals(
     [a.y, dy],
   ])
     if (Math.abs(delta) > 1e-9) {
-      const lo = Math.min(origin, origin + delta),
-        hi = Math.max(origin, origin + delta);
+      const lo = Math.max(perspective ? 0 : -Infinity, Math.min(origin, origin + delta)),
+        hi = Math.min(perspective ? f.w : Infinity, Math.max(origin, origin + delta));
       for (let edge = Math.floor(lo) + 1; edge < hi; edge++) {
         const t = (edge - origin) / delta;
         if (t > 1e-9 && t < 1 - 1e-9) cuts.push(t);
@@ -322,8 +360,8 @@ export function naturalistVisibleIntervals(
       sx = Math.floor(x),
       sy = Math.floor(y);
     const z = f.distance(sx, sy),
-      zu = mix(a.z, b.z, u),
-      zv = mix(a.z, b.z, v);
+      zu = perspective ? 1 / ((1 - u) / a.z + u / b.z) : mix(a.z, b.z, u),
+      zv = perspective ? 1 / ((1 - v) / a.z + v / b.z) : mix(a.z, b.z, v);
     let visible =
       x >= 0 &&
       y >= 0 &&
@@ -353,7 +391,14 @@ export function naturalistVisibleIntervals(
             xx >= f.w ||
             yy >= f.w ||
             f.ID(xx, yy) !== a.id ||
-            Math.abs(f.distance(xx, yy) - z - expected) > tolerance
+            (perspective ? (() => {
+              const center = f.worldAtDepth(sx, sy, z), neighbor = f.worldAtDepth(xx, yy, f.distance(xx, yy));
+              const delta = neighbor.map((v, i) => v - center[i]), view = perspective.view;
+              const vx = view[0] * delta[0] + view[4] * delta[1] + view[8] * delta[2];
+              const vy = view[1] * delta[0] + view[5] * delta[1] + view[9] * delta[2];
+              const vz = view[2] * delta[0] + view[6] * delta[1] + view[10] * delta[2];
+              return Math.abs(nx * vx + ny * vy + nz * vz) > tolerance * Math.max(.1, Math.abs(nz));
+            })() : Math.abs(f.distance(xx, yy) - z - expected) > tolerance)
           ) {
             visible = false;
             break;
@@ -378,6 +423,7 @@ export function naturalistVisibleIntervals(
 export function prepareNaturalistPlate(f) {
   const compute = () => {
     const graph = buildNaturalistGraph(f),
+      perspective = perspectiveCapture(f),
       veins = [];
     for (const [edges, reticulation] of [
       [graph.treeEdges, false],
@@ -404,9 +450,15 @@ export function prepareNaturalistPlate(f) {
                 z: b.z - (after.z - a.z) * 0.19,
               },
             ];
+        const worldHandles = perspective ? (reticulation ? [a.world, b.world] : [
+          a.world.map((v, k) => v + (b.world[k] - before.world[k]) * .19),
+          b.world.map((v, k) => v - (after.world[k] - a.world[k]) * .19),
+        ]) : null;
         const count = Math.max(
             2,
-            Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 2.5),
+            // Bound tessellation of extreme near-plane projections. This still
+            // samples the same world-space cubic; it does not replace its shape.
+            Math.min(perspective ? f.w * 2 : Infinity, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 2.5)),
           ),
           intervals = [];
         let previous = a;
@@ -414,12 +466,18 @@ export function prepareNaturalistPlate(f) {
           const t = step / count,
             u = 1 - t,
             next = { id: edge.id };
+          if (perspective) {
+            const world = a.world.map((v, k) => u*u*u*v + 3*u*u*t*worldHandles[0][k] +
+              3*u*t*t*worldHandles[1][k] + t*t*t*b.world[k]);
+            Object.assign(next, projectWorld(world, perspective, f.w));
+          } else {
           for (const key of ["x", "y", "z"])
             next[key] =
               u * u * u * a[key] +
               3 * u * u * t * handles[0][key] +
               3 * u * t * t * handles[1][key] +
               t * t * t * b[key];
+          }
           intervals.push(
             ...naturalistVisibleIntervals(
               f,

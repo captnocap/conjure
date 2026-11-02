@@ -1,13 +1,15 @@
-// Literal numerical port of the frozen owner-aware-wholetoning-v1 proof.
-// No segmentation, search, seed, palette or output parameters are exposed.
+// Owner-aware Wholetoning: the original segmentation, objective and connected-block
+// proposals are retained. Complex Conjure scenes use an explicit bounded search
+// horizon rather than rejecting a conservative maximum-degree work estimate.
 export const WIDTH = 720;
 export const HEIGHT = 720;
-export const REGION_CAP = 2048;
+export const REGION_CAP = 16384;
 export const SEARCH_SEED = 2401;
-// Execution support limit, not an optimizer/segmentation parameter. Captures
-// outside it fail explicitly; there is no lower-cost substitute or retuning.
+// Count actual adjacency work. A budget-limited search ends between complete
+// improving blocks and returns its best labels, with explicit completion metadata.
 export const MAX_ADJACENCY_VISITS = 2 ** 28;
-export const MAX_INITIAL_REGIONS = 16384;
+export const MAX_INITIAL_REGIONS = 65536;
+export const MAX_COORDINATED_WITNESSES = 64;
 const PIXELS = WIDTH * HEIGHT;
 const PARTS = ['Ccol', 'Calike', 'Copp', 'Cgroup', 'Cperimeter'];
 const require = (condition, message) => { if (!condition) throw new Error(message); };
@@ -275,12 +277,14 @@ export function evaluateWholetoning(graph, labels) {
 class State {
   constructor(graph, labels) {
     this.graph = graph; this.labels = labels; this.ones = new Int32Array(256);
+    this.adjacencyVisits = graph.edges.length;
     for (let i = 0; i < graph.nodes.length; i++) this.ones[graph.nodes[i].owner] += labels[i];
     this.parts = evaluateWholetoning(graph, labels);
   }
   delta(i) {
     const g = this.graph, d = blankParts(), old = this.labels[i], now = 1 - old;
     d.Ccol = unary(g, i, now) - unary(g, i, old);
+    this.adjacencyVisits += g.adjacency[i].length;
     for (const edgeIndex of g.adjacency[i]) {
       const e = g.edges[edgeIndex], j = e.a === i ? e.b : e.a, sign = this.labels[j] === old ? -1 : 1;
       if (g.featureWeightedEdgeLength > 0) d.Calike += sign * e.length * e.contrast * e.multiplier / g.featureWeightedEdgeLength;
@@ -314,21 +318,27 @@ export function estimateWholetoningWork(graph) {
   return { maximumDegree, adjacencyVisits: 64 * graph.nodes.length * 30 * maximumDegree + 65 * graph.edges.length };
 }
 
-export function searchWholetoning(graph) {
+export function searchWholetoning(graph, { maxAdjacencyVisits = MAX_ADJACENCY_VISITS } = {}) {
   require(graph.nodes.length > 0 && graph.nodes.length <= REGION_CAP, 'Invalid bounded region graph');
   const work = estimateWholetoningWork(graph);
-  require(work.adjacencyVisits <= MAX_ADJACENCY_VISITS,
-    `Wholetoning cannot process this capture within its fixed work budget (estimated ${work.adjacencyVisits} adjacency visits exceeds ${MAX_ADJACENCY_VISITS}). Choose another study or simplify the material assignments.`);
+  require(Number.isSafeInteger(maxAdjacencyVisits) && maxAdjacencyVisits >= 2 * graph.edges.length,
+    'Wholetoning work budget must allow the initial and final objective checks');
   const state = new State(graph, initialWholetoningLabels(graph)), order = [], witnesses = [], sweepEnergy = [];
   let rng = SEARCH_SEED, assignments = 0, accepted = 0, multiLabelAccepted = 0, maxComponentDeltaError = 0;
+  let completedSweeps = 0, completedBlocks = 0, coordinatedMoves = 0, budgetExhausted = false;
   const choice = n => { rng = (Math.imul(rng, 1664525) + 1013904223) >>> 0; return Math.floor(rng / 4294967296 * n); };
   for (let sweep = 0; sweep < 64; sweep++) {
     for (let i = 0; i < graph.nodes.length; i++) order[i] = i;
     for (let i = order.length - 1; i > 0; i--) { const j = choice(i + 1); [order[i], order[j]] = [order[j], order[i]]; }
-    for (const root of order) {
+    blocks: for (const root of order) {
       const block = [root];
       while (block.length < 4) {
         const frontier = new Set();
+        const frontierVisits = block.reduce((sum, a) => sum + graph.adjacency[a].length, 0);
+        if (state.adjacencyVisits + frontierVisits + graph.edges.length > maxAdjacencyVisits) {
+          budgetExhausted = true; break blocks;
+        }
+        state.adjacencyVisits += frontierVisits;
         for (const a of block) for (const edgeIndex of graph.adjacency[a]) {
           const e = graph.edges[edgeIndex], b = e.a === a ? e.b : e.a;
           if (!block.includes(b)) frontier.add(b);
@@ -338,6 +348,14 @@ export function searchWholetoning(graph) {
       }
       block.sort((a, b) => a - b);
       const k = block.length;
+      // Gray-code traversal flips bit j 2^(k-j-1) times; restoration flips
+      // only its highest bit. Reserve one isolated delta and accepted flip per
+      // node, plus the mandatory exact objective check at the end of the sweep.
+      const blockVisits = block.reduce((sum, a, j) => sum + graph.adjacency[a].length *
+        (2 ** (k - j - 1) + (j === k - 1 ? 1 : 0) + 2), 0);
+      if (state.adjacencyVisits + blockVisits + graph.edges.length > maxAdjacencyVisits) {
+        budgetExhausted = true; break;
+      }
       let start = 0;
       for (let j = 0; j < k; j++) start |= state.labels[block[j]] << j;
       const preParts = { ...state.parts }, pre = wholetoningEnergy(preParts);
@@ -359,23 +377,30 @@ export function searchWholetoning(graph) {
           changed.push(block[j]); isolatedEnergyDeltas.push(wholetoningEnergy(state.delta(block[j])));
         }
         const before = changed.map(a => state.labels[a]), coordinated = changed.length > 1 && isolatedEnergyDeltas.every(x => x >= 0),
-          fullPreMoveLabels = coordinated ? [...state.labels] : null, witnessPreParts = { ...state.parts };
+          fullPreMoveLabels = coordinated && witnesses.length < MAX_COORDINATED_WITNESSES ? [...state.labels] : null, witnessPreParts = { ...state.parts };
         for (const a of changed) state.flip(a);
         const post = wholetoningEnergy(state.parts);
         require(pre - post > 1e-12, 'Accepted nonimproving block'); accepted++; multiLabelAccepted += changed.length > 1;
-        if (coordinated) witnesses.push({ sweep, root, block, changed, before, after: changed.map(a => state.labels[a]),
+        if (coordinated) coordinatedMoves++;
+        if (coordinated && fullPreMoveLabels) witnesses.push({ sweep, root, block, changed, before, after: changed.map(a => state.labels[a]),
           fullPreMoveLabels, isolatedEnergyDeltas, pre, post, jointDelta: post - pre,
           preComponents: { ...witnessPreParts, energy: pre }, postComponents: { ...state.parts, energy: post } });
       }
+      completedBlocks++;
     }
+    state.adjacencyVisits += graph.edges.length;
     const exact = evaluateWholetoning(graph, state.labels), error = discrepancy(state.parts, exact);
     maxComponentDeltaError = Math.max(maxComponentDeltaError, error);
     require(error <= 1e-9, 'HOLD: incremental/full discrepancy'); state.parts = exact;
     require(Number.isFinite(wholetoningEnergy(exact)), 'Nonfinite energy'); sweepEnergy.push(wholetoningEnergy(exact));
+    if (budgetExhausted) break;
+    completedSweeps++;
   }
   require(assignments <= 64 * graph.nodes.length * 16, 'Assignment bound exceeded');
   return { labels: state.labels, components: { ...state.parts, energy: wholetoningEnergy(state.parts) },
-    assignments, accepted, multiLabelAccepted, maxComponentDeltaError, sweepEnergy, coordinatedWitnesses: witnesses };
+    assignments, accepted, multiLabelAccepted, maxComponentDeltaError, sweepEnergy, coordinatedWitnesses: witnesses,
+    completedSweeps, completedBlocks, coordinatedMoves, budgetExhausted, adjacencyVisits: state.adjacencyVisits,
+    maxAdjacencyVisits, estimatedAdjacencyVisits: work.adjacencyVisits };
 }
 
 export function renderWholetoning(color, identity, size = WIDTH) {

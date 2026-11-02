@@ -1,4 +1,4 @@
-import { choice, defineLook, noul, score } from '@conjure/kit';
+import { choice, defineLook, noul, rekeyOne, score } from '@conjure/kit';
 
 /**
  * The capture's confidence channel decides what gets inked: the model's belonging for each
@@ -7,16 +7,18 @@ import { choice, defineLook, noul, score } from '@conjure/kit';
  */
 const PAPERS = {
   white: { hex: '#f7f5ee', description: 'Bright white cartridge paper.' },
-  cream: { hex: '#efe6d0', description: 'Warm cream sketchbook paper.' },
-  grey: { hex: '#d6d6d0', description: 'Cool toned grey paper, for highlights to sit on.' },
+  cream: { hex: '#efe6d0', description: 'Soft tinted sketchbook paper, pale and warm in feel.' },
+  grey: { hex: '#d6d6d0', description: 'Mid-toned paper, a little darker, for highlights to sit on.' },
   kraft: { hex: '#c9ad85', description: 'Brown kraft paper, like a wrapping-paper sketch.' },
 } as const;
 const INKS = {
   black: { hex: '#1a1a1c', description: 'Black India ink.' },
-  sepia: { hex: '#4a2f1b', description: 'Warm sepia ink.' },
-  indigo: { hex: '#1f2a52', description: 'Deep indigo ink.' },
-  sanguine: { hex: '#7a3a2a', description: 'Red-brown sanguine ink.' },
+  sepia: { hex: '#4a2f1b', description: 'A soft, dark coloured ink, mellow like an old letter.' },
+  indigo: { hex: '#1f2a52', description: 'A deep, dense coloured ink, nearly black in the darks.' },
+  sanguine: { hex: '#7a3a2a', description: 'A lighter, chalky coloured ink, like an old master study.' },
 } as const;
+/** Black ink, white cartridge paper and kraft are materials and keep their colour; the coloured inks follow the palette's ink, the toned papers its ground. */
+const FIXED = new Set(['black', 'white', 'kraft']);
 const WASHES = { none: null, grey: '#8c8f93', tint: null } as const;
 const THRESHOLDS = { most: 0.35, balanced: 0.55, sparing: 0.75 } as const;
 
@@ -31,7 +33,7 @@ const smooth = (edge0: number, edge1: number, value: number) => {
 export default defineLook({
   questions: {
     paper: choice('What paper is the drawing on?', Object.fromEntries(Object.entries(PAPERS).map(([key, paper]) => [key, paper.description])) as Record<keyof typeof PAPERS, string>),
-    ink: choice('Which ink goes over the pencil?', Object.fromEntries(Object.entries(INKS).map(([key, ink]) => [key, ink.description])) as Record<keyof typeof INKS, string>),
+    ink: choice('Which ink goes over the pencil? Coloured inks take the picture\u2019s palette.', Object.fromEntries(Object.entries(INKS).map(([key, ink]) => [key, ink.description])) as Record<keyof typeof INKS, string>),
     commitment: choice('How much of the drawing is committed to ink?', {
       most: 'Ink nearly everything; only real doubts stay pencil.',
       balanced: 'Ink what the artist was fairly sure of; the rest stays sketched.',
@@ -56,8 +58,9 @@ export default defineLook({
   async apply(capture, a, context, signal) {
     const { size, color, identity, normal, diffuse, confidence } = capture;
     const pixels = new Uint8ClampedArray(size * size * 4);
-    const paper = rgb(PAPERS[a.paper].hex);
-    const ink = rgb(INKS[a.ink].hex);
+    const keyed = (hex: string, key: string, role: 'ink' | 'ground') => FIXED.has(key) ? rgb(hex) : [...rekeyOne(rgb(hex) as [number, number, number], context.palette, role)];
+    const paper = keyed(PAPERS[a.paper].hex, a.paper, 'ground');
+    const ink = keyed(INKS[a.ink].hex, a.ink, 'ink');
     const graphite = a.paper === 'kraft' || a.paper === 'grey' ? rgb('#3f4146') : rgb('#5a5c60');
     const washColour = a.wash === 'grey' ? rgb(WASHES.grey!) : a.wash === 'tint' ? ink.map((c, i) => lerp(c, paper[i], 0.55)) : null;
     const threshold = THRESHOLDS[a.commitment];

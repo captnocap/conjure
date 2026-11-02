@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'White-line colour woodcut',summary:'Separately brushed colour regions on a single block, divided by bright incised channels and carrying small traces of wood grain and hand pressure. Intimate coastal scenes, garden studies and luminous handmade colour prints.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'print'});

@@ -100,6 +100,13 @@ export default defineThing({
       hosing: 'The counter is being hosed down, water sheeting off the front and pooling on the floor.',
       sold: 'A sale just made: a red bag tied and waiting on the edge, coins in a tin.',
     }),
+    shadeShape: choice('What shape are the red lamp shades?', { bell: 'Wide flaring bells.', cone: 'Straight-sided conical shades.', dome: 'Rounded red domes.', stepped: 'Shades with a stepped industrial rim.' }),
+    lampGuard: choice('What protects the lamp bulbs?', { open: 'The bulbs are exposed.', cage: 'A wire cage below each shade.', rim: 'A heavy rolled rim around each shade.', reflector: 'A pale inner reflector around each bulb.' }),
+    counterSkin: choice('What is fitted to the front apron?', { steel: 'Plain brushed steel.', tiles: 'A row of small white tiles.', stripes: 'Blue and cream enamel panels.', slats: 'Narrow timber slats.' }),
+    lowerShelf: choice('What lies on the lower frame?', { open: 'An open frame.', rack: 'A slatted rack for rinsed trays.', crates: 'Two empty plastic crates on a shelf.', icebox: 'One closed insulated ice chest.' }),
+    dividers: choice('How are portions separated on the ice?', { none: 'An uninterrupted ice bed.', twin: 'One low central divider.', thirds: 'Two low dividers making three portions.', labels: 'Four short pegged fences along the rear edge.' }),
+    rinseStation: choice('What rinse fitting is on the left side?', { none: 'The hose alone.', tap: 'A small tap and wall plate on the post.', bowl: 'A steel rinse basin on a side shelf.', spray: 'A tall flexible spray nozzle above a catch bowl.' }),
+    toolBoard: choice('How are the fish tools stored?', { none: 'No separate tool board.', hooks: 'Three tools hanging on hooks.', slots: 'A wooden slotted knife block.', tray: 'A narrow perforated metal tool tray.' }),
   },
 
   build(a, context) {
@@ -253,7 +260,8 @@ export default defineThing({
     const dead = mood.wear > 0.6 ? Math.floor(random() * lampCount) : -1;
     const glow = new THREE.Color().setHSL(mix(0.11, 0.05, mood.warmth), 1, 0.62);
     const lamps: { group: THREE.Group; phase: number }[] = [];
-    const shade = new THREE.LatheGeometry([[0.035, 0.17], [0.05, 0.16], [0.09, 0.1], [0.2, 0], [0.205, -0.012]].map(([x, y]) => new THREE.Vector2(x, y)), 20);
+    const profile=a.shadeShape==='cone'?[[.035,.17],[.2,0],[.205,-.012]]:a.shadeShape==='dome'?[[.035,.17],[.09,.15],[.16,.1],[.2,.03],[.2,0]]:a.shadeShape==='stepped'?[[.035,.17],[.08,.15],[.08,.09],[.15,.09],[.15,.03],[.21,.03],[.21,0]]:[[0.035, 0.17], [0.05, 0.16], [0.09, 0.1], [0.2, 0], [0.205, -0.012]];
+    const shade = new THREE.LatheGeometry(profile.map(([x, y]) => new THREE.Vector2(x, y)), 20);
     for (let i = 0; i < lampCount; i++) {
       const x = mix(-W / 2 + 0.28, W / 2 - 0.28, lampCount === 1 ? 0.5 : i / (lampCount - 1)) + (random() - 0.5) * 0.06;
       const drop = mix(0.38, 0.55, random());
@@ -263,6 +271,9 @@ export default defineThing({
       add(new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, drop, 6), dark), -drop / 2);
       add(new THREE.Mesh(shade, red), -drop - 0.17);
       add(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.035, 0.06, 10), dark), -drop - 0.02);
+      if(a.lampGuard==='rim'){const rim=new THREE.Mesh(new THREE.TorusGeometry(.202,.012,6,24),red);rim.rotation.x=Math.PI/2;add(rim,-drop-.17);}
+      else if(a.lampGuard==='reflector')add(new THREE.Mesh(new THREE.ConeGeometry(.11,.05,20,1,true),s.material('#e8dfc4',{side:THREE.DoubleSide})), -drop-.115);
+      else if(a.lampGuard==='cage')for(let k=0;k<4;k++){const bar=new THREE.Mesh(new THREE.TorusGeometry(.1,.004,5,16,Math.PI),steel);bar.rotation.z=Math.PI;bar.rotation.y=k*Math.PI/4;add(bar,-drop-.17);}
       const lit = i !== dead;
       add(new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 8), new THREE.MeshStandardMaterial({ color: lit ? '#fff3d0' : '#8e8a80', emissive: lit ? glow : new THREE.Color('#000000'), emissiveIntensity: mix(1.6, 3, mood.cheer), roughness: 0.3 })), -drop - 0.15);
       if (lit) {
@@ -363,6 +374,28 @@ export default defineThing({
     // Meltwater under the stall grows through the morning.
     const drip = s.cylinder(1, 1, 0.005, [-0.2, 0.003, 0.1], wet, 24);
     drip.scale.set(mix(0.4, 1.2, melt), 1, mix(0.2, 0.55, melt)); drip.castShadow = false;
+
+    if(a.counterSkin==='tiles')for(let i=0;i<14;i++)s.box([.15,.18,.015],[-1.025+i*.158,.66,D/2+.01],s.material(i%4?'#eee9d8':'#d5dccd'));
+    else if(a.counterSkin==='stripes')for(let i=0;i<8;i++)s.box([.269,.19,.016],[-.9625+i*.275,.66,D/2+.01],s.material(i%2?'#d6d9c6':'#567d92'));
+    else if(a.counterSkin==='slats')for(let i=0;i<22;i++)s.box([.085,.2,.025],[-1.05+i*.1,.66,D/2+.015],s.material('#987851'));
+    if(a.lowerShelf!=='open') {
+      if(a.lowerShelf==='rack')for(let i=0;i<12;i++)s.box([.13,.025,D-.15],[-.93+i*.17,.2825,0],steel);
+      else {s.box([W-.15,.03,D-.15],[0,.285,0],steel);if(a.lowerShelf==='icebox'){s.box([.85,.29,.5],[0,.445,0],s.material('#d8e3dc'));s.box([.88,.05,.53],[0,.615,0],s.material('#f1f0e7'));}else for(const x of[-.5,.5]){s.box([.62,.025,.47],[x,.3125,0],hoseGreen);for(const dx of[-.3,.3])s.box([.022,.25,.47],[x+dx,.425,0],hoseGreen);for(const z of[-.225,.225])for(let k=0;k<3;k++)s.box([.62,.035,.022],[x,.345+k*.08,z],hoseGreen);}}
+    }
+    if(a.dividers==='twin'||a.dividers==='thirds')for(const x of a.dividers==='twin'?[0]:[-.36,.36])put(s.box([.012,.07,D-.1],[x,iceTop+.035,0],steel));
+    else if(a.dividers==='labels')for(let i=0;i<4;i++){const x=-.85+i*.56;put(s.box([.3,.06,.012],[x,iceTop+.03,-.38],steel));for(const dx of[-.13,.13])put(s.rod([x+dx,iceTop-.01,-.38],[x+dx,iceTop+.085,-.38],.005,dark));}
+    if(a.rinseStation!=='none') {
+      const x=-W/2-.23,z=-.1;
+      s.box([.025,.28,.19],[-W/2-.025,1.16,-D/2+.04],steel);
+      if(a.rinseStation==='tap')s.tube([[-W/2,1.2,-D/2+.04],[x,1.2,-D/2+.04],[x,1.12,-D/2+.04]],.018,steel);
+      else {s.box([.4,.025,.38],[x,.76,z],steel);for(const dz of[-.12,.12])s.rod([-W/2,.52,z+dz],[x-.15,.75,z+dz],.014,steel);s.lathe([[0,0],[.09,0],[.15,.12]],steel,[x,.7725,z]);if(a.rinseStation==='spray'){s.tube([[x,.8,z-.15],[x,1.55,z-.15],[x,1.57,z+.04],[x,1.33,z+.06]],.014,dark);s.cylinder(.025,.02,.07,[x,1.3,z+.06],steel,12);}}
+    }
+    if(a.toolBoard!=='none') {
+      const x=-W/2-.05,z=.25,y=1.2;
+      s.box([.035,.33,.3],[x,y,z],a.toolBoard==='slots'?s.material('#a4865c'):steel);
+      if(a.toolBoard==='tray'){s.box([.14,.02,.32],[x-.07,y-.14,z],steel);for(let i=0;i<6;i++)s.box([.006,.045,.012],[x-.13,y-.11,z-.125+i*.05],dark);}
+      for(let i=0;i<3;i++){const tz=z-.1+i*.1;s.box([.016,.095,.025],[x-.028,y+.05,tz],dark);if(i===0)s.box([.008,.14,.07],[x-.028,y-.065,tz],steel);else s.rod([x-.028,y+.01,tz],[x-.028,y-.14,tz],i===1?.007:.012,steel);}
+    }
 
     const energy = mood.energy;
     return s.finish({

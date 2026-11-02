@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, noul, score, seeded } from '@conjure/kit';
+import { type PaletteRole, choice, clamp01, defineLook, mix, noul, rekey, rekeyOne, score, seeded } from '@conjure/kit';
 
 type Lab = [number, number, number];
 type Buffer = Float32Array | number[];
@@ -131,42 +131,42 @@ const rgbOf = (code: string): Lab => {
 
 const LIGHTS = {
   sunlit: {
-    say: 'Sunlit: Naples-yellow and cream lights, cobalt-violet shadows, a high bright key like a summer afternoon on the river.',
+    say: 'Sunlit: warm creamy lights against cool saturated shadows, a high bright key like a summer afternoon on the river.',
     light: '#ffe09a', shadow: '#7a6ad2', sky: '#bcd8ee', water: '#5c94b4',
     key: [0.29, 0.95], gamma: 0.85, chroma: 1.45, tint: 0.75, aerial: 0.12, shimmer: 1, breaking: 1,
     extra: ['#fff4c4', '#f8cf6a', '#9c8ae0'],
     breaks: ['#ffe09a', '#f7b2b8', '#9cc4f0', '#bba6e6', '#bfe09a'],
   },
   overcast: {
-    say: 'Overcast: pearl greys, sage, slate blue and oyster white, close in value, the light diffused and even.',
+    say: 'Overcast: muted pearly greyed colour, close in value, quiet and soft, the light diffused and even.',
     light: '#ece6d4', shadow: '#6c8c98', sky: '#d2d7d4', water: '#7b969a',
     key: [0.3, 0.9], gamma: 0.95, chroma: 1.05, tint: 0.55, aerial: 0.22, shimmer: 0.2, breaking: 0.6,
     extra: ['#cfcfc6', '#a9b2ab', '#8a979c', '#ddd3c2', '#b7aa98'],
     breaks: ['#e6dcc4', '#bcd2c4', '#b4c2d2', '#dcc4c4', '#cfd6b4'],
   },
   dusk: {
-    say: 'Dusk: orange and rose lights against deep ultramarine and violet shadows, warm and cool pulled far apart.',
+    say: 'Dusk: glowing saturated lights against deep dark shadows, the two pulled far apart, a low and dramatic key.',
     light: '#ffa464', shadow: '#4a4c9e', sky: '#e9b4a0', water: '#5a6496',
     key: [0.18, 0.88], gamma: 1.05, chroma: 1.4, tint: 0.7, aerial: 0.18, shimmer: 0.6, breaking: 1.1,
     extra: ['#ea6c3c', '#c9506a', '#352f6a', '#f2a24e', '#f6c6a0'],
     breaks: ['#ffa464', '#e87890', '#6a6ad0', '#f2c060', '#8a5aa8'],
   },
   winter: {
-    say: 'Winter: snow light, white and the palest pink-gold in the sun, cerulean and lilac blue in every shadow.',
+    say: 'Winter: snow light, near-white and barely tinted in the sun, crisp clear colour in every shadow.',
     light: '#ffd8c8', shadow: '#6a9ad8', sky: '#e2ebf3', water: '#88a8c4',
     key: [0.32, 0.97], gamma: 0.8, chroma: 1.0, tint: 0.7, aerial: 0.16, shimmer: 0.8, breaking: 0.85,
     extra: ['#f6f8fb', '#dce8f4', '#b9cde8', '#f2ded8', '#a8b8dc'],
     breaks: ['#ffd8c8', '#a8c8f0', '#c8b8e8', '#f4f0d0', '#9ad0d8'],
   },
   mist: {
-    say: 'Morning mist: everything veiled in pearl, rose and lilac-grey, forms half dissolved, like fog on the Thames.',
+    say: 'Morning mist: everything veiled in pale pearly tints, forms half dissolved, like fog on the Thames.',
     light: '#f4d8c4', shadow: '#9890ba', sky: '#e4dcdc', water: '#a2abbc',
     key: [0.36, 0.93], gamma: 0.8, chroma: 0.95, tint: 0.6, aerial: 0.3, shimmer: 0.3, breaking: 0.7,
     extra: ['#e6dde0', '#ccc3d4', '#dccdc0', '#b9b9cb', '#f1e6da'],
     breaks: ['#f4d8c4', '#d8c8e0', '#c8d0dc', '#e8d0d8', '#d8dcc8'],
   },
   spring: {
-    say: 'Spring garden: lemon and cream lights, fresh leaf greens, blossom pink and blue-green shadows, light and new.',
+    say: 'Spring garden: fresh clean lights, bright young colour and soft cool shadows, light and new.',
     light: '#fff09c', shadow: '#56a6a0', sky: '#d0eaf0', water: '#58a2a6',
     key: [0.31, 0.95], gamma: 0.85, chroma: 1.5, tint: 0.7, aerial: 0.12, shimmer: 0.8, breaking: 1,
     extra: ['#f8c6d8', '#a8d878', '#fff8d2', '#7cc08a'],
@@ -193,6 +193,16 @@ const MONET = [
 ];
 const LEAVES = ['#5f8f4a', '#7fae5a', '#3f6f4a', '#9cc070', '#6f9a7a', '#b4cc78'];
 const BLOSSOM = ['#f0a0b8', '#f7d0dc', '#fff2f4', '#e88aa0'];
+
+/**
+ * Under the idea's palette the painter's light takes its ink (the light and the sky that pulls toward
+ * it), the shadow and the water its second colour, and the canvas priming is tinted toward its ground.
+ * The paint box itself (Impressionist, Seurat, Giverny) and the broken-colour touches stay: they are
+ * the tradition, and they still divide whatever colour is asked of them.
+ */
+const LIGHT_ROLES: Record<string, PaletteRole> = { light: 'ink', sky: 'ink', shadow: 'second', water: 'second' };
+const bytesOf = (code: string) => [1, 3, 5].map((i) => parseInt(code.slice(i, i + 2), 16)) as [number, number, number];
+const codeOf = (c: readonly number[]) => `#${c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
 
 const CANVASES = {
   white: { say: 'A white primed canvas: bright specks between the touches make the whole picture glow.', tone: '#f3f0e8', weave: 0.035 },
@@ -233,7 +243,7 @@ export default defineLook({
       'Clearly divided into neighbouring hues',
       'Strictly: only pure colours side by side, every grey built from a pair of opposites',
     ]),
-    palette: choice('Which palette is it painted in?', describe(LIGHTS)),
+    palette: choice('What light is it painted in? Its colours come from the picture\u2019s palette.', describe(LIGHTS)),
     water: noul('Does the ground become water, with the scene reflected and broken on its surface?'),
     edges: score('How soft are the edges of things?', [
       'Crisp: every form keeps its outline',
@@ -253,8 +263,14 @@ export default defineLook({
     const random = seeded((context.seed ^ 0x2b0c01) >>> 0);
     const dots = answers.tradition === 'pointillist';
     const garden = answers.tradition === 'water-garden';
-    const P = LIGHTS[answers.palette];
+    const inks = context.palette;
+    const designed = LIGHTS[answers.palette];
+    const keyed = rekey({ light: bytesOf(designed.light), sky: bytesOf(designed.sky), shadow: bytesOf(designed.shadow), water: bytesOf(designed.water) }, inks, LIGHT_ROLES);
+    const P = inks
+      ? { ...designed, light: codeOf(keyed.light), sky: codeOf(keyed.sky), shadow: codeOf(keyed.shadow), water: codeOf(keyed.water) }
+      : designed;
     const sheet = CANVASES[answers.canvas];
+    const canvasTone = inks ? codeOf(rekeyOne(bytesOf(sheet.tone), inks, 'ground')) : sheet.tone;
     const state = answers.state;
     let beats = 0;
     const breathe = async () => {
@@ -881,7 +897,7 @@ export default defineLook({
     }
 
     // ---- the canvas and the lay-in ------------------------------------------------------------------
-    const tone = rgbOf(sheet.tone);
+    const tone = rgbOf(canvasTone);
     const paint = new Float32Array(N * 3);
     const height = new Float32Array(N);
     for (let i = 0; i < N; i++) {

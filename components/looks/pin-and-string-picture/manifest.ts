@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Pin and string picture',summary:'A scene wound from taut intersecting threads around small pins, with triangular fans, dense shadow windings and visible backing board. Handmade string pictures, careful geometric craft and a tangle organized into a recognizable place.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'craft'});

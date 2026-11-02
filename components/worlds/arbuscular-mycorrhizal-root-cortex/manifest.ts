@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Arbuscular mycorrhizal root cortex", "summary": "An opened root cylinder permanently retains cortex cells, an epidermal entry and a branched arbuscule inside a cortical cell. Keep fungal and plant membranes distinct. A schematic magnified field study, with permanent structure and related specimen stations.", "scales": ["macro", "tabletop"]});

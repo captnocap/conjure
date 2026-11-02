@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Torsion balance attractor wheel pair", "summary": "Two independently supported wheels carry fixed masses around the pendulum envelope without intersecting it. Two independently supported attractor-mass carriers retain fixed seats, real axles and a clear central envelope; a schematic mechanical teaching assembly for torsion experiments.", "scales": ["macro", "tabletop"]});

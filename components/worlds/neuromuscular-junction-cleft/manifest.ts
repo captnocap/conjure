@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Neuromuscular junction cleft", "summary": "Opposed terminal and muscle surfaces form a cutaway synaptic cleft with true branched terminal bulbs and deeply folded muscle membrane. A permanent branching nerve terminal faces a folded muscle surface; the cleft, glial cap and sensory apparatus stay visible without cast objects.", "scales": ["macro", "tabletop"]});

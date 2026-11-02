@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Stellar wind termination shock cutaway", "summary": "A closed inner termination surface is cut to reveal an outward wind-reference bundle and the distinct outer shocked-wind region. A labeled schematic separates free radial wind from its inner termination boundary and retained shocked-wind region. Geometry controls explain standoff and section shape; they do not solve a hydrodynamic flow.", "scales": ["cosmic", "tabletop"]});

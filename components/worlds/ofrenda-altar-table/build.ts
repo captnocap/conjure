@@ -72,7 +72,7 @@ function clothTexture(kind: keyof typeof CLOTHS, random: () => number) {
   return { map, base };
 }
 
-function flagTexture(variant: number) {
+function flagTexture(variant:number,cut:string) {
   const canvas = document.createElement('canvas'); canvas.width = 128; canvas.height = 104;
   const g = canvas.getContext('2d')!;
   g.fillStyle = '#ffffff'; g.fillRect(0, 0, 128, 104);
@@ -96,12 +96,22 @@ function flagTexture(variant: number) {
   } else {
     for (let i = 0; i < 5; i++) for (let j = 0; j < 3; j++) hole(() => { const x = 28 + i * 18, y = 28 + j * 19; g.moveTo(x, y - 8); g.lineTo(x + 7, y); g.lineTo(x, y + 8); g.lineTo(x - 7, y); });
   }
-  const map = new THREE.CanvasTexture(canvas); map.colorSpace = THREE.SRGBColorSpace;
-  return map;
+  g.globalCompositeOperation='destination-out';
+  if(cut==='swallow'){g.beginPath();g.moveTo(0,104);g.lineTo(64,68);g.lineTo(128,104);g.fill();}
+  if(cut==='arch'){for(let x=0;x<128;x++){const bottom=68+36*Math.sqrt(Math.max(0,1-((x-64)/64)**2));g.fillRect(x,bottom,1,104-bottom);}}
+  if(cut==='narrow'){g.fillRect(0,0,24,104);g.fillRect(104,0,24,104);}
+  const map=new THREE.CanvasTexture(canvas);map.colorSpace=THREE.SRGBColorSpace;return map;
 }
 
 export default defineWorld({
   questions: {
+    floorPattern: choice('What pattern covers the floor?', { clay: 'Warm square terracotta tiles.', checker: 'Alternating cream and charcoal square tiles.', diamond: 'Cream tiles crossed by small blue diamonds.', stone: 'Uneven-coloured broad stone slabs.' }),
+    baseStructure: choice('What supports the lowest altar tier?', { posts: 'Four plain wooden posts.', turned: 'Four turned wooden legs.', trestle: 'Two braced wooden trestles.', crates: 'Two stacks of open wooden crates.' }),
+    clothFold: choice('How do the cloths hang over the altar fronts?', { flat: 'Flat evenly hanging cloths.', pleat: 'Fine vertical pleats.', scallop: 'Broad scalloped lower edges.', gathered: 'Cloth gathered into several soft swags.' }),
+    wallBorder: choice('What runs above the painted skirting?', { line: 'A simple pale line.', tile: 'A strip of small glazed blue and cream tiles.', stars: 'A stencilled band of small golden stars.', wood: 'A carved wooden moulding.' }),
+    bannerCut: choice('If papel picado hangs overhead, what outline do its flags have?', { rectangle: 'Broad rectangular flags.', swallow: 'Swallowtail flags with a deep V cut into the bottom.', arch: 'Flags ending in a rounded arch.', narrow: 'Long narrow panels.' }),
+    candleHolder: choice('What holds the tall taper candles?', { clay: 'Simple terracotta saucers.', brass: 'Low brass candlesticks.', painted: 'White pottery with bright painted dots.', black: 'Polished black clay holders.' }),
+    remembrance: choice('What small keepsakes rest at the back of the top tier?', { baskets: 'Two little covered woven baskets.', books: 'Two well-used hymn books.', plaques: 'Two small framed remembrance cards.', bare: 'The space is left clear.' }),
     wall: choice('What colour is the wall behind the altar painted?', WALLS),
     cloth: choice('What cloth covers the steps of the altar?', CLOTHS),
     banners: choice('What cut-paper banners hang overhead?', {
@@ -145,9 +155,10 @@ export default defineWorld({
     const T1 = 1.3, T2 = 2.4, T3 = 3.5;
     const { art: s, world } = diorama(context, {
       background, floor: '#9a5a40', width: 12.6, depth: 9, maxHeight: 2.4, radius: 1.22, pitch: 20, yaw: 9,
-      slots: [[0, -3.2, T3, 1], [-2.75, -1.4, T2, 0.8], [2.75, -1.4, T2, 0.8], [-3.6, 0.55, T1, 0.82], [3.6, 0.55, T1, 0.82], [0, 0.6, T1, 0.78]],
+      slots: [[0,-3.2,T3+.025,1],[-2.75,-1.4,T2+.025,.8],[2.75,-1.4,T2+.025,.8],[-3.6,.55,T1+.025,.82],[3.6,.55,T1+.025,.82],[0,.6,T1+.025,.78]],
     });
-    const root = s.root;
+    const root=s.root;
+    const ground=(node:THREE.Object3D,height=0)=>{node.updateMatrixWorld(true);node.position.y+=height-new THREE.Box3().setFromObject(node,true).min.y;};
 
     // Light: the altar's own candles at dusk, or flat day before and after.
     const hemi = root.children.find((c) => (c as THREE.HemisphereLight).isHemisphereLight) as THREE.HemisphereLight;
@@ -171,7 +182,10 @@ export default defineWorld({
     const WH = 8.8;
     s.box([13.2, WH, 0.3], [0, WH / 2, -4.55], wallMat);
     s.box([13.2, 1.7, 0.04], [0, 0.85, -4.38], skirtMat);
-    s.box([13.2, 0.09, 0.05], [0, 1.78, -4.38], s.material('#f1e6c8'));
+    if(a.wallBorder==='line')s.box([13.2,.09,.05],[0,1.78,-4.38],s.material('#f1e6c8'));
+    if(a.wallBorder==='tile')for(let i=0;i<44;i++)s.box([.285,.28,.035],[-6.45+i*.3,1.85,-4.365],s.material(i%2?'#f1e6c8':'#284e8e',{roughness:.3}));
+    if(a.wallBorder==='stars'){const gold=s.material('#e8bf64');for(let i=0;i<32;i++){const star=new THREE.Shape();for(let j=0;j<10;j++){const t=j*Math.PI/5,r=j%2?.04:.09;const x=Math.sin(t)*r,y=Math.cos(t)*r;if(!j)star.moveTo(x,y);else star.lineTo(x,y);}star.closePath();s.mesh(new THREE.ShapeGeometry(star),gold,[-6.2+i*.4,1.85,-4.37]);}}
+    if(a.wallBorder==='wood'){const wood=s.material('#805430');s.box([13.2,.2,.08],[0,1.85,-4.34],wood);for(let i=0;i<65;i++)s.ball([.035,.06,.025],[-6.4+i*.2,1.85,-4.285],wood,6);}
     s.box([0.3, WH, 9], [-6.45, WH / 2, 0], wallMat);
     s.box([0.04, 1.7, 9], [-6.28, 0.85, 0], skirtMat);
     const stains = Math.round(mood.wear * 6);
@@ -183,6 +197,7 @@ export default defineWorld({
     const tg = tiles.getContext('2d')!;
     tg.fillStyle = '#6a3c2a'; tg.fillRect(0, 0, 128, 128);
     for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { tg.fillStyle = (i + j) % 2 ? '#b06a48' : '#a45e40'; tg.fillRect(i * 64 + 2, j * 64 + 2, 60, 60); }
+    if(a.floorPattern!=='clay'){tg.fillStyle=a.floorPattern==='stone'?'#8b8171':'#d8cfb8';tg.fillRect(0,0,128,128);for(let i=0;i<2;i++)for(let j=0;j<2;j++){tg.fillStyle=a.floorPattern==='checker'?((i+j)%2?'#333b40':'#e5dcc8'):a.floorPattern==='stone'?['#b3a997','#9b9488','#c3b7a3','#a89b86'][i*2+j]:'#e7dfcc';tg.fillRect(i*64+2,j*64+2,60,60);}if(a.floorPattern==='diamond'){tg.fillStyle='#2c5685';for(let i=0;i<3;i++)for(let j=0;j<3;j++){tg.beginPath();tg.moveTo(i*64,j*64-10);tg.lineTo(i*64+10,j*64);tg.lineTo(i*64,j*64+10);tg.lineTo(i*64-10,j*64);tg.closePath();tg.fill();}}}
     const tileMap = new THREE.CanvasTexture(tiles); tileMap.colorSpace = THREE.SRGBColorSpace; tileMap.wrapS = tileMap.wrapT = THREE.RepeatWrapping; tileMap.repeat.set(6.3, 4.5);
     const floor = s.mesh(new THREE.PlaneGeometry(12.6, 9), new THREE.MeshStandardMaterial({ map: tileMap, roughness: 0.85 }), [0, 0.006, 0]);
     floor.rotation.x = -Math.PI / 2; floor.castShadow = false;
@@ -194,13 +209,19 @@ export default defineWorld({
     const tiers: { w: number; top: number; front: number; drop: number }[] = [
       { w: 10.8, top: T1, front: 1.6, drop: 1.0 }, { w: 8.4, top: T2, front: -0.5, drop: 0.62 }, { w: 5.8, top: T3, front: -2.3, drop: 0.62 },
     ];
-    for (const [x, z] of [[-5.1, 1.3], [5.1, 1.3]]) s.box([0.22, T1, 0.22], [x, T1 / 2, z], wood);
+    if(a.baseStructure==='posts'||a.baseStructure==='turned')for(const x of [-5.1,5.1])for(const z of [-3.9,1.3]){
+      if(a.baseStructure==='posts')s.box([.22,T1,.22],[x,T1/2,z],wood);
+      else s.lathe([[0,0],[.18,0],[.14,.12],[.1,.25],[.17,.38],[.12,.48],[.09,.9],[.16,1.12],[.16,T1],[0,T1]],wood,[x,0,z]);
+    }
+    if(a.baseStructure==='trestle')for(const x of [-4.2,4.2]){s.box([.35,.14,5.1],[x,.07,-1.25],wood);for(const side of [-1,1])s.rod([x,.14,-1.25+side*2.2],[x,1.2,-1.25+side*.65],.095,wood);s.box([.4,.12,3.5],[x,1.24,-1.25],wood);}
+    if(a.baseStructure==='crates')for(const x of [-4.1,4.1])for(let level=0;level<2;level++){const y=level*.65;for(const dx of [-.7,.7])for(const z of [-3.5,.5])s.box([.1,.65,.1],[x+dx,y+.325,z],wood);for(let row=0;row<3;row++)for(const z of [-3.5,.5])s.box([1.5,.13,.06],[x,y+.09+row*.2,z],wood);for(let row=0;row<3;row++)for(const dx of [-.7,.7])s.box([.06,.13,4],[x+dx,y+.09+row*.2,-1.5],wood);s.box([1.5,.08,4.1],[x,y+.61,-1.5],wood);}
     tiers.forEach((t, i) => {
       const back = -4.38, depth = t.front - back, bottom = i === 0 ? T1 - 0.16 : tiers[i - 1].top;
       s.box([t.w, t.top - bottom, depth], [0, (t.top + bottom) / 2, (t.front + back) / 2], i === 0 ? wood : clothMat);
       s.box([t.w + 0.14, 0.05, depth + 0.07], [0, t.top + 0.0, (t.front + back) / 2 + 0.035], clothMat);
       const map = clothMap.clone(); map.needsUpdate = true; map.repeat.set(t.w / 5.2, 1);
-      const drape = s.mesh(new THREE.PlaneGeometry(t.w + 0.14, t.drop), new THREE.MeshStandardMaterial({ map, alphaTest: 0.5, roughness: 0.85, side: THREE.DoubleSide }), [0, t.top - t.drop / 2 + 0.02, t.front + 0.075]);
+      const drape = s.mesh(new THREE.PlaneGeometry(t.w+.14,t.drop,64,10), new THREE.MeshStandardMaterial({ map, alphaTest: 0.5, roughness: 0.85, side: THREE.DoubleSide }), [0, t.top - t.drop / 2 + 0.02, t.front + 0.075]);
+      if(a.clothFold!=='flat'){const p=drape.geometry.getAttribute('position');for(let k=0;k<p.count;k++){const x=p.getX(k),y=p.getY(k),u=(t.drop/2-y)/t.drop;if(a.clothFold==='pleat')p.setZ(k,.055*Math.sin(x*17)*u);if(a.clothFold==='scallop')p.setY(k,y+.11*(1+Math.cos(x/t.w*Math.PI*12))*u);if(a.clothFold==='gathered'){p.setY(k,y+.18*(1+Math.cos(x/t.w*Math.PI*8))*u);p.setZ(k,.06*Math.sin(x*8)*u);}}p.needsUpdate=true;drape.geometry.computeVertexNormals();}
       drape.castShadow = false;
       for (const side of [-1, 1]) {
         const sideMap = clothMap.clone(); sideMap.needsUpdate = true; sideMap.repeat.set(depth / 5.2, 1);
@@ -258,7 +279,7 @@ export default defineWorld({
     // Papel picado on sagging strings.
     const flags: { mesh: THREE.Mesh; phase: number }[] = [];
     if (a.banners !== 'none') {
-      const maps = [0, 1, 2].map(flagTexture);
+      const maps = [0,1,2].map(i=>flagTexture(i,a.bannerCut));
       const hues = { rainbow: ['#e5257e', '#18b5b0', '#f6c21c', '#49b848', '#7a3fc0', '#f2702a', '#2a6ad8', '#d8262e'], feast: ['#7a3fc0', '#f2702a', '#e5257e', '#f6c21c'], white: ['#fbf8f0', '#f1ece0'], tattered: ['#c98aa6', '#8ab8b4', '#d8c88a', '#b0a0c8'] }[a.banners];
       const strings: [number, number, number, number][] = a.crown === 'cross' || a.crown === 'picture' ? [[8.35, 0.5, -4.1, 12.4], [7.95, 0.75, -3.3, 12.4]] : [[8.35, 0.55, -4.1, 12.4], [7.45, 0.6, -3.5, 12.4]];
       strings.forEach(([y0, sag, z, span], row) => {
@@ -294,14 +315,14 @@ export default defineWorld({
       let top: number;
       if (kind === 'taper') {
         const h = mix(1.25, 0.25, burnt);
-        s.cylinder(0.16, 0.2, 0.1, [x, y + 0.05, z], s.material('#b8663e'), 12);
+        const holder=s.material(a.candleHolder==='brass'?'#c69d42':a.candleHolder==='painted'?'#eae0c9':a.candleHolder==='black'?'#282329':'#b8663e',{roughness:a.candleHolder==='brass'?.3:.65,metalness:a.candleHolder==='brass'?.65:0});
+        s.lathe([[0,0],[.2,0],[.2,.03],[.1,.055],[.09,.08],[.11,.1],[0,.1]],holder,[x,y,z]);if(a.candleHolder==='painted')for(let k=0;k<10;k++){const t=k*Math.PI/5;s.ball([.018,.018,.018],[x+Math.sin(t)*.19,y+.035,z+Math.cos(t)*.19],s.material(k%2?'#d54965':'#2e749d'),6);}
         s.cylinder(0.055, 0.065, h, [x, y + 0.1 + h / 2, z], s.material('#f6efdc', { roughness: 0.5, emissive: '#ff9a3a', emissiveIntensity: alight ? 0.3 : 0 }), 10);
         top = y + 0.1 + h;
       } else {
         const hue = glassHues[Math.floor(random() * glassHues.length)];
-        s.cylinder(0.14, 0.135, 0.85, [x, y + 0.425, z], s.material(hue, { roughness: 0.25, emissive: hue, emissiveIntensity: alight ? 0.55 : 0.03 }), 14);
-        s.cylinder(0.125, 0.125, 0.02, [x, y + 0.86, z], s.material('#f6efdc', { emissive: '#ffb347', emissiveIntensity: alight ? 0.8 : 0 }), 12);
-        top = y + 0.84;
+        s.lathe([[0,0],[.135,0],[.14,.85],[.125,.85],[.12,.025],[0,.025]],s.material(hue,{roughness:.25,emissive:hue,emissiveIntensity:alight?.55:.03}),[x,y,z]);
+        const waxHeight=.82-burnt*.55;s.cylinder(.12,.115,waxHeight-.025,[x,y+(waxHeight+.025)/2,z],s.material('#f6efdc',{emissive:'#ffb347',emissiveIntensity:alight?.8:0}),14);top=y+waxHeight;
       }
       if (alight) {
         const group = new THREE.Group(); group.position.set(x, top, z);
@@ -324,8 +345,15 @@ export default defineWorld({
     if (more) spots.push([-0.9, T1, 1.3, 'glass'], [0.9, T1, 1.3, 'glass'], [-3.95, T2, -2.0, 'glass'], [3.95, T2, -2.0, 'glass'], [-5.2, 0, 2.3, 'glass'], [5.2, 0, 2.3, 'glass']);
     for (const [x, y, z, kind] of spots) candle(x + (random() - 0.5) * 0.12, y + 0.025, z + (random() - 0.5) * 0.1, kind);
 
+    if(a.remembrance!=='bare')for(const side of [-1,1]){
+      const x=side*1.25,y=T3+.025,z=-4.05;
+      if(a.remembrance==='baskets'){const basket=s.material('#bd965e',{roughness:.9});s.lathe([[0,0],[.24,0],[.3,.23],[.26,.28],[0,.32]],basket,[x,y,z]);for(let k=0;k<8;k++)s.ring(.24+.05*Math.sin(k/7*Math.PI/2),.009,[x,y+.025+k*.034,z],s.material('#8e6e43')).rotation.x=Math.PI/2;s.ball([.05,.035,.05],[x,y+.345,z],basket,8);}
+      if(a.remembrance==='books')for(let k=0;k<2;k++){const group=new THREE.Group();group.add(s.box([.52,.07,.42],[0,.035,0],s.material(k?'#6a3e2b':'#32424e')));group.add(s.box([.48,.045,.38],[.01,.038,.005],s.material('#d9c7a2')));group.position.set(x,y+k*.07,z);group.rotation.y=side*.1+k*.12;s.root.add(group);}
+      if(a.remembrance==='plaques'){const group=new THREE.Group();group.add(s.box([.65,.65,.06],[0,.325,0],s.material('#9b773c')));group.add(s.label(side<0?'SIEMPRE':'CON AMOR',.55,.5,[0,.33,.035],'#573c2b','#e9d6ae'));group.position.set(x,y,z);s.root.add(group);s.box([.7,.07,.3],[x,y+.035,z],s.material('#705538'));}
+    }
+
     // Water and salt always; then whatever fills the gaps.
-    s.cylinder(0.16, 0.13, 0.42, [-1.75, T1 + 0.235, 0.35], new THREE.MeshPhysicalMaterial({ color: '#bcdcd8', transparent: true, opacity: 0.45, roughness: 0.05 }), 16);
+    s.lathe([[0,0],[.13,0],[.16,.42],[.149,.42],[.119,.015],[0,.015]],new THREE.MeshPhysicalMaterial({color:'#bcdcd8',transparent:true,opacity:.45,roughness:.05,depthWrite:false}),[-1.75,T1+.025,.35]);
     s.cylinder(0.14, 0.12, 0.3, [-1.75, T1 + 0.18, 0.35], s.material('#d4ecec', { roughness: 0.1 }), 16);
     s.lathe([[0, 0.01], [0.16, 0.01], [0.24, 0.07], [0.22, 0.07], [0.14, 0.03], [0, 0.03]], s.material('#b05a34'), [1.75, T1 + 0.025, 0.35]);
     s.mesh(new THREE.ConeGeometry(0.13, 0.12, 12), s.material('#fbfaf4', { roughness: 1 }), [1.75, T1 + 0.115, 0.35]);
@@ -353,7 +381,7 @@ export default defineWorld({
       const hues = ['#d8262e', '#2a6ad8', '#f6c21c', '#49b848', '#e5257e'];
       const ball = s.ball([0.28, 0.28, 0.28], [-0.7, T2 + 0.3, -1.5], s.material('#d8262e', { roughness: 0.4 }), 16);
       void ball; s.ring(0.283, 0.03, [-0.7, T2 + 0.3, -1.5], s.material('#fbf8f0')).rotation.x = Math.PI / 2;
-      s.mesh(new THREE.ConeGeometry(0.2, 0.34, 14), s.material('#49b848'), [0.15, T2 + 0.2, -1.3]).rotation.set(Math.PI + 0.5, 0, 0.3);
+      const topToy=s.mesh(new THREE.ConeGeometry(.2,.34,14),s.material('#49b848'),[.15,T2+.2,-1.3]);topToy.rotation.set(Math.PI+.5,0,.3);ground(topToy,T2+.025);
       for (let i = 0; i < 5; i++) { const block = s.box([0.24, 0.24, 0.24], [0.7 + (i % 2) * 0.27, T2 + 0.145 + Math.floor(i / 2) * 0.245, -1.55 + (i % 2) * 0.05], s.material(hues[i])); block.rotation.y = random() * 0.5; }
       for (const side of [-1, 1]) for (let i = 0; i < 6; i++) { const sweet = s.ball([0.09, 0.06, 0.06], [side * 5 + (random() - 0.5) * 0.5, T1 + 0.08, 0 + (random() - 0.5) * 0.6], s.material(hues[i % 5], { emissive: hues[i % 5], emissiveIntensity: 0.15 }), 8); sweet.rotation.y = random() * 3; }
     }

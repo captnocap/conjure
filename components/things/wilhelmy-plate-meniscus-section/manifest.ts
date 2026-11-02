@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Wilhelmy plate meniscus section", "summary": "A thin suspended plate meets a liquid bath through curved menisci attached to both broad faces and actual bath walls. A suspended plate intersects a real bath volume and continuous menisci on both broad faces. The supported frame and exposed liquid section explain wetting geometry; the curved surfaces are schematic and no force or contact-angle reading is claimed.", "scales": ["macro", "tabletop"]});

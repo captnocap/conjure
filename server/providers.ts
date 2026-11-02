@@ -61,8 +61,15 @@ export const PROVIDERS: Record<ProviderId, ProviderDefinition> = {
   nanogpt: {
     id: 'nanogpt', title: 'NanoGPT', keyEnv: 'NANO_GPT_API_KEY', baseEnv: 'NANO_GPT_BASE_URL',
     baseURL: 'https://nano-gpt.com/api', path: '/v1/systemone', inputUsdPerMillion: 0.25,
-    // NanoGPT reports each request's cost itself; its model list carries no decision flag, so these stay as named.
-    models: ['typesafe/jev-latest', 'perplexity/pplx-decider-v1.2', 'liquid/d1', 'llmtech/decider-4b-nvfp4', 'openai/gpt-6-luna-decisions'],
+    // NanoGPT reports each request's cost itself; its model list carries no decision flag, so these stay as named
+    // (its decision models as of 2026-10-29; engine/decision-limits.ts sizes requests for the smaller ones).
+    models: [
+      'typesafe/jev-latest', 'typesafe/jev-1.14', 'typesafe/jev-1.13', 'eu-jev/eu-jeff-latest',
+      'surogate/rune-26b-a4b', 'subq/subq-snap-1.1', 'subq/subq-snap-preview', 'perplexity/pplx-decider-v1.2',
+      'vllm-sr/decision-large', 'vllm-sr/decision-medium', 'vllm-sr/decision-small',
+      'cloudflare/clef', 'cloudflare/clef-flash', 'cloudflare/clef-omni', 'jaredpalmer/kev-4b',
+      'openai/gpt-6-luna-decisions', 'liquid/d1', 'llmtech/decider-0.8b-fp8', 'llmtech/decider-2b-fp8', 'llmtech/decider-4b-nvfp4',
+    ],
   },
   custom: {
     id: 'custom', title: 'Custom', keyEnv: 'CONJURE_API_KEY', baseEnv: 'CONJURE_BASE_URL',
@@ -80,6 +87,9 @@ export interface Provider {
   inputUsdPerMillion: number;
   models: string[];
 }
+
+/** Models that refuse a structured state ("accepts text input only") and take it as one string. */
+const textOnly = (model: string) => /^vllm-sr\//.test(model);
 
 /** A model as the studio names it: "<provider>:<model>". */
 export const canonical = (provider: ProviderId, model: string) => `${provider}:${model}`;
@@ -240,7 +250,7 @@ export class Providers {
           'HTTP-Referer': 'https://github.com/captnocap/conjure',
           'X-Title': 'Conjure',
         },
-        body: JSON.stringify({ model, state: { task: brief, idea }, questions: named }),
+        body: JSON.stringify({ model, state: textOnly(model) ? `Task: ${brief}\nIdea: ${idea}` : { task: brief, idea }, questions: named }),
         signal,
       });
     } catch (error) {

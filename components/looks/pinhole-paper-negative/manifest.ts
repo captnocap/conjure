@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Pinhole paper negative',summary:'A soft paper-negative or contact-print treatment with long-exposure drift, natural corner falloff, silver tones and uneven development traces. Experimental camera images, quiet architecture and slow atmospheric photographic studies.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'optical'});

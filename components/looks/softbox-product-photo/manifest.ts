@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Softbox product photo',summary:'A controlled studio-photo treatment with broad soft highlights, open fill, clean background sweeps and restrained detail contrast. Catalogue objects, tabletop products, collectables and clear polished photographic studies.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'realism'});

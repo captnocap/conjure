@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Gravitational lens caustic plane", "summary": "Separated source, lens and image planes with strong curved light paths and open negative space; diagrams use geometry and topology to distinguish images. A permanent ray-and-plane diagram and calculated critical-curve field define the lensing place, with separate front teaching samples.", "scales": ["tabletop", "cosmic"]});

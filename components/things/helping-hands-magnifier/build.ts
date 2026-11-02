@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Sculpture, choice, defineThing, mix, noul } from '@conjure/kit';
+import { Sculpture, choice, defineThing, mix, noul, score } from '@conjure/kit';
 
 type P = [number, number, number];
 
@@ -15,6 +15,13 @@ function paint(w: number, h: number, draw: (ctx: CanvasRenderingContext2D) => vo
 
 export default defineThing({
   questions: {
+    lensSize: score('How broad is the magnifying glass?', ['A small inspection lens', 'A medium lens', 'A broad lens', 'A large work lens']),
+    glassTint: choice('What tint does the lens have?', { clear: 'Nearly colourless.', blue: 'Cool blue coated glass.', amber: 'A warm amber filter.', smoke: 'A faint smoky grey tint.' }),
+    jawFaces: choice('What protects the clipped work?', { bare: 'Bare steel teeth.', rubber: 'Black rubber jaw covers.', cork: 'Thin cork pads.', cloth: 'Cream cloth wrapped around the jaws.' }),
+    screws: choice('How are the arm joints tightened?', { wings: 'Flat wing screws.', star: 'Four-lobed star knobs.', round: 'Round knurled knobs.', hex: 'Small hexagonal nuts.' }),
+    workingHeight: score('How high is the work held?', ['Low over the base', 'At a comfortable low height', 'Raised for close work', 'High with the arms reaching up']),
+    catchTray: choice('What catches tiny fallen parts?', { none: 'No tray.', dish: 'A shallow metal dish in front.', magnetic: 'A round magnetic parts dish.', cells: 'A four-compartment sorting tray.' }),
+    backdrop: choice('Is there a background card behind the work?', { none: 'No card.', white: 'A plain white card on two feet.', dark: 'A dark contrast card.', grid: 'A pale card with a millimetre-style grid.' }),
     work: choice('What is held in the clips?', {
       board: 'A small green circuit board bristling with components.',
       watch: 'A brass watch movement, all tiny wheels and ruby jewels.',
@@ -142,7 +149,7 @@ export default defineThing({
     half *= 1.35; item.root.scale.setScalar(1.35);
 
     // ---- Where everything sits.
-    const WY = 0.165, WZ = 0.03;
+    const WY = mix(0.135, 0.205, a.workingHeight), WZ = 0.03;
     const dropped = a.hold === 'dropped' && a.work !== 'nothing', slipped = a.hold === 'slipped' && a.work !== 'nothing';
     const swing = new THREE.Group();
     swing.add(item.root);
@@ -171,6 +178,9 @@ export default defineThing({
         j.geometry.translate(0, 0, 0);
         const pivot = new THREE.Group(); pivot.position.set(0.034, 0, 0); pivot.rotation.z = jaw * gape; g.root.add(pivot);
         j.position.set(-0.017, 0, 0); pivot.add(j);
+        if (a.jawFaces !== 'bare') {
+          const pad = new THREE.Mesh(new THREE.BoxGeometry(0.027, 0.0025, 0.008), s.material(a.jawFaces === 'rubber' ? '#343b38' : a.jawFaces === 'cork' ? '#b49967' : '#e4dcc2', { roughness: 0.9 })); pad.position.set(-0.02, -jaw * 0.0017, 0); pivot.add(pad);
+        }
         const back = g.box([0.02, 0.0022, 0.007], [0.044, jaw * 0.004, 0], steel); back.rotation.z = -jaw * 0.22;
       }
       g.cylinder(0.005, 0.0045, 0.02, [0.058, 0, 0], s.material(sleeve, { roughness: 0.5 }), 10).rotation.z = Math.PI / 2;
@@ -184,6 +194,12 @@ export default defineThing({
     };
     const tailL = clip(gripL, -1, openL, mood.cheer > 0.5 ? '#c8261e' : '#1c1c1e');
     const tailR = clip(gripR.clone().add(new THREE.Vector3(openR && a.work !== 'nothing' ? 0.012 : 0, 0, 0)), 1, openR, '#1c1c1e');
+    for (const tail of [tailL, tailR]) {
+      s.rod(tail.toArray() as P, [tail.x, tail.y, tail.z + 0.011], 0.002, steel);
+      if (a.screws === 'wings') s.box([0.015, 0.005, 0.0025], [tail.x, tail.y, tail.z + 0.012], steel);
+      else if (a.screws === 'star') for (const angle of [0, Math.PI / 2]) s.box([0.014, 0.004, 0.004], [tail.x, tail.y, tail.z + 0.013], dark).rotation.z = angle;
+      else { const knob = s.cylinder(0.006, 0.006, 0.004, [tail.x, tail.y, tail.z + 0.012], a.screws === 'hex' ? steel : dark, a.screws === 'hex' ? 6 : 20); knob.rotation.x = Math.PI / 2; }
+    }
 
     // ---- Arms.
     const bead = new THREE.SphereGeometry(1, 10, 8);
@@ -222,10 +238,10 @@ export default defineThing({
     // ---- Lens.
     const lensAt = { over: new THREE.Vector3(0.005, WY + 0.012, WZ + 0.075), cracked: new THREE.Vector3(0.005, WY + 0.012, WZ + 0.075), aside: new THREE.Vector3(-0.115, 0.215, -0.02), up: new THREE.Vector3(0.0, 0.25, 0.01) }[a.lens];
     const normal = { over: new THREE.Vector3(0.22, 0.55, 0.8), cracked: new THREE.Vector3(0.22, 0.55, 0.8), aside: new THREE.Vector3(-0.3, 0.25, 1), up: new THREE.Vector3(0.05, 1, 0.12) }[a.lens].normalize();
-    const LR = 0.038;
+    const LR = mix(0.029, 0.052, a.lensSize);
     const lens = new Sculpture(context);
     lens.ring(LR, 0.003, [0, 0, 0], a.arms === 'wire' ? copper : dark);
-    const glassMat = new THREE.MeshStandardMaterial({ color: '#bfe2f2', transparent: true, opacity: 0.32, roughness: 0.03, metalness: 0.1, depthWrite: false, side: THREE.DoubleSide });
+    const glassMat = new THREE.MeshStandardMaterial({ color: { clear: '#e5edef', blue: '#a5cee4', amber: '#d8bc76', smoke: '#89989c' }[a.glassTint], transparent: true, opacity: 0.32, roughness: 0.03, metalness: 0.1, depthWrite: false, side: THREE.DoubleSide });
     const pane = lens.mesh(new THREE.SphereGeometry(LR, 24, 8, 0, Math.PI * 2, 0, 0.5), glassMat, [0, 0, -LR * 0.87]);
     pane.rotation.x = Math.PI / 2; pane.scale.set(1.9, 1, 1.9); pane.castShadow = false;
     pane.position.z = -LR * 0.88 + 0.003;
@@ -251,6 +267,27 @@ export default defineThing({
       : a.lens === 'up' ? [[0.01, (origin[1] + hilt.y) / 2, origin[2] - 0.03], [0.0, hilt.y - 0.02, hilt.z - 0.035]]
         : [[0.06, origin[1] + 0.03, origin[2] - 0.01], [0.09, hilt.y - 0.03, hilt.z - 0.05], [hilt.x + 0.03, hilt.y - 0.02, hilt.z - 0.005]];
     jointed([origin, ...bend, hilt.toArray() as P], a.arms === 'gooseneck' ? 0.0042 : 0.003);
+
+    if (a.catchTray !== 'none') {
+      const z = 0.125;
+      if (a.catchTray === 'cells') {
+        s.box([0.105, 0.003, 0.065], [-0.005, 0.0015, z], steel);
+        for (const x of [-0.0575, -0.005, 0.0475]) s.box([0.002, 0.014, 0.065], [x, 0.008, z], steel);
+        for (const dz of [-0.0325, 0, 0.0325]) s.box([0.105, 0.014, 0.002], [-0.005, 0.008, z + dz], steel);
+      } else {
+        s.lathe([[0, 0], [0.036, 0], [0.042, 0.012], [0.04, 0.013], [0.034, 0.003], [0, 0.003]], steel, [-0.005, 0, z]);
+        if (a.catchTray === 'magnetic') s.cylinder(0.024, 0.024, 0.0015, [-0.005, 0.0035, z], dark, 20);
+      }
+      for (let i = 0; i < 5; i++) { const x = -0.028 + (i % 3) * 0.019, zz = z - 0.017 + Math.floor(i / 3) * 0.027; s.cylinder(0.0027, 0.0027, 0.002, [x, 0.005, zz], steel, 6); s.rod([x, 0.005, zz], [x + 0.008, 0.005, zz + 0.003], 0.0009, steel); }
+    }
+    if (a.backdrop !== 'none') {
+      const map = paint(256, 192, c => {
+        c.fillStyle = a.backdrop === 'dark' ? '#2c373b' : '#e4e2d4'; c.fillRect(0, 0, 256, 192);
+        if (a.backdrop === 'grid') { c.strokeStyle = '#aabdb8'; for (let x = 0; x < 256; x += 12) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, 192); c.stroke(); } for (let y = 0; y < 192; y += 12) { c.beginPath(); c.moveTo(0, y); c.lineTo(256, y); c.stroke(); } }
+      });
+      s.box([0.24, 0.19, 0.002], [0, 0.115, -0.095], new THREE.MeshStandardMaterial({ map, roughness: 1 }));
+      for (const x of [-0.09, 0.09]) { s.box([0.012, 0.045, 0.008], [x, 0.0225, -0.095], dark); s.box([0.05, 0.004, 0.075], [x, 0.002, -0.095], dark); }
+    }
 
     // ---- Fine tools beside the base.
     if (a.tools) {

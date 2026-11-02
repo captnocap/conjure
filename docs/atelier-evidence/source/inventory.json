@@ -1,0 +1,932 @@
+{
+  "provenance": {
+    "archive": "/home/siah/code/jev/art/atelier-source.zip",
+    "sha256": "d08d3876f689c9e845456d2923fcf61c1aca89dd8f80ca39932331d7c1b1cabe",
+    "distFiles": 172,
+    "identicalFiles": 172,
+    "hostedVersion": 83,
+    "sourceCommit": "56f12f27a0a69ee44443fb3fcea2334073afb586",
+    "authoritativeRuntimeMatchesArchive": true
+  },
+  "counts": {
+    "already ported": 48,
+    "partial": 24,
+    "missing": 12
+  },
+  "studies": [
+    {
+      "number": 1,
+      "id": "riso",
+      "name": "Risograph",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Separate coverage masks \u00b7 rotated dot screens \u00b7 multiply overprint \u00b7 seeded plate misregistration",
+      "note": null
+    },
+    {
+      "number": 2,
+      "id": "woodcut",
+      "name": "Woodcut",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Tone-gated hatch fields \u00b7 crosshatching in deep shade \u00b7 ink contours \u00b7 seeded cut variation",
+      "note": null
+    },
+    {
+      "number": 3,
+      "id": "stipple",
+      "name": "Stipple",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Jittered sample lattice \u00b7 tone-dependent acceptance \u00b7 stable random thresholds \u00b7 edge enrichment",
+      "note": null
+    },
+    {
+      "number": 4,
+      "id": "loom",
+      "name": "Woven field",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Discrete color sampling \u00b7 alternating warp/weft order \u00b7 filament highlights \u00b7 shadow seams",
+      "note": null
+    },
+    {
+      "number": 5,
+      "id": "optical",
+      "name": "Optical relief",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Continuous stripe field \u00b7 normal-driven phase displacement \u00b7 illumination-dependent displacement",
+      "note": null
+    },
+    {
+      "number": 6,
+      "id": "cyanotype",
+      "name": "Cyanotype",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Inverted exposure response \u00b7 bright silhouette interiors \u00b7 seeded coating variation \u00b7 contact fringes",
+      "note": null
+    },
+    {
+      "number": 7,
+      "id": "contours",
+      "name": "Contour atlas",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Quantized luminance \u00b7 isoline threshold crossings \u00b7 palette-indexed plateaus \u00b7 contour ink",
+      "note": null
+    },
+    {
+      "number": 8,
+      "id": "frottage",
+      "name": "Frottage",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Anisotropic seeded ridge field \u00b7 illumination-driven pressure \u00b7 thresholded graphite transfer",
+      "note": null
+    },
+    {
+      "number": 9,
+      "id": "cutpaper",
+      "name": "Cut paper",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Connected-region segmentation \u00b7 traced polygon boundaries \u00b7 seeded edge cuts \u00b7 offset paper shadows",
+      "note": null
+    },
+    {
+      "number": 10,
+      "id": "reticulum",
+      "name": "Reticulum",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Normal-sensitive sampling \u00b7 jittered graph nodes \u00b7 neighbourhood connections \u00b7 joined wire knots",
+      "note": null
+    },
+    {
+      "number": 11,
+      "id": "luminous",
+      "name": "Luminous field",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Image-space contour extraction \u00b7 additive multi-width emission \u00b7 surface-normal color \u00b7 dark negative space",
+      "note": null
+    },
+    {
+      "number": 12,
+      "id": "scanner",
+      "name": "Data engraving",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Discrete luminance glyphs \u00b7 sampled normal orientation \u00b7 interval scanlines \u00b7 coordinate crosshairs",
+      "note": null
+    },
+    {
+      "number": 13,
+      "id": "depth",
+      "name": "Depth etching",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Packed GPU depth \u00b7 camera-space intervals \u00b7 object-identity silhouettes \u00b7 etched section lines",
+      "note": null
+    },
+    {
+      "number": 14,
+      "id": "embroidery",
+      "name": "Surface embroidery",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Normal-guided streamline integration \u00b7 mesh-boundary stopping \u00b7 broken stitches \u00b7 thread highlights",
+      "note": null
+    },
+    {
+      "number": 15,
+      "id": "wash",
+      "name": "Pigment wash",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Multi-pass pigment diffusion \u00b7 variable paper absorption \u00b7 boundary pooling \u00b7 unpainted paper gaps",
+      "note": null
+    },
+    {
+      "number": 16,
+      "id": "architectural",
+      "name": "Architectural plate",
+      "status": "partial",
+      "module": "styles.js",
+      "mechanism": "Three.js crease extraction \u00b7 camera projection \u00b7 measured depth occlusion \u00b7 dashed hidden structure",
+      "note": "Geometric creases absent: adapter supplies edges=[]/edgeOwners=[]."
+    },
+    {
+      "number": 17,
+      "id": "interference",
+      "name": "Moir\u00e9 interference",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Two coherent wave fields \u00b7 angular beating \u00b7 depth-driven phase \u00b7 squared-amplitude interference",
+      "note": null
+    },
+    {
+      "number": 18,
+      "id": "photogram",
+      "name": "Photogram",
+      "status": "partial",
+      "module": "styles.js",
+      "mechanism": "Mesh-identity masks \u00b7 actual material transmission \u00b7 connected soft edges \u00b7 seeded film grain",
+      "note": "Transmissions are forcibly zero, losing material-transmission exposure."
+    },
+    {
+      "number": 19,
+      "id": "glass",
+      "name": "Leaded glass",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Seeded Voronoi pieces \u00b7 mesh-boundary lead cames \u00b7 separate trace paint \u00b7 material-color light fields",
+      "note": null
+    },
+    {
+      "number": 20,
+      "id": "transfer",
+      "name": "Solvent transfer",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Source-color transfer strokes \u00b7 broad pressure masks \u00b7 incomplete edge pickup \u00b7 unprinted paper",
+      "note": null
+    },
+    {
+      "number": 21,
+      "id": "volume",
+      "name": "Luminous volume",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Filled radiance masks \u00b7 view-normal intensity \u00b7 depth-weighted color \u00b7 multiscale screen-space diffusion",
+      "note": null
+    },
+    {
+      "number": 22,
+      "id": "surface-dots",
+      "name": "Surface pointillism",
+      "status": "missing",
+      "module": "styles.js",
+      "mechanism": "World-area triangle sampling \u00b7 stable 3D anchors \u00b7 camera projection \u00b7 depth-tested color marks",
+      "note": "Excluded; area-distributed world-space surface samples absent."
+    },
+    {
+      "number": 23,
+      "id": "mezzotint",
+      "name": "Mezzotint",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Seeded burr-height field \u00b7 normal-oriented local burnishing \u00b7 monotone tooth removal \u00b7 nonlinear ink retention",
+      "note": null
+    },
+    {
+      "number": 24,
+      "id": "impasto",
+      "name": "Impasto relief",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Coarse-to-fine pigment dabs \u00b7 accumulated height field \u00b7 raised lips and bristle grooves \u00b7 shared-key-light relief shading",
+      "note": null
+    },
+    {
+      "number": 25,
+      "id": "reaction",
+      "name": "Reactive cells",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Seeded Gray\u2013Scott reaction \u00b7 unequal diffusion \u00b7 no-flux object boundaries \u00b7 fixed-step growth \u00b7 concentration-to-ink threshold",
+      "note": null
+    },
+    {
+      "number": 26,
+      "id": "marbling",
+      "name": "Marbled float",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Sequential radial paint displacement \u00b7 inverse history tracing \u00b7 reversible tine maps \u00b7 seeded pigment pools",
+      "note": null
+    },
+    {
+      "number": 27,
+      "id": "sections",
+      "name": "Sectional volume",
+      "status": "missing",
+      "module": "styles.js",
+      "mechanism": "True mesh\u2013plane intersections \u00b7 stable world-space levels \u00b7 captured-camera projection \u00b7 depth-tested front and rear curves",
+      "note": "Excluded; mesh\u2013plane intersections absent because capture has no geometry."
+    },
+    {
+      "number": 28,
+      "id": "crackle",
+      "name": "Crackle glaze",
+      "status": "partial",
+      "module": "styles.js",
+      "mechanism": "Seeded persistent tip growth \u00b7 normal-variation branching \u00b7 collision arrest \u00b7 two-scale stained fissures \u00b7 native component masks \u00b7 projected open rims",
+      "note": "Open-boundary projection absent, losing open-rim handling."
+    },
+    {
+      "number": 29,
+      "id": "oilspot",
+      "name": "Oil-spot glaze",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Shared iron budget \u00b7 seeded bubble lifetimes \u00b7 conservative masked transport \u00b7 cooling precipitation \u00b7 mineral/glaze reflection",
+      "note": null
+    },
+    {
+      "number": 30,
+      "id": "sabattier",
+      "name": "Sabattier print",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Latent exposure \u00b7 retained silver density \u00b7 second-flash shielding \u00b7 diffused development field \u00b7 local tonal reversal",
+      "note": null
+    },
+    {
+      "number": 31,
+      "id": "relief",
+      "name": "Schiacciato",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Depth-gradient compression \u00b7 small occlusion targets \u00b7 global Poisson reconstruction \u00b7 guided upsampling \u00b7 shared-light relief shading",
+      "note": null
+    },
+    {
+      "number": 32,
+      "id": "interlace",
+      "name": "Optical interlace",
+      "status": "already-ported",
+      "module": "styles.js",
+      "mechanism": "Bounded smooth deformation \u00b7 iterative inverse mapping \u00b7 continuous crossing parity \u00b7 round thread shading \u00b7 explicit over/under compositing",
+      "note": null
+    },
+    {
+      "number": 33,
+      "id": "voxels",
+      "name": "Surface Blocks",
+      "status": "missing",
+      "module": "styles.js",
+      "mechanism": "Triangle\u2013box overlap \u00b7 stable world cells \u00b7 nearest-surface material ownership \u00b7 hidden neighbor faces \u00b7 depth-ordered projected quads",
+      "note": "Excluded; triangle/box surface cells absent because capture has no geometry."
+    },
+    {
+      "number": 34,
+      "id": "spectral",
+      "name": "Spectral coating",
+      "status": "partial",
+      "module": "styles.js",
+      "mechanism": "Signed s/p Fresnel amplitudes \u00b7 coherent Airy interference \u00b7 CIE/D65 spectral integration \u00b7 fixed-world thickness \u00b7 shared-light illustrative relighting. RGB/hemisphere approximation; no coat self-shadows or glass transmission.",
+      "note": "worldFromClip absent: uses fixed 8.2-wide screen-space fallback rather than captured world coordinates."
+    },
+    {
+      "number": 35,
+      "id": "cel",
+      "name": "Clean cel",
+      "status": "partial",
+      "module": "clean-studies.js",
+      "mechanism": "Shared-light Lambert pass \u00b7 discrete material palettes \u00b7 independent metallic highlight mask \u00b7 smooth mesh-identity contours and visible geometric creases",
+      "note": "Shared cleanFields lacks geometric creases and actual per-owner metalness; adapter supplies no edges and zeroed material metadata."
+    },
+    {
+      "number": 36,
+      "id": "clear-line",
+      "name": "Ligne claire",
+      "status": "partial",
+      "module": "clean-studies.js",
+      "mechanism": "One flat fill per material \u00b7 uniform antialiased contours \u00b7 visible-only mesh creases \u00b7 no shading bands, grain or dots",
+      "note": "Shared cleanFields lacks geometric creases and actual per-owner metalness; adapter supplies no edges and zeroed material metadata."
+    },
+    {
+      "number": 37,
+      "id": "brush-cel",
+      "name": "Bold ink",
+      "status": "partial",
+      "module": "clean-studies.js",
+      "mechanism": "Two-tone material fills \u00b7 smooth orientation-dependent contour width \u00b7 thinner depth-tested creases \u00b7 graphic metal highlights \u00b7 no carved texture",
+      "note": "Shared cleanFields lacks geometric creases and actual per-owner metalness; adapter supplies no edges and zeroed material metadata."
+    },
+    {
+      "number": 38,
+      "id": "comic-dots",
+      "name": "Comic shadows",
+      "status": "partial",
+      "module": "clean-studies.js",
+      "mechanism": "Two-tone fills \u00b7 fixed registered dot lattice clipped to diffuse shadows \u00b7 independent highlight protection \u00b7 clean contours and creases",
+      "note": "Shared cleanFields lacks geometric creases and actual per-owner metalness; adapter supplies no edges and zeroed material metadata."
+    },
+    {
+      "number": 39,
+      "id": "expressive-ink",
+      "name": "Expressive ink",
+      "status": "partial",
+      "module": "ink-effects.js",
+      "mechanism": "Seven adjustable effects \u00b7 pooled cauliflower fronts \u00b7 heavy-tail spatter \u00b7 normal-guided white scrape \u00b7 nervous contour drift \u00b7 bristle flicks \u00b7 selective orange \u00b7 bounded screen warp",
+      "note": "Shared cleanFields lacks geometric creases and actual per-owner metalness; adapter supplies no edges and zeroed material metadata."
+    },
+    {
+      "number": 40,
+      "id": "ink-bloom",
+      "name": "Wash bloom",
+      "status": "partial",
+      "module": "ink-effects.js",
+      "mechanism": "Seeded wet patches \u00b7 scalloped fronts \u00b7 dark rim deposition \u00b7 canvas tooth \u00b7 no clipped spatter or line correction",
+      "note": "Shared cleanFields lacks geometric creases and actual per-owner metalness; adapter supplies no edges and zeroed material metadata."
+    },
+    {
+      "number": 41,
+      "id": "ink-scrape",
+      "name": "Scraped ink",
+      "status": "partial",
+      "module": "ink-effects.js",
+      "mechanism": "Surface-normal flow \u00b7 clipped form-following paths \u00b7 separated knife ribs \u00b7 tapered dry paint \u00b7 pooled ink foundation",
+      "note": "Shared cleanFields lacks geometric creases and actual per-owner metalness; adapter supplies no edges and zeroed material metadata."
+    },
+    {
+      "number": 42,
+      "id": "ink-storm",
+      "name": "Edge storm",
+      "status": "partial",
+      "module": "ink-effects.js",
+      "mechanism": "Bounded power-law droplet sizes \u00b7 outward edge density \u00b7 unrestricted placement \u00b7 directional streaks \u00b7 bristle taper \u00b7 deliberate line misregistration",
+      "note": "Shared cleanFields lacks geometric creases and actual per-owner metalness; adapter supplies no edges and zeroed material metadata."
+    },
+    {
+      "number": 43,
+      "id": "game-obra",
+      "name": "Obra Dinn / one bit",
+      "status": "partial",
+      "module": "game-painted-studies.js",
+      "mechanism": "Quantized logical raster \u00b7 binary thresholds \u00b7 ordered dither \u00b7 polarity-aware silhouette and crease lines",
+      "note": "Geometric crease extraction absent (edges/edgeOwners)."
+    },
+    {
+      "number": 44,
+      "id": "game-disco",
+      "name": "Disco / drybrush",
+      "status": "already-ported",
+      "module": "game-painted-studies.js",
+      "mechanism": "Multiscale directional dabs \u00b7 sampled material color \u00b7 scumbled shadows \u00b7 chalk highlights \u00b7 selective lost edges",
+      "note": null
+    },
+    {
+      "number": 45,
+      "id": "game-okami",
+      "name": "Okami / brushwash",
+      "status": "already-ported",
+      "module": "game-painted-studies.js",
+      "mechanism": "Variable-pressure contours \u00b7 translucent pooling \u00b7 local edge wicking \u00b7 paper granulation \u00b7 stable colored marks",
+      "note": null
+    },
+    {
+      "number": 46,
+      "id": "game-sable",
+      "name": "Sable / schematics",
+      "status": "partial",
+      "module": "game-graphic-studies.js",
+      "mechanism": "World-coordinate panel planes \u00b7 compressed lighting \u00b7 fine contours and creases \u00b7 localized pink signal glow",
+      "note": "Graphic plan uses cleanFields and actual world positions; geometric creases/metalness/worldFromClip missing."
+    },
+    {
+      "number": 47,
+      "id": "game-hylics",
+      "name": "Hylics / clay pixels",
+      "status": "partial",
+      "module": "game-painted-studies.js",
+      "mechanism": "Procedural clay ridges in shading \u00b7 indexed palette \u00b7 logical pixels \u00b7 cavity-weighted threshold dither",
+      "note": "Uses worldPosition for clay ridges, but adapter omits captured worldFromClip."
+    },
+    {
+      "number": 48,
+      "id": "game-windwaker",
+      "name": "Wind Waker / inlays",
+      "status": "partial",
+      "module": "game-graphic-studies.js",
+      "mechanism": "Two-level matte shading \u00b7 surface-attached diamond facets \u00b7 selective rim strips \u00b7 glow extracted only from inlays",
+      "note": "Graphic plan uses cleanFields and actual world positions; geometric creases/metalness/worldFromClip missing."
+    },
+    {
+      "number": 49,
+      "id": "game-persona",
+      "name": "Persona / cutouts",
+      "status": "partial",
+      "module": "game-graphic-studies.js",
+      "mechanism": "Object-bounded angular shadow wedges \u00b7 offset black silhouettes \u00b7 displaced white keylines \u00b7 selected red print masses",
+      "note": "Graphic plan uses cleanFields and actual world positions; geometric creases/metalness/worldFromClip missing."
+    },
+    {
+      "number": 50,
+      "id": "game-inside",
+      "name": "INSIDE / backlight",
+      "status": "partial",
+      "module": "game-spatial-studies.js",
+      "mechanism": "Actual-depth atmospheric mixing \u00b7 silhouette backlight \u00b7 surface-fragment floor shadows \u00b7 restrained foreground contrast",
+      "note": "Spatial plan derives camera basis/world positions from worldFromClip, currently absent; falls back to wrong fixed camera plane."
+    },
+    {
+      "number": 51,
+      "id": "game-mirrorsedge",
+      "name": "Mirror\u2019s Edge / high key",
+      "status": "partial",
+      "module": "game-spatial-studies.js",
+      "mechanism": "Surface-coordinate panel seams \u00b7 high white shoulder \u00b7 violet contact shade \u00b7 selective yellow accents \u00b7 localized glare",
+      "note": "Spatial plan derives camera basis/world positions from worldFromClip, currently absent; falls back to wrong fixed camera plane."
+    },
+    {
+      "number": 52,
+      "id": "game-viewfinder",
+      "name": "Viewfinder / photo",
+      "status": "partial",
+      "module": "game-spatial-studies.js",
+      "mechanism": "Tilted rectangular media stencil \u00b7 monochrome photographic/etched interior \u00b7 color exterior \u00b7 narrow paper edge and shadow",
+      "note": "Spatial plan derives camera basis/world positions from worldFromClip, currently absent; falls back to wrong fixed camera plane."
+    },
+    {
+      "number": 53,
+      "id": "surface-hatching",
+      "name": "Curvature hatching",
+      "status": "partial",
+      "module": "surface-hatching.js",
+      "mechanism": "Geometry-fitted principal directions \u00b7 transported tangent fallback on flat and spherical patches \u00b7 triangle-edge integration \u00b7 exact projected visibility \u00b7 light-gated crosshatching",
+      "note": "Enabled but surfaceHatches() returns empty path arrays. Real curvature-following marks unavailable."
+    },
+    {
+      "number": 54,
+      "id": "resonant-sand",
+      "name": "Resonant sand",
+      "status": "partial",
+      "module": "resonant-sand.js",
+      "mechanism": "Complete projected domains \u00b7 checked complex harmonic response \u00b7 conservative departure-rate equilibrium \u00b7 fixed grain count \u00b7 owner-clipped visibility. Camera changes reshape the 2D membrane; this is not 3D vibration or physical Hz.",
+      "note": "Enabled but membraneMasks() returns []; no projected membrane domains."
+    },
+    {
+      "number": 55,
+      "id": "contour-pools",
+      "name": "Contour pools",
+      "status": "already-ported",
+      "module": "contour-pools.js",
+      "mechanism": "Continuous depth/normal-bent scalar landscape \u00b7 irregular level spacing \u00b7 gradient-aware channels \u00b7 filtered narrow bands \u00b7 shared material-color influence",
+      "note": null
+    },
+    {
+      "number": 56,
+      "id": "hooked-pen",
+      "name": "Hooked pen",
+      "status": "already-ported",
+      "module": "hooked-pen.js",
+      "mechanism": "Sequential collision-steered paths \u00b7 coarse-to-fine infill \u00b7 local tone budgets \u00b7 variable stroke width \u00b7 visible-surface clipping",
+      "note": null
+    },
+    {
+      "number": 57,
+      "id": "naturalist-plate",
+      "name": "Naturalist plate",
+      "status": "partial",
+      "module": "naturalist-plate.js",
+      "mechanism": "Seeded mesh-sample graph \u00b7 rooted branch hierarchy \u00b7 fine reticulation \u00b7 projected owner/depth clipping \u00b7 continuous world-coordinate wash. Sampled surface approximation, not anatomical growth.",
+      "note": "Enabled but surfacePoints() is empty; world position fallback and zero transmission additionally affect wash."
+    },
+    {
+      "number": 58,
+      "id": "electric-contour",
+      "name": "Electric contours",
+      "status": "already-ported",
+      "module": "electric-contour.js",
+      "mechanism": "Shared-light incidence \u00b7 visible-surface edge transport \u00b7 unequal paired ribbons \u00b7 quiet ink gaps \u00b7 clipped directional paint. Opaque marks, with no glow or fog.",
+      "note": null
+    },
+    {
+      "number": 59,
+      "id": "cut-print",
+      "name": "Cut-print nocturne",
+      "status": "already-ported",
+      "module": "cut-print.js",
+      "mechanism": "Depth/material/facet regions \u00b7 independent exposure curves \u00b7 spatial dodging/detail \u00b7 stable emulsion grain \u00b7 subtractive knife masks \u00b7 interior paper lips",
+      "note": null
+    },
+    {
+      "number": 60,
+      "id": "knife-paint",
+      "name": "Layered knife paint",
+      "status": "already-ported",
+      "module": "knife-paint.js",
+      "mechanism": "Retained pigment/height strata \u00b7 top-first removal \u00b7 bounded pigment-carrying edge transfer \u00b7 depth/material barriers \u00b7 shared-light relief. Image-space paint approximation, with fixed geometry.",
+      "note": null
+    },
+    {
+      "number": 61,
+      "id": "wax-resist",
+      "name": "Wax-resist dye",
+      "status": "already-ported",
+      "module": "wax-resist.js",
+      "mechanism": "Separate wax coverage and deposited dye \u00b7 cumulative RGB absorption \u00b7 successive color reserves \u00b7 fracture openings before later baths \u00b7 thin-feature preservation. Stylized cloth process, with fixed scene geometry.",
+      "note": null
+    },
+    {
+      "number": 62,
+      "id": "directed-tesserae",
+      "name": "Directed tesserae",
+      "status": "already-ported",
+      "module": "directed-tesserae.js",
+      "mechanism": "Native-mask distance contours \u00b7 arc-length row placement \u00b7 separated convex quadrilaterals \u00b7 small seam infill \u00b7 per-tile color sampling \u00b7 shared-light bevels. Image-space decorative assembly, with fixed scene geometry.",
+      "note": null
+    },
+    {
+      "number": 63,
+      "id": "continuous-thread",
+      "name": "Continuous thread",
+      "status": "missing",
+      "module": "continuous-thread.js",
+      "mechanism": "Area-averaged shaded target \u00b7 exact signed-error chord selection \u00b7 continuous endpoint route \u00b7 cached completion prefixes. Digital coverage approximation with visible pin fans and lost fine detail; stopping is local, not a claim of global optimality.",
+      "note": "Excluded for stale geometry reason; implementation consumes image darkness only. Restore with bounded chord-solver/worker tests."
+    },
+    {
+      "number": 64,
+      "id": "quilled-paper",
+      "name": "Upright paper",
+      "status": "missing",
+      "module": "quilled-paper.js",
+      "mechanism": "Visible-surface distance bands \u00b7 finite strip cross-sections \u00b7 separate top, side and end faces \u00b7 orthographic triangle visibility \u00b7 per-triangle directional shadows on backing and neighboring walls. A new decorative relief built from the captured scene; no original mesh displacement.",
+      "note": "Excluded for stale geometry reason; implementation constructs paper relief from image owner/normal/depth/material data, not source geometry. Restore with real render/worker tests."
+    },
+    {
+      "number": 65,
+      "id": "lifted-emulsion",
+      "name": "Lifted emulsion",
+      "status": "already-ported",
+      "module": "lifted-emulsion.js",
+      "mechanism": "Source-connected triangle films \u00b7 retained boundary attachments \u00b7 distributed pulls \u00b7 compression-gated fine folds \u00b7 donor removal and additive transmission. Stylized flattened emulsion; extinction changes, finite-frame clamping and regular source-shaped sheets are explicit approximations.",
+      "note": null
+    },
+    {
+      "number": 66,
+      "id": "color-woodblock",
+      "name": "Color woodblock",
+      "status": "already-ported",
+      "module": "color-woodblock.js",
+      "mechanism": "Six source-derived inks plus key \u00b7 hard masks and reserves \u00b7 plate-coordinate pigment ramps \u00b7 shared paper contact \u00b7 monotone pressure pickup \u00b7 linear-reflectance overprint. Source illumination and fine material optics are flattened into a small ink palette.",
+      "note": null
+    },
+    {
+      "number": 67,
+      "id": "typed-contours",
+      "name": "Typed contours",
+      "status": "already-ported",
+      "module": "structural-glyphs.js",
+      "mechanism": "Original 42-glyph atlas \u00b7 owner-specific boundary and crease targets \u00b7 symmetric spatial-distance matching \u00b7 exact source-mask clipping \u00b7 nested ink pressure. Pigment is flattened; curved forms use approximate character alignment and camera changes can change glyph choices.",
+      "note": null
+    },
+    {
+      "number": 68,
+      "id": "faceted-planes",
+      "name": "Faceted planes",
+      "status": "already-ported",
+      "module": "faceted-study.mjs",
+      "mechanism": "Saliency-weighted site placement \u00b7 303 or 603 sites at 720px \u00b7 exact Delaunay triangles \u00b7 flat source-color means clipped by original object ownership. Small frames clamp to available sites. Reflections are simplified, shadows angularized, and native ownership boundaries retained.",
+      "note": null
+    },
+    {
+      "number": 69,
+      "id": "curved-paint",
+      "name": "Curved paint",
+      "status": "already-ported",
+      "module": "curved-paint-study.mjs",
+      "mechanism": "Gaussian reference \u00b7 residual-based cell placement \u00b7 gradient-following cubic splines \u00b7 rounded per-stroke antialias coverage. Fixed 16/8/4/2 px radii; refinement overflow admits the strongest mean-residual cells within declared budgets. Local selection does not guarantee the best global painting.",
+      "note": null
+    },
+    {
+      "number": 70,
+      "id": "translucent-tape",
+      "name": "Translucent tape",
+      "status": "already-ported",
+      "module": "translucent-tape-study.mjs",
+      "mechanism": "Constant stock transmission \u00d7 local geometric overlap \u00b7 finite seeded pieces \u00b7 geometry-supported cuts \u00b7 coherent clear reserves. Authored display-RGB optical approximation.",
+      "note": null
+    },
+    {
+      "number": 71,
+      "id": "thickness-exposure",
+      "name": "Thickness exposure",
+      "status": "missing",
+      "module": "thickness-exposure-study.js",
+      "mechanism": "All original-triangle inside intervals \u00b7 bounded open-sheet crossings \u00b7 four-sample transmission exposure. Uniform illustrative coefficients, independent overlapping bodies and a zero-attenuation floor; visible-light materials do not set density.",
+      "note": "Excluded; requires snapshot + per-mesh closed/open classification. Existing core fixes owner semantics to Garden IDs and budgets to 20 meshes/24k triangles."
+    },
+    {
+      "number": 72,
+      "id": "copy-feedback",
+      "name": "Repeated-copy feedback",
+      "status": "already-ported",
+      "module": "copy-feedback-study.js",
+      "mechanism": "Previous-image-only scan, local development and transfer \u00b7 fixed machine error / seeded paper error \u00b7 retained generations 0\u201312. Aligned digital feedback, not a calibrated photocopier; late copies intentionally amplify background speckle.",
+      "note": null
+    },
+    {
+      "number": 73,
+      "id": "section-ribs",
+      "name": "Section ribs",
+      "status": "missing",
+      "module": "section-rib-study.js",
+      "mechanism": "Fixed, finite section faces derived from the original triangles \u00b7 independent depth and shadow raster \u00b7 matte material pigments. A separate depiction proxy preserves the reference geometry; no engineered slots or fabrication claim. Partial and object-scoped mixes composite finished images and retain lower imagery.",
+      "note": "Excluded; fixed source signature/baked ribs and 20-mesh geometry. Must derive slabs/ribbon cages from actual scene triangles, retaining original surfaces where appropriate."
+    },
+    {
+      "number": 74,
+      "id": "prismatic-exposure",
+      "name": "Prismatic exposure",
+      "status": "already-ported",
+      "module": "prismatic-exposure.js",
+      "mechanism": "Three positive contributions from the same captured view \u00b7 linear-light bilinear sampling \u00b7 one normalization over valid source coverage. Illustrative prism-like exposure, not calibrated glass or new viewpoints; peripheral copies clip at the image boundary. Object and tone selections keep the original image masks.",
+      "note": null
+    },
+    {
+      "number": 75,
+      "id": "rank-streaks",
+      "name": "Pixel sorting",
+      "status": "already-ported",
+      "module": "rank-streak-study.js",
+      "mechanism": "Source-brightness intervals \u00b7 fixed 72-pixel cap \u00b7 stable color-record permutation \u00b7 whole-span activation by normalized disorder. Coverage counts sortable spans, not image area. Shared strength 15/60/95% maps to coverage 0/60/100%. The scene geometry and original mixer masks stay fixed while depicted colors can cross object boundaries.",
+      "note": null
+    },
+    {
+      "number": 76,
+      "id": "pixel-clusters",
+      "name": "Pixel clusters",
+      "status": "already-ported",
+      "module": "pixel-cluster-study.js",
+      "mechanism": "Fixed 720-pixel source \u2192 120 \u00d7 120 logical cells \u00b7 adaptive feature regions \u00b7 joint 24-color palette refinement \u00b7 exact 6\u00d7 enlargement. Depicted edges can move within the logical grid; original scene geometry, mixer masks and recipes remain. This is an automatic interpretation, not handcrafted pixel art or guaranteed topology.",
+      "note": null
+    },
+    {
+      "number": 77,
+      "id": "finite-lenses",
+      "name": "Finite lenses",
+      "status": "already-ported",
+      "module": "finite-lens-study.js",
+      "mechanism": "One finite image plane \u00b7 two Snell crossings per sphere \u00b7 polarization-path Fresnel transmission \u00b7 fixed 16 \u00d7 16 pixel sampling. Primary transmitted paths only; reflected paths are omitted and picture misses are black. The original scene and mixer masks stay fixed. This is an image-plane depiction, not a complete water simulation.",
+      "note": null
+    },
+    {
+      "number": 78,
+      "id": "chromatic-shadows",
+      "name": "Chromatic shadows",
+      "status": "missing",
+      "module": "styles.js",
+      "mechanism": "Independent triangle-traced key/fill visibility \u00b7 current shell openings and caster policy \u00b7 fixed four-state palette \u00b7 source-luminance modulation. False-color illustration, not colored relighting. Material hue is replaced; directions, geometry and mixer masks stay fixed. Binary pixel-center queries omit penumbrae and refracted paths.",
+      "note": "Excluded; fixed 720 capture and 20-mesh admission. Needs actual triangles, source depths, worldFromClip and light directions for two visibility fields."
+    },
+    {
+      "number": 79,
+      "id": "single-cutaway",
+      "name": "Single cutaway",
+      "status": "missing",
+      "module": "cutaway-study.js",
+      "mechanism": "Separate source-solid ray intervals clipped by one fixed world plane \u00b7 uncapped open and perforated surfaces \u00b7 fresh key shadows \u00b7 geometric face normals and matte object pigments. Red is section ink, not an inferred interior material. Original objects stay in place; this numerical rendering proxy does not preserve their complete visible shapes or native material optics. Mixer masks remain anchored to the original image.",
+      "note": "Excluded; source-admitted common-plane solids/open-sheet proxy. Needs actual closed/open topology, camera/light, new shadow visibility and pigment data."
+    },
+    {
+      "number": 80,
+      "id": "wholetoning",
+      "name": "Wholetoning",
+      "status": "missing",
+      "module": "wholetoning-study.js",
+      "mechanism": "Owner-aware tonal regions \u00b7 fixed connected-block search \u00b7 black and white fills. Tiny regions affect feature grouping, and reflective surfaces can form noisy bands. A bounded local search without an optimum or topology guarantee; visible owner IDs do not describe hidden backgrounds.",
+      "note": "Excluded; fixed search work budget fails on many small shapes. Adapt bounded region solver without replacing mechanism."
+    },
+    {
+      "number": 81,
+      "id": "tone-illustration",
+      "name": "Tone illustration",
+      "status": "partial",
+      "module": "tone-illustration-study.js",
+      "mechanism": "Normalized native normals \u00b7 signed shared-key incidence \u00b7 fixed Figure 7 pigment endpoints \u00b7 unchanged Clean cel lines and bright-metal marker. Positive-facing warm is an explicit convention. Floor shadows remain; body shadows, AO and reflective identity are mostly flattened. The metal marker can darken pixels, and a reserved-dark/white hierarchy is not guaranteed.",
+      "note": "Shared Clean-cel fields lack real creases and metallic marker metadata."
+    },
+    {
+      "number": 82,
+      "id": "triangle-stack",
+      "name": "Triangle stack",
+      "status": "already-ported",
+      "module": "triangle-stack-study.js",
+      "mechanism": "Fixed 144-pixel source-RGB fit \u00b7 up to 96 ordered triangles \u00b7 50% source-over opacity \u00b7 analytic candidate colors. Bounded local search without an optimum or topology guarantee. The ring loop, reflective sphere and small plant features can lose their identities.",
+      "note": null
+    },
+    {
+      "number": 83,
+      "id": "directional-color",
+      "name": "Directional color",
+      "status": "missing",
+      "module": "directional-color-study.js",
+      "mechanism": "Fixed 720-pixel captured image \u00b7 three unquantized passes \u00b7 eight polynomial sectors with a 9-pixel base radius \u00b7 local image directions guide the sectors. This is color abstraction, not physical paint, semantic understanding, guaranteed topology or material preservation.",
+      "note": "Excluded for latency (~7 s), not unavailable mathematics. Keep real three-pass abstraction; worker/cancel/performance validation needed."
+    },
+    {
+      "number": 84,
+      "id": "interior-lattice",
+      "name": "Interior lattice",
+      "status": "missing",
+      "module": "volume-bar-study.js",
+      "mechanism": "Certified finite prisms inside the original triangle-defined solids \u00b7 separate depth and own-shadow raster \u00b7 fixed matte object pigments. Bars retreat from the skin; silhouette, topology and self-support are not preserved or promised. True mesh openings remain; shader-only material holes, textures, reflections and transmission are ignored, including on retained original surfaces. Partial and object-scoped mixes use the original-image masks and retain lower imagery. Scene camera, light and pigments remain inputs; seed and shared treatment strength do not change this fixed study.",
+      "note": "Excluded; fixed source signatures + 1,503 precomputed bars. Requires actual-scene interior bar generation and visibility, not reuse of Garden bake."
+    }
+  ],
+  "materials": [
+    {
+      "id": "brushed-steel",
+      "name": "Brushed steel",
+      "status": "source-present-not-integrated",
+      "note": null
+    },
+    {
+      "id": "chrome",
+      "name": "Chrome",
+      "status": "source-present-not-integrated",
+      "note": null
+    },
+    {
+      "id": "brass",
+      "name": "Brass",
+      "status": "source-present-not-integrated",
+      "note": null
+    },
+    {
+      "id": "copper",
+      "name": "Copper",
+      "status": "source-present-not-integrated",
+      "note": null
+    },
+    {
+      "id": "porcelain",
+      "name": "Porcelain",
+      "status": "source-present-not-integrated",
+      "note": null
+    },
+    {
+      "id": "marble",
+      "name": "Marble",
+      "status": "source-present-not-integrated",
+      "note": null
+    },
+    {
+      "id": "concrete",
+      "name": "Concrete",
+      "status": "source-present-not-integrated",
+      "note": null
+    },
+    {
+      "id": "stone",
+      "name": "Stone",
+      "status": "source-present-not-integrated",
+      "note": null
+    },
+    {
+      "id": "wood",
+      "name": "Solid wood",
+      "status": "source-present-not-integrated",
+      "note": "Requires original geometric/material bake attributes and fiber shader."
+    },
+    {
+      "id": "frosted-glass",
+      "name": "Frosted glass",
+      "status": "source-present-not-integrated",
+      "note": "Requires original transmission shader, custom capture and caster policy, and compatible environment."
+    },
+    {
+      "id": "skin",
+      "name": "Skin",
+      "status": "source-present-not-integrated",
+      "note": "Requires soft-tissue material shader and bake attributes."
+    },
+    {
+      "id": "adipose",
+      "name": "Fatty tissue",
+      "status": "source-present-not-integrated",
+      "note": "Requires soft-tissue material shader and bake attributes."
+    },
+    {
+      "id": "muscle",
+      "name": "Aligned muscle",
+      "status": "source-present-not-integrated",
+      "note": "Requires aligned soft-tissue material shader and bake attributes."
+    },
+    {
+      "id": "cortical-bone",
+      "name": "Cortical bone",
+      "status": "source-present-not-integrated",
+      "note": "Requires original bone shader and bake attributes."
+    },
+    {
+      "id": "cancellous-bone",
+      "name": "Cancellous bone",
+      "status": "source-present-not-integrated",
+      "note": "Requires original bone shader and bake attributes."
+    },
+    {
+      "id": "velvet",
+      "name": "Velvet",
+      "status": "source-present-not-integrated",
+      "note": null
+    },
+    {
+      "id": "woven-linen",
+      "name": "Woven linen",
+      "status": "source-present-not-integrated",
+      "note": "Requires woven-linen geometry charts, quadrature tables and anisotropic shader integration."
+    },
+    {
+      "id": "diffraction-foil",
+      "name": "Diffraction foil",
+      "status": "source-present-not-integrated",
+      "note": "Requires original spectral model/resources and directional light shader integration."
+    },
+    {
+      "id": "hammered-metal",
+      "name": "Hammered metal",
+      "status": "source-present-not-integrated",
+      "note": "Requires impact-field resources and local material-frame mapping; source explicitly excludes shear."
+    },
+    {
+      "id": "interference-coat",
+      "name": "Interference coat",
+      "status": "source-present-not-integrated",
+      "note": "Requires fixed optical lookup tables/resources and coating shader integration."
+    },
+    {
+      "id": "tiled-surface",
+      "name": "Tiled surface",
+      "status": "source-present-not-integrated",
+      "note": null
+    },
+    {
+      "id": "perlage-metal",
+      "name": "Circular-grained metal",
+      "status": "source-present-not-integrated",
+      "note": "Requires circular-grain surface charts/geometry manager and consistent tangent frame."
+    },
+    {
+      "id": "perforated-shell",
+      "name": "Perforated metal",
+      "status": "source-present-not-integrated",
+      "note": "Source restricts to Garden vase/sphere; aperture visibility must agree across beauty, depth, identity, samples, hatches and shadows."
+    },
+    {
+      "id": "shingle-relief",
+      "name": "Shingle relief",
+      "status": "source-present-not-integrated",
+      "note": "Source restricts to Garden vase; per-surface charts and geometry manager required."
+    },
+    {
+      "id": "enamel-reserve",
+      "name": "Enamel reserve",
+      "status": "source-present-not-integrated",
+      "note": "Source restricts to Garden vase; closed blue cells in metal reserve, geometry charts/manager; explicitly requires Three180."
+    },
+    {
+      "id": "ribbed-clay",
+      "name": "Ribbed clay",
+      "status": "source-present-not-integrated",
+      "note": "Source restricts to Garden vase; joined-course relief and geometry manager; explicitly requires Three180."
+    }
+  ]
+}

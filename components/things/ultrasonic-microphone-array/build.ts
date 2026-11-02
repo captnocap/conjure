@@ -1,0 +1,28 @@
+import * as THREE from 'three';
+import { Sculpture, choice, defineThing, score } from '@conjure/kit';
+export default defineThing({questions:{
+    geometry:choice('How are the microphones arranged?', {'ring': 'One vertical circular microphone ring.', 'cross': 'Four straight radial arms in a cross.', 'sphere': 'Three intersecting rings form a spherical array.', 'grid': 'A rectangular planar microphone grid.'}),
+    capsules:choice('How many microphones occupy each ring or row?', {'four': 'Four large separated microphone capsules.', 'eight': 'Eight evenly spaced capsules.', 'twelve': 'Twelve small closely spaced capsules.', 'alternating': 'Alternating large and small capsules.'}),
+    mount:choice('What supports the array?', {'tripod': 'A tall splayed tripod.', 'bench': 'A low broad bench stand.', 'fork': 'A two-sided tilting fork.', 'rail': 'A sliding carriage on a long floor rail.'}),
+    backing:choice('What frames the microphone positions?', {'open': 'Bare spokes and no back plate.', 'rim': 'A thick outer perimeter frame.', 'mesh': 'A fine open mesh behind the capsules.', 'plate': 'A perforated dark back plate.'}),
+    cables:choice('How are signals routed?', {'radial': 'Individual cables run toward a central hub.', 'loop': 'One loop harness follows the perimeter.', 'down': 'A bundled cable descends the support.', 'wireless': 'Small radio modules replace long cables.'}),
+    source:choice('What calibration source accompanies the array?', {'none': 'No separate sound source.', 'sphere': 'A small point source on a short arm.', 'horn': 'A miniature horn faces the array.', 'pair': 'Two reference sources flank the centre.'}),
+    aim:choice('How is the array oriented?', {'front': 'The array faces forward.', 'tilted': 'The array tilts slightly upward.', 'side': 'The array is turned sideways.', 'diagonal': 'The array rotates diagonally within its own plane.'}),
+    state:choice('What measurement state is shown?', {'ready': 'A complete array ready to listen.', 'calibration': 'One capsule has a calibration sleeve.', 'missing': 'One capsule position is empty with a capped lead.', 'tagged': 'Several numbered position tags are attached.'}),
+    size:score('How broad is the array aperture?', ['Compact','Medium','Broad']),
+},build(a,context){
+const s=new Sculpture(context),rnd=context.random;
+const metal=s.material('#9da7a1',{metalness:0.65}),dark=s.material('#3e5150'),pale=s.material('#c6c5ad'),accent=s.material('#b27a47'),foam=s.material('#7a8374');
+const R=0.4+a.size*0.5,H=a.mount==='bench'?0.5:1.2,n=a.capsules==='four'?4:a.capsules==='twelve'?12:8;
+if(a.mount==='tripod')for(let j=0;j<3;j++){const t=j/3*Math.PI*2;s.rod([Math.cos(t)*0.45,0.02,Math.sin(t)*0.45],[0,H,0],0.025,metal);}else if(a.mount==='rail'){s.box([1.8,0.05,0.35],[0,0.025,0],dark);s.box([0.3,0.12,0.3],[0,0.1,0],metal);s.rod([0,0.12,0],[0,H,0],0.035,metal);}else{s.cylinder(0.4,0.4,0.05,[0,0.025,0],dark,32);s.rod([0,0.05,0],[0,H,0],0.04,metal);}
+s.rod([0,H,0],[0,H+R*0.65,0],0.025,metal);const start=s.root.children.length,group=new THREE.Group(),points:[number,number,number][]=[];
+if(a.geometry==='grid')for(let x=0;x<n;x++)for(let y=0;y<2;y++)points.push([(x/(n-1)-0.5)*R*2,(y-0.5)*R,0]);else if(a.geometry==='cross')for(let j=0;j<4;j++)for(let k=1;k<=n/4+1;k++)points.push([Math.cos(j*Math.PI/2)*R*k/(n/4+1),Math.sin(j*Math.PI/2)*R*k/(n/4+1),0]);else for(let plane=0;plane<(a.geometry==='sphere'?3:1);plane++)for(let j=0;j<n;j++){const t=j/n*Math.PI*2;points.push(plane===0?[Math.cos(t)*R,Math.sin(t)*R,0]:plane===1?[Math.cos(t)*R,0,Math.sin(t)*R]:[0,Math.cos(t)*R,Math.sin(t)*R]);}
+const rings=a.geometry==='sphere'?3:1;for(let j=0;j<rings;j++)if(a.geometry==='ring'||a.geometry==='sphere'){const rr=s.ring(R,a.backing==='rim'?0.035:0.015,[0,0,0],metal);if(j===1)rr.rotation.x=Math.PI/2;if(j===2)rr.rotation.y=Math.PI/2;}else {s.rod([-R,0,0],[R,0,0],0.022,metal);s.rod([0,-R,0],[0,R,0],0.022,metal);}
+if(a.backing==='plate'){const disc=s.cylinder(R*0.94,R*0.94,0.02,[0,0,-0.03],foam,32);disc.rotation.x=Math.PI/2;}if(a.backing==='mesh')for(let j=-4;j<=4;j++){const x=j*R/5,len=Math.sqrt(R*R-x*x);s.rod([x,-len,-0.04],[x,len,-0.04],0.005,metal);s.rod([-len,x,-0.04],[len,x,-0.04],0.005,metal);}
+points.forEach(([x,y,z],j)=>{s.rod([0,0,-0.03],[x,y,z],0.009,metal);if(a.state==='missing'&&j===0){s.ball([0.025,0.025,0.025],[x,y,z],accent,8);return;}const r=a.capsules==='alternating'&&j%2?0.027:0.045;const m=s.cylinder(r,r,0.11,[x,y,z+0.04],dark,16);m.rotation.x=Math.PI/2;s.cylinder(r*0.8,r*0.8,0.008,[x,y,z+0.1],metal,12).rotation.x=Math.PI/2;if(a.cables==='radial')s.tube([[x,y,z-0.04],[x*0.45,y*0.45,-0.1],[0,0,-0.12]],0.006,dark);if(a.cables==='wireless')s.box([0.06,0.08,0.025],[x,y,z-0.08],accent);if(a.state==='calibration'&&j===0)s.cylinder(0.07,0.07,0.15,[x,y,z+0.18],accent,20).rotation.x=Math.PI/2;if(a.state==='tagged'&&j%3===0)s.label(String(j+1),0.08,0.07,[x+0.07,y,z+0.02],'#324748','#d3cfb3');});
+if(a.cables==='loop')s.ring(R*0.93,0.012,[0,0,-0.08],dark);if(a.cables==='down')s.tube([[0,0,-0.12],[0,-R,-0.15],[0,-R-0.4,-0.15]],0.025,dark);
+if(a.source!=='none')for(const x of(a.source==='pair'?[-R*0.3,R*0.3]:[0])){s.rod([0,-R,0],[x,-R*0.4,0.5],0.018,metal);if(a.source==='horn')s.cylinder(0.025,0.1,0.2,[x,-R*0.4,0.5],accent,20).rotation.x=Math.PI/2;else s.ball([0.07,0.07,0.07],[x,-R*0.4,0.5],accent,16);}
+for(const c of s.root.children.slice(start))group.add(c);group.position.y=H+R*0.65;group.rotation.set(a.aim==='tilted'?-0.3:0,a.aim==='side'?0.9:0,a.aim==='diagonal'?0.5:0);s.root.add(group);if(a.mount==='fork')for(const x of [-R,R]){const p=new THREE.Vector3(x,0,0).applyEuler(group.rotation).add(group.position);s.rod([0,H*0.6,0],[p.x,p.y,p.z],0.025,metal);}
+
+return s.finish();
+}});

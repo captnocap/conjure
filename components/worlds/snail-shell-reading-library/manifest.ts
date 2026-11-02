@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Snail shell reading library", "summary": "A great cutaway snail shell houses curved reading floors, book-lined chambers and a winding stair, opening onto a moss garden with tiny study tables. A library that grew with its keeper, sheltered reading and patient journeys between shelves.", "scales": ["tabletop", "room", "macro"]});

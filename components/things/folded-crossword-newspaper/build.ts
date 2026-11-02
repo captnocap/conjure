@@ -13,6 +13,12 @@ const HEADLINES = {
 
 export default defineThing({
   questions: {
+    stock: choice('Which newsprint was this puzzle printed on?', {ivory:'Warm ivory daily newsprint.', salmon:'Pink financial-paper stock.', white:'A bright white puzzle supplement.', yellow:'Deep yellow paper from a saved old edition.'}),
+    typography: choice('How is the headline typeset?', {serif:'Heavy traditional newspaper serifs.', sans:'Clean bold sans-serif news type.', condensed:'Tall compressed block headline letters.', italic:'A sloping editorial headline in italic serif type.'}),
+    marginalia: choice('What has been written in the spare margin?', {shopping:'A short handwritten shopping list.', score:'A tiny score tally with crossed groups of five.', doodle:'A small flower doodle beside the clues.', anagram:'Letters circled and rearranged into an anagram.'}),
+    stack: choice('How much folded paper is underneath the puzzle?', {thin:'A thin two-leaf puzzle pullout.', daily:'An ordinary folded daily paper.', weekend:'A thick weekend edition with extra sections.', saved:'Several saved editions with staggered edges.'}),
+    holder: choice('What keeps one corner of the newspaper down?', {clip:'A large bent-wire paper clip.', binder:'A black binder clip with raised wire handles.', peg:'A small wooden spring peg.', weight:'A smooth oval stone used as a paperweight.'}),
+    penPlace: choice('Where has the writing tool been put down?', {grid:'Across the lower part of the crossword.', clues:'Along the outside edge of the clue columns.', top:'Just below the headline.', side:'On the table beside the folded edge.'}),
     complete: score('How much of the crossword is filled in?', [
       'Untouched, not a letter',
       'A few easy ones',
@@ -67,9 +73,10 @@ export default defineThing({
     const s = new Sculpture(context);
     const { mood, random } = context;
     const wobble = (amount: number) => (random() - 0.5) * 2 * amount;
-    const W = 0.32, D = 0.24, T = 0.012;
+    const W = 0.32, D = 0.24, T = {thin:.006,daily:.012,weekend:.020,saved:.028}[a.stack];
     const age = mood.wear;
-    const paperTone = `rgb(${Math.round(238 - age * 28)},${Math.round(234 - age * 40)},${Math.round(222 - age * 70)})`;
+    const stock = {ivory:[238,234,222],salmon:[240,201,184],white:[250,249,240],yellow:[225,207,152]}[a.stock];
+    const paperTone = `rgb(${Math.round(stock[0] - age * 28)},${Math.round(stock[1] - age * 36)},${Math.round(stock[2] - age * 48)})`;
     const ink = a.writer === 'biro' ? '#1f3fa8' : a.writer === 'fountain' ? '#15151c' : '#55555a';
 
     const canvas = document.createElement('canvas');
@@ -87,7 +94,7 @@ export default defineThing({
     g.fillStyle = '#1a1a1a';
     g.textBaseline = 'middle';
     g.textAlign = 'left';
-    g.font = '900 78px Georgia, "Times New Roman", serif';
+    g.font = a.typography==='sans'?'900 78px Arial, sans-serif':a.typography==='condensed'?'900 78px Impact, sans-serif':a.typography==='italic'?'bold italic 78px Georgia, serif':'900 78px Georgia, serif';
     g.fillText(head, 28, 64, 968);
     g.font = 'italic 30px Georgia, serif';
     g.fillText(sub, 30, 124, 620);
@@ -135,7 +142,7 @@ export default defineThing({
           g.save();
           g.translate(x + cell / 2 + wobble(cell * 0.06), y + cell * 0.58 + wobble(cell * 0.06));
           g.rotate(wobble(0.12));
-          g.fillText('ETAOINSHRDLUCMPGB'[Math.floor(random() * 17)], 0, 0);
+          g.fillText('ETAOINSHRDLUCMPGB'[Math.floor(random() * 16)], 0, 0);
           g.restore();
           if (a.mistakes && random() < 0.13) {
             g.strokeStyle = ink;
@@ -174,6 +181,14 @@ export default defineThing({
       g.fillText('R E T A I N S ?   N A S T I E R', 0, 0); g.restore();
       g.strokeStyle = ink; g.lineWidth = 3; g.beginPath(); g.ellipse(700, 172, 60, 16, 0.05, 0, Math.PI * 2); g.stroke();
     }
+    // Personal notes occupy the narrow gap above the clue columns.
+    g.save();g.translate(620,175);g.rotate(-.025);g.fillStyle=ink;g.strokeStyle=ink;g.lineWidth=2.3;
+    g.font='18px cursive';g.textAlign='left';
+    if(a.marginalia==='shopping')g.fillText('milk • bread • stamps',0,0);
+    if(a.marginalia==='anagram'){g.fillText('L I S T E N  →  S I L E N T',0,0);g.beginPath();g.ellipse(56,-4,61,13,0,0,Math.PI*2);g.stroke();}
+    if(a.marginalia==='score')for(let group=0;group<3;group++){for(let j=0;j<4;j++){g.beginPath();g.moveTo(group*52+j*9,-12);g.lineTo(group*52+j*9,3);g.stroke();}g.beginPath();g.moveTo(group*52-4,0);g.lineTo(group*52+33,-10);g.stroke();}
+    if(a.marginalia==='doodle')for(let flower=0;flower<3;flower++){const x=flower*45+10;for(let j=0;j<5;j++){const t=j*Math.PI*2/5;g.beginPath();g.ellipse(x+Math.cos(t)*10,-4+Math.sin(t)*10,7,4,t,0,Math.PI*2);g.stroke();}g.beginPath();g.moveTo(x,5);g.lineTo(x+4,16);g.stroke();}
+    g.restore();
     // Drink marks.
     const ringAt = (x: number, y: number, r: number, strength: number) => {
       g.strokeStyle = `rgba(110,65,25,${strength})`;
@@ -197,7 +212,7 @@ export default defineThing({
     const pulp = new THREE.MeshStandardMaterial({ color: paperTone, roughness: 1 });
     const edge = new THREE.MeshStandardMaterial({ color: new THREE.Color(paperTone).multiplyScalar(0.86), roughness: 1 });
     const paper = new Sculpture(context);
-    const leaves = 4;
+    const leaves = {thin:2,daily:4,weekend:7,saved:10}[a.stack];
     for (let i = 0; i < leaves; i++) {
       const leaf = paper.box([W - (leaves - 1 - i) * 0.004 * random(), T / leaves - 0.0004, D - 0.004], [wobble(0.003), (i + 0.5) * (T / leaves), 0.002 + wobble(0.002)], i % 2 ? pulp : edge);
       leaf.rotation.y = wobble(0.012);
@@ -248,9 +263,10 @@ export default defineThing({
         pen.cylinder(0.005, 0.005, 0.004, [-0.02, 0.0008, 0.04], pen.material('#c9a544', { metalness: 0.9, roughness: 0.25 }), 12).rotation.set(0, 0.6, Math.PI / 2);
       } else pen.box([0.03, 0.0012, 0.002], [-0.05, 0.0048, 0], cap);
     }
-    pen.root.position.set(...onPaper(300 + wobble(60), 520 + wobble(60)));
-    pen.root.position.y += 0.0038;
-    pen.root.rotation.y = 0.5 + wobble(0.5);
+    const penSpots={grid:[300,620,.5],clues:[950,460,Math.PI/2],top:[370,175,0],side:[270,850,.05]}[a.penPlace];
+    pen.root.position.set(...onPaper(penSpots[0]+wobble(12),penSpots[1]+wobble(12)));
+    pen.root.position.y = (a.penPlace==='side'?0:T+.0008)+.0048;
+    pen.root.rotation.y = penSpots[2]+wobble(.08);
     s.root.add(pen.root);
 
     // Reading glasses.
@@ -327,6 +343,13 @@ export default defineThing({
       glass.root.rotation.y = -0.7 + wobble(0.3);
       s.root.add(glass.root);
     }
+    // A real corner holder: each piece stands on the folded sheet.
+    const holder=new Sculpture(context),wire=holder.material('#9ca2a3',{metalness:.85,roughness:.25}),wood=holder.material('#c7a16b');
+    if(a.holder==='clip')holder.tube([[-.008,.001,-.018],[-.008,.001,.016],[-.004,.001,.023],[.004,.001,.023],[.008,.001,.016],[.008,.001,-.018],[.004,.001,-.024],[-.002,.001,-.024],[-.004,.001,-.018],[-.004,.001,.011],[.002,.001,.015],[.004,.001,.009],[.004,.001,-.011]],.0009,wire);
+    if(a.holder==='binder'){holder.box([.029,.011,.017],[0,.0055,0],holder.material('#252629'));for(const z of [-.009,.009])holder.tube([[-.01,.006,z],[-.012,.021,z],[.012,.021,z],[.01,.006,z]],.001,wire);}
+    if(a.holder==='peg'){holder.box([.011,.006,.047],[0,.003,0],wood);const jaw=holder.box([.011,.005,.047],[0,.008,0],wood);jaw.rotation.x=.06;holder.ring(.004,.0008,[.006,.006,0],wire).rotation.y=Math.PI/2;}
+    if(a.holder==='weight')holder.ball([.022,.009,.017],[0,.009,0],holder.material('#828a7c',{roughness:.9}),16);
+    holder.root.position.set(-W/2+.025,T+.001,-D/2+.025);holder.root.rotation.y=-.22;s.root.add(holder.root);
     // Rubbings-out.
     if (a.writer === 'pencil' && a.mistakes) {
       s.scatter(new THREE.DodecahedronGeometry(1, 0), s.material('#d98f8f', { roughness: 1 }), Array.from({ length: Math.round(mix(10, 40, mood.density)) }, () => ({

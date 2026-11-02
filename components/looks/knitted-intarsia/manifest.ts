@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Knitted intarsia picture',summary:'A scene knitted from linked yarn loops and intarsia colour blocks, with visible V stitches, plush shadows, ribbed hems and occasional hand repairs. Winter jumpers, homemade picture blankets, patient counting and the warmth of a kept gift.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'craft'});

@@ -9,7 +9,7 @@ export default defineLook({questions:{
  state:choice('What is happening in the apartments?',{occupied:'Every window is occupied by the same impossible view.',vacated:'Some windows are bricked up, leaving pale rectangular scars.',watching:'Dark slit shutters cross the views like half closed eyes.',evicted:'The windows survive but the masonry is splitting into suspended fragments.'}),
  descent:score('How many generations of miniature apartments remain legible?',['Two rooms deep','Three rooms deep','Five rooms deep']),
  reach:score('How much empty air has been occupied by the tenement?',['A few narrow outbuildings','Several towers','A crowded city around the cast']),
- pigment:choice('What was the architecture printed with?',{bone:'Bone paper and sooty olive ink.',rust:'Dry rust red, tobacco plaster and dark iron.',ink:'Cold blue black ink on concrete grey.',acid:'Sickly yellow green plaster with charcoal ribs.'})
+ pigment:choice('What was the architecture printed with?',{bone:'Pale paper and soft dark ink.',rust:'Deep toned plaster, heavy iron dark and a hot edge.',ink:'Cold, quiet, even ink on chalky stock.',acid:'Sickly sour plaster with sharp dark ribs.'})
 },async apply(c,a,context,signal){
  const t=prepare(c,context,signal,a.pigment),{g,p,source}=t,r=context.random,m=context.mood;
  const towers:{x:number;y:number;w:number;h:number}[]=[];const count=4+Math.round(a.reach*5+m.density*2);

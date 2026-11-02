@@ -2,10 +2,15 @@ import * as THREE from "./vendor/three.module.min.js";
 import { createSurfaceHatching, createHatchVisibilityAtlas, exactHatchVisible, visibleHatchSegmentIntervals } from "./surface-hatch-geometry.js";
 import { shellVisibilityOwner, materialVisibilityKey } from "./material-visibility.js";
 import { projectMembraneMasks } from "./projected-membranes.js";
+import { projectClippedPolygon, projectClippedSegment } from "./perspective-hatch-visibility.js";
 
-export function createGeometryStudies(solids, size) {
+export function createGeometryStudies(solids, size, options = {}) {
+  const owner = (mesh, index) => mesh.userData.captureId ?? index + 1;
+  const subjects = solids.filter((mesh, index) => owner(mesh, index) !== 1);
+  const worldScale = options.worldScale || 1;
+
   // The factory is lazy: every other study avoids curvature tracing entirely.
-  const hatching = createSurfaceHatching(solids);
+  const hatching = createSurfaceHatching(solids, options.source === "conjure" ? { spacing: .075 * worldScale, step: .023 * worldScale, maxLength: 1.45 * worldScale } : {});
   let sectionTriangles = null,
     sectionRange = null;
   const worldSectionCache = new Map();
@@ -16,7 +21,7 @@ export function createGeometryStudies(solids, size) {
       point = new THREE.Vector3();
     let minY = Infinity,
       maxY = -Infinity;
-    solids.slice(1).forEach((mesh, index) => {
+    subjects.forEach((mesh, index) => {
       const pos = mesh.geometry.getAttribute("position"),
         idx = mesh.geometry.getIndex(),
         n = idx ? idx.count : pos.count;
@@ -47,7 +52,7 @@ export function createGeometryStudies(solids, size) {
               ? -1
               : 1;
         data.push(
-          index + 2,
+          mesh.userData.captureId ?? index + 2,
           (nx / length) * direction,
           (ny / length) * direction,
           (nz / length) * direction,
@@ -160,6 +165,21 @@ export function createGeometryStudies(solids, size) {
       result = new Float32Array((source.length / 11) * 9),
       point = new THREE.Vector3(),
       normal = new THREE.Vector3();
+    if (Math.abs(projection.elements[11]) > 1e-12) {
+      const output = [];
+      for (let i = 0; i < source.length; i += 11) {
+        const a = Array.from(source.subarray(i, i + 3)), b = Array.from(source.subarray(i + 3, i + 6));
+        const pair = projectClippedSegment([a, b], view, projection, size);
+        if (!pair) continue;
+        point.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2).applyMatrix4(view).normalize().negate();
+        const face = (x, y, z) => { normal.set(x, y, z); return normal.lengthSq() === 0 ? 1 : normal.transformDirection(view).dot(point); };
+        let facing = face(source[i + 8], source[i + 9], source[i + 10]);
+        const extra = record.extraNormals.get(i / 11) || [];
+        for (let k = 0; k < extra.length; k += 3) facing = Math.max(facing, face(extra[k], extra[k + 1], extra[k + 2]));
+        output.push(...pair[0], ...pair[1], source[i + 6], source[i + 7], facing);
+      }
+      return Float32Array.from(output);
+    }
     const facing = (x, y, z) => {
       normal.set(x, y, z);
       return normal.lengthSq() === 0 ? 1 : normal.transformDirection(view).z;
@@ -202,7 +222,7 @@ export function createGeometryStudies(solids, size) {
         ab = new THREE.Vector3(),
         ac = new THREE.Vector3();
       let totalArea = 0;
-      solids.slice(1).forEach((mesh, objectIndex) => {
+      subjects.forEach((mesh, objectIndex) => {
         const positions = mesh.geometry.getAttribute("position"),
           indices = mesh.geometry.getIndex(),
           count = indices ? indices.count : positions.count;
@@ -236,7 +256,7 @@ export function createGeometryStudies(solids, size) {
                     .multiplyScalar(
                       mesh.material.side === THREE.BackSide ? -1 : 1,
                     ),
-            id: objectIndex + 2,
+            id: mesh.userData.captureId ?? objectIndex + 2,
             limit: totalArea,
           });
         }
@@ -292,13 +312,17 @@ export function createGeometryStudies(solids, size) {
         surfaceSource[i + 5],
         surfaceSource[i + 6],
       );
-      const facing =
-        shellVisibilityOwner(materialVisibility, surfaceSource[i + 3]) || direction.lengthSq() === 0 ? 1 : direction.transformDirection(view).z;
+      const perspective = Math.abs(projection.elements[11]) > 1e-12;
+      const facing = shellVisibilityOwner(materialVisibility, surfaceSource[i + 3]) || direction.lengthSq() === 0 ? 1 :
+        perspective ? -direction.transformDirection(view).dot(point) / (point.length() || 1) : direction.transformDirection(view).z;
       point.applyMatrix4(projection);
+      // Shared samples also anchor world-space graphs. Replacing offscreen
+      // coordinates/facing with sentinels corrupts those anchors when the camera
+      // moves. Drawing consumers apply their own viewport and depth clipping.
       output.set(
         [
-          ((point.x + 1) * size) / 2,
-          ((1 - point.y) * size) / 2,
+          Number.isFinite(point.x) ? ((point.x + 1) * size) / 2 : -1,
+          Number.isFinite(point.y) ? ((1 - point.y) * size) / 2 : -1,
           distance,
           surfaceSource[i + 3],
           i / 7,
@@ -315,7 +339,7 @@ export function createGeometryStudies(solids, size) {
     if (!boundarySource) {
       const result = [],
         point = new THREE.Vector3();
-      solids.slice(1).forEach((mesh, meshIndex) => {
+      subjects.forEach((mesh, meshIndex) => {
         mesh.updateWorldMatrix(true, false);
         const position = mesh.geometry.getAttribute("position"),
           index = mesh.geometry.getIndex(),
@@ -381,7 +405,7 @@ export function createGeometryStudies(solids, size) {
               vertices[b],
               vertices[b + 1],
               vertices[b + 2],
-              meshIndex + 2,
+              mesh.userData.captureId ?? meshIndex + 2,
               upper,
               result.length / 9,
             );
@@ -411,6 +435,7 @@ export function createGeometryStudies(solids, size) {
     cellSize = Math.round(Number(cellSize) * 1000) / 1000;
     if (!Number.isFinite(cellSize) || cellSize < 0.06 || cellSize > 0.22)
       throw new RangeError("Voxel size must be between .06 and .22");
+    cellSize *= worldScale;
     if (voxelCache.has(cellSize)) {
       const value = voxelCache.get(cellSize);
       voxelCache.delete(cellSize);
@@ -418,7 +443,7 @@ export function createGeometryStudies(solids, size) {
       return value;
     }
     ensureWorldTriangles();
-    const origin = [0.019, 0.011, 0.023],
+    const origin = [0.019, 0.011, 0.023].map(value => value * worldScale),
       occupied = new Map(),
       a = new THREE.Vector3(),
       b = new THREE.Vector3(),
@@ -517,6 +542,27 @@ export function createGeometryStudies(solids, size) {
       point = new THREE.Vector3(),
       normal = new THREE.Vector3(),
       center = new THREE.Vector3();
+    if (Math.abs(projection.elements[11]) > 1e-12) {
+      for (let i = 0; i < source.faces.length; i += 19) {
+        normal.fromArray(source.faces, i + 12).transformDirection(view);
+        point.fromArray(source.faces, i).applyMatrix4(view);
+        if (normal.dot(point) >= -1e-10) continue;
+        const polygon = projectClippedPolygon([0, 1, 2, 3].map(k => Array.from(source.faces.subarray(i + k * 3, i + k * 3 + 3))), view, projection, size);
+        if (polygon.length < 3) continue;
+        // Preserve one outline per clipped cube face; triangulation would add
+        // false diagonal ink seams. Legacy callers still have a quad row.
+        const vertices = [polygon[0], polygon[1], polygon[2], polygon[3] ?? polygon[2]];
+        const row = [...vertices.flatMap(vertex => vertex.slice(0, 2)), normal.x, -normal.y, normal.z,
+          source.faces[i + 15], polygon.reduce((sum, vertex) => sum + vertex[2], 0) / polygon.length,
+          source.faces[i + 16], source.faces[i + 17], source.faces[i + 18]];
+        row.polygon = polygon.map(vertex => vertex.slice(0, 2));
+        output.push(row);
+      }
+      output.sort((a, b) => b[12] - a[12]);
+      const projected = Float64Array.from(output.flat());
+      projected.polygons = output.map(row => row.polygon);
+      return projected;
+    }
     for (let i = 0; i < source.faces.length; i += 19) {
       normal.fromArray(source.faces, i + 12).transformDirection(view);
       if (normal.z <= 1e-10) continue;
@@ -578,7 +624,7 @@ export function createGeometryStudies(solids, size) {
           normal = vertices[1].clone().sub(vertices[0]).cross(vertices[2].clone().sub(vertices[0])).normalize();
         faces.push({ p: vertices.map(v => v.toArray()), normal: normal.toArray() });
       }
-      return { mesh, id:i+1, faces };
+      return { mesh, id:owner(mesh,i), faces };
     });
     const atlas = createHatchVisibilityAtlas(prepared, view, projection, size, { materialVisibility });
     const value = {
@@ -611,7 +657,9 @@ export function snapshotGeometryStudies(solids, size, view, projection) {
     size,
     view: view.toArray(),
     projection: projection.toArray(),
+    ...(solids.some(mesh => mesh.userData.captureId !== undefined) ? { source: "conjure" } : {}),
     meshes: solids.map((mesh) => ({
+      ...(mesh.userData.captureId !== undefined ? { id: mesh.userData.captureId } : {}),
       position: mesh.geometry.getAttribute("position").array,
       index: mesh.geometry.index?.array || null,
       drawRange: { ...mesh.geometry.drawRange },
@@ -623,7 +671,28 @@ export function snapshotGeometryStudies(solids, size, view, projection) {
 export function restoreGeometryStudies(snapshot, materialVisibility) {
   materialVisibilityKey(materialVisibility);
   if (snapshot.version !== 1) throw Error("Unsupported geometry snapshot");
-  const solids = snapshot.meshes.map((source) => {
+  // A material boundary is not a hole in a body. Rejoin each original mesh
+  // instance before extracting topology, sections and surface paths.
+  const bodies = new Map();
+  for (const [ordinal, source] of snapshot.meshes.entries()) {
+    const key = source.bodyId ?? `mesh:${ordinal}`;
+    if (!bodies.has(key)) bodies.set(key, []);
+    bodies.get(key).push(source);
+  }
+  const sources = [...bodies.values()].map(parts => {
+    if (parts.length === 1) return parts[0];
+    const values = parts.map(part => {
+      const total = part.index?.length ?? part.position.length / 3;
+      const start = part.drawRange?.start ?? 0, end = Math.min(total, start + (part.drawRange?.count ?? Infinity));
+      return part.index ? part.index.subarray(start, end) : Uint32Array.from({ length: end - start }, (_, i) => start + i);
+    });
+    const index = new Uint32Array(values.reduce((sum, value) => sum + value.length, 0));
+    let at = 0;
+    for (const value of values) { index.set(value, at); at += value.length; }
+    return { ...parts[0], index, drawRange: { start: 0, count: index.length },
+      side: parts.every(part => part.side === parts[0].side) ? parts[0].side : THREE.DoubleSide };
+  });
+  const solids = sources.map((source) => {
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute(
       "position",
@@ -637,12 +706,13 @@ export function restoreGeometryStudies(snapshot, materialVisibility) {
       geometry,
       new THREE.MeshBasicMaterial({ side: source.side }),
     );
+    if (source.id !== undefined) mesh.userData.captureId = source.id;
     mesh.matrixAutoUpdate = false;
     mesh.matrix.fromArray(source.matrix);
     mesh.updateMatrixWorld(true);
     return mesh;
   });
-  const studies = createGeometryStudies(solids, snapshot.size),
+  const studies = createGeometryStudies(solids, snapshot.size, snapshot),
     view = new THREE.Matrix4().fromArray(snapshot.view),
     projection = new THREE.Matrix4().fromArray(snapshot.projection),
     sections = new Map(),

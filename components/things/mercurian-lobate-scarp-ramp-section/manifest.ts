@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Mercurian lobate scarp ramp section", "summary": "A closed terrain block has an asymmetric ramp and steeper scarp face with a real sectional side. A closed asymmetric terrain section retains a steep lobate front, gentler hanging-wall ramp and actual crater depressions. Relief is exaggerated for teaching; no measured age or displacement is inferred.", "scales": ["planetary", "landscape", "tabletop"]});

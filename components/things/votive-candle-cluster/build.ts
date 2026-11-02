@@ -60,6 +60,12 @@ const WAX = { white: ['#f6efdc'], cream: ['#f1dfb2', '#f6efdc'], red: ['#c4222c'
 
 export default defineThing({
   questions: {
+    arrangement: choice('How is the gathering arranged?', { scattered: 'A close informal scattering.', rows: 'Ordered staggered rows.', crescent: 'A curved crescent around an open centre.', spiral: 'A loose spiral from low candles to tall ones.' }),
+    vessel: choice('What shape are the tall candle glasses?', { straight: 'Straight round glass columns.', tapered: 'Glasses broadening gently toward the mouth.', fluted: 'Tall glasses with narrow vertical flutes.', faceted: 'Eight-sided glass vessels.' }),
+    labelBorder: choice('What frames the printed candle image?', { bands: 'Simple solid bands above and below.', rays: 'Short golden rays around the image.', vines: 'Small leaf vines up both sides.', lace: 'A fine scalloped ornamental border.' }),
+    pillarRelief: choice('How are the bare wax pillars shaped?', { smooth: 'Smooth round pillars.', spiral: 'A shallow spiral ridge winds around the wax.', rings: 'Stacked horizontal bands encircle the pillar.', faceted: 'Octagonal pillars with flat faces.' }),
+    rimFinish: choice('What finish marks the vessel rims?', { clear: 'Clear pale glass rims.', brass: 'Thin brass-coloured rims.', silver: 'Cool silver rims.', black: 'Dark charcoal rims.' }),
+    waxSurface: choice('What texture shows on the exposed wax?', { smooth: 'Smooth poured wax.', rippled: 'Concentric ripples from the last pour.', cracked: 'Fine radial cracks in cooled wax.', flecked: 'Small darker flecks suspended in the wax.' }),
     count: choice('How many candles are gathered?', {
       lone: 'One tall glass candle with a single tea light for company.',
       few: 'Three or four, a private prayer.',
@@ -93,7 +99,7 @@ export default defineThing({
       nothing: 'Nothing.',
       matches: 'A matchbox and a scatter of spent matches.',
       coins: 'A few coins and a folded note.',
-      flowers: 'Marigold heads tucked between the glasses.',
+      flowers: 'Marigold heads placed around the candles and their stand.',
       card: 'A small prayer card propped against a candle.',
     }),
   },
@@ -108,35 +114,54 @@ export default defineThing({
 
     // Stand.
     const spread = { lone: 0.07, few: 0.1, cluster: 0.16, crowd: 0.23 }[a.count];
-    let floorY = 0;
-    const lift = (z: number) => (a.stand === 'steps' && z < -0.01 ? 0.045 : 0) + floorY;
     if (a.stand === 'tray') {
       s.lathe([[0, 0], [spread * 1.45, 0], [spread * 1.6, 0.014], [spread * 1.57, 0.014], [spread * 1.43, 0.005], [0, 0.005]], s.material('#aab0b0', { metalness: 0.75, roughness: 0.38 })).scale.z = 0.8;
-      floorY = 0.005;
     } else if (a.stand === 'steps') {
       const wood = s.material('#7a5232', { roughness: 0.8 });
       s.box([spread * 3, 0.02, spread * 2.5], [0, 0.01, 0], wood);
       s.box([spread * 3, 0.045, spread * 1.25], [0, 0.0425, -spread * 0.635], wood);
-      floorY = 0.02;
     } else if (a.stand === 'bricks') {
       const brick = s.material('#a9553c', { roughness: 0.95 });
       const w = Math.max(0.22, spread * 1.45);
       for (const side of a.count === 'lone' ? [0] : [-1, 1]) { const b = s.box([w, 0.06, Math.max(0.11, spread * 2.3)], [side * (w / 2 + 0.004), 0.03, 0], brick); b.rotation.y = (random() - 0.5) * 0.06; }
-      floorY = 0.06;
     }
+
+    const standParts=[...s.root.children];s.root.updateMatrixWorld(true);
+    const supportRay=new THREE.Raycaster();
+    const lift=(x:number,z:number,r=0)=>{
+      if(a.stand==='bare')return 0;
+      const samples=[[x,z],...Array.from({length:24},(_,i)=>[x+Math.cos(i*Math.PI/12)*r,z+Math.sin(i*Math.PI/12)*r])];
+      let height=Infinity,highest=0;for(const [px,pz] of samples){supportRay.set(new THREE.Vector3(px,1,pz),new THREE.Vector3(0,-1,0));const hit=supportRay.intersectObjects(standParts,true)[0];height=Math.min(height,hit?.point.y??0);highest=Math.max(highest,hit?.point.y??0);}
+      return highest-height>.0006?-1:Number.isFinite(height)?height:0;
+    };
 
     // Placement: tall at the back, small in front.
     const placed: { x: number; z: number; r: number }[] = [];
-    const place = (r: number, back: number) => {
-      for (let attempt = 0; attempt < 60; attempt++) {
-        const ang = random() * Math.PI * 2, d = Math.sqrt(random()) * (spread * (1 + attempt / 60));
-        const x = Math.cos(ang) * d * 1.25, z = Math.sin(ang) * d * 0.75 - back * spread * 0.45;
-        if (a.stand === 'steps' && Math.abs(z + 0.01) < r) continue;
-        if (placed.every((p) => Math.hypot(p.x - x, p.z - z) > p.r + r + 0.004)) { placed.push({ x, z, r }); return { x, z }; }
+    const standBounds=new THREE.Box3().setFromObject(s.root,true);
+    const place = (r: number, back: number, needStand=true) => {
+      const xmin=!needStand?-spread*2-.08:a.stand==='bare'?-spread*1.4:standBounds.min.x+r+.004,xmax=!needStand?spread*2+.08:a.stand==='bare'?spread*1.4:standBounds.max.x-r-.004;
+      const zmin=!needStand?-spread*1.7-.08:a.stand==='bare'?-spread*1.25:standBounds.min.z+r+.004,zmax=!needStand?spread*1.7+.08:a.stand==='bare'?spread*1.25:standBounds.max.z-r-.004;
+      const valid=(x:number,z:number)=>x>=xmin&&x<=xmax&&z>=zmin&&z<=zmax&&placed.every(p=>Math.hypot(p.x-x,p.z-z)>p.r+r+.004)&&(needStand||a.stand==='bare'||x-r>standBounds.max.x||x+r<standBounds.min.x||z-r>standBounds.max.z||z+r<standBounds.min.z)&&(a.stand==='bare'||(needStand?lift(x,z,r)>0:lift(x,z,r)>=0))&&(!needStand||a.stand!=='tray'||Math.hypot((Math.abs(x)+r)/(spread*1.425),(Math.abs(z)+r)/(spread*1.425*.8))<1);
+      const keep=(x:number,z:number)=>{placed.push({x,z,r});return{x,z};};
+      const intervals=needStand&&a.stand==='steps'?[[zmin,-spread*.01-r-.005],[-spread*.01+r+.005,zmax]]:[[zmin,zmax]];
+      const rowCandidates:{x:number;z:number}[]=[];
+      for(const [low,high] of intervals){if(high<low)continue;const rows=Math.max(1,Math.floor((high-low)/(r*2+.008))+1),columns=Math.max(1,Math.floor((xmax-xmin)/(r*2+.008))+1);for(let row=0;row<rows;row++)for(let column=0;column<columns;column++)rowCandidates.push({x:columns===1?(xmin+xmax)/2:mix(xmin,xmax,column/(columns-1)),z:rows===1?(low+high)/2:mix(low,high,row/(rows-1))});}
+      rowCandidates.sort((p,q)=>Math.abs(p.z+back*spread*.55)-Math.abs(q.z+back*spread*.55)||Math.abs(p.x)-Math.abs(q.x));
+      if(a.arrangement==='rows')for(const p of rowCandidates)if(valid(p.x,p.z))return keep(p.x,p.z);
+      for(let attempt=0;attempt<180;attempt++){
+        const index=placed.length,ang=random()*Math.PI*2,d=Math.sqrt(random())*spread;
+        let x=Math.cos(ang)*d*1.25,z=Math.sin(ang)*d*.75-back*spread*.45;
+        if(a.arrangement==='crescent'){const t=-Math.PI*.85+random()*Math.PI*1.7,reach=spread*(.72+attempt/300);x=Math.sin(t)*reach*1.25;z=Math.cos(t)*reach*.75-spread*.25;}
+        if(a.arrangement==='spiral'){const t=(index+attempt*.23)*2.399963,reach=spread*Math.sqrt((index+1)/(n[0]+n[1]+n[2]))+attempt*.0003;x=Math.cos(t)*reach*1.25;z=Math.sin(t)*reach*.75;}
+        if(valid(x,z))return keep(x,z);
       }
-      const x = (random() - 0.5) * spread * 3, z = (random() - 0.5) * spread;
-      placed.push({ x, z, r });
-      return { x, z };
+      // Dense fallback stays on the same flat support and within the same footprint.
+      const candidates:{x:number;z:number;rank:number}[]=[];
+      const nx=Math.max(1,Math.ceil((xmax-xmin)/.009)),nz=Math.max(1,Math.ceil((zmax-zmin)/.009));
+      for(let iz=0;iz<=nz;iz++)for(let ix=0;ix<=nx;ix++){const x=mix(xmin,xmax,ix/nx),z=mix(zmin,zmax,iz/nz);candidates.push({x,z,rank:Math.abs(z+back*spread*.5)+Math.abs(x)*.25});}
+      candidates.sort((p,q)=>p.rank-q.rank);
+      for(const p of candidates)if(valid(p.x,p.z))return keep(p.x,p.z);
+      throw new Error('Candle gathering does not fit its selected support');
     };
 
     const total = n[0] + n[1] + n[2];
@@ -185,16 +210,22 @@ export default defineThing({
       const blobs = 2 + Math.floor(random() * 3);
       for (let i = 0; i < blobs; i++) {
         const ang = random() * 6.28, d = r * mix(0.5, 1.2, random());
-        s.ball([r * mix(0.5, 1, random()), 0.003, r * mix(0.5, 1, random())], [x + Math.cos(ang) * d, y + 0.001, z + Math.sin(ang) * d], mat, 12).castShadow = false;
+        const px=x+Math.cos(ang)*d,pz=z+Math.sin(ang)*d; s.ball([r * mix(0.5, 1, random()), 0.003, r * mix(0.5, 1, random())], [px,lift(px,pz)+.003,pz], mat, 12).castShadow = false;
       }
     };
 
     // Tall glass prayer candles.
-    const rimMat = s.material('#e9eef0', { roughness: 0.15, metalness: 0.1 });
+    const rimMat = s.material({clear:'#e9eef0',brass:'#c3a053',silver:'#bdc7d0',black:'#353238'}[a.rimFinish], { roughness: 0.15, metalness: a.rimFinish==='clear'?.1:.7 });
+    const waxDetail=(x:number,y:number,z:number,r:number,colour:string)=>{
+      const mat=s.material(new THREE.Color(colour).multiplyScalar(.76),{roughness:.6});
+      if(a.waxSurface==='rippled')for(let i=1;i<=4;i++)s.ring(r*i/5,.00045,[x,y+.0018,z],mat).rotation.x=Math.PI/2;
+      if(a.waxSurface==='cracked')for(let i=0;i<5;i++){const t=i*Math.PI*2/5;s.tube([[x+Math.cos(t)*r*.25,y+.0018,z+Math.sin(t)*r*.25],[x+Math.cos(t+.2)*r*.65,y+.0018,z+Math.sin(t+.2)*r*.65],[x+Math.cos(t)*r*.91,y+.0018,z+Math.sin(t)*r*.91]],.00035,mat);}
+      if(a.waxSurface==='flecked')for(let i=0;i<15;i++){const t=random()*Math.PI*2,d=Math.sqrt(random())*r*.9;s.ball([.0009,.00025,.0006],[x+Math.cos(t)*d,y+.0016,z+Math.sin(t)*d],mat,5);}
+    };
     const tallSpots: { x: number; z: number; y: number }[] = [];
     for (let i = 0; i < n[0]; i++) {
       const { x, z } = place(0.033, 1);
-      const y0 = lift(z), h = mix(0.19, 0.22, random()), r = 0.03;
+      const y0 = lift(x,z,.033), h = mix(0.19, 0.22, random()), r = 0.03;
       const lit = isLit();
       const canvas = document.createElement('canvas'); canvas.width = canvas.height = 256;
       const g = canvas.getContext('2d')!;
@@ -207,17 +238,24 @@ export default defineThing({
         glass = tint;
         g.fillStyle = a.imagery === 'muerte' ? '#d9a521' : '#a81a22'; g.fillRect(0, 0, 256, 10); g.fillRect(0, 244, 256, 12);
       }
+      g.strokeStyle=a.labelBorder==='vines'?'#477c4b':'#d4b45b';g.lineWidth=3;
+      if(a.labelBorder==='rays')for(let j=0;j<20;j++){const t=j/20*Math.PI*2;g.beginPath();g.moveTo(128+Math.cos(t)*101,128+Math.sin(t)*103);g.lineTo(128+Math.cos(t)*118,128+Math.sin(t)*119);g.stroke();}
+      if(a.labelBorder==='vines')for(const x of [16,240]){g.beginPath();g.moveTo(x,20);g.lineTo(x,235);g.stroke();for(let y=30;y<230;y+=20){g.beginPath();g.ellipse(x+(y%40?4:-4),y,7,3,y*.1,0,Math.PI*2);g.stroke();}}
+      if(a.labelBorder==='lace')for(let y=14;y<244;y+=13)for(const x of [12,244]){g.beginPath();g.arc(x,y,6,0,Math.PI*2);g.stroke();}
       // Soot and wax level darken the glass above the wax line.
       const level = mix(0.9, 0.12, Math.min(1, burn * mix(0.75, 1.2, random())));
       g.fillStyle = `rgba(30,22,16,${0.1 + burn * 0.22})`; g.fillRect(0, 0, 256, 256 * (1 - level));
       const map = new THREE.CanvasTexture(canvas); map.colorSpace = THREE.SRGBColorSpace;
-      const body = s.mesh(new THREE.CylinderGeometry(r, r * 0.97, h, 28, 1, true), new THREE.MeshStandardMaterial({ map, roughness: 0.22, side: THREE.DoubleSide, emissive: '#ffffff', emissiveMap: map, emissiveIntensity: lit ? 0.5 * brightness : 0.04 }), [x, y0 + h / 2, z]);
-      body.rotation.y = Math.PI + (random() - 0.5) * 0.9;
-      s.cylinder(r * 0.97, r * 0.97, 0.004, [x, y0 + 0.002, z], rimMat, 28);
-      s.ring(r, 0.0022, [x, y0 + h, z], rimMat).rotation.x = Math.PI / 2;
+      const bottomR=a.vessel==='tapered'?r*.76:r*.97,segments=a.vessel==='faceted'?8:64;
+      const wall=new THREE.CylinderGeometry(r,bottomR,h,segments,1,true);
+      if(a.vessel==='fluted'){const p=wall.getAttribute('position');for(let k=0;k<p.count;k++){const theta=Math.atan2(p.getZ(k),p.getX(k)),f=1+.04*Math.cos(theta*16);p.setXYZ(k,p.getX(k)*f,p.getY(k),p.getZ(k)*f);}wall.computeVertexNormals();}
+      const body = s.mesh(wall, new THREE.MeshStandardMaterial({ map, roughness: 0.22, side: THREE.DoubleSide, emissive: '#ffffff', emissiveMap: map, emissiveIntensity: lit ? 0.5 * brightness : 0.04 }), [x, y0 + h / 2, z]);
+      const vesselTurn=Math.PI+(random()-.5)*.9;body.rotation.y=vesselTurn;
+      s.cylinder(bottomR,bottomR,0.004,[x,y0+.002,z],rimMat,segments).rotation.y=vesselTurn;
+      if(a.vessel==='faceted'){const points:V3[]=[];for(let j=0;j<=8;j++){const t=j*Math.PI/4+vesselTurn;points.push([x+Math.sin(t)*r,y0+h,z+Math.cos(t)*r]);}s.tube(points,.0012,rimMat);}else s.ring(r,0.0022,[x,y0+h,z],rimMat).rotation.x=Math.PI/2;
       const waxY = y0 + h * level;
       const waxColour = a.imagery === 'plain' ? '#f3ead8' : waxes[Math.floor(random() * waxes.length)];
-      s.cylinder(r * 0.96, r * 0.96, 0.004, [x, waxY, z], s.material(waxColour, { roughness: 0.4, emissive: '#ffb347', emissiveIntensity: lit ? 0.7 : 0 }), 24);
+      const waxR=mix(bottomR,r,level)*.95;s.cylinder(waxR,waxR,.004,[x,waxY,z],s.material(waxColour,{roughness:.4,emissive:'#ffb347',emissiveIntensity:lit?.7:0}),segments).rotation.y=vesselTurn;waxDetail(x,waxY+.0003,z,waxR,waxColour);
       flame(x, waxY + 0.003, z, 0.0085, lit);
       tallSpots.push({ x, z, y: y0 });
       void glass;
@@ -226,12 +264,15 @@ export default defineThing({
     // Bare pillar stubs with drips.
     for (let i = 0; i < n[2]; i++) {
       const { x, z } = place(0.026, 0.2);
-      const y0 = lift(z), r = mix(0.016, 0.023, random());
+      const y0 = lift(x,z,.026), r = mix(0.016, 0.023, random());
       const h = mix(0.15, 0.025, Math.min(1, burn * mix(0.7, 1.25, random())));
       const colour = waxes[Math.floor(random() * waxes.length)];
       const lit = isLit();
       const mat = s.material(colour, { roughness: 0.45, emissive: '#ff9a3a', emissiveIntensity: lit ? 0.22 * brightness : 0 });
-      s.cylinder(r * 0.94, r, h, [x, y0 + h / 2, z], mat, 20);
+      s.cylinder(r * 0.94, r, h, [x, y0 + h / 2, z], mat, a.pillarRelief==='faceted'?8:24);
+      if(a.pillarRelief==='rings')for(let y=.006;y<h-.004;y+=.012)s.ring(mix(r,r*.94,y/h),.0016,[x,y0+y,z],mat).rotation.x=Math.PI/2;
+      if(a.pillarRelief==='spiral'){const points:V3[]=[];for(let j=0;j<=80;j++){const u=j/80,t=u*Math.PI*10,rr=mix(r,r*.94,u);points.push([x+Math.cos(t)*rr,y0+.003+u*(h-.006),z+Math.sin(t)*rr]);}s.tube(points,.0015,mat);}
+      waxDetail(x,y0+h-.0013,z,r*.92,colour);
       const drips = Math.round(mix(1, 7, burn));
       for (let d = 0; d < drips; d++) {
         const ang = random() * 6.28, len = Math.min(h * 0.9, mix(0.01, 0.06, random()));
@@ -245,37 +286,40 @@ export default defineThing({
     const tin = s.material('#cfd4d6', { metalness: 0.8, roughness: 0.3 });
     for (let i = 0; i < n[1]; i++) {
       const { x, z } = place(0.022, -0.9);
-      const y0 = lift(z), lit = isLit();
+      const y0 = lift(x,z,.022), lit = isLit();
       const colour = waxes[Math.floor(random() * waxes.length)];
-      s.cylinder(0.0195, 0.0185, 0.016, [x, y0 + 0.008, z], tin, 20);
+      s.lathe([[0,0],[.0185,0],[.0195,.016],[.0185,.016],[.0175,.0015],[0,.0015]],tin,[x,y0,z]);
       const level = mix(0.015, 0.006, burn);
       s.cylinder(0.018, 0.018, 0.003, [x, y0 + level, z], s.material(colour, { roughness: 0.3, emissive: '#ffb347', emissiveIntensity: lit ? 0.6 : 0 }), 20);
+      waxDetail(x,y0+level,z,.0175,colour);
       if (burn > 0.75 && random() < 0.5) pool(x, y0, z, 0.02, s.material(colour, { roughness: 0.4 }));
       flame(x, y0 + level + 0.002, z, 0.0065, lit);
     }
 
     // Left behind.
-    const front = spread * 0.75 + 0.05;
+    const front = spread * 1.5 + 0.09;
     if (a.left === 'matches') {
-      const box = s.box([0.052, 0.014, 0.036], [spread * 0.9, floorY + 0.007, front * 0.8], s.material('#c4262b'));
+      const box = s.box([0.052, 0.014, 0.036], [spread * 0.9,0.007,front], s.material('#c4262b'));
       box.rotation.y = 0.5;
-      s.box([0.046, 0.0145, 0.03], [spread * 0.9, floorY + 0.0075, front * 0.8], s.material('#f2d24a')).rotation.y = 0.5;
+      s.box([0.046, 0.0145, 0.03], [spread * 0.9,0.00725,front], s.material('#f2d24a')).rotation.y = 0.5;
       for (let i = 0; i < 5 + Math.floor(random() * 5); i++) {
-        const x = (random() - 0.5) * spread * 2, z = front * mix(0.7, 1.05, random()), ang = random() * 6.28;
-        s.rod([x, floorY + 0.002, z], [x + Math.cos(ang) * 0.04, floorY + 0.002, z + Math.sin(ang) * 0.04], 0.0011, s.material('#d8c49a'));
-        s.ball([0.002, 0.002, 0.002], [x, floorY + 0.002, z], wickMat, 6);
+        const x = (random() - 0.5) * spread * 2, z = front+random()*.04, ang = random() * 6.28;
+        s.rod([x,.002,z],[x+Math.cos(ang)*.04,.0011,z+Math.sin(ang)*.04],.0011,s.material('#d8c49a'));
+        s.ball([0.002,0.002,0.002],[x,.002,z],wickMat,6);
       }
     } else if (a.left === 'coins') {
       const brass = s.material('#c9a23a', { metalness: 0.8, roughness: 0.3 }), silver = s.material('#c4c8ca', { metalness: 0.8, roughness: 0.3 });
-      for (let i = 0; i < 5 + Math.floor(random() * 6); i++) s.cylinder(0.011, 0.011, 0.002, [(random() - 0.5) * spread * 2, floorY + 0.001 + (i % 3) * 0.002, front * mix(0.7, 1.05, random())], random() < 0.5 ? brass : silver, 14);
-      const note = s.box([0.06, 0.004, 0.04], [-spread * 0.8, floorY + 0.003, front * 0.85], s.material('#f1ead2'));
+      const coins:{x:number;z:number;top:number}[]=[];
+      for(let i=0;i<5+Math.floor(random()*6);i++){const x=(random()-.5)*spread*2,z=front+random()*.04;let y=0;for(const p of coins)if(Math.hypot(p.x-x,p.z-z)<.022)y=Math.max(y,p.top);s.cylinder(.011,.011,.002,[x,y+.001,z],random()<.5?brass:silver,14);coins.push({x,z,top:y+.002});}
+      const note = s.box([0.06, 0.004, 0.04], [-spread*.8,.002,front+.08], s.material('#f1ead2'));
       note.rotation.y = -0.4;
     } else if (a.left === 'flowers') {
       const petal = s.material('#ee7a0c', { flatShading: true, emissive: '#b84a00', emissiveIntensity: 0.15 });
       for (let i = 0; i < 6 + Math.floor(random() * 6); i++) {
-        const { x, z } = place(0.02, random() * 2 - 1.2);
-        const bloom = s.mesh(new THREE.IcosahedronGeometry(mix(0.018, 0.025, random()), 1), petal, [x, lift(z) + 0.014, z]);
+        const { x, z } = place(0.027,random()*2-1.2,false);
+        const bloom = s.mesh(new THREE.IcosahedronGeometry(mix(0.018, 0.025, random()), 1), petal, [x,0,z]);
         bloom.scale.y = 0.7; bloom.rotation.set(random(), random() * 6, random());
+        bloom.updateMatrixWorld(true);bloom.position.y+=lift(x,z,.027)-new THREE.Box3().setFromObject(bloom,true).min.y;
       }
     } else if (a.left === 'card' && tallSpots.length) {
       const t = tallSpots[0];

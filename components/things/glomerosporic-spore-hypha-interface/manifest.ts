@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Glomerosporic spore hypha interface", "summary": "A layered spore wall is cut away around its actual attached hyphal neck; use a specified verified taxon rather than generic invented wall anatomy. A schematic Rhizophagus irregularis spore based on observed layered walls and attached hyphae; soil life, propagation and microscopy.", "scales": ["macro", "tabletop"]});

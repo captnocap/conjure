@@ -41,6 +41,12 @@ function tartanTexture(key: keyof typeof TARTANS, wear: number, random: () => nu
 
 export default defineThing({
   questions: {
+    stopper: choice('What kind of stopper seals the flask?',{cork:'A broad cork stopper with a wooden top.',screw:'A dark screw stopper with a ridged grip.',button:'A cream stopper with a push-button pour valve.',lever:'A stopper with a small hinged metal locking lever.'}),
+    cupForm: choice('What shape is the drinking cup?',{taper:'A gently tapered cup.',straight:'A straight-sided cup with a broad base.',flare:'A flared cup with a narrow foot.',fluted:'A tapered cup with vertical grip flutes.'}),
+    boot: choice('What protects the bottom of the flask?',{metal:'A smooth bright metal foot ring.',rubber:'A thick black rubber protective boot.',ribs:'A low ribbed metal base.',painted:'A broad painted base matching the cup.'}),
+    badge: choice('How is the flask labelled?',{oval:'An oval metal maker badge.',shield:'A small shield-shaped enamel badge.',name:'A paper name label under a clear strip.',measure:'A short column of capacity marks.'}),
+    neck: choice('How is the collar below the stopper finished?',{plain:'A plain polished collar.',knurl:'A close row of knurled grip ridges.',rings:'Three narrow raised metal rings.',colour:'A dark coloured collar band.'}),
+    provision: choice('What small item accompanies the poured drink?',{spoon:'A teaspoon laid on a folded paper sleeve.',sugar:'Two wrapped sugar cubes.',sachets:'A fan of three small drink sachets.',cloth:'A small rolled cloth tied with string.'}),
     pattern: choice('What is printed on the flask?', {
       stewart: 'Red Royal Stewart tartan with green, navy and yellow lines: the classic picnic flask.',
       blackwatch: 'Dark green and navy Black Watch tartan, sober and military.',
@@ -99,7 +105,9 @@ export default defineThing({
     const open = a.state !== 'shut';
 
     const flask = new THREE.Group();
-    add(new THREE.Mesh(new THREE.CylinderGeometry(R + 0.002, R - 0.003, 0.022, 36), steel), flask).position.y = 0.011;
+    const baseSkin=a.boot==='rubber'?s.material('#303638',{roughness:.9}):a.boot==='painted'?cupPaint:steel;
+    add(new THREE.Mesh(new THREE.CylinderGeometry(R+(a.boot==='rubber'?.006:.002),R+(a.boot==='rubber'?.004:-.003),a.boot==='rubber'?.029:.022,36),baseSkin),flask).position.y=a.boot==='rubber'?.0145:.011;
+    if(a.boot==='ribs')for(let i=0;i<4;i++){const ring=add(new THREE.Mesh(new THREE.TorusGeometry(R+.002,.0013,6,36),steel),flask);ring.rotation.x=Math.PI/2;ring.position.y=.004+i*.0045;}
     add(new THREE.Mesh(new THREE.CylinderGeometry(R, R, B - 0.022, 40), wrap), flask).position.y = 0.022 + (B - 0.022) / 2;
     add(new THREE.Mesh(new THREE.CylinderGeometry(R + 0.002, R + 0.002, 0.014, 36), steel), flask).position.y = B + 0.007;
     if (a.pattern === 'enamel') for (const y of [0.3, 0.72]) add(new THREE.Mesh(new THREE.CylinderGeometry(R + 0.0008, R + 0.0008, 0.008, 36), s.material('#e9e2c8')), flask).position.y = B * y;
@@ -108,13 +116,26 @@ export default defineThing({
     // Shoulder and threaded neck: hidden by the cup when shut.
     add(new THREE.Mesh(new THREE.LatheGeometry([[R, B + 0.014], [R * 0.92, B + 0.024], [R * 0.66, B + 0.036], [R * 0.6, B + 0.04], [R * 0.6, neckTop]].map(([x, y]) => new THREE.Vector2(x, y)), 32), cupPaint), flask);
     for (let i = 0; i < 3; i++) { const thread = add(new THREE.Mesh(new THREE.TorusGeometry(R * 0.6, 0.0016, 5, 28), cupPaint), flask); thread.rotation.x = Math.PI / 2; thread.position.y = B + 0.044 + i * 0.005; }
+    if(a.neck==='knurl')for(let i=0;i<36;i++){const t=i*Math.PI/18;const ridge=add(new THREE.Mesh(new THREE.BoxGeometry(.0018,.013,.0018),steel),flask);ridge.position.set(Math.cos(t)*(R+.002),B+.007,Math.sin(t)*(R+.002));ridge.rotation.y=-t;}
+    if(a.neck==='rings')for(let i=0;i<3;i++){const ring=add(new THREE.Mesh(new THREE.TorusGeometry(R+.003,.0015,6,36),steel),flask);ring.rotation.x=Math.PI/2;ring.position.y=B+.002+i*.005;}
+    if(a.neck==='colour')add(new THREE.Mesh(new THREE.CylinderGeometry(R+.0025,R+.0025,.012,36),s.material('#30454b')),flask).position.y=B+.007;
+    const label=new Sculpture(context),ink=label.material('#e5dbc2'),badgeMetal=label.material('#c4b38a',{metalness:.45,roughness:.4});
+    if(a.badge==='oval'){const mark=label.mesh(new THREE.CircleGeometry(.018,24),badgeMetal,[0,B*.51,R+.0015]);mark.scale.x=1.35;label.label('VACUUM',.038,.01,[0,B*.51,R+.002],'#374747','#c4b38a');}
+    if(a.badge==='shield'){const shape=new THREE.Shape();shape.moveTo(-.019,.015);shape.lineTo(.019,.015);shape.lineTo(.016,-.009);shape.lineTo(0,-.023);shape.lineTo(-.016,-.009);shape.closePath();label.mesh(new THREE.ShapeGeometry(shape),label.material('#ebe6cf'),[0,B*.51,R+.0015]);label.label('HOT',.024,.009,[0,B*.51,R+.002],'#7e5b3d','#ebe6cf');}
+    if(a.badge==='name')label.label('PICNIC',.055,.022,[0,B*.51,R+.002],'#334c68','#f0e5c9');
+    if(a.badge==='measure')for(let i=0;i<6;i++)label.rod([-.009,B*.3+i*.017,R+.001],[i%2?.005:.012,B*.3+i*.017,R+.001],.0007,ink);
+    flask.add(label.root);
     const stopper = new THREE.Group();
-    add(new THREE.Mesh(new THREE.CylinderGeometry(R * 0.52, R * 0.46, 0.03, 20), s.material(a.pattern === 'steel' ? '#2a2d30' : '#c9a777', { roughness: 0.8 })), stopper);
-    add(new THREE.Mesh(new THREE.CylinderGeometry(R * 0.6, R * 0.6, 0.008, 20), s.material(a.pattern === 'steel' ? '#2a2d30' : '#8a5a34', { roughness: 0.7 })), stopper).position.y = 0.018;
+    add(new THREE.Mesh(new THREE.CylinderGeometry(R * 0.52, R * 0.46, 0.03, 20), s.material(a.stopper==='cork'?'#c9a777':a.stopper==='button'?'#e0d6b7':'#353a3a',{roughness:.7})), stopper);
+    add(new THREE.Mesh(new THREE.CylinderGeometry(R * 0.6, R * 0.6, 0.008, 20), s.material(a.stopper==='cork'?'#8a5a34':a.stopper==='button'?'#e0d6b7':'#353a3a',{roughness:.6})), stopper).position.y = 0.018;
+    if(a.stopper==='screw')for(let i=0;i<20;i++){const t=i*Math.PI/10;const rid=add(new THREE.Mesh(new THREE.CylinderGeometry(.0012,.0012,.012,6),steel),stopper);rid.position.set(Math.cos(t)*R*.6,.018,Math.sin(t)*R*.6);}
+    if(a.stopper==='button')add(new THREE.Mesh(new THREE.CylinderGeometry(R*.27,R*.3,.006,20),s.material('#b44f37')),stopper).position.y=.025;
+    if(a.stopper==='lever'){const lever=add(new THREE.Mesh(new THREE.TorusGeometry(R*.4,.0025,6,16,Math.PI),steel),stopper);lever.position.y=.024;lever.rotation.z=.3;}
     const cup = (filled: boolean) => {
       const g = new THREE.Group();
-      const h = 0.066, r0 = R * 0.78, r1 = R + 0.004;
+      const h = .066, r0 = R * (a.cupForm==='straight'?1:a.cupForm==='flare'?.6:.78), r1 = R + .004;
       add(new THREE.Mesh(new THREE.LatheGeometry([[0, 0.004], [r0, 0.004], [r0, 0], [r1, h], [r1 - 0.004, h], [r0 - 0.003, 0.006], [0, 0.006]].map(([x, y]) => new THREE.Vector2(x, y)), 32), cupPaint), g);
+      if(a.cupForm==='fluted')for(let i=0;i<20;i++){const t=i*Math.PI/10;const p0=new THREE.Vector3(Math.cos(t)*(r0+.001),.009,Math.sin(t)*(r0+.001)),p1=new THREE.Vector3(Math.cos(t)*(r1+.001),h-.006,Math.sin(t)*(r1+.001));const ridge=new THREE.Mesh(new THREE.CylinderGeometry(.0015,.0015,p0.distanceTo(p1),6),cupPaint);ridge.position.copy(p0).add(p1).multiplyScalar(.5);ridge.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),p1.clone().sub(p0).normalize());add(ridge,g);}
       const grip = add(new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.0045, 6, 16, Math.PI), cupPaint), g);
       grip.rotation.z = -Math.PI / 2; grip.position.set(mix(r0, r1, 0.55), h * 0.55, 0);
       if (filled) {
@@ -172,10 +193,12 @@ export default defineThing({
       stopper.rotation.set(Math.PI / 2, 0, random() * 3);
       lid.position.set(mouth.x - 0.03, R + 0.006, mouth.z - 0.11 - random() * 0.02);
       lid.rotation.set(Math.PI / 2 + 0.1, 0, random() * 3);
+      for(const node of [stopper,lid]){node.updateMatrixWorld(true);node.position.y-=new THREE.Box3().setFromObject(node,true).min.y;}
       s.root.add(stopper, lid);
     } else if (open) {
       stopper.position.set(-R - 0.04, 0.015, 0.07 + random() * 0.02);
       stopper.rotation.set(Math.PI, random(), 0);
+      stopper.updateMatrixWorld(true);stopper.position.y-=new THREE.Box3().setFromObject(stopper,true).min.y;
       s.root.add(stopper);
       const poured = cup(hot);
       poured.position.set(R + 0.07, 0, 0.06 + random() * 0.02);
@@ -191,6 +214,7 @@ export default defineThing({
         if (hot) steamSources.push(new THREE.Vector3(second.position.x, 0.06, second.position.z));
       }
     }
+    flask.updateMatrixWorld(true);flask.position.y-=new THREE.Box3().setFromObject(flask,true).min.y;
     s.root.add(flask);
 
     const at = new THREE.Vector3(-R - 0.1, 0, a.state === 'toppled' ? 0.16 : -0.02);
@@ -250,6 +274,12 @@ export default defineThing({
     }
     for (const item of side) s.root.add(item);
 
+    const provision=new Sculpture(context),paper=provision.material('#eee8d5');
+    if(a.provision==='spoon'){provision.box([.031,.001,.12],[0,.0005,0],paper);provision.ball([.009,.0025,.014],[0,.003,.035],steel,14);provision.rod([0,.003,.024],[0,.003,-.052],.0017,steel);}
+    if(a.provision==='sugar')for(let i=0;i<2;i++){provision.box([.022,.018,.023],[(i-.5)*.03,.009,0],paper);provision.box([.024,.001,.009],[(i-.5)*.03,.0185,0],provision.material(i?'#b96546':'#63869b'));}
+    if(a.provision==='sachets')for(let i=0;i<3;i++){const packet=new Sculpture(context);packet.box([.035,.002,.052],[0,.001,0],packet.material(['#9d5748','#6c8563','#b9a263'][i]));packet.label(['TEA','COCOA','SUGAR'][i],.028,.012,[0,.0022,0],'#eee8d7',['#9d5748','#6c8563','#b9a263'][i]).rotation.x=-Math.PI/2;packet.root.position.set((i-1)*.022,i*.001,0);packet.root.rotation.y=(i-1)*.25;provision.root.add(packet.root);}
+    if(a.provision==='cloth'){const roll=provision.cylinder(.017,.017,.075,[0,.017,0],provision.material('#a8b7ac'),24);roll.rotation.z=Math.PI/2;const tie=provision.ring(.0175,.001,[0,.017,0],paper);tie.rotation.y=Math.PI/2;}
+    provision.root.position.set(R+.095,0,-.115);provision.root.rotation.y=.2;s.root.add(provision.root);
     // Steam: see-through, so it is not measured as part of the object.
     const puffs: { mesh: THREE.Mesh; base: THREE.Vector3; phase: number }[] = [];
     const steamPaint = new THREE.MeshStandardMaterial({ color: '#ffffff', transparent: true, opacity: mix(0.34, 0.14, mood.warmth), depthWrite: false, roughness: 1 });

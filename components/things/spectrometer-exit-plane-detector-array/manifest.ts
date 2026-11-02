@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Spectrometer exit plane detector array", "summary": "A supported detector plane has individually resolved sensing strips, an entrance window and a true sectional opening through the housing. Individual sensing strips conform to a real flat or bowed backing, with a cut housing and a separately supported entrance window. Marked bands are schematic detector responses, not calculated spectral dispersion or sensor data.", "scales": ["macro", "tabletop"]});

@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Martian polar araneiform sublimation field", "summary": "A permanent radial araneiform channel basin lies beneath a retained seasonal-ice section and visible vent, independent of sample casts. Permanent radial erosion basins, seasonal ice and a layered rear scarp identify the polar field; retained sub-slab spaces and vent sections are explicit teaching models, with exaggerated relief and schematic dust deposition.", "scales": ["planetary", "landscape", "macro"]});

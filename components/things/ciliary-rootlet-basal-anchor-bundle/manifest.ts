@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Ciliary rootlet basal anchor bundle", "summary": "A cross-striated rootlet bundle emerges from a basal-body base and extends into an attached epithelial section. Cross-striated rootlet bundles connect proximal basal-body regions to retained epithelial cytoplasm. Branches and linked bundles represent a schematic subapical network; section cuts expose attachments without inventing extra axonemes.", "scales": ["macro", "tabletop"]});

@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type Palette, type PaletteRole, choice, clamp01, defineLook, mix, oklch, paintRGB, rekey, score, seeded } from '@conjure/kit';
 
 /**
  * Paper cut: the frame rebuilt as a stack of cut paper sheets.
@@ -104,6 +104,38 @@ const KRAFT = ['#1f1b19', '#4f3b2c', '#8c6a47', '#b99263', '#dcc9a3', '#f4ecda']
 const DUSK_WARM = ['#1d1836', '#4f2757', '#a23a67', '#e4683f', '#f6a94e', '#fbdc98', '#fdf1cf'].map(hex);
 const DUSK_COLD = ['#0c1a2c', '#12384f', '#1c6470', '#3f9c8c', '#8fcf9f', '#d3ecb4', '#f4f8dc'].map(hex);
 
+/** HSL hue in degrees of a 0–1 colour. */
+function hueOf([r, g, b]: RGB): number {
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  if (d === 0) return 0;
+  const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return h * 60;
+}
+
+/** Re-key 0–1 colours with the kit's 0–255 `rekey`, by index. */
+function keyList(colours: RGB[], palette: Palette, roles: (PaletteRole | undefined)[]): RGB[] {
+  const keyed = rekey(Object.fromEntries(colours.map((c, k) => [k, [c[0] * 255, c[1] * 255, c[2] * 255] as const])), palette, Object.fromEntries(roles.map((role, k) => [k, role])));
+  return colours.map((_, k) => keyed[k].map((v) => v / 255) as RGB);
+}
+
+/**
+ * Construction paper under a palette: every coloured sheet is re-keyed on its own, so it lands squarely
+ * on the palette hue rather than on an offset from it; the reds, oranges, pinks, yellow, brown and
+ * violet become sheets of the palette's ink, the greens, teal and blues sheets of its second. Each
+ * sheet keeps its lightness, so the drawer still runs pale to deep. Cream, black, grey and white card
+ * stay. Indexes follow STOCK.
+ */
+const STOCK_ROLES: (PaletteRole | undefined)[] = [
+  'ink', 'ink', 'ink', undefined, 'second', 'second', 'second', 'second', 'second',
+  'ink', 'ink', 'ink', undefined, undefined, undefined, 'ink', 'second',
+];
+const keyStock = (palette: Palette): RGB[] => STOCK.map((sheet, i) => {
+  const role = STOCK_ROLES[i];
+  return role ? keyList([sheet], palette, [role])[0] : sheet;
+});
+/** The dusk ramp: deep foreground on the ground, the burning middle on the ink, the glowing sky on the second. */
+const DUSK_ROLES: PaletteRole[] = ['ground', 'ground', 'ink', 'ink', 'ink', 'second', 'second'];
+
 function ramp(stops: RGB[], t: number): RGB {
   const at = clamp01(t) * (stops.length - 1);
   const low = Math.min(stops.length - 2, Math.floor(at));
@@ -115,12 +147,12 @@ const FRAME = 61; // colour slot for the window mat in front of it
 
 export default defineLook({
   questions: {
-    palette: choice('Which stock of paper is the picture cut from?', {
+    palette: choice('Which stock of paper is the picture cut from? Coloured stocks take the picture\u2019s palette.', {
       scene: "Papers chosen to match the scene's own colours, reduced to a small tidy stock: a faithful picture-book collage.",
-      construction: 'Loud school construction paper: fire-engine red, sunflower, grass green, sky blue. Childlike and cheerful.',
+      construction: 'Loud school construction paper in two bright families of flat, saturated sheets. Childlike and cheerful.',
       kraft: 'Brown kraft, cream and black card with one bright accent: rustic, recycled, a market-stall poster.',
       tonal: 'One hue family stepped from deep in front to pale behind, like a layered paper landscape receding into mist.',
-      horizon: 'A sunset or aurora gradient running through the layers, deep foreground to glowing sky: theatrical and romantic.',
+      horizon: 'A glowing gradient running through the layers, deep foreground to luminous sky: theatrical and romantic.',
       white: 'All white paper. Only shadows separate the sheets: a quiet architectural paper sculpture.',
       silhouette: 'Black card silhouettes over one vivid backing, like a shadow-puppet theatre or a Victorian cut profile.',
     }),
@@ -707,28 +739,38 @@ export default defineLook({
 
     // ---- 6. Choose the papers -----------------------------------------------------------------
     const vivid = 0.75 + mood.cheer * 0.5;
-    const hue = 232 + mood.warmth * 150; // blue, through violet and rose, to orange
+    // Under the picture's palette, tonal and silhouette take their hue from its ink (silhouette's vivid
+    // backing lands on it) and only as much vividness as the ink has; kraft's accent is the ink; the
+    // construction drawer and the dusk ramp are re-keyed; scene, white and the kraft card are left as made.
+    const palette = context.palette;
+    const inkPaint = palette ? paintRGB(palette.ink).map((v) => v / 255) as RGB : undefined;
+    const hue = inkPaint ? hueOf(inkPaint) - (a.palette === 'silhouette' ? 40 : 0) : 232 + mood.warmth * 150; // blue, through violet and rose, to orange
+    const tinted = inkPaint ? vivid * clamp01(oklch(paintRGB(palette!.ink))[1] / 0.1) : vivid;
+    const stockPapers = palette && a.palette === 'construction' ? keyStock(palette) : STOCK;
+    const duskStops = DUSK_COLD.map((cold, i) => lerp3(cold, DUSK_WARM[i], mood.warmth));
+    const horizonStops = palette && a.palette === 'horizon' ? keyList(duskStops, palette, DUSK_ROLES) : duskStops;
     const backingBase: RGB = (() => {
       switch (a.palette) {
         case 'scene':
           return saturate(shade(backdrop, 0.12), 0.9);
         case 'construction': {
-          const options = [STOCK[16], STOCK[3], STOCK[2], STOCK[15], STOCK[6]];
+          const options = [stockPapers[16], stockPapers[3], stockPapers[2], stockPapers[15], stockPapers[6]];
           return options[Math.floor(rng() * options.length)];
         }
         case 'kraft':
           return rng() < 0.65 ? KRAFT[3] : KRAFT[4];
         case 'tonal':
-          return hsl(hue, 0.3 * vivid, 0.9);
+          return hsl(hue, 0.3 * tinted, 0.9);
         case 'horizon':
-          return lerp3(DUSK_COLD[5], DUSK_WARM[5], mood.warmth);
+          return horizonStops[5];
         case 'white':
           return [0.955, 0.948, 0.925];
         default:
-          return hsl(hue + 40, 0.7 * vivid, 0.6);
+          return hsl(hue + 40, 0.7 * tinted, 0.6);
       }
     })();
-    const accent = mood.warmth > 0.5 ? hex('#cf4327') : hex('#1f8087');
+    const designedAccent = mood.warmth > 0.5 ? hex('#cf4327') : hex('#1f8087');
+    const accent = palette ? keyList([designedAccent], palette, ['ink'])[0] : designedAccent;
     let accentPaper = -1;
     {
       let strongest = 0.22;
@@ -753,13 +795,13 @@ export default defineLook({
             : a.palette === 'kraft'
               ? KRAFT[1]
               : a.palette === 'construction'
-                ? STOCK[12]
+                ? stockPapers[12]
                 : a.palette === 'silhouette'
                   ? [0.07, 0.065, 0.08]
                   : a.palette === 'tonal'
-                    ? hsl(hue, 0.4 * vivid, 0.14)
+                    ? hsl(hue, 0.4 * tinted, 0.14)
                     : a.palette === 'horizon'
-                      ? lerp3(DUSK_COLD[0], DUSK_WARM[0], mood.warmth)
+                      ? horizonStops[0]
                       : luma(backdrop) > 0.5
                         ? [0.96, 0.945, 0.9]
                         : [0.13, 0.12, 0.13];
@@ -768,11 +810,10 @@ export default defineLook({
         const step = maxLevel > backLevel ? back / (maxLevel - backLevel) : 0;
         if (a.palette === 'white') c = shade(backingBase, -0.012 * back);
         else if (a.palette === 'horizon') {
-          const stops = DUSK_COLD.map((cold, i) => lerp3(cold, DUSK_WARM[i], mood.warmth));
-          c = saturate(ramp(stops, 0.72 + 0.28 * (maxLevel > backLevel ? step : 1)), vivid);
-        } else if (a.palette === 'silhouette') c = hsl(hue + 40 - back * 9, 0.75 * vivid, 0.5 + 0.11 * back + (maxLevel > backLevel ? 0 : 0.12));
-        else if (a.palette === 'tonal') c = hsl(hue + back * 4, 0.34 * vivid, 0.74 + 0.06 * back + (maxLevel > backLevel ? 0 : 0.14));
-        else if (a.mount === 'sun' && back === 0) c = a.palette === 'kraft' ? accent : a.palette === 'construction' ? STOCK[2] : shade(saturate(lerp3(backingBase, hex('#f6c95a'), 0.75), 1.1), 0.05);
+          c = saturate(ramp(horizonStops, 0.72 + 0.28 * (maxLevel > backLevel ? step : 1)), vivid);
+        } else if (a.palette === 'silhouette') c = hsl(hue + 40 - back * 9, 0.75 * tinted, 0.5 + 0.11 * back + (maxLevel > backLevel ? 0 : 0.12));
+        else if (a.palette === 'tonal') c = hsl(hue + back * 4, 0.34 * tinted, 0.74 + 0.06 * back + (maxLevel > backLevel ? 0 : 0.14));
+        else if (a.mount === 'sun' && back === 0) c = a.palette === 'kraft' ? accent : a.palette === 'construction' ? stockPapers[2] : shade(saturate(lerp3(backingBase, hex('#f6c95a'), 0.75), 1.1), 0.05);
         else {
           const direction = luma(backingBase) > 0.55 ? -1 : 1;
           c = shade(backingBase, direction * 0.085 * (maxLevel > backLevel ? maxLevel - backLevel - back : 0));
@@ -806,18 +847,17 @@ export default defineLook({
                 }
               }
             }
-            c = toned(STOCK[best]);
+            c = toned(stockPapers[best]);
             break;
           }
           case 'kraft':
             c = toned(paper === accentPaper ? accent : ramp(KRAFT, clamp01(brightness * 1.15 - 0.05 + (f - 0.5) * 0.12)));
             break;
           case 'tonal':
-            c = toned(hsl(hue + (brightness - 0.5) * 40, (0.5 - f * 0.18 + (thing ? 0.12 : 0)) * vivid, clamp01(0.16 + 0.44 * f + (brightness - 0.5) * 0.6)));
+            c = toned(hsl(hue + (brightness - 0.5) * 40, (0.5 - f * 0.18 + (thing ? 0.12 : 0)) * tinted, clamp01(0.16 + 0.44 * f + (brightness - 0.5) * 0.6)));
             break;
           case 'horizon': {
-            const stops = DUSK_COLD.map((cold, i) => lerp3(cold, DUSK_WARM[i], mood.warmth));
-            c = toned(saturate(ramp(stops, clamp01(f * 0.55 + (brightness - 0.5) * 0.5 + (thing ? 0.2 : 0.1))), vivid));
+            c = toned(saturate(ramp(horizonStops, clamp01(f * 0.55 + (brightness - 0.5) * 0.5 + (thing ? 0.2 : 0.1))), vivid));
             break;
           }
           case 'white': {
@@ -830,7 +870,7 @@ export default defineLook({
             const v = thing
               ? 0.06 + 0.05 * f + brightness * 0.05 + (tn === 2 ? 0.05 : tn === 0 ? -0.02 : 0)
               : 0.2 + 0.14 * f + brightness * 0.08 + (tn === 0 ? -0.07 : 0);
-            c = hsl(hue + 30, thing ? 0.25 : 0.45 * vivid, v);
+            c = hsl(hue + 30, (thing ? 0.25 : 0.45 * vivid) * (inkPaint ? tinted / vivid : 1), v);
           }
         }
       }

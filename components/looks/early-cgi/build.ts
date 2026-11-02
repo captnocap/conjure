@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score } from '@conjure/kit';
+import { type Palette, type PaletteRole, type RGB as Paint, choice, clamp01, defineLook, mix, paintIsMetal, rekey, rekeyOne, score } from '@conjure/kit';
 
 /**
  * Early CGI: the frame is re-rendered the way a 1990s machine would have drawn it.
@@ -18,11 +18,11 @@ type RGB = [number, number, number];
 type Vec = [number, number, number];
 
 const SCHEMES = {
-  juggler: 'Cobalt sky paling to a misty horizon over a green and yellow checkerboard: the classic home-computer raytracing demo, with green phosphor wireframes.',
-  sunset: 'A synthetic sunset, violet through rose to apricot, over a black and magenta checkerboard, with white wireframes.',
-  studio: 'A teal graphics-lab backdrop over a black and white checkerboard, with crisp white wireframes.',
-  corporate: 'A navy void with a gold horizon over cobalt and silver tiles: a corporate logo flythrough, with amber wireframes.',
-  desert: 'A dusty rust sky over terracotta and sand tiles: a planetary-probe animation, with cyan wireframes.',
+  juggler: 'A deep sky paling to a misty horizon over a bright two-colour checkerboard: the classic home-computer raytracing demo, with glowing phosphor wireframes.',
+  sunset: 'A synthetic sunset sweeping through three hues to a pale glow, over a black and vivid checkerboard, with white wireframes.',
+  studio: 'A cool graphics-lab backdrop over a black and white checkerboard, with crisp white wireframes.',
+  corporate: 'A dark void with a glowing horizon over saturated and silver tiles: a corporate logo flythrough, with bright wireframes.',
+  desert: 'A dusty warm sky over earthy and pale tiles: a planetary-probe animation, with contrasting wireframes.',
 } as const;
 type SchemeKey = keyof typeof SCHEMES;
 
@@ -33,6 +33,32 @@ const SCHEME_COLOURS: Record<SchemeKey, { zenith: string; mid: string; horizon: 
   corporate: { zenith: '#030820', mid: '#123172', horizon: '#eab64e', tileA: '#1d409a', tileB: '#bcc6d0', wire: '#ffb22e', panel: '#8d8673' },
   desert: { zenith: '#5e2614', mid: '#bd6236', horizon: '#f4c890', tileA: '#8e3c22', tileB: '#e3c597', wire: '#62e8ff', panel: '#a48d76' },
 };
+
+/**
+ * Under the picture's palette each scheme keeps its tonal design: the sky gradient takes the ground,
+ * the checkerboard's lead tile (and corporate's horizon glow) the ink, its other tile the second, and
+ * wireframes glow in the ink. Black and white tiles, white wires and silver stay as they are.
+ */
+const SCHEME_ROLES: Record<SchemeKey, Partial<Record<'zenith' | 'mid' | 'horizon' | 'tileA' | 'tileB', PaletteRole>> & { wire?: boolean }> = {
+  juggler: { zenith: 'ground', mid: 'ground', horizon: 'ground', tileA: 'second', tileB: 'ink', wire: true },
+  sunset: { zenith: 'ground', mid: 'ground', horizon: 'ground', tileB: 'ink' },
+  studio: { zenith: 'ground', mid: 'ground', horizon: 'ground' },
+  corporate: { zenith: 'ground', mid: 'ground', horizon: 'ink', tileA: 'second', wire: true },
+  desert: { zenith: 'ground', mid: 'ground', horizon: 'ground', tileA: 'ink', tileB: 'second', wire: true },
+};
+const hexPaint = (h: string): Paint => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const paintHexOf = (c: Paint) => `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+function schemeIn(key: SchemeKey, palette: Palette | undefined) {
+  const scheme = SCHEME_COLOURS[key];
+  if (!palette) return scheme;
+  const { wire, ...roles } = SCHEME_ROLES[key];
+  const sky = rekey({ zenith: hexPaint(scheme.zenith), mid: hexPaint(scheme.mid), horizon: hexPaint(scheme.horizon), tileA: hexPaint(scheme.tileA), tileB: hexPaint(scheme.tileB) }, palette, roles);
+  return {
+    zenith: paintHexOf(sky.zenith), mid: paintHexOf(sky.mid), horizon: paintHexOf(sky.horizon), tileA: paintHexOf(sky.tileA), tileB: paintHexOf(sky.tileB),
+    wire: wire ? paintHexOf(rekeyOne(hexPaint(scheme.wire), palette, 'ink')) : scheme.wire,
+    panel: paintHexOf(rekeyOne(hexPaint(scheme.panel), palette, 'ground')),
+  };
+}
 
 const VGA: RGB[] = [
   [0, 0, 0], [0, 0, 170], [0, 170, 0], [0, 170, 170], [170, 0, 0], [170, 0, 170], [170, 85, 0], [170, 170, 170],
@@ -189,7 +215,7 @@ export default defineLook({
       wireframe: 'A wireframe render: glowing line meshes of every surface on a black screen, with flat-shaded polygons filling in row by row from the top.',
       cdrom: 'An early CD-ROM render: moody pre-rendered rooms with marble floors and spotlight pools, crushed to a dithered 256-colour palette with banding in every gradient.',
     }),
-    scheme: choice('Which colours is the synthetic world built from?', SCHEMES),
+    scheme: choice('What character has the synthetic world\u2019s colour scheme? Its colours come from the picture\u2019s palette.', SCHEMES),
     material: choice('What are the objects made of?', {
       plastic: 'Everything is smooth glossy plastic in its own colours, each with a hard white highlight: toy-like and new.',
       chrome: 'The main object is mirror chrome reflecting the sky and the checkerboard; the rest stay plastic.',
@@ -249,7 +275,11 @@ export default defineLook({
     const wireMode = tradition === 'wireframe';
     const cdrom = tradition === 'cdrom';
     const palette = cdrom && (a.palette === 'millions' || a.palette === 'thousands') ? 'adaptive' : a.palette;
-    const scheme = SCHEME_COLOURS[a.scheme];
+    const scheme = schemeIn(a.scheme, context.palette);
+    // Gold stays gold unless the palette's ink is itself a metal.
+    const gold: Vec = context.palette && paintIsMetal(context.palette.ink)
+      ? (() => { const g = rekeyOne([srgb(GOLD[0]), srgb(GOLD[1]), srgb(GOLD[2])].map(Math.round) as unknown as Paint, context.palette, 'ink').map((v) => TO_LIN[v]); const peak = Math.max(...g, 1e-3); return [g[0] / peak, g[1] / peak, g[2] / peak]; })()
+      : GOLD;
     const zenith = hexLin(scheme.zenith), midSky = hexLin(scheme.mid), horizon = hexLin(scheme.horizon);
     let tileA = hexLin(scheme.tileA), tileB = hexLin(scheme.tileB);
     if (cdrom) {
@@ -729,7 +759,7 @@ export default defineLook({
           const bdv = Math.max(0, dot(bn, Vd));
           rv[0] = 2 * bdv * bn[0] - Vd[0]; rv[1] = 2 * bdv * bn[1] - Vd[1]; rv[2] = 2 * bdv * bn[2] - Vd[2];
           env(rv, e3, i);
-          const tint: Vec = kind === 'gold' ? GOLD : [STEEL[0] * mix(1, ar * 1.6, 0.2), STEEL[1] * mix(1, ag * 1.6, 0.2), STEEL[2] * mix(1, ab * 1.6, 0.2)];
+          const tint: Vec = kind === 'gold' ? gold : [STEEL[0] * mix(1, ar * 1.6, 0.2), STEEL[1] * mix(1, ag * 1.6, 0.2), STEEL[2] * mix(1, ab * 1.6, 0.2)];
           // Polished metal shows a deeper, contrastier world than the one around it, brightening at the rim.
           const dim = (0.7 + 0.3 * sh) * mix(0.82, 1.1, Math.pow(1 - bdv, 3));
           // Gold keeps mostly its own colour; steel lets the world's colours through.
@@ -802,7 +832,7 @@ export default defineLook({
         dir[0] = vx - 2 * vn * NX[i]; dir[1] = vy - 2 * vn * NY[i]; dir[2] = vz - 2 * vn * NZ[i];
         const hit = march(i, dir, id[i]);
         if (hit < 0) continue;
-        const o = i * 3, f = marchFade * 0.85, tint = mirror[i] === 2 ? GOLD : STEEL;
+        const o = i * 3, f = marchFade * 0.85, tint = mirror[i] === 2 ? gold : STEEL;
         img[o] = mix(img[o], img[hit * 3] * tint[0], f); img[o + 1] = mix(img[o + 1], img[hit * 3 + 1] * tint[1], f); img[o + 2] = mix(img[o + 2], img[hit * 3 + 2] * tint[2], f);
       }
     }

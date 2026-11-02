@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Glomerular afferent efferent vascular pole", "summary": "Afferent and efferent vessels join a retained loop network at a common vascular pole with actual open lumens. Paired vessels feed a genuinely connected retained capillary network. Geometry and relative calibers are schematic teaching choices, not a hemodynamic simulation or a venous outlet.", "scales": ["macro", "tabletop"]});

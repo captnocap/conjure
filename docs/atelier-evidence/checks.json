@@ -1,0 +1,152 @@
+{
+  "unit": {
+    "original": {
+      "tests": 10248,
+      "pass": 10248,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "staging": {
+      "tests": 10237,
+      "pass": 10237,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    }
+  },
+  "build": {
+    "original": {
+      "typecheck": "passed as prerequisite of vite build",
+      "build": "passed",
+      "duration": "1m 18s"
+    },
+    "staging": {
+      "typecheck": "passed as prerequisite of vite build",
+      "build": "passed",
+      "duration": "59.90s"
+    }
+  },
+  "ui": {
+    "styles": {
+      "passed": true,
+      "checks": 7,
+      "providerCalls": 0,
+      "names": [
+        "all-families-in-one-open-cycle-and-repeatable-cached-replay",
+        "svg-reconsults-per-look-and-reuses-repeat-look",
+        "pinned-look-and-pinned-family-remain-stable",
+        "typed-explicit-style-keeps-its-medium-and-tours-treatments",
+        "explicit-look-option-skips-style-selection",
+        "style-failure-leaves-no-routing-or-detail-requests-running",
+        "actual-tree-family-and-look-pins-replace-each-other-and-survive-roll"
+      ]
+    },
+    "requests": {
+      "passed": true,
+      "providerCalls": 0,
+      "errors": [],
+      "galleryIntercepted": true,
+      "requestCount": 43,
+      "questionCount": 1820
+    },
+    "layers": {
+      "passed": true,
+      "checks": 15,
+      "modelRequests": 0,
+      "names": [
+        "automatic-typed-design-preview-png-and-gallery",
+        "look-chooser-and-free-study",
+        "design-tree-branch-and-release",
+        "automatic-design-roll-and-first-choice-reproducibility",
+        "four-vector-recipes",
+        "layer-visibility-and-paint-order",
+        "seed-reproducibility-opacity-and-colors",
+        "density-transform-blend-and-captured-placement",
+        "add-and-remove-layer",
+        "transparent-and-composed-svg-downloads",
+        "layered-png-and-scene-print-preservation",
+        "mobile-layer-studio",
+        "second-new-look-study",
+        "clear-stack",
+        "look-url-with-automatic-design"
+      ]
+    },
+    "atelierLook": {
+      "passed": true,
+      "rolls": 6
+    }
+  },
+  "customMaterialProfiles": {
+    "customShaderKinds": [
+      "RawShaderMaterial",
+      "ShaderMaterial"
+    ],
+    "actualGpuCases": 2,
+    "sourceFactoriesUnchanged": 22,
+    "priorSceneFixturesUseNativeProfiles": [
+      "perspective",
+      "room",
+      "street",
+      "tabletop",
+      "topology"
+    ],
+    "nativePbrUnchanged": true,
+    "baseline": {
+      "method": "Installed pre-fix comparison passed before guarded integration; repeatable baseline reconstructs that function by removing only the three validated ordinal additions.",
+      "removedFragments": [
+        "const customInstances=new Map;",
+        "if((source.isShaderMaterial||source.isRawShaderMaterial)&&!customInstances.has(original))customInstances.set(original,customInstances.size+1);",
+        "customInstance:customInstances.get(original),"
+      ],
+      "beforeFunctionSha256": "3d21173f9350afb276074f7f8157bbbd9dfbfa0430aade4c766ed2c65c933c22",
+      "afterFunctionSha256": "25d6f81f7c7bd19b0b9add7d6d135aaa5e43850f21037bcef4fc21cb6d96b4ab"
+    },
+    "gpuReport": "capture/custom-shader-profiles.json",
+    "parityReport": "capture/custom-shader-native-parity.json",
+    "image": "images/custom-shader-actual2color.png",
+    "initialAuditDiagnostic": {
+      "report": "capture/custom-shader-audit-initial.json",
+      "passed": false,
+      "reason": "Instrumentation imported a second Vite CaptureRig class and observed zero actual fixture captures; the final proof imports the loaded module identity.",
+      "customGpuCasesPassed": 2,
+      "missedFixtureCaptures": 5,
+      "countsTowardFinalVerification": false
+    }
+  },
+  "sourceRegression": {
+    "passed": [
+      "depth",
+      "edges",
+      "linework",
+      "sections",
+      "voxels",
+      "contact-geometry",
+      "clean-studies",
+      "clean-surfaces",
+      "spectral-film",
+      "naturalist-plate",
+      "game-spatial-studies",
+      "material-visibility",
+      "mixer-arithmetic",
+      "mixer-lifecycle",
+      "mixer-async"
+    ],
+    "identityGateFailure": [
+      "contact-worker"
+    ],
+    "reason": "Strict historical function/descriptor SHA-256 gate rejects the declared Conjure adaptations."
+  },
+  "materials": {
+    "renders": 22,
+    "repeats": 6,
+    "stableMemory": {
+      "geometries": 24,
+      "textures": 7
+    },
+    "passed": true
+  },
+  "installedFiles": 96
+}

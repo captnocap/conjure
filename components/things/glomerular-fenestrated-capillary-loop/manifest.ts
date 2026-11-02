@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Glomerular fenestrated capillary loop", "summary": "A retained capillary loop has a continuous lumen, genuine endothelial fenestrae and an exposed basement-membrane segment. Enlarged fenestrae are real through-openings without invented diaphragms. The retained outer basement membrane is distinct; this is a schematic capillary-wall teaching section.", "scales": ["macro", "tabletop"]});

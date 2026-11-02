@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Radiolarian spicule lattice fragment", "summary": "A spherical or conical skeletal lattice has open cells and continuous attached radial spines. A magnified marine-snow specimen: sinking organic matter, open biological skeletons and connected collection hardware.", "scales": ["macro", "tabletop"]});

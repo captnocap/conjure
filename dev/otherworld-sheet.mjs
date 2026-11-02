@@ -2,6 +2,7 @@
 // node dev/otherworld-sheet.mjs <gallery-entry.json> <out-dir> [ink] [depth]
 // node dev/otherworld-sheet.mjs <gallery-entry.json> <out-dir> --vacui [reach]
 // node dev/otherworld-sheet.mjs <gallery-entry.json> <out-dir> --forms [reach] [fill]   (macro form × ink)
+// node dev/otherworld-sheet.mjs <gallery-entry.json> <out-dir> --doodles [reach]       (the glyph fill with each doodle set)
 // Writes <out-dir>/<variant>.jpg for each effect (the dead-space pass off), or with --vacui for each
 // dead-space fill and grain (the otherworld off). The model is mocked; nothing is saved to the gallery.
 import assert from 'node:assert/strict';
@@ -13,12 +14,16 @@ const base = process.env.CONJURE_URL ?? 'http://127.0.0.1:3400';
 const [entryPath, out, ink = 'own', depth = '0.5'] = process.argv.slice(2);
 if (!entryPath || !out) throw new Error('usage: node dev/otherworld-sheet.mjs <gallery-entry.json> <out-dir> [ink] [depth]');
 const RIFTS = ['plate', 'echo', 'tear', 'wireframe', 'portal', 'sky', 'trails', 'colossus'];
-const vacuiMode = ink === '--vacui', formsMode = ink === '--forms';
+const vacuiMode = ink === '--vacui', formsMode = ink === '--forms', doodlesMode = ink === '--doodles';
+// The doodle sets of engine/doodles.ts; the dead-space pass is pinned to machinery elsewhere on this sheet, as older pictures drew.
+const DOODLE_SETS = ['machinery', 'hieroglyphs', 'ascii', 'anatomy', 'furniture', 'buildings', 'nature', 'gems', 'flowers', 'sacred', 'contours', 'fractals', 'fungi', 'notebook'];
 const fillArg = process.argv[6] ?? 'glyphs';
-const VARIANTS = formsMode
-  ? ['land', 'skull', 'eye'].flatMap((form) => ['print', 'graphite', 'blacklight'].map((tint) => ({ name: `${form}-${tint}`, pins: { 'direction::rift': 'none', 'direction::vacui': fillArg, 'direction::vacuiGrain': 'hug', 'direction::vacuiReach': Number(depth), 'direction::vacuiForm': form, 'direction::vacuiInk': tint, 'direction::vacuiDrip': form === 'skull' } })))
+const VARIANTS = doodlesMode
+  ? DOODLE_SETS.map((set) => ({ name: `doodles-${set}`, pins: { 'direction::rift': 'none', 'direction::vacui': 'glyphs', 'direction::vacuiGrain': 'hug', 'direction::vacuiReach': Number(depth), 'direction::vacuiForm': 'land', 'direction::vacuiInk': 'print', 'direction::vacuiDrip': false, 'direction::vacuiDoodles': set } }))
+  : formsMode
+  ? ['land', 'skull', 'eye'].flatMap((form) => ['print', 'graphite', 'blacklight'].map((tint) => ({ name: `${form}-${tint}`, pins: { 'direction::rift': 'none', 'direction::vacui': fillArg, 'direction::vacuiGrain': 'hug', 'direction::vacuiReach': Number(depth), 'direction::vacuiForm': form, 'direction::vacuiInk': tint, 'direction::vacuiDrip': form === 'skull', 'direction::vacuiDoodles': 'machinery' } })))
   : vacuiMode
-  ? ['tissue', 'terrain', 'lace', 'glyphs'].flatMap((fill) => ['hug', 'halo', 'even'].map((grain) => ({ name: `${fill}-${grain}`, pins: { 'direction::rift': 'none', 'direction::vacui': fill, 'direction::vacuiGrain': grain, 'direction::vacuiReach': Number(depth), 'direction::vacuiForm': 'land', 'direction::vacuiInk': 'print', 'direction::vacuiDrip': false } })))
+  ? ['tissue', 'terrain', 'lace', 'glyphs'].flatMap((fill) => ['hug', 'halo', 'even'].map((grain) => ({ name: `${fill}-${grain}`, pins: { 'direction::rift': 'none', 'direction::vacui': fill, 'direction::vacuiGrain': grain, 'direction::vacuiReach': Number(depth), 'direction::vacuiForm': 'land', 'direction::vacuiInk': 'print', 'direction::vacuiDrip': false, 'direction::vacuiDoodles': 'machinery' } })))
   : RIFTS.map((rift) => ({ name: rift, pins: { 'direction::vacui': 'none', 'direction::rift': rift, 'direction::riftDepth': Number(depth), 'direction::riftInk': ink } }));
 const entry = JSON.parse(readFileSync(entryPath, 'utf8'));
 const force = {};
@@ -45,6 +50,14 @@ if (entry.look) force['direction::look'] = entry.look.id;
 for (const owner of [entry.world, entry.look, ...(entry.cast ?? [])].filter(Boolean))
   for (const [key, value] of Object.entries(owner.answers ?? {})) force[`${owner.id}::${key}`] = value;
 for (const member of entry.cast ?? []) force[`direction::cast:${member.id}`] = true;
+// Entries saved before materials were asked keep every surface as built; those saved before the
+// materialize pass existed print flat, as they did.
+if (!(entry.rulings ?? []).some((ruling) => ruling.name === 'materialBody' || ruling.name === 'materialSky')) {
+  for (const name of ['materialBody', 'materialSky']) force[`${entry.world.id}::${name}`] = 'as-made';
+  for (const member of entry.cast ?? []) force[`${member.id}::materialBody`] = 'as-made';
+}
+force['direction::materialize'] = entry.materialize ? entry.materialize.weight : 'none';
+
 for (const [key, value] of Object.entries(entry.design?.answers ?? {})) force[`design::${key}`] = value;
 
 const hash = (text) => [...text].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261);

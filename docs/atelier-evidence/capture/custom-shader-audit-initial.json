@@ -1,0 +1,257 @@
+{
+  "started": "2026-10-30T13:41:20.044Z",
+  "base": "http://127.0.0.1:3400",
+  "size": 384,
+  "completed": true,
+  "passed": false,
+  "problems": [
+    "tabletop: CaptureRig instrumentation did not observe the actual fixture capture.",
+    "room: CaptureRig instrumentation did not observe the actual fixture capture.",
+    "street: CaptureRig instrumentation did not observe the actual fixture capture.",
+    "perspective: CaptureRig instrumentation did not observe the actual fixture capture.",
+    "topology: CaptureRig instrumentation did not observe the actual fixture capture."
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "blockedRequests": [],
+  "cases": [
+    {
+      "kind": "ShaderMaterial",
+      "sameProgram": true,
+      "first": {
+        "tokens": [
+          1,
+          2
+        ],
+        "owners": [
+          2,
+          2
+        ],
+        "probes": [
+          {
+            "side": "left",
+            "expectedLinear": [
+              0.8,
+              0.1,
+              0.15
+            ],
+            "albedo": [
+              204,
+              26,
+              38,
+              255
+            ],
+            "color": [
+              231,
+              89,
+              108,
+              255
+            ],
+            "token": 1,
+            "owner": 2
+          },
+          {
+            "side": "right",
+            "expectedLinear": [
+              0.1,
+              0.65,
+              0.25
+            ],
+            "albedo": [
+              26,
+              166,
+              64,
+              255
+            ],
+            "color": [
+              89,
+              211,
+              137,
+              255
+            ],
+            "token": 2,
+            "owner": 2
+          }
+        ],
+        "profiles": [
+          "",
+          "{\"type\":\"ShaderMaterial\",\"name\":\"\",\"source\":null,\"customInstance\":1,\"named\":null,\"transmission\":null,\"colors\":[null,null,null,null,null,null],\"values\":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,1,0,false,false,0,null],\"maps\":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],\"program\":\"onBeforeCompile() {\\n  }\",\"defines\":{},\"vertex\":\"void main(){ gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }\",\"fragment\":\"precision highp float;\\nuniform vec3 pigment;\\nvec3 displayColor(vec3 c){ return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c)); }\\nvoid main(){ gl_FragColor = vec4(displayColor(pigment), 1.0); }\"}",
+          "{\"type\":\"ShaderMaterial\",\"name\":\"\",\"source\":null,\"customInstance\":2,\"named\":null,\"transmission\":null,\"colors\":[null,null,null,null,null,null],\"values\":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,1,0,false,false,0,null],\"maps\":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],\"program\":\"onBeforeCompile() {\\n  }\",\"defines\":{},\"vertex\":\"void main(){ gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }\",\"fragment\":\"precision highp float;\\nuniform vec3 pigment;\\nvec3 displayColor(vec3 c){ return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c)); }\\nvoid main(){ gl_FragColor = vec4(displayColor(pigment), 1.0); }\"}"
+        ],
+        "colorHash": "016eef61",
+        "albedoHash": "e6f9c6e5",
+        "transmissionHash": "72223b25"
+      },
+      "repeat": {
+        "sameTokens": true,
+        "sameProfiles": true,
+        "samePixels": true
+      },
+      "rebuilt": {
+        "newInstances": true,
+        "sameTokens": true,
+        "sameProfiles": true,
+        "samePixels": true
+      },
+      "sharedInstance": {
+        "tokens": [
+          1,
+          1
+        ],
+        "singleProfile": true,
+        "reusedTokenMatches": true,
+        "samePigment": true
+      },
+      "restore": {
+        "sameTokens": true,
+        "sameProfiles": true,
+        "samePixels": true
+      },
+      "problems": []
+    },
+    {
+      "kind": "RawShaderMaterial",
+      "sameProgram": true,
+      "first": {
+        "tokens": [
+          1,
+          2
+        ],
+        "owners": [
+          2,
+          2
+        ],
+        "probes": [
+          {
+            "side": "left",
+            "expectedLinear": [
+              0.8,
+              0.1,
+              0.15
+            ],
+            "albedo": [
+              204,
+              26,
+              38,
+              255
+            ],
+            "color": [
+              231,
+              89,
+              108,
+              255
+            ],
+            "token": 1,
+            "owner": 2
+          },
+          {
+            "side": "right",
+            "expectedLinear": [
+              0.1,
+              0.65,
+              0.25
+            ],
+            "albedo": [
+              26,
+              166,
+              64,
+              255
+            ],
+            "color": [
+              89,
+              211,
+              137,
+              255
+            ],
+            "token": 2,
+            "owner": 2
+          }
+        ],
+        "profiles": [
+          "",
+          "{\"type\":\"RawShaderMaterial\",\"name\":\"\",\"source\":null,\"customInstance\":1,\"named\":null,\"transmission\":null,\"colors\":[null,null,null,null,null,null],\"values\":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,1,0,false,false,0,null],\"maps\":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],\"program\":\"onBeforeCompile() {\\n  }\",\"defines\":{},\"vertex\":\"precision highp float;\\nattribute vec3 position;\\nuniform mat4 projectionMatrix;\\nuniform mat4 modelViewMatrix;\\nvoid main(){ gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }\",\"fragment\":\"precision highp float;\\nuniform vec3 pigment;\\nvec3 displayColor(vec3 c){ return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c)); }\\nvoid main(){ gl_FragColor = vec4(displayColor(pigment), 1.0); }\"}",
+          "{\"type\":\"RawShaderMaterial\",\"name\":\"\",\"source\":null,\"customInstance\":2,\"named\":null,\"transmission\":null,\"colors\":[null,null,null,null,null,null],\"values\":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,1,0,false,false,0,null],\"maps\":[null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],\"program\":\"onBeforeCompile() {\\n  }\",\"defines\":{},\"vertex\":\"precision highp float;\\nattribute vec3 position;\\nuniform mat4 projectionMatrix;\\nuniform mat4 modelViewMatrix;\\nvoid main(){ gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }\",\"fragment\":\"precision highp float;\\nuniform vec3 pigment;\\nvec3 displayColor(vec3 c){ return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c)); }\\nvoid main(){ gl_FragColor = vec4(displayColor(pigment), 1.0); }\"}"
+        ],
+        "colorHash": "016eef61",
+        "albedoHash": "e6f9c6e5",
+        "transmissionHash": "72223b25"
+      },
+      "repeat": {
+        "sameTokens": true,
+        "sameProfiles": true,
+        "samePixels": true
+      },
+      "rebuilt": {
+        "newInstances": true,
+        "sameTokens": true,
+        "sameProfiles": true,
+        "samePixels": true
+      },
+      "sharedInstance": {
+        "tokens": [
+          1,
+          1
+        ],
+        "singleProfile": true,
+        "reusedTokenMatches": true,
+        "samePigment": true
+      },
+      "restore": {
+        "sameTokens": true,
+        "sameProfiles": true,
+        "samePixels": true
+      },
+      "problems": []
+    }
+  ],
+  "fixtureProfiles": [
+    {
+      "fixture": "tabletop",
+      "captures": 0,
+      "types": [],
+      "customTypes": [],
+      "problems": [
+        "CaptureRig instrumentation did not observe the actual fixture capture."
+      ]
+    },
+    {
+      "fixture": "room",
+      "captures": 0,
+      "types": [],
+      "customTypes": [],
+      "problems": [
+        "CaptureRig instrumentation did not observe the actual fixture capture."
+      ]
+    },
+    {
+      "fixture": "street",
+      "captures": 0,
+      "types": [],
+      "customTypes": [],
+      "problems": [
+        "CaptureRig instrumentation did not observe the actual fixture capture."
+      ]
+    },
+    {
+      "fixture": "perspective",
+      "captures": 0,
+      "types": [],
+      "customTypes": [],
+      "problems": [
+        "CaptureRig instrumentation did not observe the actual fixture capture."
+      ]
+    },
+    {
+      "fixture": "topology",
+      "captures": 0,
+      "types": [],
+      "customTypes": [],
+      "problems": [
+        "CaptureRig instrumentation did not observe the actual fixture capture."
+      ]
+    }
+  ],
+  "image": "actual2color.png",
+  "threeModule": "/node_modules/.vite/deps/three.js?v=ab1cdfb6",
+  "finished": "2026-10-30T13:41:28.808Z"
+}

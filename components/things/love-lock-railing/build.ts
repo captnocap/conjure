@@ -60,6 +60,13 @@ export default defineThing({
     }),
     ribbons: noul('Are there ribbons tied among the locks?'),
     lamp: noul('Does the middle post carry a bridge lamp?'),
+    lockFormat: choice('What shape are the ordinary lock bodies?', { square: 'Squat rectangular padlocks.', tall: 'Long narrow padlocks.', round: 'Rounded oval lock bodies.', disc: 'Flat round disc locks.' }),
+    wirePitch: choice('How is the wire infill spaced?', { fine: 'A fine rectangular grid.', square: 'A broader square grid.', wide: 'Wide rectangles with close horizontal wires.', upright: 'Narrow upright rectangles.' }),
+    postCaps: choice('How are the outer posts capped?', { ball: 'Round iron balls.', acorn: 'Pointed acorn finials.', pyramid: 'Square pyramidal caps.', flat: 'Flat square plates.' }),
+    handrail: choice('What caps the top rail?', { timber: 'A round dark wooden handrail.', brass: 'A polished round brass rail.', iron: 'A heavier black iron pipe.', square: 'A broad squared wooden handrail.' }),
+    footplates: choice('How are the posts fixed to the kerb?', { plain: 'Plain buried post feet.', bolts: 'Square plates with four bolts.', braces: 'Small triangular side braces.', collars: 'Raised iron collars around the feet.' }),
+    deckEnd: choice('How is the outer edge of the deck finished?', { plain: 'Exposed plank ends.', iron: 'A dark iron binding strip.', pale: 'A broad pale painted safety edge.', rivets: 'An iron edge with regularly spaced rivets.' }),
+    lowerGuard: choice('What runs along the lower part of the railing?', { none: 'No extra guard.', double: 'Two slim horizontal guard rails.', waves: 'A repeated low curved iron guard.', solid: 'A low solid iron kick plate.' }),
   },
 
   build(a, context) {
@@ -79,9 +86,15 @@ export default defineThing({
     // Posts and rails.
     for (const x of [-PW, 0, PW]) {
       s.box([0.07, H + 0.05, 0.07], [x, (H + 0.05) / 2 + 0.04, 0], iron);
-      if (x !== 0 || !a.lamp) s.ball([0.05, 0.05, 0.05], [x, H + 0.13, 0], iron, 10);
+      if(x!==0||!a.lamp){
+        if(a.postCaps==='ball')s.ball([.05,.05,.05],[x,H+.13,0],iron,10);
+        else if(a.postCaps==='acorn'){s.ball([.055,.04,.055],[x,H+.12,0],iron,10);s.cylinder(0,.05,.12,[x,H+.19,0],iron,12);}
+        else if(a.postCaps==='pyramid')s.cylinder(0,.085,.09,[x,H+.135,0],iron,4).rotation.y=Math.PI/4;
+        else s.box([.14,.025,.14],[x,H+.105,0],iron);
+      }
     }
-    s.rod([-PW - 0.1, H + 0.04, 0], [PW + 0.1, H + 0.04, 0], 0.035, s.material('#5a4630', { roughness: 0.5 }));
+    if(a.handrail==='square')s.box([PW*2+.2,.075,.12],[0,H+.04,0],s.material('#5a4630'));
+    else s.rod([-PW-.1,H+.04,0],[PW+.1,H+.04,0],a.handrail==='iron'?.05:.035,s.material(a.handrail==='brass'?'#bca25b':a.handrail==='iron'?'#252c29':'#5a4630',{metalness:a.handrail==='timber'?0:.65,roughness:.4}));
 
     let glassLamp: THREE.MeshStandardMaterial | null = null;
     if (a.lamp) {
@@ -131,8 +144,8 @@ export default defineThing({
         for (const y of [0.02, top - 0.02]) group.add(s.box([inside, 0.03, 0.03], [0, y, 0], s.material('#c9cdd0', { metalness: 0.8, roughness: 0.3 })));
       } else {
         const wires: Piece[] = [];
-        for (let x = -inside / 2; x <= inside / 2 + 0.001; x += inside / 16) wires.push({ at: [x, top / 2, 0], size: [0.007, top, 0.007], color: '#3a4846' });
-        for (let y = 0; y <= top + 0.001; y += top / 12) wires.push({ at: [0, y, 0], size: [inside, 0.007, 0.007], color: '#3a4846' });
+        for (let x = -inside / 2; x <= inside / 2 + 0.001; x += inside / ({fine:16,square:10,wide:7,upright:18}[a.wirePitch])) wires.push({ at: [x, top / 2, 0], size: [0.007, top, 0.007], color: '#3a4846' });
+        for (let y = 0; y <= top + 0.001; y += top / ({fine:12,square:8,wide:14,upright:5}[a.wirePitch])) wires.push({ at: [0, y, 0], size: [inside, 0.007, 0.007], color: '#3a4846' });
         pieces(new THREE.BoxGeometry(1, 1, 1), s.material('#ffffff', { metalness: 0.5, roughness: 0.5 }), wires, group);
       }
 
@@ -148,11 +161,11 @@ export default defineThing({
         const z = face * (0.018 + random() * random() * a.crowd * 0.09);
         const rot: V3 = [face * (0.1 + random() * 0.35), (random() - 0.5) * 0.9, (random() - 0.5) * 0.7];
         const colour = new THREE.Color(pick(palette)).lerp(new THREE.Color('#7a4a2a'), mood.wear * random() * 0.7);
-        bodies.push({ at: [x, y, z], size: [size, size * 0.85, size * 0.38], rot, color: colour });
+        bodies.push({ at: [x, y, z], size: [size*(a.lockFormat==='tall'?.72:1),size*(a.lockFormat==='tall'?1.2:.85),size*(a.lockFormat==='disc'?.22:.38)], rot, color: colour });
         shackles.push({ at: [x - Math.sin(rot[2]) * size * 0.5, y + Math.cos(rot[2]) * size * 0.5, z * 0.7], size: [size, size * 1.15, size], rot, color: '#b9bcc0' });
         if (!heaviest || (Math.abs(x) < 0.3 && y > 0.4 && y < 0.7 && face > 0)) heaviest = { x, y, z: Math.abs(z), group };
       }
-      pieces(new THREE.BoxGeometry(1, 1, 1), plain, bodies, group);
+      pieces(a.lockFormat==='round'||a.lockFormat==='disc'?new THREE.SphereGeometry(.5,a.lockFormat==='disc'?12:10,8):new THREE.BoxGeometry(1,1,1),plain,bodies,group);
       pieces(new THREE.TorusGeometry(0.3, 0.07, 5, 10, Math.PI), plain, shackles, group);
 
       if (a.ribbons && !replaced) {
@@ -247,6 +260,19 @@ export default defineThing({
       pen.rotation.set(0, random() * 3, Math.PI / 2, 'YXZ');
       s.cylinder(0.012, 0.012, 0.035, [gx + 0.12, 0.052, gz + 0.06], s.material('#18181a'), 10).rotation.x = Math.PI / 2;
     }
+
+    if(a.footplates!=='plain')for(const x of[-PW,0,PW]){
+      if(a.footplates==='bolts'){s.box([.18,.025,.18],[x,.1325,0],iron);for(const dx of[-.06,.06])for(const dz of[-.06,.06])s.cylinder(.012,.012,.018,[x+dx,.154,dz],plain,6);}
+      else if(a.footplates==='braces')for(const side of[-1,1])s.rod([x+side*.15,.125,0],[x,.35,0],.018,iron);
+      else s.box([.13,.12,.13],[x,.18,0],iron);
+    }
+    if(a.deckEnd!=='plain'){
+      s.box([PW*2+.5,.045,a.deckEnd==='pale'?.08:.025],[0,.0225,.9825],s.material(a.deckEnd==='pale'?'#ded7bf':'#3d4541'));
+      if(a.deckEnd==='rivets')for(let i=0;i<20;i++)s.ball([.009,.009,.005],[-1.45+i*.152,.023,.998],plain,6);
+    }
+    if(a.lowerGuard==='double')for(const y of[.24,.34])s.rod([-PW,y,-.07],[PW,y,-.07],.013,iron);
+    else if(a.lowerGuard==='solid')s.box([PW*2,.23,.014],[0,.255,-.07],iron);
+    else if(a.lowerGuard==='waves')for(let i=0;i<8;i++){const x=-PW+i*PW/4;s.tube([[x,.17,-.07],[x+PW/8,.33,-.07],[x+PW/4,.17,-.07]],.013,iron);}
 
     const wind = mix(0.2, 1.8, mood.energy), phases = sway.map(() => random() * 6);
     return s.finish({

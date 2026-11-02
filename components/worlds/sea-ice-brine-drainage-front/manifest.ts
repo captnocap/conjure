@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'world', "title": "Sea ice brine drainage front", "summary": "A permanent section through sea ice contains connected brine channels and a platelet underside above a clearly cut ocean interface. A permanent magnified sea-ice drainage model with actual channel voids, attached underside platelets and a retained ocean reference; polar freezing and field sampling.", "scales": ["landscape", "tabletop"]});

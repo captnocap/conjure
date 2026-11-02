@@ -1,0 +1,7601 @@
+{
+  "started": "2026-10-30T12:22:37.083Z",
+  "base": "http://127.0.0.1:3400",
+  "options": {
+    "materials": true,
+    "styles": true,
+    "finishes": true,
+    "scenes": [
+      "tabletop",
+      "room",
+      "street",
+      "perspective",
+      "topology"
+    ],
+    "only": null,
+    "lifecycle": true,
+    "geometry": true,
+    "timeout": 120000,
+    "out": "/home/siah/Documents/Codex/2026-10-30/task/evidence/final-renders"
+  },
+  "scenes": [
+    {
+      "name": "tabletop",
+      "fixture": {
+        "name": "tabletop",
+        "fixture": {
+          "world": "worlds/worktable",
+          "cast": [
+            "things/teapot",
+            "things/crystal-geode"
+          ],
+          "idea": "a teapot and a mineral on a worktable"
+        },
+        "reports": [
+          {
+            "id": "worlds/worktable",
+            "milliseconds": 1,
+            "error": null
+          },
+          {
+            "id": "things/teapot",
+            "milliseconds": 8,
+            "error": null
+          },
+          {
+            "id": "things/crystal-geode",
+            "milliseconds": 8,
+            "error": null
+          }
+        ],
+        "identities": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "topology": null,
+        "materialEvidence": null,
+        "camera": "orthographic",
+        "geometry": {
+          "source": "conjure",
+          "meshes": 172,
+          "triangles": 10980
+        },
+        "problems": []
+      },
+      "lifecycle": [
+        {
+          "check": "pre-aborted signal",
+          "passed": true,
+          "detail": "Rejected before drawing.",
+          "milliseconds": 304
+        },
+        {
+          "check": "in-flight worker cancellation",
+          "passed": true,
+          "detail": "Canceled a directional-color solve; next render follows.",
+          "milliseconds": 126
+        },
+        {
+          "check": "style switch and deterministic replay",
+          "passed": true,
+          "detail": "912f895b → 498b18fc → 912f895b",
+          "milliseconds": 4465
+        },
+        {
+          "check": "real look selector and Stage.develop",
+          "passed": true,
+          "detail": "84 studies present in base and overlay; Stage returned 2073600 bytes.",
+          "milliseconds": 2016
+        },
+        {
+          "check": "capture preservation",
+          "passed": true,
+          "detail": "84e0bdef",
+          "milliseconds": 42
+        }
+      ],
+      "geometry": [
+        {
+          "id": "sections",
+          "passed": true,
+          "original": "c8b1569f",
+          "changed": "bc2dfbee",
+          "changedFraction": 0.029996141975308643,
+          "milliseconds": 2717
+        },
+        {
+          "id": "voxels",
+          "passed": true,
+          "original": "75b295fd",
+          "changed": "cbca6d11",
+          "changedFraction": 0.11103973765432099,
+          "milliseconds": 1480
+        },
+        {
+          "id": "surface-dots",
+          "passed": true,
+          "original": "dcab3c33",
+          "changed": "c2fdfc36",
+          "changedFraction": 0.026782407407407408,
+          "milliseconds": 1958
+        },
+        {
+          "id": "thickness-exposure",
+          "passed": true,
+          "original": "9574297b",
+          "changed": "1c5874ba",
+          "changedFraction": 0.059008487654320985,
+          "milliseconds": 3880
+        },
+        {
+          "id": "section-ribs",
+          "passed": true,
+          "original": "ea3c5149",
+          "changed": "b7cf65b9",
+          "changedFraction": 0.04229552469135803,
+          "milliseconds": 2791
+        },
+        {
+          "id": "single-cutaway",
+          "passed": true,
+          "original": "a56a6d69",
+          "changed": "8f050951",
+          "changedFraction": 0.02326388888888889,
+          "milliseconds": 1839
+        },
+        {
+          "id": "interior-lattice",
+          "passed": true,
+          "original": "b1d4f798",
+          "changed": "3afd8307",
+          "changedFraction": 0.02722222222222222,
+          "milliseconds": 2687
+        },
+        {
+          "id": "chromatic-shadows",
+          "passed": true,
+          "original": "67975777",
+          "changed": "97f8c70b",
+          "changedFraction": 0.06703125,
+          "milliseconds": 4083
+        }
+      ],
+      "renders": [
+        {
+          "scene": "tabletop",
+          "id": "riso",
+          "milliseconds": 2219,
+          "problems": [],
+          "hash": "4076d68a",
+          "variance": 1377.7895298997028,
+          "changed": 1,
+          "colors": 70,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "woodcut",
+          "milliseconds": 1036,
+          "problems": [],
+          "hash": "e0eba470",
+          "variance": 343.1267939737809,
+          "changed": 0.9999980709876544,
+          "colors": 25,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "stipple",
+          "milliseconds": 1656,
+          "problems": [],
+          "hash": "ad089cf1",
+          "variance": 1814.4555046538517,
+          "changed": 1,
+          "colors": 36,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "loom",
+          "milliseconds": 1832,
+          "problems": [],
+          "hash": "92cfecb7",
+          "variance": 401.495596324763,
+          "changed": 0.9999922839506172,
+          "colors": 698,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "optical",
+          "milliseconds": 819,
+          "problems": [],
+          "hash": "7550f4ce",
+          "variance": 4295.555171325417,
+          "changed": 1,
+          "colors": 46,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "cyanotype",
+          "milliseconds": 696,
+          "problems": [],
+          "hash": "fef7a3fb",
+          "variance": 1401.8465680809368,
+          "changed": 1,
+          "colors": 409,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "contours",
+          "milliseconds": 493,
+          "problems": [],
+          "hash": "5fff2d3e",
+          "variance": 543.170563852982,
+          "changed": 1,
+          "colors": 7,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "frottage",
+          "milliseconds": 581,
+          "problems": [],
+          "hash": "4ae8b85e",
+          "variance": 471.2832330200981,
+          "changed": 1,
+          "colors": 321,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "cutpaper",
+          "milliseconds": 710,
+          "problems": [],
+          "hash": "78a431cf",
+          "variance": 2427.601923717619,
+          "changed": 1,
+          "colors": 169,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "reticulum",
+          "milliseconds": 1130,
+          "problems": [],
+          "hash": "7486e684",
+          "variance": 167.37435908714542,
+          "changed": 0.9999961419753086,
+          "colors": 308,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "luminous",
+          "milliseconds": 1089,
+          "problems": [],
+          "hash": "40051325",
+          "variance": 303.8974694438466,
+          "changed": 1,
+          "colors": 2993,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "scanner",
+          "milliseconds": 1102,
+          "problems": [],
+          "hash": "a22585db",
+          "variance": 147.13088553943726,
+          "changed": 1,
+          "colors": 168,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "depth",
+          "milliseconds": 987,
+          "problems": [],
+          "hash": "1d10b630",
+          "variance": 235.30583244830632,
+          "changed": 1,
+          "colors": 27,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "embroidery",
+          "milliseconds": 888,
+          "problems": [],
+          "hash": "e2dafeab",
+          "variance": 19.17002839284396,
+          "changed": 1,
+          "colors": 172,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "wash",
+          "milliseconds": 682,
+          "problems": [],
+          "hash": "fa8fcb4e",
+          "variance": 46.78875555414561,
+          "changed": 0.9999228395061729,
+          "colors": 875,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "architectural",
+          "milliseconds": 1442,
+          "problems": [],
+          "hash": "9676d356",
+          "variance": 229.75704583674087,
+          "changed": 0.9999961419753086,
+          "colors": 283,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "interference",
+          "milliseconds": 669,
+          "problems": [],
+          "hash": "2806a952",
+          "variance": 3333.5536499302398,
+          "changed": 1,
+          "colors": 604,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "photogram",
+          "milliseconds": 592,
+          "problems": [],
+          "hash": "9e8a600c",
+          "variance": 961.4165669237451,
+          "changed": 1,
+          "colors": 143,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "glass",
+          "milliseconds": 671,
+          "problems": [],
+          "hash": "c2a5507b",
+          "variance": 2754.5000945095235,
+          "changed": 1,
+          "colors": 1147,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "transfer",
+          "milliseconds": 5214,
+          "problems": [],
+          "hash": "76a6fc51",
+          "variance": 43.256244410484214,
+          "changed": 0.9916300154320987,
+          "colors": 698,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "volume",
+          "milliseconds": 1033,
+          "problems": [],
+          "hash": "af1f4497",
+          "variance": 439.4614634679012,
+          "changed": 1,
+          "colors": 3585,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "surface-dots",
+          "milliseconds": 1525,
+          "problems": [],
+          "hash": "f6e5ca42",
+          "variance": 123.52646801652736,
+          "changed": 0.9999903549382716,
+          "colors": 1153,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "mezzotint",
+          "milliseconds": 750,
+          "problems": [],
+          "hash": "dc7b3e8d",
+          "variance": 890.5074021393434,
+          "changed": 0.9999922839506172,
+          "colors": 261,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "impasto",
+          "milliseconds": 933,
+          "problems": [],
+          "hash": "482b8690",
+          "variance": 71.23771548829973,
+          "changed": 0.9992881944444445,
+          "colors": 1653,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "reaction",
+          "milliseconds": 804,
+          "problems": [],
+          "hash": "db97c57f",
+          "variance": 439.10971661869553,
+          "changed": 1,
+          "colors": 88,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "marbling",
+          "milliseconds": 635,
+          "problems": [],
+          "hash": "febd9d87",
+          "variance": 366.6528851208641,
+          "changed": 1,
+          "colors": 249,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "sections",
+          "milliseconds": 1289,
+          "problems": [],
+          "hash": "b5ccb06a",
+          "variance": 109.68270603103156,
+          "changed": 1,
+          "colors": 241,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "crackle",
+          "milliseconds": 817,
+          "problems": [],
+          "hash": "c3fd4c54",
+          "variance": 66.81439574842807,
+          "changed": 1,
+          "colors": 454,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "oilspot",
+          "milliseconds": 845,
+          "problems": [],
+          "hash": "60430b48",
+          "variance": 585.3641352643172,
+          "changed": 1,
+          "colors": 597,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "sabattier",
+          "milliseconds": 766,
+          "problems": [],
+          "hash": "7130f59a",
+          "variance": 42.51211024980148,
+          "changed": 0.999994212962963,
+          "colors": 262,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "relief",
+          "milliseconds": 1028,
+          "problems": [],
+          "hash": "b6b33921",
+          "variance": 6.5772443467139965,
+          "changed": 0.9999961419753086,
+          "colors": 192,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "interlace",
+          "milliseconds": 1099,
+          "problems": [],
+          "hash": "42c703ec",
+          "variance": 4239.6237728158885,
+          "changed": 0.9999961419753086,
+          "colors": 1299,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "voxels",
+          "milliseconds": 854,
+          "problems": [],
+          "hash": "75b295fd",
+          "variance": 170.07402420911967,
+          "changed": 0.9999807098765432,
+          "colors": 726,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "spectral",
+          "milliseconds": 1606,
+          "problems": [],
+          "hash": "639f5cfc",
+          "variance": 338.2541906748156,
+          "changed": 0.024035493827160494,
+          "colors": 1523,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "cel",
+          "milliseconds": 1074,
+          "problems": [],
+          "hash": "a045cce4",
+          "variance": 3901.7389295713,
+          "changed": 1,
+          "colors": 84,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "clear-line",
+          "milliseconds": 1063,
+          "problems": [],
+          "hash": "b332e519",
+          "variance": 259.8166860779311,
+          "changed": 0.9999421296296296,
+          "colors": 41,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "brush-cel",
+          "milliseconds": 1375,
+          "problems": [],
+          "hash": "6a3ca50d",
+          "variance": 3935.7692500516896,
+          "changed": 1,
+          "colors": 66,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "comic-dots",
+          "milliseconds": 1222,
+          "problems": [],
+          "hash": "182e1295",
+          "variance": 1975.3029769427194,
+          "changed": 1,
+          "colors": 95,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "expressive-ink",
+          "milliseconds": 1548,
+          "problems": [],
+          "hash": "929fa2b2",
+          "variance": 743.5638490526544,
+          "changed": 1,
+          "colors": 854,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "ink-bloom",
+          "milliseconds": 1101,
+          "problems": [],
+          "hash": "0d6cbe11",
+          "variance": 378.1789895937254,
+          "changed": 0.9999961419753086,
+          "colors": 450,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "ink-scrape",
+          "milliseconds": 1630,
+          "problems": [],
+          "hash": "a27d4e5e",
+          "variance": 127.20463328742335,
+          "changed": 1,
+          "colors": 546,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "ink-storm",
+          "milliseconds": 1428,
+          "problems": [],
+          "hash": "b01dfa3e",
+          "variance": 1042.2206550374976,
+          "changed": 0.9999980709876544,
+          "colors": 663,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "game-obra",
+          "milliseconds": 779,
+          "problems": [],
+          "hash": "92027ea5",
+          "variance": 677.8150247558528,
+          "changed": 1,
+          "colors": 2,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "game-disco",
+          "milliseconds": 1278,
+          "problems": [],
+          "hash": "dad3dd14",
+          "variance": 53.533178436849994,
+          "changed": 1,
+          "colors": 1488,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "game-okami",
+          "milliseconds": 826,
+          "problems": [],
+          "hash": "96eca8ad",
+          "variance": 460.1677086905256,
+          "changed": 1,
+          "colors": 1079,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "game-sable",
+          "milliseconds": 1280,
+          "problems": [],
+          "hash": "14deac7d",
+          "variance": 113.60137501301506,
+          "changed": 1,
+          "colors": 599,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "game-hylics",
+          "milliseconds": 919,
+          "problems": [],
+          "hash": "ae6db3f5",
+          "variance": 1152.978671222263,
+          "changed": 1,
+          "colors": 9,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "game-windwaker",
+          "milliseconds": 976,
+          "problems": [],
+          "hash": "e1e2d1c7",
+          "variance": 426.3396343478462,
+          "changed": 1,
+          "colors": 324,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "game-persona",
+          "milliseconds": 1172,
+          "problems": [],
+          "hash": "35f4b9f7",
+          "variance": 2864.954633113921,
+          "changed": 0.9999980709876544,
+          "colors": 63,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "game-inside",
+          "milliseconds": 1064,
+          "problems": [],
+          "hash": "78b83f3c",
+          "variance": 544.4531519577349,
+          "changed": 1,
+          "colors": 444,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "game-mirrorsedge",
+          "milliseconds": 862,
+          "problems": [],
+          "hash": "d8c0115e",
+          "variance": 4913.805019642277,
+          "changed": 1,
+          "colors": 416,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "game-viewfinder",
+          "milliseconds": 589,
+          "problems": [],
+          "hash": "7d1a9267",
+          "variance": 3569.5403226975286,
+          "changed": 1,
+          "colors": 302,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "surface-hatching",
+          "milliseconds": 2666,
+          "problems": [],
+          "hash": "a6c2905d",
+          "variance": 234.04689603506995,
+          "changed": 1,
+          "colors": 386,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "resonant-sand",
+          "milliseconds": 759,
+          "problems": [],
+          "hash": "d6dddea7",
+          "variance": 578.0700229951981,
+          "changed": 0.024033564814814813,
+          "colors": 638,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "contour-pools",
+          "milliseconds": 1239,
+          "problems": [],
+          "hash": "05630e81",
+          "variance": 4951.710527129959,
+          "changed": 1,
+          "colors": 2864,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "hooked-pen",
+          "milliseconds": 1601,
+          "problems": [],
+          "hash": "40114de5",
+          "variance": 199.60079433239298,
+          "changed": 1,
+          "colors": 70,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "naturalist-plate",
+          "milliseconds": 2064,
+          "problems": [],
+          "hash": "f7421431",
+          "variance": 77.87007666969293,
+          "changed": 1,
+          "colors": 777,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "electric-contour",
+          "milliseconds": 1833,
+          "problems": [],
+          "hash": "4e7bcd41",
+          "variance": 371.05538940118083,
+          "changed": 1,
+          "colors": 203,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "cut-print",
+          "milliseconds": 660,
+          "problems": [],
+          "hash": "872737ac",
+          "variance": 947.5980086199725,
+          "changed": 1,
+          "colors": 237,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "knife-paint",
+          "milliseconds": 702,
+          "problems": [],
+          "hash": "dd4a5587",
+          "variance": 47.89820863957357,
+          "changed": 1,
+          "colors": 1237,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "wax-resist",
+          "milliseconds": 1688,
+          "problems": [],
+          "hash": "020ea9b5",
+          "variance": 191.0554965264455,
+          "changed": 0.9999980709876544,
+          "colors": 417,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "directed-tesserae",
+          "milliseconds": 1006,
+          "problems": [],
+          "hash": "feb1b2d3",
+          "variance": 645.5005639178999,
+          "changed": 0.8918441358024691,
+          "colors": 1198,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "continuous-thread",
+          "milliseconds": 832,
+          "problems": [],
+          "hash": "50f20cfe",
+          "variance": 628.2104284170418,
+          "changed": 1,
+          "colors": 17,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "quilled-paper",
+          "milliseconds": 668,
+          "problems": [],
+          "hash": "b6715a80",
+          "variance": 123.46638562908629,
+          "changed": 0.9999961419753086,
+          "colors": 281,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "lifted-emulsion",
+          "milliseconds": 555,
+          "problems": [],
+          "hash": "f526c3c6",
+          "variance": 47.81388504867937,
+          "changed": 1,
+          "colors": 217,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "color-woodblock",
+          "milliseconds": 1238,
+          "problems": [],
+          "hash": "a37c86d3",
+          "variance": 324.7538443071244,
+          "changed": 1,
+          "colors": 711,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "typed-contours",
+          "milliseconds": 1561,
+          "problems": [],
+          "hash": "4ea55699",
+          "variance": 130.26532778027467,
+          "changed": 0.9999922839506172,
+          "colors": 55,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "faceted-planes",
+          "milliseconds": 1182,
+          "problems": [],
+          "hash": "be3649ab",
+          "variance": 30.06414791152929,
+          "changed": 0.04133487654320988,
+          "colors": 299,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "curved-paint",
+          "milliseconds": 2166,
+          "problems": [],
+          "hash": "fc8b9f43",
+          "variance": 35.36290703308623,
+          "changed": 0.14510030864197532,
+          "colors": 1037,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "translucent-tape",
+          "milliseconds": 1478,
+          "problems": [],
+          "hash": "5ae72bc8",
+          "variance": 251.9870223044927,
+          "changed": 1,
+          "colors": 150,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "thickness-exposure",
+          "milliseconds": 3660,
+          "problems": [],
+          "hash": "9574297b",
+          "variance": 55.21090663245349,
+          "changed": 1,
+          "colors": 105,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "copy-feedback",
+          "milliseconds": 1739,
+          "problems": [],
+          "hash": "7ba891d1",
+          "variance": 3203.3087621522427,
+          "changed": 1,
+          "colors": 256,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "section-ribs",
+          "milliseconds": 2103,
+          "problems": [],
+          "hash": "ea3c5149",
+          "variance": 1402.7270236167678,
+          "changed": 1,
+          "colors": 560,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "prismatic-exposure",
+          "milliseconds": 835,
+          "problems": [],
+          "hash": "3373d512",
+          "variance": 15.011631893590675,
+          "changed": 0.21847993827160495,
+          "colors": 1118,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "rank-streaks",
+          "milliseconds": 654,
+          "problems": [],
+          "hash": "cb8d7242",
+          "variance": 34.57822925787332,
+          "changed": 0.015084876543209877,
+          "colors": 699,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "pixel-clusters",
+          "milliseconds": 2910,
+          "problems": [],
+          "hash": "189ff475",
+          "variance": 26.96467917240807,
+          "changed": 0.06657600308641975,
+          "colors": 22,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "finite-lenses",
+          "milliseconds": 1709,
+          "problems": [],
+          "hash": "b29f9010",
+          "variance": 703.3009929795808,
+          "changed": 0.07526813271604939,
+          "colors": 917,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "chromatic-shadows",
+          "milliseconds": 1936,
+          "problems": [],
+          "hash": "67975777",
+          "variance": 402.40335464566306,
+          "changed": 1,
+          "colors": 307,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "single-cutaway",
+          "milliseconds": 1445,
+          "problems": [],
+          "hash": "a56a6d69",
+          "variance": 1361.6839357764184,
+          "changed": 1,
+          "colors": 336,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "wholetoning",
+          "milliseconds": 1323,
+          "problems": [],
+          "hash": "cfaf6f44",
+          "variance": 14642.07755041471,
+          "changed": 1,
+          "colors": 2,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "tone-illustration",
+          "milliseconds": 1116,
+          "problems": [],
+          "hash": "807475c8",
+          "variance": 261.5486146469193,
+          "changed": 0.026143904320987656,
+          "colors": 625,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "triangle-stack",
+          "milliseconds": 1138,
+          "problems": [],
+          "hash": "bbdd8bc4",
+          "variance": 17.43358244295814,
+          "changed": 0.0814891975308642,
+          "colors": 669,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "directional-color",
+          "milliseconds": 13811,
+          "problems": [],
+          "hash": "3b7fb8c3",
+          "variance": 20.558089171594474,
+          "changed": 0.02345486111111111,
+          "colors": 328,
+          "opaque": 1
+        },
+        {
+          "scene": "tabletop",
+          "id": "interior-lattice",
+          "milliseconds": 2050,
+          "problems": [],
+          "hash": "b1d4f798",
+          "variance": 1355.3256780833326,
+          "changed": 1,
+          "colors": 374,
+          "opaque": 1
+        }
+      ],
+      "teardown": {
+        "problems": []
+      },
+      "finishes": [
+        {
+          "id": "finite-lenses",
+          "milliseconds": 3150,
+          "problems": [],
+          "layers": [
+            {
+              "id": "section-ribs",
+              "enabled": true,
+              "weight": 100,
+              "blend": "normal"
+            },
+            {
+              "id": "surface-hatching",
+              "enabled": true,
+              "weight": 35,
+              "blend": "multiply"
+            }
+          ],
+          "beforeFinish": "df65c787",
+          "afterFinish": "9fa68cea"
+        },
+        {
+          "id": "ink-completed-mix",
+          "milliseconds": 2605,
+          "problems": [],
+          "layers": [
+            {
+              "id": "section-ribs",
+              "enabled": true,
+              "weight": 100,
+              "blend": "normal"
+            },
+            {
+              "id": "surface-hatching",
+              "enabled": true,
+              "weight": 35,
+              "blend": "multiply"
+            }
+          ],
+          "beforeFinish": "df65c787",
+          "afterFinish": "f4006284"
+        },
+        {
+          "id": "fluted-glass",
+          "milliseconds": 575,
+          "problems": [],
+          "layers": [
+            {
+              "id": "section-ribs",
+              "enabled": true,
+              "weight": 100,
+              "blend": "normal"
+            },
+            {
+              "id": "surface-hatching",
+              "enabled": true,
+              "weight": 35,
+              "blend": "multiply"
+            }
+          ],
+          "beforeFinish": "df65c787",
+          "afterFinish": "76452601"
+        }
+      ]
+    },
+    {
+      "name": "room",
+      "fixture": {
+        "name": "room",
+        "fixture": {
+          "world": "worlds/tiled-room",
+          "cast": [
+            "things/market-shelf",
+            "things/desk-lamp"
+          ],
+          "idea": "a stocked shelf and a lamp in a tiled room"
+        },
+        "reports": [
+          {
+            "id": "worlds/tiled-room",
+            "milliseconds": 2,
+            "error": null
+          },
+          {
+            "id": "things/market-shelf",
+            "milliseconds": 7,
+            "error": null
+          },
+          {
+            "id": "things/desk-lamp",
+            "milliseconds": 7,
+            "error": null
+          }
+        ],
+        "identities": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "topology": null,
+        "materialEvidence": null,
+        "camera": "orthographic",
+        "geometry": {
+          "source": "conjure",
+          "meshes": 145,
+          "triangles": 2514
+        },
+        "problems": []
+      },
+      "lifecycle": [
+        {
+          "check": "pre-aborted signal",
+          "passed": true,
+          "detail": "Rejected before drawing.",
+          "milliseconds": 9
+        },
+        {
+          "check": "in-flight worker cancellation",
+          "passed": true,
+          "detail": "Canceled a directional-color solve; next render follows.",
+          "milliseconds": 17
+        },
+        {
+          "check": "style switch and deterministic replay",
+          "passed": true,
+          "detail": "1fc88ad2 → 99c75884 → 1fc88ad2",
+          "milliseconds": 3498
+        },
+        {
+          "check": "real look selector and Stage.develop",
+          "passed": true,
+          "detail": "84 studies present in base and overlay; Stage returned 2073600 bytes.",
+          "milliseconds": 2117
+        },
+        {
+          "check": "capture preservation",
+          "passed": true,
+          "detail": "b67a7d09",
+          "milliseconds": 52
+        }
+      ],
+      "geometry": [
+        {
+          "id": "sections",
+          "passed": true,
+          "original": "6ffc2e28",
+          "changed": "4a98b72c",
+          "changedFraction": 0.14624035493827162,
+          "milliseconds": 3724
+        },
+        {
+          "id": "voxels",
+          "passed": true,
+          "original": "660be0e3",
+          "changed": "46383d5d",
+          "changedFraction": 0.23893711419753086,
+          "milliseconds": 1804
+        },
+        {
+          "id": "surface-dots",
+          "passed": true,
+          "original": "2f778f7c",
+          "changed": "b6590f70",
+          "changedFraction": 0.1437692901234568,
+          "milliseconds": 1970
+        },
+        {
+          "id": "thickness-exposure",
+          "passed": true,
+          "original": "585da6db",
+          "changed": "9119e69e",
+          "changedFraction": 0.19425540123456791,
+          "milliseconds": 4832
+        },
+        {
+          "id": "section-ribs",
+          "passed": true,
+          "original": "d8942b0b",
+          "changed": "5f0ffc4d",
+          "changedFraction": 0.2334452160493827,
+          "milliseconds": 2567
+        },
+        {
+          "id": "single-cutaway",
+          "passed": true,
+          "original": "176ab3ca",
+          "changed": "1ede553e",
+          "changedFraction": 0.14298418209876543,
+          "milliseconds": 1566
+        },
+        {
+          "id": "interior-lattice",
+          "passed": true,
+          "original": "60a83f79",
+          "changed": "6e55b18e",
+          "changedFraction": 0.01984375,
+          "milliseconds": 2205
+        },
+        {
+          "id": "chromatic-shadows",
+          "passed": true,
+          "original": "871cc091",
+          "changed": "a5676920",
+          "changedFraction": 0.19568479938271605,
+          "milliseconds": 3605
+        }
+      ],
+      "renders": [
+        {
+          "scene": "room",
+          "id": "riso",
+          "milliseconds": 2167,
+          "problems": [],
+          "hash": "10ac8a97",
+          "variance": 3046.660663937284,
+          "changed": 0.9999864969135802,
+          "colors": 97,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "woodcut",
+          "milliseconds": 1179,
+          "problems": [],
+          "hash": "9407eb4c",
+          "variance": 1457.433885778155,
+          "changed": 1,
+          "colors": 33,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "stipple",
+          "milliseconds": 2153,
+          "problems": [],
+          "hash": "7f441d72",
+          "variance": 2759.1450652087515,
+          "changed": 1,
+          "colors": 48,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "loom",
+          "milliseconds": 2011,
+          "problems": [],
+          "hash": "df07df6c",
+          "variance": 671.5494691573258,
+          "changed": 1,
+          "colors": 1001,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "optical",
+          "milliseconds": 844,
+          "problems": [],
+          "hash": "a78195b5",
+          "variance": 4813.69444731337,
+          "changed": 1,
+          "colors": 29,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "cyanotype",
+          "milliseconds": 915,
+          "problems": [],
+          "hash": "2b04313d",
+          "variance": 2805.4730727227434,
+          "changed": 0.9999980709876544,
+          "colors": 407,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "contours",
+          "milliseconds": 581,
+          "problems": [],
+          "hash": "24ffa210",
+          "variance": 1907.0408463745553,
+          "changed": 1,
+          "colors": 9,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "frottage",
+          "milliseconds": 990,
+          "problems": [],
+          "hash": "2fde7cdc",
+          "variance": 1889.4218643303757,
+          "changed": 1,
+          "colors": 457,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "cutpaper",
+          "milliseconds": 933,
+          "problems": [],
+          "hash": "c68bb1ed",
+          "variance": 523.2727908736906,
+          "changed": 0.9999980709876544,
+          "colors": 284,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "reticulum",
+          "milliseconds": 1474,
+          "problems": [],
+          "hash": "9ce766b5",
+          "variance": 630.063460037818,
+          "changed": 1,
+          "colors": 547,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "luminous",
+          "milliseconds": 1807,
+          "problems": [],
+          "hash": "b5a2204b",
+          "variance": 614.3314094136309,
+          "changed": 1,
+          "colors": 5968,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "scanner",
+          "milliseconds": 1519,
+          "problems": [],
+          "hash": "8fce6ecf",
+          "variance": 411.65368690092623,
+          "changed": 1,
+          "colors": 311,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "depth",
+          "milliseconds": 961,
+          "problems": [],
+          "hash": "aba12a7e",
+          "variance": 1212.8565813313908,
+          "changed": 1,
+          "colors": 42,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "embroidery",
+          "milliseconds": 955,
+          "problems": [],
+          "hash": "c23dfd0b",
+          "variance": 336.23874310963583,
+          "changed": 1,
+          "colors": 344,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "wash",
+          "milliseconds": 1004,
+          "problems": [],
+          "hash": "c0f2c6d1",
+          "variance": 580.6065245339923,
+          "changed": 0.9998398919753086,
+          "colors": 1032,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "architectural",
+          "milliseconds": 1893,
+          "problems": [],
+          "hash": "59e96035",
+          "variance": 779.974622302987,
+          "changed": 0.9999922839506172,
+          "colors": 292,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "interference",
+          "milliseconds": 605,
+          "problems": [],
+          "hash": "3eafda0b",
+          "variance": 3351.7405985851074,
+          "changed": 1,
+          "colors": 605,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "photogram",
+          "milliseconds": 760,
+          "problems": [],
+          "hash": "40dea77d",
+          "variance": 6898.16516119738,
+          "changed": 1,
+          "colors": 156,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "glass",
+          "milliseconds": 775,
+          "problems": [],
+          "hash": "e9873cea",
+          "variance": 3189.1884604095685,
+          "changed": 1,
+          "colors": 1415,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "transfer",
+          "milliseconds": 2597,
+          "problems": [],
+          "hash": "5bfd9c1f",
+          "variance": 556.7008652124059,
+          "changed": 0.9999922839506172,
+          "colors": 1274,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "volume",
+          "milliseconds": 1024,
+          "problems": [],
+          "hash": "aa6feb11",
+          "variance": 3406.0668488812,
+          "changed": 1,
+          "colors": 11917,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "surface-dots",
+          "milliseconds": 1248,
+          "problems": [],
+          "hash": "babd9949",
+          "variance": 717.0967699610192,
+          "changed": 0.999945987654321,
+          "colors": 1259,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "mezzotint",
+          "milliseconds": 448,
+          "problems": [],
+          "hash": "5213b566",
+          "variance": 5514.236441746571,
+          "changed": 1,
+          "colors": 480,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "impasto",
+          "milliseconds": 675,
+          "problems": [],
+          "hash": "20b5549e",
+          "variance": 1032.9938262942233,
+          "changed": 0.9983449074074074,
+          "colors": 8055,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "reaction",
+          "milliseconds": 904,
+          "problems": [],
+          "hash": "22e1005e",
+          "variance": 3504.2148077412785,
+          "changed": 0.9999961419753086,
+          "colors": 374,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "marbling",
+          "milliseconds": 597,
+          "problems": [],
+          "hash": "aa857e82",
+          "variance": 3810.197453890054,
+          "changed": 1,
+          "colors": 384,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "sections",
+          "milliseconds": 1969,
+          "problems": [],
+          "hash": "2aeb58a6",
+          "variance": 868.3806827712106,
+          "changed": 0.9999922839506172,
+          "colors": 334,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "crackle",
+          "milliseconds": 805,
+          "problems": [],
+          "hash": "315662d2",
+          "variance": 656.6994272347802,
+          "changed": 1,
+          "colors": 1205,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "oilspot",
+          "milliseconds": 862,
+          "problems": [],
+          "hash": "54695443",
+          "variance": 4877.325562527316,
+          "changed": 1,
+          "colors": 1879,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "sabattier",
+          "milliseconds": 592,
+          "problems": [],
+          "hash": "9006e7e4",
+          "variance": 271.6892855733822,
+          "changed": 0.9999749228395062,
+          "colors": 335,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "relief",
+          "milliseconds": 682,
+          "problems": [],
+          "hash": "10e93ce7",
+          "variance": 26.35313155824406,
+          "changed": 1,
+          "colors": 286,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "interlace",
+          "milliseconds": 966,
+          "problems": [],
+          "hash": "69124581",
+          "variance": 4861.34864933055,
+          "changed": 1,
+          "colors": 2985,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "voxels",
+          "milliseconds": 774,
+          "problems": [],
+          "hash": "e7177bdb",
+          "variance": 1951.555336647325,
+          "changed": 1,
+          "colors": 1187,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "spectral",
+          "milliseconds": 943,
+          "problems": [],
+          "hash": "223f3c35",
+          "variance": 4020.1443760031325,
+          "changed": 0.2040509259259259,
+          "colors": 2981,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "cel",
+          "milliseconds": 1476,
+          "problems": [],
+          "hash": "84d77e0d",
+          "variance": 2961.1673079460725,
+          "changed": 0.9999845679012346,
+          "colors": 285,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "clear-line",
+          "milliseconds": 1293,
+          "problems": [],
+          "hash": "8fe036c2",
+          "variance": 844.6870536591668,
+          "changed": 0.9999980709876544,
+          "colors": 118,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "brush-cel",
+          "milliseconds": 1188,
+          "problems": [],
+          "hash": "98f69229",
+          "variance": 3022.0547822799927,
+          "changed": 0.9982079475308642,
+          "colors": 202,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "comic-dots",
+          "milliseconds": 1192,
+          "problems": [],
+          "hash": "64901267",
+          "variance": 1664.7519959147394,
+          "changed": 0.9980131172839506,
+          "colors": 503,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "expressive-ink",
+          "milliseconds": 1457,
+          "problems": [],
+          "hash": "4e79b6a7",
+          "variance": 2725.7379161950157,
+          "changed": 1,
+          "colors": 986,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "ink-bloom",
+          "milliseconds": 1660,
+          "problems": [],
+          "hash": "52a70e01",
+          "variance": 3133.861901074779,
+          "changed": 0.9999980709876544,
+          "colors": 634,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "ink-scrape",
+          "milliseconds": 1405,
+          "problems": [],
+          "hash": "3e443d64",
+          "variance": 2325.123963730286,
+          "changed": 0.9999980709876544,
+          "colors": 912,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "ink-storm",
+          "milliseconds": 1602,
+          "problems": [],
+          "hash": "a49282a9",
+          "variance": 3569.3607668737604,
+          "changed": 0.9999980709876544,
+          "colors": 730,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "game-obra",
+          "milliseconds": 981,
+          "problems": [],
+          "hash": "d3b1ce25",
+          "variance": 4191.44173603422,
+          "changed": 1,
+          "colors": 2,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "game-disco",
+          "milliseconds": 1574,
+          "problems": [],
+          "hash": "9757ac16",
+          "variance": 234.59793451405494,
+          "changed": 0.9999980709876544,
+          "colors": 3079,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "game-okami",
+          "milliseconds": 846,
+          "problems": [],
+          "hash": "dc49810b",
+          "variance": 1728.2313859946662,
+          "changed": 1,
+          "colors": 3948,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "game-sable",
+          "milliseconds": 1340,
+          "problems": [],
+          "hash": "a4d58512",
+          "variance": 534.3490086596721,
+          "changed": 1,
+          "colors": 1152,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "game-hylics",
+          "milliseconds": 717,
+          "problems": [],
+          "hash": "66331c45",
+          "variance": 3147.266032378786,
+          "changed": 1,
+          "colors": 9,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "game-windwaker",
+          "milliseconds": 1174,
+          "problems": [],
+          "hash": "0218d1e9",
+          "variance": 860.5115887661495,
+          "changed": 1,
+          "colors": 784,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "game-persona",
+          "milliseconds": 1148,
+          "problems": [],
+          "hash": "8842fe23",
+          "variance": 5157.244539543302,
+          "changed": 1,
+          "colors": 84,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "game-inside",
+          "milliseconds": 1290,
+          "problems": [],
+          "hash": "e7cb5c9e",
+          "variance": 318.0089771458893,
+          "changed": 1,
+          "colors": 577,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "game-mirrorsedge",
+          "milliseconds": 733,
+          "problems": [],
+          "hash": "6eccc60a",
+          "variance": 4284.2383301929185,
+          "changed": 1,
+          "colors": 485,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "game-viewfinder",
+          "milliseconds": 926,
+          "problems": [],
+          "hash": "4cf4e2ba",
+          "variance": 2814.411281957913,
+          "changed": 0.9999749228395062,
+          "colors": 426,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "surface-hatching",
+          "milliseconds": 4464,
+          "problems": [],
+          "hash": "edf35ee3",
+          "variance": 2003.9988574666859,
+          "changed": 0.9999961419753086,
+          "colors": 717,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "resonant-sand",
+          "milliseconds": 917,
+          "problems": [],
+          "hash": "d4b388dd",
+          "variance": 4686.365214207093,
+          "changed": 0.2040509259259259,
+          "colors": 1584,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "contour-pools",
+          "milliseconds": 1320,
+          "problems": [],
+          "hash": "922f599c",
+          "variance": 4930.3283951809735,
+          "changed": 0.9999980709876544,
+          "colors": 3538,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "hooked-pen",
+          "milliseconds": 2563,
+          "problems": [],
+          "hash": "928509be",
+          "variance": 1982.4751721530265,
+          "changed": 0.9999131944444445,
+          "colors": 63,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "naturalist-plate",
+          "milliseconds": 1956,
+          "problems": [],
+          "hash": "ebf84ee9",
+          "variance": 778.6095697721903,
+          "changed": 0.999994212962963,
+          "colors": 1733,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "electric-contour",
+          "milliseconds": 1195,
+          "problems": [],
+          "hash": "c61189e7",
+          "variance": 1670.3569641038214,
+          "changed": 1,
+          "colors": 259,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "cut-print",
+          "milliseconds": 691,
+          "problems": [],
+          "hash": "44a9cfe7",
+          "variance": 5341.491129863596,
+          "changed": 1,
+          "colors": 245,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "knife-paint",
+          "milliseconds": 1122,
+          "problems": [],
+          "hash": "c56e64e0",
+          "variance": 814.8849309026009,
+          "changed": 0.9999980709876544,
+          "colors": 6821,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "wax-resist",
+          "milliseconds": 1274,
+          "problems": [],
+          "hash": "2edf6245",
+          "variance": 2766.80933327361,
+          "changed": 1,
+          "colors": 750,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "directed-tesserae",
+          "milliseconds": 1575,
+          "problems": [],
+          "hash": "f1a7b676",
+          "variance": 1634.3600721609473,
+          "changed": 0.9041087962962963,
+          "colors": 2266,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "continuous-thread",
+          "milliseconds": 1524,
+          "problems": [],
+          "hash": "47bccfea",
+          "variance": 1650.1238434392144,
+          "changed": 1,
+          "colors": 40,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "quilled-paper",
+          "milliseconds": 1276,
+          "problems": [],
+          "hash": "1966a89d",
+          "variance": 1747.5306002364669,
+          "changed": 0.9999903549382716,
+          "colors": 314,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "lifted-emulsion",
+          "milliseconds": 683,
+          "problems": [],
+          "hash": "4e363df7",
+          "variance": 1065.5931294494076,
+          "changed": 0.9967650462962963,
+          "colors": 290,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "color-woodblock",
+          "milliseconds": 957,
+          "problems": [],
+          "hash": "cce1e27d",
+          "variance": 1862.2497055183703,
+          "changed": 1,
+          "colors": 1949,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "typed-contours",
+          "milliseconds": 1509,
+          "problems": [],
+          "hash": "3cd359c7",
+          "variance": 493.20360215136316,
+          "changed": 0.9999961419753086,
+          "colors": 55,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "faceted-planes",
+          "milliseconds": 1032,
+          "problems": [],
+          "hash": "0d510c3d",
+          "variance": 643.821377188091,
+          "changed": 0.14472608024691358,
+          "colors": 388,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "curved-paint",
+          "milliseconds": 2252,
+          "problems": [],
+          "hash": "2f50f3b4",
+          "variance": 646.8866930096337,
+          "changed": 0.27554398148148146,
+          "colors": 1840,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "translucent-tape",
+          "milliseconds": 1857,
+          "problems": [],
+          "hash": "3f2c4bf7",
+          "variance": 3376.7108418427306,
+          "changed": 1,
+          "colors": 498,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "thickness-exposure",
+          "milliseconds": 4298,
+          "problems": [],
+          "hash": "585da6db",
+          "variance": 247.02430935999658,
+          "changed": 1,
+          "colors": 98,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "copy-feedback",
+          "milliseconds": 1696,
+          "problems": [],
+          "hash": "8f6d8158",
+          "variance": 6034.498596859012,
+          "changed": 1,
+          "colors": 256,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "section-ribs",
+          "milliseconds": 1691,
+          "problems": [],
+          "hash": "d8942b0b",
+          "variance": 3038.784141635151,
+          "changed": 0.999988425925926,
+          "colors": 524,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "prismatic-exposure",
+          "milliseconds": 686,
+          "problems": [],
+          "hash": "f8b7831e",
+          "variance": 380.68641657014086,
+          "changed": 0.4633159722222222,
+          "colors": 2238,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "rank-streaks",
+          "milliseconds": 683,
+          "problems": [],
+          "hash": "41033a12",
+          "variance": 665.9991525110818,
+          "changed": 0.06487847222222222,
+          "colors": 716,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "pixel-clusters",
+          "milliseconds": 2708,
+          "problems": [],
+          "hash": "57921415",
+          "variance": 654.9374453307973,
+          "changed": 0.189945987654321,
+          "colors": 23,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "finite-lenses",
+          "milliseconds": 1411,
+          "problems": [],
+          "hash": "86fe820c",
+          "variance": 1273.2633833189902,
+          "changed": 0.07516396604938272,
+          "colors": 1532,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "chromatic-shadows",
+          "milliseconds": 1970,
+          "problems": [],
+          "hash": "871cc091",
+          "variance": 3931.207339080036,
+          "changed": 1,
+          "colors": 261,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "single-cutaway",
+          "milliseconds": 1108,
+          "problems": [],
+          "hash": "176ab3ca",
+          "variance": 2770.0273337088875,
+          "changed": 1,
+          "colors": 193,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "wholetoning",
+          "milliseconds": 1139,
+          "problems": [],
+          "hash": "2e700b95",
+          "variance": 10784.882584632069,
+          "changed": 1,
+          "colors": 2,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "tone-illustration",
+          "milliseconds": 1396,
+          "problems": [],
+          "hash": "47c41e34",
+          "variance": 1922.4376268263077,
+          "changed": 0.20861496913580246,
+          "colors": 459,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "triangle-stack",
+          "milliseconds": 926,
+          "problems": [],
+          "hash": "49b10a92",
+          "variance": 618.7387970615309,
+          "changed": 0.3766435185185185,
+          "colors": 1560,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "directional-color",
+          "milliseconds": 18292,
+          "problems": [],
+          "hash": "323c460e",
+          "variance": 637.3817688512208,
+          "changed": 0.042374614197530865,
+          "colors": 674,
+          "opaque": 1
+        },
+        {
+          "scene": "room",
+          "id": "interior-lattice",
+          "milliseconds": 1350,
+          "problems": [],
+          "hash": "60a83f79",
+          "variance": 1285.5772816047975,
+          "changed": 1,
+          "colors": 216,
+          "opaque": 1
+        }
+      ],
+      "teardown": {
+        "problems": []
+      }
+    },
+    {
+      "name": "street",
+      "fixture": {
+        "name": "street",
+        "fixture": {
+          "world": "worlds/street-corner",
+          "cast": [
+            "things/gas-pump",
+            "things/fire-hydrant"
+          ],
+          "idea": "a fuel pump and a fire hydrant on a street corner"
+        },
+        "reports": [
+          {
+            "id": "worlds/street-corner",
+            "milliseconds": 1,
+            "error": null
+          },
+          {
+            "id": "things/gas-pump",
+            "milliseconds": 8,
+            "error": null
+          },
+          {
+            "id": "things/fire-hydrant",
+            "milliseconds": 8,
+            "error": null
+          }
+        ],
+        "identities": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "topology": null,
+        "materialEvidence": null,
+        "camera": "orthographic",
+        "geometry": {
+          "source": "conjure",
+          "meshes": 69,
+          "triangles": 24054
+        },
+        "problems": []
+      },
+      "lifecycle": [
+        {
+          "check": "pre-aborted signal",
+          "passed": true,
+          "detail": "Rejected before drawing.",
+          "milliseconds": 56
+        },
+        {
+          "check": "in-flight worker cancellation",
+          "passed": true,
+          "detail": "Canceled a directional-color solve; next render follows.",
+          "milliseconds": 21
+        },
+        {
+          "check": "style switch and deterministic replay",
+          "passed": true,
+          "detail": "63769de1 → 987b0787 → 63769de1",
+          "milliseconds": 3734
+        },
+        {
+          "check": "real look selector and Stage.develop",
+          "passed": true,
+          "detail": "84 studies present in base and overlay; Stage returned 2073600 bytes.",
+          "milliseconds": 2442
+        },
+        {
+          "check": "capture preservation",
+          "passed": true,
+          "detail": "bbaf81e3",
+          "milliseconds": 47
+        }
+      ],
+      "geometry": [
+        {
+          "id": "sections",
+          "passed": true,
+          "original": "cd6d7485",
+          "changed": "a6c37dcb",
+          "changedFraction": 0.08828703703703704,
+          "milliseconds": 3800
+        },
+        {
+          "id": "voxels",
+          "passed": true,
+          "original": "8f3967e2",
+          "changed": "467f1218",
+          "changedFraction": 0.20926697530864197,
+          "milliseconds": 2095
+        },
+        {
+          "id": "surface-dots",
+          "passed": true,
+          "original": "ca4a0688",
+          "changed": "3e0ec52f",
+          "changedFraction": 0.16032407407407406,
+          "milliseconds": 2983
+        },
+        {
+          "id": "thickness-exposure",
+          "passed": true,
+          "original": "599f8572",
+          "changed": "7acc3bfb",
+          "changedFraction": 0.18439621913580248,
+          "milliseconds": 5032
+        },
+        {
+          "id": "section-ribs",
+          "passed": true,
+          "original": "3bd0524d",
+          "changed": "ac9530d2",
+          "changedFraction": 0.1750192901234568,
+          "milliseconds": 2895
+        },
+        {
+          "id": "single-cutaway",
+          "passed": true,
+          "original": "14ee3781",
+          "changed": "a7252e91",
+          "changedFraction": 0.1134182098765432,
+          "milliseconds": 2321
+        },
+        {
+          "id": "interior-lattice",
+          "passed": true,
+          "original": "c3eece4a",
+          "changed": "723c5e2a",
+          "changedFraction": 0.04352623456790124,
+          "milliseconds": 2665
+        },
+        {
+          "id": "chromatic-shadows",
+          "passed": true,
+          "original": "d4e72e28",
+          "changed": "41db1a05",
+          "changedFraction": 0.14805748456790124,
+          "milliseconds": 4117
+        }
+      ],
+      "renders": [
+        {
+          "scene": "street",
+          "id": "riso",
+          "milliseconds": 2185,
+          "problems": [],
+          "hash": "7392d641",
+          "variance": 3306.419457351447,
+          "changed": 0.9999980709876544,
+          "colors": 127,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "woodcut",
+          "milliseconds": 1055,
+          "problems": [],
+          "hash": "51311e08",
+          "variance": 1664.0457464968495,
+          "changed": 1,
+          "colors": 25,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "stipple",
+          "milliseconds": 2226,
+          "problems": [],
+          "hash": "3400fdf8",
+          "variance": 3245.2156155829216,
+          "changed": 1,
+          "colors": 44,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "loom",
+          "milliseconds": 1803,
+          "problems": [],
+          "hash": "0107a6f2",
+          "variance": 691.2423870321509,
+          "changed": 1,
+          "colors": 1257,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "optical",
+          "milliseconds": 859,
+          "problems": [],
+          "hash": "dc92871c",
+          "variance": 5102.507702641036,
+          "changed": 0.9999922839506172,
+          "colors": 38,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "cyanotype",
+          "milliseconds": 957,
+          "problems": [],
+          "hash": "05cb53d2",
+          "variance": 2621.123038831667,
+          "changed": 1,
+          "colors": 366,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "contours",
+          "milliseconds": 550,
+          "problems": [],
+          "hash": "cfe08815",
+          "variance": 2038.8684346319205,
+          "changed": 1,
+          "colors": 9,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "frottage",
+          "milliseconds": 738,
+          "problems": [],
+          "hash": "479ee43e",
+          "variance": 2143.922356008552,
+          "changed": 1,
+          "colors": 478,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "cutpaper",
+          "milliseconds": 997,
+          "problems": [],
+          "hash": "2fc9aca9",
+          "variance": 1186.3512108654322,
+          "changed": 1,
+          "colors": 343,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "reticulum",
+          "milliseconds": 1448,
+          "problems": [],
+          "hash": "8f274c33",
+          "variance": 753.714117421936,
+          "changed": 1,
+          "colors": 609,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "luminous",
+          "milliseconds": 1683,
+          "problems": [],
+          "hash": "378d1711",
+          "variance": 797.7770345303007,
+          "changed": 1,
+          "colors": 6409,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "scanner",
+          "milliseconds": 1181,
+          "problems": [],
+          "hash": "c50e60a3",
+          "variance": 442.5145249203981,
+          "changed": 1,
+          "colors": 485,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "depth",
+          "milliseconds": 1016,
+          "problems": [],
+          "hash": "dd183875",
+          "variance": 1233.0940434170407,
+          "changed": 1,
+          "colors": 50,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "embroidery",
+          "milliseconds": 954,
+          "problems": [],
+          "hash": "6b6d0bda",
+          "variance": 371.52986924155994,
+          "changed": 0.999994212962963,
+          "colors": 388,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "wash",
+          "milliseconds": 1016,
+          "problems": [],
+          "hash": "1edacdbb",
+          "variance": 727.2598894817784,
+          "changed": 0.999994212962963,
+          "colors": 1976,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "architectural",
+          "milliseconds": 2386,
+          "problems": [],
+          "hash": "f34a4383",
+          "variance": 508.08571886931895,
+          "changed": 1,
+          "colors": 255,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "interference",
+          "milliseconds": 575,
+          "problems": [],
+          "hash": "4ec7dcd7",
+          "variance": 3259.5252237306413,
+          "changed": 1,
+          "colors": 604,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "photogram",
+          "milliseconds": 605,
+          "problems": [],
+          "hash": "54f619d7",
+          "variance": 7259.024877749605,
+          "changed": 1,
+          "colors": 158,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "glass",
+          "milliseconds": 986,
+          "problems": [],
+          "hash": "11266497",
+          "variance": 3129.1007592459246,
+          "changed": 1,
+          "colors": 1604,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "transfer",
+          "milliseconds": 5005,
+          "problems": [],
+          "hash": "540a85a7",
+          "variance": 631.9020198693906,
+          "changed": 0.999988425925926,
+          "colors": 1495,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "volume",
+          "milliseconds": 884,
+          "problems": [],
+          "hash": "c6aca50c",
+          "variance": 3534.299939172921,
+          "changed": 0.9999980709876544,
+          "colors": 12298,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "surface-dots",
+          "milliseconds": 1834,
+          "problems": [],
+          "hash": "9a5aafa9",
+          "variance": 889.0126554091548,
+          "changed": 0.9999498456790124,
+          "colors": 1658,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "mezzotint",
+          "milliseconds": 638,
+          "problems": [],
+          "hash": "ac05278a",
+          "variance": 5569.175421070057,
+          "changed": 1,
+          "colors": 533,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "impasto",
+          "milliseconds": 1010,
+          "problems": [],
+          "hash": "7c0c2ebc",
+          "variance": 1342.4231271190438,
+          "changed": 0.9984664351851852,
+          "colors": 11533,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "reaction",
+          "milliseconds": 1161,
+          "problems": [],
+          "hash": "50a6010a",
+          "variance": 3772.2537455717393,
+          "changed": 1,
+          "colors": 397,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "marbling",
+          "milliseconds": 652,
+          "problems": [],
+          "hash": "41da53ae",
+          "variance": 4067.5439500314533,
+          "changed": 1,
+          "colors": 368,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "sections",
+          "milliseconds": 1965,
+          "problems": [],
+          "hash": "d7a32f75",
+          "variance": 583.4918754972532,
+          "changed": 0.9999980709876544,
+          "colors": 302,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "crackle",
+          "milliseconds": 733,
+          "problems": [],
+          "hash": "8ca1bdf8",
+          "variance": 712.2962714589958,
+          "changed": 1,
+          "colors": 1290,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "oilspot",
+          "milliseconds": 1139,
+          "problems": [],
+          "hash": "e1ea69d1",
+          "variance": 4925.8759289422305,
+          "changed": 0.999994212962963,
+          "colors": 1947,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "sabattier",
+          "milliseconds": 985,
+          "problems": [],
+          "hash": "632116ca",
+          "variance": 194.01421473639493,
+          "changed": 0.9997029320987655,
+          "colors": 350,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "relief",
+          "milliseconds": 981,
+          "problems": [],
+          "hash": "d98be889",
+          "variance": 34.17227176735469,
+          "changed": 1,
+          "colors": 294,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "interlace",
+          "milliseconds": 1168,
+          "problems": [],
+          "hash": "05c078ca",
+          "variance": 4979.205831660634,
+          "changed": 1,
+          "colors": 3218,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "voxels",
+          "milliseconds": 1114,
+          "problems": [],
+          "hash": "5013f0ce",
+          "variance": 1687.6222686921246,
+          "changed": 0.999988425925926,
+          "colors": 1131,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "spectral",
+          "milliseconds": 1257,
+          "problems": [],
+          "hash": "84100768",
+          "variance": 3819.625281302593,
+          "changed": 0.2192746913580247,
+          "colors": 4382,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "cel",
+          "milliseconds": 1696,
+          "problems": [],
+          "hash": "57395441",
+          "variance": 1927.7295072478155,
+          "changed": 1,
+          "colors": 170,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "clear-line",
+          "milliseconds": 1455,
+          "problems": [],
+          "hash": "099b81b1",
+          "variance": 1137.814134679582,
+          "changed": 1,
+          "colors": 65,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "brush-cel",
+          "milliseconds": 202,
+          "problems": [
+            "Error: Mixer worker failed"
+          ]
+        },
+        {
+          "scene": "street",
+          "id": "comic-dots",
+          "milliseconds": 30,
+          "problems": [
+            "Error: Mixer worker failed"
+          ]
+        },
+        {
+          "scene": "street",
+          "id": "expressive-ink",
+          "milliseconds": 27,
+          "problems": [
+            "Error: Mixer worker failed"
+          ]
+        },
+        {
+          "scene": "street",
+          "id": "ink-bloom",
+          "milliseconds": 30,
+          "problems": [
+            "Error: Mixer worker failed"
+          ]
+        },
+        {
+          "scene": "street",
+          "id": "ink-scrape",
+          "milliseconds": 29,
+          "problems": [
+            "Error: Mixer worker failed"
+          ]
+        },
+        {
+          "scene": "street",
+          "id": "ink-storm",
+          "milliseconds": 32,
+          "problems": [
+            "Error: Mixer worker failed"
+          ]
+        },
+        {
+          "scene": "street",
+          "id": "game-obra",
+          "milliseconds": 29,
+          "problems": [
+            "Error: Mixer worker failed"
+          ]
+        },
+        {
+          "scene": "street",
+          "id": "game-disco",
+          "milliseconds": 30,
+          "problems": [
+            "Error: Mixer worker failed"
+          ]
+        },
+        {
+          "scene": "street",
+          "id": "game-okami",
+          "milliseconds": 24,
+          "problems": [
+            "Error: Mixer worker failed"
+          ]
+        },
+        {
+          "scene": "street",
+          "id": "game-sable",
+          "milliseconds": 31,
+          "problems": [
+            "Error: Mixer worker failed"
+          ]
+        },
+        {
+          "scene": "street",
+          "id": "game-hylics",
+          "milliseconds": 29,
+          "problems": [
+            "Error: Mixer worker failed"
+          ]
+        },
+        {
+          "scene": "street",
+          "id": "game-windwaker",
+          "milliseconds": 28,
+          "problems": [
+            "Error: Mixer worker failed"
+          ]
+        },
+        {
+          "scene": "street",
+          "id": "game-persona",
+          "milliseconds": 77,
+          "problems": [
+            "Error: Mixer worker failed"
+          ]
+        },
+        {
+          "scene": "street",
+          "id": "game-inside",
+          "milliseconds": 56,
+          "problems": [
+            "Error: Mixer worker failed"
+          ]
+        },
+        {
+          "scene": "street",
+          "id": "game-mirrorsedge",
+          "milliseconds": 59,
+          "problems": [
+            "Error: Mixer worker failed"
+          ]
+        },
+        {
+          "scene": "street",
+          "id": "game-viewfinder",
+          "milliseconds": 3029,
+          "problems": [],
+          "hash": "6cb0fdf1",
+          "variance": 2232.3910012375127,
+          "changed": 0.9999864969135802,
+          "colors": 507,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "surface-hatching",
+          "milliseconds": 5861,
+          "problems": [],
+          "hash": "e15c0535",
+          "variance": 1777.7176181616232,
+          "changed": 1,
+          "colors": 643,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "resonant-sand",
+          "milliseconds": 1159,
+          "problems": [],
+          "hash": "92d7134c",
+          "variance": 4884.025943778099,
+          "changed": 0.21926697530864198,
+          "colors": 1995,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "contour-pools",
+          "milliseconds": 1394,
+          "problems": [],
+          "hash": "d36bf985",
+          "variance": 4983.9485661267045,
+          "changed": 1,
+          "colors": 3871,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "hooked-pen",
+          "milliseconds": 2726,
+          "problems": [],
+          "hash": "7d88a912",
+          "variance": 1560.0383859404174,
+          "changed": 0.9990104166666667,
+          "colors": 80,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "naturalist-plate",
+          "milliseconds": 3394,
+          "problems": [],
+          "hash": "02565db2",
+          "variance": 1043.164070590101,
+          "changed": 0.999988425925926,
+          "colors": 2217,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "electric-contour",
+          "milliseconds": 1455,
+          "problems": [],
+          "hash": "5995cd61",
+          "variance": 1842.0578663683143,
+          "changed": 1,
+          "colors": 356,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "cut-print",
+          "milliseconds": 849,
+          "problems": [],
+          "hash": "7db813c6",
+          "variance": 2783.7627166347806,
+          "changed": 1,
+          "colors": 245,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "knife-paint",
+          "milliseconds": 1520,
+          "problems": [],
+          "hash": "3db11792",
+          "variance": 680.6868604062183,
+          "changed": 1,
+          "colors": 9604,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "wax-resist",
+          "milliseconds": 1587,
+          "problems": [],
+          "hash": "b82231a9",
+          "variance": 5614.725167277284,
+          "changed": 1,
+          "colors": 1135,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "directed-tesserae",
+          "milliseconds": 1536,
+          "problems": [],
+          "hash": "4ca8a4a3",
+          "variance": 1751.4536100009282,
+          "changed": 0.8999826388888889,
+          "colors": 2581,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "continuous-thread",
+          "milliseconds": 1522,
+          "problems": [],
+          "hash": "48cb43e4",
+          "variance": 2183.2499356392073,
+          "changed": 0.9999961419753086,
+          "colors": 44,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "quilled-paper",
+          "milliseconds": 1290,
+          "problems": [],
+          "hash": "a8da3668",
+          "variance": 2436.5716588170835,
+          "changed": 0.9999672067901234,
+          "colors": 433,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "lifted-emulsion",
+          "milliseconds": 864,
+          "problems": [],
+          "hash": "2e96769b",
+          "variance": 1310.32672886808,
+          "changed": 1,
+          "colors": 347,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "color-woodblock",
+          "milliseconds": 1463,
+          "problems": [],
+          "hash": "d39543b1",
+          "variance": 1200.9462042880332,
+          "changed": 0.999994212962963,
+          "colors": 1215,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "typed-contours",
+          "milliseconds": 1900,
+          "problems": [],
+          "hash": "dd0c88b6",
+          "variance": 624.1472729299057,
+          "changed": 1,
+          "colors": 55,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "faceted-planes",
+          "milliseconds": 1119,
+          "problems": [],
+          "hash": "8bb425b0",
+          "variance": 704.2903757451058,
+          "changed": 0.13218171296296297,
+          "colors": 571,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "curved-paint",
+          "milliseconds": 2660,
+          "problems": [],
+          "hash": "bac49a9e",
+          "variance": 685.2631347415663,
+          "changed": 0.21700038580246914,
+          "colors": 3078,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "translucent-tape",
+          "milliseconds": 2019,
+          "problems": [],
+          "hash": "b3845f3a",
+          "variance": 4080.36183505191,
+          "changed": 1,
+          "colors": 465,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "thickness-exposure",
+          "milliseconds": 4286,
+          "problems": [],
+          "hash": "599f8572",
+          "variance": 451.1995390252556,
+          "changed": 1,
+          "colors": 192,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "copy-feedback",
+          "milliseconds": 1857,
+          "problems": [],
+          "hash": "6795cae8",
+          "variance": 6037.124153844532,
+          "changed": 1,
+          "colors": 256,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "section-ribs",
+          "milliseconds": 2245,
+          "problems": [],
+          "hash": "3bd0524d",
+          "variance": 3282.5231859295236,
+          "changed": 1,
+          "colors": 481,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "prismatic-exposure",
+          "milliseconds": 840,
+          "problems": [],
+          "hash": "d29bcd28",
+          "variance": 478.1895150555065,
+          "changed": 0.4569270833333333,
+          "colors": 3397,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "rank-streaks",
+          "milliseconds": 1060,
+          "problems": [],
+          "hash": "55cd5189",
+          "variance": 734.9682147238636,
+          "changed": 0.08353973765432099,
+          "colors": 814,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "pixel-clusters",
+          "milliseconds": 2820,
+          "problems": [],
+          "hash": "fcea76bd",
+          "variance": 719.7374163413915,
+          "changed": 0.1270042438271605,
+          "colors": 22,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "finite-lenses",
+          "milliseconds": 1709,
+          "problems": [],
+          "hash": "d9447c35",
+          "variance": 1265.1532382171936,
+          "changed": 0.07510223765432099,
+          "colors": 1937,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "chromatic-shadows",
+          "milliseconds": 1741,
+          "problems": [],
+          "hash": "d4e72e28",
+          "variance": 3251.5493475932017,
+          "changed": 1,
+          "colors": 312,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "single-cutaway",
+          "milliseconds": 1879,
+          "problems": [],
+          "hash": "14ee3781",
+          "variance": 3010.7404101489155,
+          "changed": 1,
+          "colors": 260,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "wholetoning",
+          "milliseconds": 1169,
+          "problems": [],
+          "hash": "77a6a0ac",
+          "variance": 7544.23685936613,
+          "changed": 1,
+          "colors": 2,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "tone-illustration",
+          "milliseconds": 1463,
+          "problems": [],
+          "hash": "dac3e9b7",
+          "variance": 1607.2828531693813,
+          "changed": 0.22485918209876543,
+          "colors": 535,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "triangle-stack",
+          "milliseconds": 1114,
+          "problems": [],
+          "hash": "10e5dbd2",
+          "variance": 622.6010429097514,
+          "changed": 0.5467033179012346,
+          "colors": 2379,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "directional-color",
+          "milliseconds": 17378,
+          "problems": [],
+          "hash": "567085a9",
+          "variance": 700.8131950421448,
+          "changed": 0.04412229938271605,
+          "colors": 680,
+          "opaque": 1
+        },
+        {
+          "scene": "street",
+          "id": "interior-lattice",
+          "milliseconds": 1865,
+          "problems": [],
+          "hash": "c3eece4a",
+          "variance": 1672.2535894103494,
+          "changed": 1,
+          "colors": 437,
+          "opaque": 1
+        }
+      ],
+      "teardown": {
+        "problems": []
+      }
+    },
+    {
+      "name": "perspective",
+      "fixture": {
+        "name": "perspective",
+        "fixture": {
+          "world": "worlds/summer-school-corridor",
+          "cast": [
+            "things/school-desk"
+          ],
+          "idea": "an empty school corridor with one desk"
+        },
+        "reports": [
+          {
+            "id": "worlds/summer-school-corridor",
+            "milliseconds": 22,
+            "error": null
+          },
+          {
+            "id": "things/school-desk",
+            "milliseconds": 3,
+            "error": null
+          }
+        ],
+        "identities": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "topology": null,
+        "materialEvidence": null,
+        "camera": "perspective",
+        "geometry": {
+          "source": "conjure",
+          "meshes": 414,
+          "triangles": 8086
+        },
+        "problems": []
+      },
+      "lifecycle": [
+        {
+          "check": "pre-aborted signal",
+          "passed": true,
+          "detail": "Rejected before drawing.",
+          "milliseconds": 14
+        },
+        {
+          "check": "in-flight worker cancellation",
+          "passed": true,
+          "detail": "Canceled a directional-color solve; next render follows.",
+          "milliseconds": 15
+        },
+        {
+          "check": "style switch and deterministic replay",
+          "passed": true,
+          "detail": "f18f82a4 → 7c3b9abe → f18f82a4",
+          "milliseconds": 7207
+        },
+        {
+          "check": "real look selector and Stage.develop",
+          "passed": true,
+          "detail": "84 studies present in base and overlay; Stage returned 2073600 bytes.",
+          "milliseconds": 3831
+        },
+        {
+          "check": "capture preservation",
+          "passed": true,
+          "detail": "c4b787f7",
+          "milliseconds": 31
+        }
+      ],
+      "geometry": [
+        {
+          "id": "sections",
+          "passed": true,
+          "original": "87fc3e74",
+          "changed": "a21eefe4",
+          "changedFraction": 0.1634008487654321,
+          "milliseconds": 7863
+        },
+        {
+          "id": "voxels",
+          "passed": true,
+          "original": "23e72acf",
+          "changed": "5fe36ebb",
+          "changedFraction": 0.8170158179012346,
+          "milliseconds": 21306
+        },
+        {
+          "id": "surface-dots",
+          "passed": true,
+          "original": "b6779b6f",
+          "changed": "4805a208",
+          "changedFraction": 0.05372878086419753,
+          "milliseconds": 4771
+        },
+        {
+          "id": "thickness-exposure",
+          "passed": true,
+          "original": "ff84bba7",
+          "changed": "4cab05f2",
+          "changedFraction": 0.8038329475308642,
+          "milliseconds": 24948
+        },
+        {
+          "id": "section-ribs",
+          "passed": true,
+          "original": "f03fee40",
+          "changed": "ac0ec58e",
+          "changedFraction": 0.8957851080246914,
+          "milliseconds": 7534
+        },
+        {
+          "id": "single-cutaway",
+          "passed": true,
+          "original": "d5f63a2b",
+          "changed": "406ebc64",
+          "changedFraction": 0.576195987654321,
+          "milliseconds": 5819
+        },
+        {
+          "id": "interior-lattice",
+          "passed": true,
+          "original": "fbef8cda",
+          "changed": "da573124",
+          "changedFraction": 0.3768827160493827,
+          "milliseconds": 6914
+        },
+        {
+          "id": "chromatic-shadows",
+          "passed": true,
+          "original": "aa66333d",
+          "changed": "0cda0aee",
+          "changedFraction": 0.4608429783950617,
+          "milliseconds": 9924
+        }
+      ],
+      "renders": [
+        {
+          "scene": "perspective",
+          "id": "riso",
+          "milliseconds": 3802,
+          "problems": [],
+          "hash": "a6eb625e",
+          "variance": 5431.635204425467,
+          "changed": 1,
+          "colors": 259,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "woodcut",
+          "milliseconds": 3587,
+          "problems": [],
+          "hash": "a86cd698",
+          "variance": 5483.053479390612,
+          "changed": 0.9994463734567901,
+          "colors": 36,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "stipple",
+          "milliseconds": 7365,
+          "problems": [],
+          "hash": "d3a93732",
+          "variance": 5584.549199145982,
+          "changed": 0.999747299382716,
+          "colors": 63,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "loom",
+          "milliseconds": 4290,
+          "problems": [],
+          "hash": "081e2341",
+          "variance": 1079.188677652095,
+          "changed": 0.9995524691358024,
+          "colors": 9078,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "optical",
+          "milliseconds": 2929,
+          "problems": [],
+          "hash": "2df9cc2e",
+          "variance": 7657.103584897541,
+          "changed": 1,
+          "colors": 17,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "cyanotype",
+          "milliseconds": 2172,
+          "problems": [],
+          "hash": "13b6403e",
+          "variance": 1161.3625938214682,
+          "changed": 1,
+          "colors": 428,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "contours",
+          "milliseconds": 1896,
+          "problems": [],
+          "hash": "e184a88e",
+          "variance": 2275.1043221864966,
+          "changed": 1,
+          "colors": 9,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "frottage",
+          "milliseconds": 2586,
+          "problems": [],
+          "hash": "8e8a6393",
+          "variance": 5099.810433451832,
+          "changed": 0.9999710648148148,
+          "colors": 474,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "cutpaper",
+          "milliseconds": 2474,
+          "problems": [],
+          "hash": "92d47d68",
+          "variance": 566.6249618220354,
+          "changed": 0.9999903549382716,
+          "colors": 574,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "reticulum",
+          "milliseconds": 4214,
+          "problems": [],
+          "hash": "9da415fa",
+          "variance": 2538.290221535739,
+          "changed": 0.9999768518518518,
+          "colors": 902,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "luminous",
+          "milliseconds": 5977,
+          "problems": [],
+          "hash": "d61b854d",
+          "variance": 1516.4783983734235,
+          "changed": 1,
+          "colors": 16192,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "scanner",
+          "milliseconds": 3176,
+          "problems": [],
+          "hash": "6cf2aaff",
+          "variance": 1523.981244823286,
+          "changed": 1,
+          "colors": 932,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "depth",
+          "milliseconds": 2648,
+          "problems": [],
+          "hash": "0de195a1",
+          "variance": 1890.480397062216,
+          "changed": 0.9999845679012346,
+          "colors": 48,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "embroidery",
+          "milliseconds": 3759,
+          "problems": [],
+          "hash": "bb29f0e7",
+          "variance": 1505.248221983049,
+          "changed": 0.9999980709876544,
+          "colors": 2175,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "wash",
+          "milliseconds": 2707,
+          "problems": [],
+          "hash": "a1b2e760",
+          "variance": 1365.2809608749812,
+          "changed": 0.9999652777777778,
+          "colors": 5522,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "architectural",
+          "milliseconds": 5607,
+          "problems": [],
+          "hash": "838cc6ca",
+          "variance": 1176.9986500039522,
+          "changed": 0.9999131944444445,
+          "colors": 611,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "interference",
+          "milliseconds": 2736,
+          "problems": [],
+          "hash": "6f041fba",
+          "variance": 3278.952314467577,
+          "changed": 0.9999652777777778,
+          "colors": 600,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "photogram",
+          "milliseconds": 1770,
+          "problems": [],
+          "hash": "16ba4c48",
+          "variance": 8611.13731304873,
+          "changed": 0.9999980709876544,
+          "colors": 152,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "glass",
+          "milliseconds": 2054,
+          "problems": [],
+          "hash": "d479ed4c",
+          "variance": 2680.8759478931934,
+          "changed": 0.9999961419753086,
+          "colors": 1734,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "transfer",
+          "milliseconds": 7635,
+          "problems": [],
+          "hash": "bbf49da0",
+          "variance": 2700.3960649970904,
+          "changed": 0.9985686728395061,
+          "colors": 6381,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "volume",
+          "milliseconds": 2572,
+          "problems": [],
+          "hash": "54206a27",
+          "variance": 3176.2972992240157,
+          "changed": 1,
+          "colors": 6156,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "surface-dots",
+          "milliseconds": 2472,
+          "problems": [],
+          "hash": "b6779b6f",
+          "variance": 210.96669798385847,
+          "changed": 0.9999961419753086,
+          "colors": 1103,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "mezzotint",
+          "milliseconds": 3007,
+          "problems": [],
+          "hash": "db219e65",
+          "variance": 6839.605205409316,
+          "changed": 0.9996045524691358,
+          "colors": 619,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "impasto",
+          "milliseconds": 3571,
+          "problems": [],
+          "hash": "796e2198",
+          "variance": 2328.3171289408565,
+          "changed": 0.9925192901234567,
+          "colors": 29384,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "reaction",
+          "milliseconds": 3723,
+          "problems": [],
+          "hash": "f6c1990f",
+          "variance": 8438.031789380617,
+          "changed": 0.9999845679012346,
+          "colors": 508,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "marbling",
+          "milliseconds": 3311,
+          "problems": [],
+          "hash": "cf84ff58",
+          "variance": 5972.1920939455995,
+          "changed": 1,
+          "colors": 985,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "sections",
+          "milliseconds": 3582,
+          "problems": [],
+          "hash": "a2274126",
+          "variance": 419.20565360483306,
+          "changed": 1,
+          "colors": 451,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "crackle",
+          "milliseconds": 3272,
+          "problems": [],
+          "hash": "bdc19908",
+          "variance": 1414.6312352498717,
+          "changed": 0.9999864969135802,
+          "colors": 2744,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "oilspot",
+          "milliseconds": 3482,
+          "problems": [],
+          "hash": "95538dbf",
+          "variance": 7381.707280811852,
+          "changed": 0.9994116512345679,
+          "colors": 3944,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "sabattier",
+          "milliseconds": 2868,
+          "problems": [],
+          "hash": "b08bea93",
+          "variance": 916.7972475374117,
+          "changed": 0.9998842592592593,
+          "colors": 420,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "relief",
+          "milliseconds": 3405,
+          "problems": [],
+          "hash": "a2c86872",
+          "variance": 156.61873459145136,
+          "changed": 0.9976427469135802,
+          "colors": 226,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "interlace",
+          "milliseconds": 3243,
+          "problems": [],
+          "hash": "d56cb67a",
+          "variance": 6697.079564471329,
+          "changed": 0.9990914351851852,
+          "colors": 4154,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "voxels",
+          "milliseconds": 11028,
+          "problems": [],
+          "hash": "2313082e",
+          "variance": 3587.200250479462,
+          "changed": 1,
+          "colors": 782,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "spectral",
+          "milliseconds": 3689,
+          "problems": [],
+          "hash": "a24e7324",
+          "variance": 3143.8384953789755,
+          "changed": 0.7208738425925926,
+          "colors": 9366,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "cel",
+          "milliseconds": 4811,
+          "problems": [],
+          "hash": "3a7797ea",
+          "variance": 1303.324413800574,
+          "changed": 1,
+          "colors": 930,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "clear-line",
+          "milliseconds": 3797,
+          "problems": [],
+          "hash": "bd90b922",
+          "variance": 2690.294365513684,
+          "changed": 0.9985956790123457,
+          "colors": 929,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "brush-cel",
+          "milliseconds": 4341,
+          "problems": [],
+          "hash": "4819b307",
+          "variance": 1335.8595360084373,
+          "changed": 1,
+          "colors": 814,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "comic-dots",
+          "milliseconds": 4851,
+          "problems": [],
+          "hash": "72054925",
+          "variance": 1878.689402335387,
+          "changed": 0.9999633487654321,
+          "colors": 2717,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "expressive-ink",
+          "milliseconds": 4128,
+          "problems": [],
+          "hash": "d065f62d",
+          "variance": 5436.7388341011665,
+          "changed": 0.9996566358024691,
+          "colors": 1023,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "ink-bloom",
+          "milliseconds": 3804,
+          "problems": [],
+          "hash": "5bde3c9e",
+          "variance": 5815.601671934455,
+          "changed": 0.9996701388888889,
+          "colors": 604,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "ink-scrape",
+          "milliseconds": 4184,
+          "problems": [],
+          "hash": "376634df",
+          "variance": 5958.132768878579,
+          "changed": 0.9996450617283951,
+          "colors": 924,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "ink-storm",
+          "milliseconds": 3897,
+          "problems": [],
+          "hash": "91ddbb53",
+          "variance": 5311.176990847649,
+          "changed": 0.9997048611111111,
+          "colors": 699,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "game-obra",
+          "milliseconds": 3626,
+          "problems": [],
+          "hash": "7eb5e325",
+          "variance": 4608.804964501186,
+          "changed": 1,
+          "colors": 2,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "game-disco",
+          "milliseconds": 4741,
+          "problems": [],
+          "hash": "d32b806a",
+          "variance": 658.9571190104907,
+          "changed": 0.9999903549382716,
+          "colors": 7512,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "game-okami",
+          "milliseconds": 3181,
+          "problems": [],
+          "hash": "3917cd26",
+          "variance": 2605.304293264602,
+          "changed": 0.9998784722222223,
+          "colors": 8484,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "game-sable",
+          "milliseconds": 5010,
+          "problems": [],
+          "hash": "524ad28e",
+          "variance": 935.76694043717,
+          "changed": 1,
+          "colors": 2446,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "game-hylics",
+          "milliseconds": 3375,
+          "problems": [],
+          "hash": "4c90b6b5",
+          "variance": 4869.930532334007,
+          "changed": 1,
+          "colors": 9,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "game-windwaker",
+          "milliseconds": 3408,
+          "problems": [],
+          "hash": "9e7019de",
+          "variance": 201.46038843621818,
+          "changed": 1,
+          "colors": 427,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "game-persona",
+          "milliseconds": 3447,
+          "problems": [],
+          "hash": "63e33af8",
+          "variance": 7724.172610553693,
+          "changed": 0.9999980709876544,
+          "colors": 70,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "game-inside",
+          "milliseconds": 3395,
+          "problems": [],
+          "hash": "875545e1",
+          "variance": 256.0333382370752,
+          "changed": 1,
+          "colors": 650,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "game-mirrorsedge",
+          "milliseconds": 2862,
+          "problems": [],
+          "hash": "21bfc28f",
+          "variance": 1561.153293224339,
+          "changed": 1,
+          "colors": 734,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "game-viewfinder",
+          "milliseconds": 2113,
+          "problems": [],
+          "hash": "f8d4437f",
+          "variance": 1531.4106931677888,
+          "changed": 0.9990470679012345,
+          "colors": 1358,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "surface-hatching",
+          "milliseconds": 32788,
+          "problems": [],
+          "hash": "1d5eb57c",
+          "variance": 2913.957827531929,
+          "changed": 0.9999247685185185,
+          "colors": 2314,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "resonant-sand",
+          "milliseconds": 4386,
+          "problems": [],
+          "hash": "d6bdb85f",
+          "variance": 3818.8857133991023,
+          "changed": 0.7208526234567901,
+          "colors": 9172,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "contour-pools",
+          "milliseconds": 3608,
+          "problems": [],
+          "hash": "8d027db1",
+          "variance": 5147.907257483883,
+          "changed": 0.9997916666666666,
+          "colors": 5291,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "hooked-pen",
+          "milliseconds": 8922,
+          "problems": [],
+          "hash": "b7e2eee4",
+          "variance": 6514.292018816064,
+          "changed": 0.9999807098765432,
+          "colors": 161,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "naturalist-plate",
+          "milliseconds": 4166,
+          "problems": [],
+          "hash": "7585494c",
+          "variance": 1478.2015386632193,
+          "changed": 1,
+          "colors": 3699,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "electric-contour",
+          "milliseconds": 3996,
+          "problems": [],
+          "hash": "00b0d956",
+          "variance": 3942.1609945314303,
+          "changed": 0.9995158179012346,
+          "colors": 1023,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "cut-print",
+          "milliseconds": 3414,
+          "problems": [],
+          "hash": "e6805405",
+          "variance": 10236.376190624984,
+          "changed": 0.9999807098765432,
+          "colors": 245,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "knife-paint",
+          "milliseconds": 4115,
+          "problems": [],
+          "hash": "362a567a",
+          "variance": 1458.5263306747693,
+          "changed": 0.9999324845679012,
+          "colors": 11753,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "wax-resist",
+          "milliseconds": 3950,
+          "problems": [],
+          "hash": "32a0d91c",
+          "variance": 9427.846124639002,
+          "changed": 1,
+          "colors": 4087,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "directed-tesserae",
+          "milliseconds": 3840,
+          "problems": [],
+          "hash": "53d8c0fa",
+          "variance": 1277.3424238124717,
+          "changed": 0.9722106481481482,
+          "colors": 14521,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "continuous-thread",
+          "milliseconds": 3884,
+          "problems": [],
+          "hash": "7d700c57",
+          "variance": 5399.194643392766,
+          "changed": 0.9999652777777778,
+          "colors": 49,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "quilled-paper",
+          "milliseconds": 3947,
+          "problems": [],
+          "hash": "4c007f62",
+          "variance": 2521.8492920415883,
+          "changed": 0.9995216049382716,
+          "colors": 914,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "lifted-emulsion",
+          "milliseconds": 3705,
+          "problems": [],
+          "hash": "9e1d3450",
+          "variance": 2324.8250316681515,
+          "changed": 0.9997935956790124,
+          "colors": 599,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "color-woodblock",
+          "milliseconds": 3846,
+          "problems": [],
+          "hash": "cff50c75",
+          "variance": 2061.0850702743555,
+          "changed": 0.9999864969135802,
+          "colors": 1698,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "typed-contours",
+          "milliseconds": 5367,
+          "problems": [],
+          "hash": "1da01a46",
+          "variance": 1411.9095825781842,
+          "changed": 0.9995389660493827,
+          "colors": 37,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "faceted-planes",
+          "milliseconds": 3433,
+          "problems": [],
+          "hash": "282c99c7",
+          "variance": 1165.5796013528561,
+          "changed": 0.6437152777777778,
+          "colors": 1112,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "curved-paint",
+          "milliseconds": 5483,
+          "problems": [],
+          "hash": "ef8ebabf",
+          "variance": 1266.8469635193796,
+          "changed": 0.6267573302469136,
+          "colors": 8581,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "translucent-tape",
+          "milliseconds": 4303,
+          "problems": [],
+          "hash": "e0ca2f72",
+          "variance": 6283.640280516862,
+          "changed": 1,
+          "colors": 720,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "thickness-exposure",
+          "milliseconds": 19333,
+          "problems": [],
+          "hash": "ff84bba7",
+          "variance": 10022.566436524048,
+          "changed": 0.9999864969135802,
+          "colors": 256,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "copy-feedback",
+          "milliseconds": 4028,
+          "problems": [],
+          "hash": "33843a58",
+          "variance": 12629.789944141692,
+          "changed": 0.9999961419753086,
+          "colors": 256,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "section-ribs",
+          "milliseconds": 4416,
+          "problems": [],
+          "hash": "f03fee40",
+          "variance": 2969.9984644067845,
+          "changed": 0.9987364969135802,
+          "colors": 554,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "prismatic-exposure",
+          "milliseconds": 2469,
+          "problems": [],
+          "hash": "d945f264",
+          "variance": 824.4728411518881,
+          "changed": 0.85734375,
+          "colors": 15905,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "rank-streaks",
+          "milliseconds": 3225,
+          "problems": [],
+          "hash": "e1f3bb2f",
+          "variance": 1298.5533487269968,
+          "changed": 0.42169367283950615,
+          "colors": 8313,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "pixel-clusters",
+          "milliseconds": 5336,
+          "problems": [],
+          "hash": "bd1a764d",
+          "variance": 1191.9589278023814,
+          "changed": 0.8957272376543209,
+          "colors": 24,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "finite-lenses",
+          "milliseconds": 3726,
+          "problems": [],
+          "hash": "4d56833b",
+          "variance": 1588.984223786727,
+          "changed": 0.0749537037037037,
+          "colors": 9999,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "chromatic-shadows",
+          "milliseconds": 5792,
+          "problems": [],
+          "hash": "aa66333d",
+          "variance": 1113.5898257336876,
+          "changed": 0.9999980709876544,
+          "colors": 388,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "single-cutaway",
+          "milliseconds": 4255,
+          "problems": [],
+          "hash": "d5f63a2b",
+          "variance": 3881.770895808266,
+          "changed": 0.9999845679012346,
+          "colors": 446,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "wholetoning",
+          "milliseconds": 4144,
+          "problems": [],
+          "hash": "a6cdabd5",
+          "variance": 15904.422693209337,
+          "changed": 1,
+          "colors": 2,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "tone-illustration",
+          "milliseconds": 4989,
+          "problems": [],
+          "hash": "53333de3",
+          "variance": 2893.475268479113,
+          "changed": 0.7248456790123456,
+          "colors": 5731,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "triangle-stack",
+          "milliseconds": 3842,
+          "problems": [],
+          "hash": "cb8f1279",
+          "variance": 1049.751071636998,
+          "changed": 0.9197916666666667,
+          "colors": 3025,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "directional-color",
+          "milliseconds": 43047,
+          "problems": [],
+          "hash": "9cf81856",
+          "variance": 1313.72298366619,
+          "changed": 0.23823688271604937,
+          "colors": 4058,
+          "opaque": 1
+        },
+        {
+          "scene": "perspective",
+          "id": "interior-lattice",
+          "milliseconds": 3971,
+          "problems": [],
+          "hash": "fbef8cda",
+          "variance": 2767.7362159133554,
+          "changed": 0.9975713734567901,
+          "colors": 498,
+          "opaque": 1
+        }
+      ],
+      "teardown": {
+        "problems": []
+      }
+    },
+    {
+      "name": "topology",
+      "fixture": {
+        "name": "topology",
+        "fixture": {
+          "world": "worlds/plinth",
+          "cast": [
+            "things/found-atelier-topology"
+          ],
+          "idea": "a closed multi-material box beside an open cylindrical sheet and a paper plane"
+        },
+        "reports": [
+          {
+            "id": "worlds/plinth",
+            "milliseconds": 1,
+            "error": null
+          },
+          {
+            "id": "things/found-atelier-topology",
+            "milliseconds": 1,
+            "error": null
+          }
+        ],
+        "identities": [
+          1,
+          2,
+          3
+        ],
+        "topology": [
+          {
+            "bodyId": "2:0",
+            "owner": 3,
+            "groups": 6,
+            "triangles": 12,
+            "boundaryEdges": 0,
+            "nonManifoldEdges": 0
+          },
+          {
+            "bodyId": "3:0",
+            "owner": 3,
+            "groups": 1,
+            "triangles": 48,
+            "boundaryEdges": 48,
+            "nonManifoldEdges": 0
+          },
+          {
+            "bodyId": "4:0",
+            "owner": 3,
+            "groups": 1,
+            "triangles": 2,
+            "boundaryEdges": 4,
+            "nonManifoldEdges": 0
+          }
+        ],
+        "materialEvidence": {
+          "problems": [],
+          "materialPixels": 66682,
+          "pigments": 5,
+          "matchedBoxPigments": [
+            0,
+            2,
+            4
+          ],
+          "transmissionValues": [
+            0,
+            255
+          ],
+          "profiles": [
+            3,
+            5,
+            7,
+            9,
+            10
+          ],
+          "boxProfiles": [
+            {
+              "pigment": 2,
+              "tokens": [
+                5
+              ]
+            },
+            {
+              "pigment": 0,
+              "tokens": [
+                3
+              ]
+            },
+            {
+              "pigment": 4,
+              "tokens": [
+                7
+              ]
+            }
+          ]
+        },
+        "camera": "orthographic",
+        "geometry": {
+          "source": "conjure",
+          "meshes": 10,
+          "triangles": 76
+        },
+        "problems": []
+      },
+      "lifecycle": [
+        {
+          "check": "pre-aborted signal",
+          "passed": true,
+          "detail": "Rejected before drawing.",
+          "milliseconds": 1
+        },
+        {
+          "check": "in-flight worker cancellation",
+          "passed": true,
+          "detail": "Canceled a directional-color solve; next render follows.",
+          "milliseconds": 13
+        },
+        {
+          "check": "style switch and deterministic replay",
+          "passed": true,
+          "detail": "c3f8fbbe → bb859a8b → c3f8fbbe",
+          "milliseconds": 6544
+        },
+        {
+          "check": "real look selector and Stage.develop",
+          "passed": true,
+          "detail": "84 studies present in base and overlay; Stage returned 2073600 bytes.",
+          "milliseconds": 5161
+        },
+        {
+          "check": "capture preservation",
+          "passed": true,
+          "detail": "58425bc9",
+          "milliseconds": 41
+        }
+      ],
+      "geometry": [
+        {
+          "id": "sections",
+          "passed": true,
+          "original": "3b974f30",
+          "changed": "8c91029f",
+          "changedFraction": 0.07979359567901234,
+          "milliseconds": 9724
+        },
+        {
+          "id": "voxels",
+          "passed": true,
+          "original": "3b1638ae",
+          "changed": "217372d9",
+          "changedFraction": 0.29483796296296294,
+          "milliseconds": 9938
+        },
+        {
+          "id": "surface-dots",
+          "passed": true,
+          "original": "1eb79a33",
+          "changed": "9d8da678",
+          "changedFraction": 0.15275462962962963,
+          "milliseconds": 9581
+        },
+        {
+          "id": "thickness-exposure",
+          "passed": true,
+          "original": "cde70fb7",
+          "changed": "002f9624",
+          "changedFraction": 0.2779591049382716,
+          "milliseconds": 12691
+        },
+        {
+          "id": "section-ribs",
+          "passed": true,
+          "original": "bae8edd1",
+          "changed": "6bbb612c",
+          "changedFraction": 0.2514139660493827,
+          "milliseconds": 10306
+        },
+        {
+          "id": "single-cutaway",
+          "passed": true,
+          "original": "3e559265",
+          "changed": "da161e22",
+          "changedFraction": 0.2106134259259259,
+          "milliseconds": 9511
+        },
+        {
+          "id": "interior-lattice",
+          "passed": true,
+          "original": "04430afb",
+          "changed": "0177d6d7",
+          "changedFraction": 0.2,
+          "milliseconds": 10848
+        },
+        {
+          "id": "chromatic-shadows",
+          "passed": true,
+          "original": "4d6dbe32",
+          "changed": "331c0b84",
+          "changedFraction": 0.19739197530864197,
+          "milliseconds": 11784
+        }
+      ],
+      "renders": [
+        {
+          "scene": "topology",
+          "id": "riso",
+          "milliseconds": 4015,
+          "problems": [],
+          "hash": "e618bb98",
+          "variance": 3167.426998768402,
+          "changed": 1,
+          "colors": 156,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "woodcut",
+          "milliseconds": 3609,
+          "problems": [],
+          "hash": "bb859a8b",
+          "variance": 2775.946461288615,
+          "changed": 1,
+          "colors": 21,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "stipple",
+          "milliseconds": 4142,
+          "problems": [],
+          "hash": "0eff0428",
+          "variance": 2629.775618159678,
+          "changed": 1,
+          "colors": 50,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "loom",
+          "milliseconds": 5742,
+          "problems": [],
+          "hash": "73944ce4",
+          "variance": 1568.5642876402926,
+          "changed": 0.9997935956790124,
+          "colors": 973,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "optical",
+          "milliseconds": 4181,
+          "problems": [],
+          "hash": "5f168487",
+          "variance": 5026.746249823911,
+          "changed": 0.9999980709876544,
+          "colors": 46,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "cyanotype",
+          "milliseconds": 4122,
+          "problems": [],
+          "hash": "70b52354",
+          "variance": 3588.5745456544446,
+          "changed": 1,
+          "colors": 343,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "contours",
+          "milliseconds": 3726,
+          "problems": [],
+          "hash": "723c2a5b",
+          "variance": 1184.9726473461196,
+          "changed": 1,
+          "colors": 9,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "frottage",
+          "milliseconds": 3240,
+          "problems": [],
+          "hash": "4f63dd36",
+          "variance": 2739.15241489849,
+          "changed": 1,
+          "colors": 440,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "cutpaper",
+          "milliseconds": 3235,
+          "problems": [],
+          "hash": "a4f44d26",
+          "variance": 676.5240632648711,
+          "changed": 1,
+          "colors": 160,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "reticulum",
+          "milliseconds": 4286,
+          "problems": [],
+          "hash": "2ef3b300",
+          "variance": 1022.8530204673734,
+          "changed": 0.9999575617283951,
+          "colors": 479,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "luminous",
+          "milliseconds": 3670,
+          "problems": [],
+          "hash": "1cadd6a2",
+          "variance": 413.774841342473,
+          "changed": 1,
+          "colors": 4254,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "scanner",
+          "milliseconds": 3147,
+          "problems": [],
+          "hash": "3ce33def",
+          "variance": 423.13858792780866,
+          "changed": 1,
+          "colors": 216,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "depth",
+          "milliseconds": 3297,
+          "problems": [],
+          "hash": "4348d846",
+          "variance": 478.7028258560822,
+          "changed": 1,
+          "colors": 19,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "embroidery",
+          "milliseconds": 4199,
+          "problems": [],
+          "hash": "54c01e05",
+          "variance": 628.0335328426299,
+          "changed": 0.9999903549382716,
+          "colors": 550,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "wash",
+          "milliseconds": 3811,
+          "problems": [],
+          "hash": "6b066538",
+          "variance": 1062.3789559002762,
+          "changed": 0.9983179012345679,
+          "colors": 2133,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "architectural",
+          "milliseconds": 3761,
+          "problems": [],
+          "hash": "1bd97a71",
+          "variance": 209.7340160656313,
+          "changed": 0.9999845679012346,
+          "colors": 77,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "interference",
+          "milliseconds": 3339,
+          "problems": [],
+          "hash": "21545551",
+          "variance": 3258.7493961830914,
+          "changed": 0.9999729938271605,
+          "colors": 604,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "photogram",
+          "milliseconds": 3325,
+          "problems": [],
+          "hash": "b8cc7e53",
+          "variance": 6627.284036767158,
+          "changed": 1,
+          "colors": 206,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "glass",
+          "milliseconds": 3362,
+          "problems": [],
+          "hash": "06fae47d",
+          "variance": 2850.8742419861082,
+          "changed": 1,
+          "colors": 1408,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "transfer",
+          "milliseconds": 5879,
+          "problems": [],
+          "hash": "de21d0f7",
+          "variance": 865.0545381123156,
+          "changed": 1,
+          "colors": 1076,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "volume",
+          "milliseconds": 4520,
+          "problems": [],
+          "hash": "da8c606e",
+          "variance": 4036.4573821138324,
+          "changed": 1,
+          "colors": 3298,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "surface-dots",
+          "milliseconds": 3886,
+          "problems": [],
+          "hash": "0704af4a",
+          "variance": 804.3482570451451,
+          "changed": 0.999988425925926,
+          "colors": 1165,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "mezzotint",
+          "milliseconds": 3513,
+          "problems": [],
+          "hash": "733584a6",
+          "variance": 5588.118452896602,
+          "changed": 1,
+          "colors": 567,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "impasto",
+          "milliseconds": 4737,
+          "problems": [],
+          "hash": "742276d4",
+          "variance": 1980.411655408061,
+          "changed": 0.9987114197530864,
+          "colors": 12630,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "reaction",
+          "milliseconds": 5156,
+          "problems": [],
+          "hash": "b590810a",
+          "variance": 4057.402252244523,
+          "changed": 1,
+          "colors": 379,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "marbling",
+          "milliseconds": 4388,
+          "problems": [],
+          "hash": "426d208c",
+          "variance": 4228.391696054183,
+          "changed": 1,
+          "colors": 300,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "sections",
+          "milliseconds": 4131,
+          "problems": [],
+          "hash": "10752264",
+          "variance": 399.71987922283733,
+          "changed": 1,
+          "colors": 147,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "crackle",
+          "milliseconds": 4121,
+          "problems": [],
+          "hash": "061427e7",
+          "variance": 975.7482422249814,
+          "changed": 1,
+          "colors": 1655,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "oilspot",
+          "milliseconds": 5488,
+          "problems": [],
+          "hash": "90a1ba0d",
+          "variance": 5487.268876016962,
+          "changed": 0.9999980709876544,
+          "colors": 2534,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "sabattier",
+          "milliseconds": 3338,
+          "problems": [],
+          "hash": "e8dc726c",
+          "variance": 628.8107669297169,
+          "changed": 0.9999344135802469,
+          "colors": 380,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "relief",
+          "milliseconds": 4855,
+          "problems": [],
+          "hash": "ddcaca22",
+          "variance": 64.19254616997205,
+          "changed": 1,
+          "colors": 310,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "interlace",
+          "milliseconds": 4373,
+          "problems": [],
+          "hash": "c5cf9600",
+          "variance": 5003.667665481156,
+          "changed": 0.9999672067901234,
+          "colors": 3012,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "voxels",
+          "milliseconds": 4299,
+          "problems": [],
+          "hash": "2bb41447",
+          "variance": 2780.985207220656,
+          "changed": 0.9996238425925926,
+          "colors": 1051,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "spectral",
+          "milliseconds": 5820,
+          "problems": [],
+          "hash": "26ea75e9",
+          "variance": 4534.939688238803,
+          "changed": 0.24294753086419754,
+          "colors": 4155,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "cel",
+          "milliseconds": 4459,
+          "problems": [],
+          "hash": "4b171b04",
+          "variance": 1556.302731717682,
+          "changed": 1,
+          "colors": 56,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "clear-line",
+          "milliseconds": 5157,
+          "problems": [],
+          "hash": "73f4b994",
+          "variance": 505.00421296662535,
+          "changed": 1,
+          "colors": 33,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "brush-cel",
+          "milliseconds": 4755,
+          "problems": [],
+          "hash": "69755093",
+          "variance": 1923.9551920871745,
+          "changed": 0.9999980709876544,
+          "colors": 41,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "comic-dots",
+          "milliseconds": 5457,
+          "problems": [],
+          "hash": "aef1a860",
+          "variance": 1446.9594738379092,
+          "changed": 1,
+          "colors": 451,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "expressive-ink",
+          "milliseconds": 5710,
+          "problems": [],
+          "hash": "fb9b5bb5",
+          "variance": 2974.610793744032,
+          "changed": 1,
+          "colors": 1002,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "ink-bloom",
+          "milliseconds": 5849,
+          "problems": [],
+          "hash": "c4f9f3f3",
+          "variance": 3242.274617797266,
+          "changed": 1,
+          "colors": 638,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "ink-scrape",
+          "milliseconds": 6095,
+          "problems": [],
+          "hash": "b648471b",
+          "variance": 2598.309171270099,
+          "changed": 1,
+          "colors": 909,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "ink-storm",
+          "milliseconds": 5769,
+          "problems": [],
+          "hash": "52a663bd",
+          "variance": 3630.8905982398137,
+          "changed": 1,
+          "colors": 732,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "game-obra",
+          "milliseconds": 3944,
+          "problems": [],
+          "hash": "d4b91de5",
+          "variance": 5411.466492615214,
+          "changed": 1,
+          "colors": 2,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "game-disco",
+          "milliseconds": 5545,
+          "problems": [],
+          "hash": "84e1e940",
+          "variance": 311.63056323138517,
+          "changed": 0.9999980709876544,
+          "colors": 3656,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "game-okami",
+          "milliseconds": 4647,
+          "problems": [],
+          "hash": "ca5c9bca",
+          "variance": 1110.3972470006483,
+          "changed": 0.9999537037037037,
+          "colors": 4298,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "game-sable",
+          "milliseconds": 5412,
+          "problems": [],
+          "hash": "4c970770",
+          "variance": 574.507924286987,
+          "changed": 1,
+          "colors": 664,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "game-hylics",
+          "milliseconds": 4728,
+          "problems": [],
+          "hash": "9b28d5b5",
+          "variance": 2530.6336260712997,
+          "changed": 1,
+          "colors": 9,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "game-windwaker",
+          "milliseconds": 5760,
+          "problems": [],
+          "hash": "ec21a4df",
+          "variance": 1063.7373720596743,
+          "changed": 1,
+          "colors": 1193,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "game-persona",
+          "milliseconds": 5525,
+          "problems": [],
+          "hash": "3c5456b9",
+          "variance": 4688.295129048303,
+          "changed": 1,
+          "colors": 56,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "game-inside",
+          "milliseconds": 5378,
+          "problems": [],
+          "hash": "8ee4fca1",
+          "variance": 349.0437086244501,
+          "changed": 1,
+          "colors": 429,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "game-mirrorsedge",
+          "milliseconds": 4386,
+          "problems": [],
+          "hash": "c863f332",
+          "variance": 510.7722880993315,
+          "changed": 1,
+          "colors": 455,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "game-viewfinder",
+          "milliseconds": 4688,
+          "problems": [],
+          "hash": "ad0e4546",
+          "variance": 1968.4927080438065,
+          "changed": 1,
+          "colors": 378,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "surface-hatching",
+          "milliseconds": 7832,
+          "problems": [],
+          "hash": "9a9212aa",
+          "variance": 1531.0613674301421,
+          "changed": 1,
+          "colors": 284,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "resonant-sand",
+          "milliseconds": 4814,
+          "problems": [],
+          "hash": "6bc02f74",
+          "variance": 5991.936140137128,
+          "changed": 0.24294753086419754,
+          "colors": 2003,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "contour-pools",
+          "milliseconds": 5624,
+          "problems": [],
+          "hash": "a264be4f",
+          "variance": 4111.961111765699,
+          "changed": 1,
+          "colors": 3186,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "hooked-pen",
+          "milliseconds": 6829,
+          "problems": [],
+          "hash": "e1bbf9fc",
+          "variance": 1938.6406860527495,
+          "changed": 0.999994212962963,
+          "colors": 50,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "naturalist-plate",
+          "milliseconds": 6963,
+          "problems": [],
+          "hash": "21564c27",
+          "variance": 844.4667389747628,
+          "changed": 1,
+          "colors": 1613,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "electric-contour",
+          "milliseconds": 5503,
+          "problems": [],
+          "hash": "578a8109",
+          "variance": 1702.2586991824212,
+          "changed": 1,
+          "colors": 337,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "cut-print",
+          "milliseconds": 4398,
+          "problems": [],
+          "hash": "f0c74d44",
+          "variance": 3027.630844665652,
+          "changed": 0.999994212962963,
+          "colors": 245,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "knife-paint",
+          "milliseconds": 5782,
+          "problems": [],
+          "hash": "f3e03afe",
+          "variance": 698.3694822186189,
+          "changed": 0.9999710648148148,
+          "colors": 12206,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "wax-resist",
+          "milliseconds": 5658,
+          "problems": [],
+          "hash": "159a319f",
+          "variance": 3416.3817159180544,
+          "changed": 1,
+          "colors": 1326,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "directed-tesserae",
+          "milliseconds": 5921,
+          "problems": [],
+          "hash": "e0443cc1",
+          "variance": 2251.8332769238114,
+          "changed": 0.9166261574074074,
+          "colors": 2709,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "continuous-thread",
+          "milliseconds": 5508,
+          "problems": [],
+          "hash": "9f2f85f7",
+          "variance": 2305.355742525062,
+          "changed": 1,
+          "colors": 46,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "quilled-paper",
+          "milliseconds": 5340,
+          "problems": [],
+          "hash": "cde575e7",
+          "variance": 1917.423441122075,
+          "changed": 0.9998996913580247,
+          "colors": 432,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "lifted-emulsion",
+          "milliseconds": 5674,
+          "problems": [],
+          "hash": "2950c1c6",
+          "variance": 1428.104177273999,
+          "changed": 0.9999594907407408,
+          "colors": 518,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "color-woodblock",
+          "milliseconds": 5171,
+          "problems": [],
+          "hash": "1552f11f",
+          "variance": 1267.588880739182,
+          "changed": 0.9999672067901234,
+          "colors": 896,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "typed-contours",
+          "milliseconds": 5468,
+          "problems": [],
+          "hash": "8d7ce0f1",
+          "variance": 232.75399231902702,
+          "changed": 0.9999864969135802,
+          "colors": 37,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "faceted-planes",
+          "milliseconds": 5192,
+          "problems": [],
+          "hash": "b93fc38e",
+          "variance": 2046.7328965591441,
+          "changed": 0.0573341049382716,
+          "colors": 308,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "curved-paint",
+          "milliseconds": 6678,
+          "problems": [],
+          "hash": "08a2f1dc",
+          "variance": 2018.9344136660802,
+          "changed": 0.13870949074074074,
+          "colors": 1456,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "translucent-tape",
+          "milliseconds": 6101,
+          "problems": [],
+          "hash": "2a4cd9a8",
+          "variance": 3908.347482915655,
+          "changed": 1,
+          "colors": 582,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "thickness-exposure",
+          "milliseconds": 7557,
+          "problems": [],
+          "hash": "cde70fb7",
+          "variance": 5566.674673839497,
+          "changed": 1,
+          "colors": 251,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "copy-feedback",
+          "milliseconds": 5969,
+          "problems": [],
+          "hash": "d64a01f5",
+          "variance": 4765.802013487853,
+          "changed": 0.9932156635802469,
+          "colors": 256,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "section-ribs",
+          "milliseconds": 5823,
+          "problems": [],
+          "hash": "bae8edd1",
+          "variance": 1030.4555474513982,
+          "changed": 0.9999286265432099,
+          "colors": 173,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "prismatic-exposure",
+          "milliseconds": 3569,
+          "problems": [],
+          "hash": "033df582",
+          "variance": 893.5357049871891,
+          "changed": 0.4050443672839506,
+          "colors": 1785,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "rank-streaks",
+          "milliseconds": 3419,
+          "problems": [],
+          "hash": "5edf9df6",
+          "variance": 2060.5470094017146,
+          "changed": 0.025532407407407406,
+          "colors": 1008,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "pixel-clusters",
+          "milliseconds": 7232,
+          "problems": [],
+          "hash": "08e01dbd",
+          "variance": 2061.4790354374054,
+          "changed": 0.06261766975308641,
+          "colors": 24,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "finite-lenses",
+          "milliseconds": 5879,
+          "problems": [],
+          "hash": "61939fcc",
+          "variance": 2347.2364759446573,
+          "changed": 0.0743287037037037,
+          "colors": 1629,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "chromatic-shadows",
+          "milliseconds": 5956,
+          "problems": [],
+          "hash": "4d6dbe32",
+          "variance": 2866.590489088536,
+          "changed": 0.9999710648148148,
+          "colors": 464,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "single-cutaway",
+          "milliseconds": 5794,
+          "problems": [],
+          "hash": "3e559265",
+          "variance": 1346.8946955420324,
+          "changed": 1,
+          "colors": 88,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "wholetoning",
+          "milliseconds": 6042,
+          "problems": [],
+          "hash": "c492295d",
+          "variance": 10342.123761882183,
+          "changed": 1,
+          "colors": 2,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "tone-illustration",
+          "milliseconds": 4667,
+          "problems": [],
+          "hash": "20f65eea",
+          "variance": 1527.6415121848258,
+          "changed": 0.24611882716049382,
+          "colors": 177,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "triangle-stack",
+          "milliseconds": 4760,
+          "problems": [],
+          "hash": "c3f4593e",
+          "variance": 1941.6913925907647,
+          "changed": 0.45661265432098763,
+          "colors": 2392,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "directional-color",
+          "milliseconds": 17869,
+          "problems": [],
+          "hash": "a62eddb4",
+          "variance": 2091.2011937125862,
+          "changed": 0.02419945987654321,
+          "colors": 430,
+          "opaque": 1
+        },
+        {
+          "scene": "topology",
+          "id": "interior-lattice",
+          "milliseconds": 5486,
+          "problems": [],
+          "hash": "04430afb",
+          "variance": 773.866890798512,
+          "changed": 0.9999922839506172,
+          "colors": 192,
+          "opaque": 1
+        }
+      ],
+      "teardown": {
+        "problems": []
+      },
+      "captureSlots": {
+        "milliseconds": 2058,
+        "problems": [],
+        "evidence": {
+          "owner": 200,
+          "slots": [
+            "excluded-first-glow",
+            "later-opaque-front",
+            "backside-map-alpha-0.30",
+            "double-sided-uv1-green-alpha",
+            "vertex-alpha",
+            "culled-frontside",
+            "double-sided-transmission"
+          ],
+          "admittedGroups": 6,
+          "masks": {
+            "identity": {
+              "pixels": 85536,
+              "mismatch": 0
+            },
+            "depth": {
+              "pixels": 85536,
+              "mismatch": 0
+            },
+            "normal": {
+              "pixels": 85536,
+              "mismatch": 0
+            },
+            "diffuse": {
+              "pixels": 85536,
+              "mismatch": 0
+            },
+            "material": {
+              "pixels": 85536,
+              "mismatch": 0
+            },
+            "albedo": {
+              "pixels": 85536,
+              "mismatch": 0
+            },
+            "transmission": {
+              "pixels": 85536,
+              "mismatch": 0
+            }
+          },
+          "probes": [
+            {
+              "slot": 0,
+              "name": "excluded-first-glow",
+              "samples": [
+                {
+                  "u": 0.25,
+                  "x": 67,
+                  "y": 189,
+                  "expected": false,
+                  "present": false,
+                  "identity": 0,
+                  "transmission": 0,
+                  "albedo": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "u": 0.75,
+                  "x": 130,
+                  "y": 189,
+                  "expected": false,
+                  "present": false,
+                  "identity": 0,
+                  "transmission": 0,
+                  "albedo": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                }
+              ]
+            },
+            {
+              "slot": 1,
+              "name": "later-opaque-front",
+              "samples": [
+                {
+                  "u": 0.25,
+                  "x": 233,
+                  "y": 189,
+                  "expected": true,
+                  "present": true,
+                  "identity": 200,
+                  "transmission": 0,
+                  "albedo": [
+                    31,
+                    122,
+                    52,
+                    255
+                  ]
+                },
+                {
+                  "u": 0.75,
+                  "x": 296,
+                  "y": 189,
+                  "expected": true,
+                  "present": true,
+                  "identity": 200,
+                  "transmission": 0,
+                  "albedo": [
+                    31,
+                    122,
+                    52,
+                    255
+                  ]
+                }
+              ]
+            },
+            {
+              "slot": 2,
+              "name": "backside-map-alpha-0.30",
+              "samples": [
+                {
+                  "u": 0.25,
+                  "x": 398,
+                  "y": 189,
+                  "expected": true,
+                  "present": true,
+                  "identity": 200,
+                  "transmission": 0,
+                  "albedo": [
+                    31,
+                    76,
+                    164,
+                    77
+                  ]
+                },
+                {
+                  "u": 0.75,
+                  "x": 461,
+                  "y": 189,
+                  "expected": false,
+                  "present": false,
+                  "identity": 0,
+                  "transmission": 0,
+                  "albedo": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                }
+              ]
+            },
+            {
+              "slot": 3,
+              "name": "double-sided-uv1-green-alpha",
+              "samples": [
+                {
+                  "u": 0.25,
+                  "x": 564,
+                  "y": 189,
+                  "expected": false,
+                  "present": false,
+                  "identity": 0,
+                  "transmission": 0,
+                  "albedo": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "u": 0.75,
+                  "x": 627,
+                  "y": 189,
+                  "expected": true,
+                  "present": true,
+                  "identity": 200,
+                  "transmission": 0,
+                  "albedo": [
+                    159,
+                    48,
+                    93,
+                    102
+                  ]
+                }
+              ]
+            },
+            {
+              "slot": 4,
+              "name": "vertex-alpha",
+              "samples": [
+                {
+                  "u": 0.25,
+                  "x": 67,
+                  "y": 495,
+                  "expected": false,
+                  "present": false,
+                  "identity": 0,
+                  "transmission": 0,
+                  "albedo": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "u": 0.75,
+                  "x": 130,
+                  "y": 495,
+                  "expected": true,
+                  "present": true,
+                  "identity": 200,
+                  "transmission": 0,
+                  "albedo": [
+                    159,
+                    76,
+                    23,
+                    76
+                  ]
+                }
+              ]
+            },
+            {
+              "slot": 5,
+              "name": "culled-frontside",
+              "samples": [
+                {
+                  "u": 0.25,
+                  "x": 233,
+                  "y": 495,
+                  "expected": false,
+                  "present": false,
+                  "identity": 0,
+                  "transmission": 0,
+                  "albedo": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                },
+                {
+                  "u": 0.75,
+                  "x": 296,
+                  "y": 495,
+                  "expected": false,
+                  "present": false,
+                  "identity": 0,
+                  "transmission": 0,
+                  "albedo": [
+                    0,
+                    0,
+                    0,
+                    0
+                  ]
+                }
+              ]
+            },
+            {
+              "slot": 6,
+              "name": "double-sided-transmission",
+              "samples": [
+                {
+                  "u": 0.25,
+                  "x": 398,
+                  "y": 495,
+                  "expected": true,
+                  "present": true,
+                  "identity": 200,
+                  "transmission": 166,
+                  "albedo": [
+                    84,
+                    51,
+                    168,
+                    255
+                  ]
+                },
+                {
+                  "u": 0.75,
+                  "x": 461,
+                  "y": 495,
+                  "expected": true,
+                  "present": true,
+                  "identity": 200,
+                  "transmission": 166,
+                  "albedo": [
+                    84,
+                    51,
+                    168,
+                    255
+                  ]
+                }
+              ]
+            }
+          ],
+          "sourceMaterialsRestored": true
+        }
+      }
+    }
+  ],
+  "blockedRequests": [],
+  "pageErrors": [],
+  "completed": true,
+  "catalogue": [
+    {
+      "id": "riso",
+      "name": "Risograph"
+    },
+    {
+      "id": "woodcut",
+      "name": "Woodcut"
+    },
+    {
+      "id": "stipple",
+      "name": "Stipple"
+    },
+    {
+      "id": "loom",
+      "name": "Woven field"
+    },
+    {
+      "id": "optical",
+      "name": "Optical relief"
+    },
+    {
+      "id": "cyanotype",
+      "name": "Cyanotype"
+    },
+    {
+      "id": "contours",
+      "name": "Contour atlas"
+    },
+    {
+      "id": "frottage",
+      "name": "Frottage"
+    },
+    {
+      "id": "cutpaper",
+      "name": "Cut paper"
+    },
+    {
+      "id": "reticulum",
+      "name": "Reticulum"
+    },
+    {
+      "id": "luminous",
+      "name": "Luminous field"
+    },
+    {
+      "id": "scanner",
+      "name": "Data engraving"
+    },
+    {
+      "id": "depth",
+      "name": "Depth etching"
+    },
+    {
+      "id": "embroidery",
+      "name": "Surface embroidery"
+    },
+    {
+      "id": "wash",
+      "name": "Pigment wash"
+    },
+    {
+      "id": "architectural",
+      "name": "Architectural plate"
+    },
+    {
+      "id": "interference",
+      "name": "Moiré interference"
+    },
+    {
+      "id": "photogram",
+      "name": "Photogram"
+    },
+    {
+      "id": "glass",
+      "name": "Leaded glass"
+    },
+    {
+      "id": "transfer",
+      "name": "Solvent transfer"
+    },
+    {
+      "id": "volume",
+      "name": "Luminous volume"
+    },
+    {
+      "id": "surface-dots",
+      "name": "Surface pointillism"
+    },
+    {
+      "id": "mezzotint",
+      "name": "Mezzotint"
+    },
+    {
+      "id": "impasto",
+      "name": "Impasto relief"
+    },
+    {
+      "id": "reaction",
+      "name": "Reactive cells"
+    },
+    {
+      "id": "marbling",
+      "name": "Marbled float"
+    },
+    {
+      "id": "sections",
+      "name": "Sectional volume"
+    },
+    {
+      "id": "crackle",
+      "name": "Crackle glaze"
+    },
+    {
+      "id": "oilspot",
+      "name": "Oil-spot glaze"
+    },
+    {
+      "id": "sabattier",
+      "name": "Sabattier print"
+    },
+    {
+      "id": "relief",
+      "name": "Schiacciato"
+    },
+    {
+      "id": "interlace",
+      "name": "Optical interlace"
+    },
+    {
+      "id": "voxels",
+      "name": "Surface Blocks"
+    },
+    {
+      "id": "spectral",
+      "name": "Spectral coating"
+    },
+    {
+      "id": "cel",
+      "name": "Clean cel"
+    },
+    {
+      "id": "clear-line",
+      "name": "Ligne claire"
+    },
+    {
+      "id": "brush-cel",
+      "name": "Bold ink"
+    },
+    {
+      "id": "comic-dots",
+      "name": "Comic shadows"
+    },
+    {
+      "id": "expressive-ink",
+      "name": "Expressive ink"
+    },
+    {
+      "id": "ink-bloom",
+      "name": "Wash bloom"
+    },
+    {
+      "id": "ink-scrape",
+      "name": "Scraped ink"
+    },
+    {
+      "id": "ink-storm",
+      "name": "Edge storm"
+    },
+    {
+      "id": "game-obra",
+      "name": "Obra Dinn / one bit"
+    },
+    {
+      "id": "game-disco",
+      "name": "Disco / drybrush"
+    },
+    {
+      "id": "game-okami",
+      "name": "Okami / brushwash"
+    },
+    {
+      "id": "game-sable",
+      "name": "Sable / schematics"
+    },
+    {
+      "id": "game-hylics",
+      "name": "Hylics / clay pixels"
+    },
+    {
+      "id": "game-windwaker",
+      "name": "Wind Waker / inlays"
+    },
+    {
+      "id": "game-persona",
+      "name": "Persona / cutouts"
+    },
+    {
+      "id": "game-inside",
+      "name": "INSIDE / backlight"
+    },
+    {
+      "id": "game-mirrorsedge",
+      "name": "Mirror’s Edge / high key"
+    },
+    {
+      "id": "game-viewfinder",
+      "name": "Viewfinder / photo"
+    },
+    {
+      "id": "surface-hatching",
+      "name": "Curvature hatching"
+    },
+    {
+      "id": "resonant-sand",
+      "name": "Resonant sand"
+    },
+    {
+      "id": "contour-pools",
+      "name": "Contour pools"
+    },
+    {
+      "id": "hooked-pen",
+      "name": "Hooked pen"
+    },
+    {
+      "id": "naturalist-plate",
+      "name": "Naturalist plate"
+    },
+    {
+      "id": "electric-contour",
+      "name": "Electric contours"
+    },
+    {
+      "id": "cut-print",
+      "name": "Cut-print nocturne"
+    },
+    {
+      "id": "knife-paint",
+      "name": "Layered knife paint"
+    },
+    {
+      "id": "wax-resist",
+      "name": "Wax-resist dye"
+    },
+    {
+      "id": "directed-tesserae",
+      "name": "Directed tesserae"
+    },
+    {
+      "id": "continuous-thread",
+      "name": "Continuous thread"
+    },
+    {
+      "id": "quilled-paper",
+      "name": "Upright paper"
+    },
+    {
+      "id": "lifted-emulsion",
+      "name": "Lifted emulsion"
+    },
+    {
+      "id": "color-woodblock",
+      "name": "Color woodblock"
+    },
+    {
+      "id": "typed-contours",
+      "name": "Typed contours"
+    },
+    {
+      "id": "faceted-planes",
+      "name": "Faceted planes"
+    },
+    {
+      "id": "curved-paint",
+      "name": "Curved paint"
+    },
+    {
+      "id": "translucent-tape",
+      "name": "Translucent tape"
+    },
+    {
+      "id": "thickness-exposure",
+      "name": "Thickness exposure"
+    },
+    {
+      "id": "copy-feedback",
+      "name": "Repeated-copy feedback"
+    },
+    {
+      "id": "section-ribs",
+      "name": "Section ribs"
+    },
+    {
+      "id": "prismatic-exposure",
+      "name": "Prismatic exposure"
+    },
+    {
+      "id": "rank-streaks",
+      "name": "Pixel sorting"
+    },
+    {
+      "id": "pixel-clusters",
+      "name": "Pixel clusters"
+    },
+    {
+      "id": "finite-lenses",
+      "name": "Finite lenses"
+    },
+    {
+      "id": "chromatic-shadows",
+      "name": "Chromatic shadows"
+    },
+    {
+      "id": "single-cutaway",
+      "name": "Single cutaway"
+    },
+    {
+      "id": "wholetoning",
+      "name": "Wholetoning"
+    },
+    {
+      "id": "tone-illustration",
+      "name": "Tone illustration"
+    },
+    {
+      "id": "triangle-stack",
+      "name": "Triangle stack"
+    },
+    {
+      "id": "directional-color",
+      "name": "Directional color"
+    },
+    {
+      "id": "interior-lattice",
+      "name": "Interior lattice"
+    }
+  ],
+  "materials": {
+    "fixture": {
+      "materials": [
+        "atelier-brushed-steel",
+        "atelier-chrome",
+        "atelier-brass",
+        "atelier-copper",
+        "atelier-porcelain",
+        "atelier-marble",
+        "atelier-concrete",
+        "atelier-stone",
+        "atelier-wood",
+        "atelier-frosted-glass",
+        "atelier-skin",
+        "atelier-adipose",
+        "atelier-muscle",
+        "atelier-cortical-bone",
+        "atelier-cancellous-bone",
+        "atelier-velvet",
+        "atelier-woven-linen",
+        "atelier-diffraction-foil",
+        "atelier-hammered-metal",
+        "atelier-interference-coat",
+        "atelier-tiled-surface",
+        "atelier-perlage-metal"
+      ],
+      "baseline": "2c8261ae",
+      "memory": {
+        "geometries": 13,
+        "textures": 5
+      }
+    },
+    "renders": [
+      {
+        "id": "atelier-brushed-steel",
+        "repeated": false,
+        "milliseconds": 2063,
+        "problems": [],
+        "hash": "b87a6d6b",
+        "variance": 4737.217132577745,
+        "changed": 0.024893904320987655,
+        "colors": 1198,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              126.88991259154264,
+              141.83290022836445,
+              154.82872667139145
+            ],
+            "minima": [
+              108,
+              110,
+              116
+            ],
+            "maxima": [
+              136,
+              153,
+              167
+            ],
+            "colors": 289
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 6
+        }
+      },
+      {
+        "id": "atelier-chrome",
+        "repeated": false,
+        "milliseconds": 1963,
+        "problems": [],
+        "hash": "65a32e5e",
+        "variance": 4693.177170537841,
+        "changed": 0.024928626543209875,
+        "colors": 1039,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              195.88361288290417,
+              201.64146783211277,
+              211.47869911016616
+            ],
+            "minima": [
+              160,
+              163,
+              169
+            ],
+            "maxima": [
+              199,
+              205,
+              215
+            ],
+            "colors": 117
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 6
+        }
+      },
+      {
+        "id": "atelier-brass",
+        "repeated": false,
+        "milliseconds": 1864,
+        "problems": [],
+        "hash": "bc410dd5",
+        "variance": 4765.026691285559,
+        "changed": 0.02493827160493827,
+        "colors": 1387,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              171.5285455547681,
+              113.44649184975195,
+              35.56295771320576
+            ],
+            "minima": [
+              110,
+              85,
+              32
+            ],
+            "maxima": [
+              179,
+              118,
+              37
+            ],
+            "colors": 158
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 6
+        }
+      },
+      {
+        "id": "atelier-copper",
+        "repeated": false,
+        "milliseconds": 2003,
+        "problems": [],
+        "hash": "47611cdf",
+        "variance": 4825.438709902504,
+        "changed": 0.02493827160493827,
+        "colors": 1375,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              168.43562485235057,
+              67.75313016772974,
+              38.46334357035987
+            ],
+            "minima": [
+              52,
+              53,
+              37
+            ],
+            "maxima": [
+              175,
+              70,
+              40
+            ],
+            "colors": 242
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 6
+        }
+      },
+      {
+        "id": "atelier-porcelain",
+        "repeated": false,
+        "milliseconds": 2141,
+        "problems": [],
+        "hash": "088df69b",
+        "variance": 4496.87384220129,
+        "changed": 0.024932484567901234,
+        "colors": 865,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              191.6731238680211,
+              209.92849830695332,
+              194.19639341680448
+            ],
+            "minima": [
+              148,
+              175,
+              160
+            ],
+            "maxima": [
+              202,
+              217,
+              201
+            ],
+            "colors": 808
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 6
+        }
+      },
+      {
+        "id": "atelier-marble",
+        "repeated": false,
+        "milliseconds": 2306,
+        "problems": [],
+        "hash": "c23bfef2",
+        "variance": 4480.803000117005,
+        "changed": 0.02493827160493827,
+        "colors": 915,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              186.9000708717222,
+              183.77053311284354,
+              164.1697771478069
+            ],
+            "minima": [
+              115,
+              115,
+              98
+            ],
+            "maxima": [
+              201,
+              197,
+              176
+            ],
+            "colors": 580
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 6
+        }
+      },
+      {
+        "id": "atelier-concrete",
+        "repeated": false,
+        "milliseconds": 2197,
+        "problems": [],
+        "hash": "127beaec",
+        "variance": 4464.200271436035,
+        "changed": 0.02493827160493827,
+        "colors": 1018,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              100.29041656823372,
+              100.29041656823372,
+              86.35372864005039
+            ],
+            "minima": [
+              76,
+              76,
+              65
+            ],
+            "maxima": [
+              111,
+              111,
+              96
+            ],
+            "colors": 63
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 6
+        }
+      },
+      {
+        "id": "atelier-stone",
+        "repeated": false,
+        "milliseconds": 1829,
+        "problems": [],
+        "hash": "30a72b2b",
+        "variance": 4464.434270469239,
+        "changed": 0.02493827160493827,
+        "colors": 1232,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              133.541302464761,
+              109.31018190408693,
+              77.36475313016773
+            ],
+            "minima": [
+              103,
+              82,
+              56
+            ],
+            "maxima": [
+              162,
+              139,
+              105
+            ],
+            "colors": 655
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 6
+        }
+      },
+      {
+        "id": "atelier-wood",
+        "repeated": false,
+        "milliseconds": 2125,
+        "problems": [],
+        "hash": "84158647",
+        "variance": 4500.4715639214555,
+        "changed": 0.02493827160493827,
+        "colors": 1515,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              100.14316087880935,
+              47.441215843767225,
+              17.725647688794393
+            ],
+            "minima": [
+              38,
+              17,
+              6
+            ],
+            "maxima": [
+              125,
+              59,
+              22
+            ],
+            "colors": 176
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 6
+        }
+      },
+      {
+        "id": "atelier-frosted-glass",
+        "repeated": false,
+        "milliseconds": 2335,
+        "problems": [],
+        "hash": "28c79143",
+        "variance": 4616.335721968011,
+        "changed": 0.03413966049382716,
+        "colors": 581,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 255,
+            "min": 255,
+            "max": 255,
+            "values": [
+              255
+            ]
+          },
+          "albedo": {
+            "means": [
+              255,
+              255,
+              255
+            ],
+            "minima": [
+              255,
+              255,
+              255
+            ],
+            "maxima": [
+              255,
+              255,
+              255
+            ],
+            "colors": 1
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 6
+        }
+      },
+      {
+        "id": "atelier-skin",
+        "repeated": false,
+        "milliseconds": 1976,
+        "problems": [],
+        "hash": "11f2e3c0",
+        "variance": 4470.484038071787,
+        "changed": 0.02493827160493827,
+        "colors": 1288,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              141.57461217418694,
+              68.012363178203,
+              44.2392314355461
+            ],
+            "minima": [
+              122,
+              56,
+              37
+            ],
+            "maxima": [
+              155,
+              76,
+              49
+            ],
+            "colors": 235
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 6
+        }
+      },
+      {
+        "id": "atelier-adipose",
+        "repeated": false,
+        "milliseconds": 1866,
+        "problems": [],
+        "hash": "d13b6088",
+        "variance": 4473.733162121971,
+        "changed": 0.02493827160493827,
+        "colors": 960,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              204.20048822741947,
+              166.3806598944799,
+              94.24576738325852
+            ],
+            "minima": [
+              196,
+              158,
+              85
+            ],
+            "maxima": [
+              217,
+              178,
+              100
+            ],
+            "colors": 331
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 6
+        }
+      },
+      {
+        "id": "atelier-muscle",
+        "repeated": false,
+        "milliseconds": 1916,
+        "problems": [],
+        "hash": "0d08c579",
+        "variance": 4545.8402640903005,
+        "changed": 0.02493827160493827,
+        "colors": 1747,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              89.00322860067722,
+              26.174186943853847,
+              20.610914245216158
+            ],
+            "minima": [
+              73,
+              21,
+              17
+            ],
+            "maxima": [
+              107,
+              35,
+              28
+            ],
+            "colors": 309
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 6
+        }
+      },
+      {
+        "id": "atelier-cortical-bone",
+        "repeated": false,
+        "milliseconds": 1754,
+        "problems": [],
+        "hash": "f513e0f7",
+        "variance": 4478.11441801583,
+        "changed": 0.02493827160493827,
+        "colors": 822,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              198.43050633908183,
+              172.09866918655013,
+              122.86274509803921
+            ],
+            "minima": [
+              184,
+              160,
+              114
+            ],
+            "maxima": [
+              208,
+              180,
+              129
+            ],
+            "colors": 60
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 6
+        }
+      },
+      {
+        "id": "atelier-cancellous-bone",
+        "repeated": false,
+        "milliseconds": 1591,
+        "problems": [],
+        "hash": "803aa2a9",
+        "variance": 4495.027715393611,
+        "changed": 0.02493827160493827,
+        "colors": 1292,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              197.06087093471928,
+              165.33561697771478,
+              107.20631545791007
+            ],
+            "minima": [
+              180,
+              151,
+              98
+            ],
+            "maxima": [
+              204,
+              171,
+              111
+            ],
+            "colors": 55
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 6
+        }
+      },
+      {
+        "id": "atelier-velvet",
+        "repeated": false,
+        "milliseconds": 1639,
+        "problems": [],
+        "hash": "020f754f",
+        "variance": 4604.146893030433,
+        "changed": 0.02493827160493827,
+        "colors": 1386,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              2,
+              18,
+              22.043782975037406
+            ],
+            "minima": [
+              2,
+              18,
+              22
+            ],
+            "maxima": [
+              2,
+              18,
+              23
+            ],
+            "colors": 2
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 6
+        }
+      },
+      {
+        "id": "atelier-woven-linen",
+        "repeated": false,
+        "milliseconds": 3097,
+        "problems": [],
+        "hash": "b9c0f89b",
+        "variance": 4465.644380895777,
+        "changed": 0.02493827160493827,
+        "colors": 1089,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              128,
+              101,
+              66
+            ],
+            "minima": [
+              128,
+              101,
+              66
+            ],
+            "maxima": [
+              128,
+              101,
+              66
+            ],
+            "colors": 1
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 7
+        }
+      },
+      {
+        "id": "atelier-diffraction-foil",
+        "repeated": false,
+        "milliseconds": 1583,
+        "problems": [],
+        "hash": "5a92e513",
+        "variance": 4821.95907969524,
+        "changed": 0.024928626543209875,
+        "colors": 1072,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              204,
+              204,
+              204
+            ],
+            "minima": [
+              204,
+              204,
+              204
+            ],
+            "maxima": [
+              204,
+              204,
+              204
+            ],
+            "colors": 1
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 7
+        }
+      },
+      {
+        "id": "atelier-hammered-metal",
+        "repeated": false,
+        "milliseconds": 1799,
+        "problems": [],
+        "hash": "da825f6f",
+        "variance": 4785.672561891675,
+        "changed": 0.024907407407407406,
+        "colors": 1174,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              141,
+              146,
+              151
+            ],
+            "minima": [
+              141,
+              146,
+              151
+            ],
+            "maxima": [
+              141,
+              146,
+              151
+            ],
+            "colors": 1
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 7
+        }
+      },
+      {
+        "id": "atelier-interference-coat",
+        "repeated": false,
+        "milliseconds": 1499,
+        "problems": [],
+        "hash": "e503c205",
+        "variance": 5002.860424572049,
+        "changed": 0.02493827160493827,
+        "colors": 1341,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              6,
+              6,
+              6
+            ],
+            "minima": [
+              6,
+              6,
+              6
+            ],
+            "maxima": [
+              6,
+              6,
+              6
+            ],
+            "colors": 1
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 7
+        }
+      },
+      {
+        "id": "atelier-tiled-surface",
+        "repeated": false,
+        "milliseconds": 1963,
+        "problems": [],
+        "hash": "08d90aed",
+        "variance": 4917.592319814008,
+        "changed": 0.024934413580246912,
+        "colors": 989,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              3,
+              3,
+              3
+            ],
+            "minima": [
+              3,
+              3,
+              3
+            ],
+            "maxima": [
+              3,
+              3,
+              3
+            ],
+            "colors": 1
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 7
+        }
+      },
+      {
+        "id": "atelier-perlage-metal",
+        "repeated": false,
+        "milliseconds": 2162,
+        "problems": [],
+        "hash": "7e257b90",
+        "variance": 4579.862328417876,
+        "changed": 0.02492476851851852,
+        "colors": 1551,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              128,
+              144,
+              157
+            ],
+            "minima": [
+              128,
+              144,
+              157
+            ],
+            "maxima": [
+              128,
+              144,
+              157
+            ],
+            "colors": 1
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 7
+        }
+      }
+    ],
+    "repeats": [
+      {
+        "id": "atelier-frosted-glass",
+        "repeated": true,
+        "milliseconds": 2419,
+        "problems": [],
+        "hash": "28c79143",
+        "variance": 4616.335721968011,
+        "changed": 0.03413966049382716,
+        "colors": 581,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 255,
+            "min": 255,
+            "max": 255,
+            "values": [
+              255
+            ]
+          },
+          "albedo": {
+            "means": [
+              255,
+              255,
+              255
+            ],
+            "minima": [
+              255,
+              255,
+              255
+            ],
+            "maxima": [
+              255,
+              255,
+              255
+            ],
+            "colors": 1
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 7
+        }
+      },
+      {
+        "id": "atelier-woven-linen",
+        "repeated": true,
+        "milliseconds": 2981,
+        "problems": [],
+        "hash": "b9c0f89b",
+        "variance": 4465.644380895777,
+        "changed": 0.02493827160493827,
+        "colors": 1089,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              128,
+              101,
+              66
+            ],
+            "minima": [
+              128,
+              101,
+              66
+            ],
+            "maxima": [
+              128,
+              101,
+              66
+            ],
+            "colors": 1
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 7
+        }
+      },
+      {
+        "id": "atelier-perlage-metal",
+        "repeated": true,
+        "milliseconds": 2188,
+        "problems": [],
+        "hash": "7e257b90",
+        "variance": 4579.862328417876,
+        "changed": 0.02492476851851852,
+        "colors": 1551,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              128,
+              144,
+              157
+            ],
+            "minima": [
+              128,
+              144,
+              157
+            ],
+            "maxima": [
+              128,
+              144,
+              157
+            ],
+            "colors": 1
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 7
+        }
+      },
+      {
+        "id": "atelier-frosted-glass",
+        "repeated": true,
+        "milliseconds": 2283,
+        "problems": [],
+        "hash": "28c79143",
+        "variance": 4616.335721968011,
+        "changed": 0.03413966049382716,
+        "colors": 581,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 255,
+            "min": 255,
+            "max": 255,
+            "values": [
+              255
+            ]
+          },
+          "albedo": {
+            "means": [
+              255,
+              255,
+              255
+            ],
+            "minima": [
+              255,
+              255,
+              255
+            ],
+            "maxima": [
+              255,
+              255,
+              255
+            ],
+            "colors": 1
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 7
+        }
+      },
+      {
+        "id": "atelier-woven-linen",
+        "repeated": true,
+        "milliseconds": 3332,
+        "problems": [],
+        "hash": "b9c0f89b",
+        "variance": 4465.644380895777,
+        "changed": 0.02493827160493827,
+        "colors": 1089,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              128,
+              101,
+              66
+            ],
+            "minima": [
+              128,
+              101,
+              66
+            ],
+            "maxima": [
+              128,
+              101,
+              66
+            ],
+            "colors": 1
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 7
+        }
+      },
+      {
+        "id": "atelier-perlage-metal",
+        "repeated": true,
+        "milliseconds": 1914,
+        "problems": [],
+        "hash": "7e257b90",
+        "variance": 4579.862328417876,
+        "changed": 0.02492476851851852,
+        "colors": 1551,
+        "opaque": 1,
+        "materialEvidence": {
+          "taggedPixels": 12699,
+          "owners": [
+            3
+          ],
+          "shaderMeshes": 16,
+          "transmission": {
+            "mean": 0,
+            "min": 0,
+            "max": 0,
+            "values": [
+              0
+            ]
+          },
+          "albedo": {
+            "means": [
+              128,
+              144,
+              157
+            ],
+            "minima": [
+              128,
+              144,
+              157
+            ],
+            "maxima": [
+              128,
+              144,
+              157
+            ],
+            "colors": 1
+          }
+        },
+        "materials": 1,
+        "geometries": 16,
+        "disposedMaterials": 1,
+        "disposedGeometries": 16,
+        "memory": {
+          "geometries": 24,
+          "textures": 7
+        }
+      }
+    ]
+  },
+  "finished": "2026-10-30T12:49:06.062Z",
+  "failures": 15
+}

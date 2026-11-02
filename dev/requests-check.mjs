@@ -60,6 +60,8 @@ try {
       gallery = request.postDataJSON();
       return json({ id: 'request-contract-qa' });
     }
+    // The gallery dock lists saved pictures as the page opens; the check has none.
+    if (path === '/api/gallery' && request.method() === 'GET') return json({ total: 0, entries: [] });
     if (path !== '/api/decide' || request.method() !== 'POST') {
       unexpectedApi.push(`${request.method()} ${path}`);
       return json({ error: 'Unexpected API request in contract check' }, 500);
@@ -158,13 +160,17 @@ try {
   assert.ok(eligible.length < things.length, 'The forced world must leave some things out of scale, so scale-first casting is exercised');
   const casting = castingRequests.flatMap(({ body }) => body.questions);
   assert.deepEqual(casting.map(({ ask }) => ask).sort(), eligible.map(({ title, summary }) => `Would this belong in the scene? ${title}: ${summary}`).sort(), 'Every current thing at the setting scales must be asked exactly once, and nothing out of scale');
-  assert.equal(shortlistRequests.length, 1, 'The closest things are judged once more with the setting in view, in one batch');
-  const shortlist = shortlistRequests[0].body.questions;
+  assert.ok(shortlistRequests.length >= 1, 'The closest things are judged once more with the setting in view');
+  assert.equal(new Set(shortlistRequests.map(({ body }) => body.brief)).size, 1, 'The shortlist is one consultation, however many batches it takes');
+  const shortlistQuestions = shortlistRequests.flatMap(({ body }) => body.questions);
+  const shortlist = shortlistQuestions.filter(({ ask }) => ask.startsWith('Would this belong in the scene? '));
+  assert.equal(shortlistQuestions.length - shortlist.length, shortlist.length, 'Each shortlisted thing is also asked whether it is what the idea is about');
   assert.ok(shortlist.length > 0 && shortlist.length <= 36, `The shortlist holds at most 36 things, got ${shortlist.length}`);
   assert.ok(shortlist.every(({ ask }) => casting.some((question) => question.ask === ask)), 'The shortlist is drawn from the things already asked');
   assert.match(shortlistRequests[0].body.brief, new RegExp(`The setting is ${forcedWorld.title}:`));
   assert.ok(!routing.some(({ ask }) => ask.startsWith('Would this belong in the scene? ')), 'The routing chain no longer carries the catalogue of things');
-  assert.equal(routing.filter(({ type }) => type === 'score').length, 11, 'All six mood, three framing, the otherworld depth and the dead-space reach scores must survive batching');
+  assert.equal(routing.filter(({ type }) => type === 'score').length, 12, 'All six mood, three framing, the otherworld depth, the dead-space reach and the materialize weight scores must survive batching');
+  assert.ok(routing.some(({ ask }) => ask.startsWith('How much should the surfaces of things show through the medium')), 'How far materials show through the medium is a typed routing decision');
   assert.ok(routing.some(({ ask }) => ask.startsWith('How does the empty space fill with micro-macro detail')), 'The dead-space fill is a typed routing decision');
   assert.ok(routing.some(({ ask }) => ask.startsWith('If the print moves, how does the camera move?')), 'The loop camera is a typed routing decision');
   assert.ok(routing.some(({ ask }) => ask.startsWith('How does this picture show that it comes from another dimension?')), 'The otherworld is a typed routing decision');
@@ -179,7 +185,10 @@ try {
     return questions.length;
   };
   const worldQuestions = choiceCoverage(routing, 'Which setting should hold this scene?', worlds);
-  assert.equal(routing.length, 6 + 5 + 4 + 2 + 3 + 6 + 1 + worldQuestions, 'Scene routing must contain only mood, framing, presentation, accent, otherworld, dead-space, loop camera and world questions');
+  assert.equal(routing.length, 6 + 5 + 4 + 2 + 3 + 7 + 1 + 3 + 1 + worldQuestions, 'Scene routing must contain only mood, framing, presentation, accent, otherworld, dead-space, loop camera, palette, materialize and world questions');
+  const componentQuestions = requests.filter(({ phase }) => phase === 'component').flatMap(({ body }) => body.questions);
+  assert.ok(componentQuestions.some(({ ask }) => ask.startsWith('Does the idea itself say what the teapot is made of')), 'Each cast thing is asked what the idea says it is made of, with its own details');
+  assert.ok(componentQuestions.some(({ ask }) => ask.startsWith('Does the idea say what the place itself is made of')) && componentQuestions.some(({ ask }) => ask.includes('the sky or backdrop behind everything to be a material')), 'The setting is asked what its stuff and its backdrop are made of');
 
   const { plan } = result;
   const styleRequests = requests.filter(({ phase }) => phase === 'style');

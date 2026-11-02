@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, noul, score } from '@conjure/kit';
+import { type PaletteRole, choice, clamp01, defineLook, fromOklch, mix, noul, oklch, rekey, rekeyOne, score } from '@conjure/kit';
 
 type RGB = readonly [number, number, number];
 
@@ -11,6 +11,18 @@ const STOCKS = {
   vellum: { paper: [220, 216, 203], line: [26, 25, 24], accent: [200, 50, 30], dark: false, bleed: 0.1, mottle: 0.1 },
   cad: { paper: [12, 14, 18], line: [226, 228, 230], accent: [240, 80, 70], dark: true, bleed: 0, mottle: 0 },
 } as const satisfies Record<string, { paper: RGB; line: RGB; accent: RGB; dark: boolean; bleed: number; mottle: number }>;
+
+/**
+ * Under the idea's palette the sheet takes its ground, the line work its ink and the marking pencil
+ * its second colour, each keeping its tone (a dark sheet stays dark, a pale line pale). Black ink on
+ * vellum and a CAD screen's white default line stay; the CAD layer colours turn onto the ink as a set
+ * and the note layer takes the second colour.
+ */
+const STOCK_ROLES: Record<string, PaletteRole> = { paper: 'ground', line: 'ink', accent: 'second' };
+const ROLES: Partial<Record<keyof typeof STOCKS, Record<string, PaletteRole>>> = {
+  vellum: { paper: 'ground', accent: 'second' },
+  cad: { paper: 'ground', accent: 'second' },
+};
 
 const CAD_LAYERS: RGB[] = [
   [84, 216, 232],
@@ -100,13 +112,13 @@ function standardScale(ratio: number): string {
 
 export default defineLook({
   questions: {
-    stock: choice('What is the sheet printed on?', {
-      blueprint: 'A true blueprint: soft white lines on mottled Prussian blue, slightly bled, the classic engineering copy.',
-      cyan: 'Crisp glowing cyan line work on deep navy, a modern schematic or a film prop of a secret plan.',
-      sepia: 'A sepia diazo print: brown line on tan, warm, antique, a patent office or a ship yard.',
-      blueline: 'A blueline whiteprint: violet-blue line on off-white, the everyday office copy of the 1970s.',
-      vellum: 'Black ink on grey drafting vellum, the hand-made original, precise and quiet.',
-      cad: 'A CAD screen: thin coloured layers on black, each object in its own layer colour, cold and exact.',
+    stock: choice('What is the sheet printed on? Its colours come from the picture\u2019s palette.', {
+      blueprint: 'A true blueprint: soft pale lines on a mottled deep sheet, slightly bled, the classic engineering copy.',
+      cyan: 'Crisp glowing bright line work on a near-black sheet, a modern schematic or a film prop of a secret plan.',
+      sepia: 'A diazo print: dark soft line on a warm mid-pale sheet, antique, a patent office or a ship yard.',
+      blueline: 'A whiteprint: strong coloured line on off-white, the everyday office copy of the 1970s.',
+      vellum: 'Black ink on pale drafting vellum, the hand-made original, precise and quiet.',
+      cad: 'A CAD screen: thin coloured layers on a black screen, each object in its own layer colour, cold and exact.',
     }),
     weight: score('How heavy is the line work?', ['Hairline, delicate', 'Fine', 'Standard drafting weights', 'Bold', 'Heavy, poster-like']),
     hand: choice('Whose hand drew it?', {
@@ -157,7 +169,21 @@ export default defineLook({
     const N = capture.size;
     const total = N * N;
     const { mood, seed } = context;
-    const stock = STOCKS[a.stock];
+    const { palette } = context;
+    const designed = STOCKS[a.stock];
+    const stock = { ...designed, ...rekey({ paper: designed.paper, line: designed.line, accent: designed.accent }, palette, ROLES[a.stock] ?? STOCK_ROLES) };
+    // The layer set turns as one, pivoting on the set's own layer (tag 2, the largest area) so the
+    // drawing's main colour is the palette's ink and every other layer keeps its hue step from it.
+    let cadLayers = CAD_LAYERS;
+    if (palette) {
+      const [l0, c0, h0] = oklch(CAD_LAYERS[2]);
+      const [l1, c1, h1] = oklch(rekeyOne(CAD_LAYERS[2], palette, 'ink'));
+      cadLayers = CAD_LAYERS.map((c) => {
+        const [l, ch, h] = oklch(c);
+        return fromOklch(Math.min(0.98, Math.max(0.02, l + l1 - l0)), Math.min(2.5, c1 / c0) * ch, h + h1 - h0);
+      });
+    }
+    const cadNote = rekeyOne(CAD_NOTE, palette, 'second');
     const breathe = async () => {
       signal.throwIfAborted();
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
@@ -827,7 +853,7 @@ export default defineLook({
         let colour: RGB = lineColour;
         if (a.stock === 'cad') {
           const tag = layer[at];
-          colour = tag === 255 ? CAD_NOTE : tag >= 2 ? CAD_LAYERS[tag % CAD_LAYERS.length] : tag === 1 ? [150, 156, 164] : stock.line;
+          colour = tag === 255 ? cadNote : tag >= 2 ? cadLayers[tag % cadLayers.length] : tag === 1 ? [150, 156, 164] : stock.line;
         }
         cover = clamp01(cover);
         r = mix(r, colour[0], cover);

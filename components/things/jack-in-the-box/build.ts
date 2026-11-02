@@ -13,6 +13,30 @@ type V3 = readonly [number, number, number];
 
 export default defineThing({
   questions: {
+    crankGrip: choice('What shape is the little crank grip?', {
+      bulb: 'A round red bulb on the crank arm.', bar: 'A long turned wooden grip.',
+      star: 'A five-pointed metal star grip.', wheel: 'A tiny open handwheel with four spokes.',
+    }),
+    collar: choice('If the clown is visible, what collar does it wear?', {
+      ruff: 'A sharply pleated white ruff.', petals: 'Six broad coloured collar petals.',
+      bow: 'A large two-colour bow tie.', bells: 'A scalloped collar tipped with small brass bells.',
+    }),
+    lining: choice('What lines the inside of the box and lid?', {
+      dark: 'Plain dark metal.', red: 'Deep red velvet with a soft nap.',
+      paper: 'Cream paper patterned with little stars.', striped: 'Pale cloth with narrow blue stripes.',
+    }),
+    hinges: choice('How is the lid attached?', {
+      barrels: 'Two short plain barrel hinges.', piano: 'A continuous row of small piano-hinge barrels.',
+      straps: 'Broad brass hinge straps with visible rivets.', ornate: 'Two curled hinge plates with round decorated ends.',
+    }),
+    confetti: choice('What has spilled around the toy?', {
+      none: 'Nothing outside the box.', scraps: 'Small squares of paper confetti.',
+      stars: 'Several shiny star-shaped sequins.', ribbons: 'Loose curled strips of coloured ribbon.',
+    }),
+    keepsake: choice('What clue to its owner remains?', {
+      none: 'No separate keepsake.', tag: 'A gift tag tied to the side of the box.',
+      ticket: 'A faded carnival ticket laid beside it.', ribbon: 'A loose gift ribbon loop and bow beside the box.',
+    }),
     state: choice('What state is the box in?', {
       closed: 'Lid shut and latched, the handle turning, nothing happened yet.',
       ajar: 'The lid lifted a crack: white-gloved fingers on the rim and the top of a face looking out.',
@@ -156,11 +180,17 @@ export default defineThing({
     const tin = (map: THREE.Texture) => new THREE.MeshStandardMaterial({ map, metalness: 0.25, roughness: mix(0.32, 0.8, mood.wear) });
     const sides = ['K', 'C', 'J', 'A'].map((letter) => tin(panel(letter)));
     const hidden = new THREE.MeshBasicMaterial({ visible: false });
-    const under = s.material('#3a3229');
+    const liningMap=texture(256,256,g=>{
+      g.fillStyle={dark:'#3a3229',red:'#7c282f',paper:'#ebdfbb',striped:'#e5e2d2'}[a.lining];g.fillRect(0,0,256,256);
+      if(a.lining==='red')for(let i=0;i<1500;i++){g.fillStyle=i%2?'rgba(239,111,117,.1)':'rgba(23,10,15,.13)';g.fillRect(random()*256,random()*256,1,2);}
+      if(a.lining==='paper'){g.fillStyle='#bb9c5b';for(let y=24;y<256;y+=45)for(let x=24;x<256;x+=45)star(g,x,y,8);}
+      if(a.lining==='striped'){g.fillStyle='#7896ac';for(let x=0;x<256;x+=16)g.fillRect(x,0,5,256);}
+    });
+    const under=new THREE.MeshStandardMaterial({map:liningMap,roughness:a.lining==='red'?1:.8});
 
     // The box: four printed walls, a dark inside, gold corners, a hinged lid and a crank.
     put(s.root, new THREE.Mesh(new THREE.BoxGeometry(B, B, B), [sides[0], sides[1], hidden, under, sides[2], sides[3]]), [0, B / 2, 0]);
-    const inside = new THREE.Mesh(new THREE.BoxGeometry(B - 0.006, B - 0.004, B - 0.006), new THREE.MeshStandardMaterial({ color: '#2a2019', roughness: 1, side: THREE.BackSide }));
+    const inside = new THREE.Mesh(new THREE.BoxGeometry(B - 0.006, B - 0.004, B - 0.006), new THREE.MeshStandardMaterial({ map:liningMap, roughness: 1, side: THREE.BackSide }));
     inside.position.y = B / 2 + 0.002;
     inside.receiveShadow = true;
     s.root.add(inside);
@@ -172,8 +202,19 @@ export default defineThing({
     const lid = put(s.root, new THREE.Group(), [0, B + 0.001, -B / 2]);
     const lidTop = tin(panel('J'));
     put(lid, new THREE.Mesh(new THREE.BoxGeometry(B + 0.006, 0.008, B + 0.006), [under, under, lidTop, under, under, under]), [0, 0.004, B / 2]);
-    put(lid, new THREE.Mesh(new THREE.BoxGeometry(B + 0.008, 0.004, B + 0.008), gold), [0, 0.001, B / 2]);
-    for (const x of [-0.035, 0.035]) s.cylinder(0.005, 0.005, 0.022, [x, B, -B / 2 - 0.003], steel, 10).rotation.z = Math.PI / 2;
+    for(const side of [-1,1]) {
+      put(lid,new THREE.Mesh(new THREE.BoxGeometry(B+.008,.004,.004),gold),[0,.001,B/2+side*(B/2+.002)]);
+      put(lid,new THREE.Mesh(new THREE.BoxGeometry(.004,.004,B+.008),gold),[side*(B/2+.002),.001,B/2]);
+    }
+    const hingeXs=a.hinges==='piano'?[-.05,-.03,-.01,.01,.03,.05]:[-.035,.035];
+    for(const x of hingeXs)s.cylinder(.005,.005,a.hinges==='piano'?.018:.022,[x,B,-B/2-.003],steel,10).rotation.z=Math.PI/2;
+    if(a.hinges==='straps'||a.hinges==='ornate')for(const x of [-.035,.035]) {
+      const w=a.hinges==='straps'?.017:.024;
+      put(lid,new THREE.Mesh(new THREE.BoxGeometry(w,.003,.045),gold),[x,.009,.018]);
+      s.box([w,.045,.003],[x,B-.02,-B/2-.002],gold);
+      for(const z of [.01,.035])put(lid,new THREE.Mesh(new THREE.SphereGeometry(.0025,8,6),steel),[x,.012,z]);
+      if(a.hinges==='ornate')put(lid,new THREE.Mesh(new THREE.TorusGeometry(.009,.002,6,16),steel),[x,.012,.036]).rotation.x=Math.PI/2;
+    }
     const out = a.state === 'sprung' || a.state === 'drooping';
     const lidRest = a.state === 'closed' ? 0 : a.state === 'ajar' ? -0.52 : -(1.75 + random() * 0.35);
     lid.rotation.x = lidRest;
@@ -183,8 +224,15 @@ export default defineThing({
     put(crank, new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.03, 10), steel), [0.014, 0, 0]).rotation.z = Math.PI / 2;
     put(crank, new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.004, 16), gold), [0.002, 0, 0]).rotation.z = Math.PI / 2;
     put(crank, new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.05, 0.012), steel), [0.028, 0.02, 0]);
-    put(crank, new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.009, 0.034, 12), s.material('#c9302c')), [0.046, 0.042, 0]).rotation.z = Math.PI / 2;
-    put(crank, new THREE.Mesh(new THREE.SphereGeometry(0.0105, 12, 10), s.material('#c9302c')), [0.064, 0.042, 0]);
+    if(a.crankGrip==='bulb'||a.crankGrip==='bar') {
+      const grip=s.material(a.crankGrip==='bulb'?'#c9302c':'#b38d53');
+      put(crank,new THREE.Mesh(new THREE.CylinderGeometry(.008,.009,a.crankGrip==='bar'?.049:.034,12),grip),[a.crankGrip==='bar'?.053:.046,.042,0]).rotation.z=Math.PI/2;
+      if(a.crankGrip==='bulb')put(crank,new THREE.Mesh(new THREE.SphereGeometry(.0105,12,10),grip),[.064,.042,0]);
+    } else {
+      put(crank,new THREE.Mesh(new THREE.CylinderGeometry(.003,.003,.029,8),steel),[.043,.042,0]).rotation.z=Math.PI/2;
+      if(a.crankGrip==='star') {const sh=new THREE.Shape();for(let i=0;i<10;i++){const t=i*Math.PI/5,r=i%2?.009:.02;if(i)sh.lineTo(Math.cos(t)*r,Math.sin(t)*r);else sh.moveTo(Math.cos(t)*r,Math.sin(t)*r);}sh.closePath();const m=put(crank,new THREE.Mesh(new THREE.ExtrudeGeometry(sh,{depth:.004,bevelEnabled:false}),gold),[.056,.042,0]);m.rotation.y=Math.PI/2;}
+      else {put(crank,new THREE.Mesh(new THREE.TorusGeometry(.018,.003,6,24),gold),[.057,.042,0]).rotation.y=Math.PI/2;for(const t of [0,Math.PI/2]){const spoke=put(crank,new THREE.Mesh(new THREE.BoxGeometry(.004,.036,.003),steel),[.057,.042,0]);spoke.rotation.x=t;}}
+    }
     crank.rotation.x = random() * Math.PI * 2;
 
     // ---- The clown ------------------------------------------------------------------------
@@ -244,14 +292,20 @@ export default defineThing({
       // Body, ruff and head.
       put(clown, new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.046, 0.06, 20), cloth), [0, -0.006, 0]);
       for (let i = 0; i < 3; i++) put(clown, new THREE.Mesh(new THREE.SphereGeometry(0.0055, 10, 8), s.material(motley.one)), [0, 0.012 - i * 0.016, 0.024 + i * 0.0075]);
-      const ruff = new THREE.CylinderGeometry(0.044, 0.05, 0.008, 18, 1);
+      const ruff = new THREE.CylinderGeometry(0.044, 0.05, 0.008, 36, 1);
       const ruffPosition = ruff.getAttribute('position');
       for (let i = 0; i < ruffPosition.count; i++) {
         const angle = Math.atan2(ruffPosition.getZ(i), ruffPosition.getX(i));
-        if (Math.hypot(ruffPosition.getX(i), ruffPosition.getZ(i)) > 0.01) ruffPosition.setY(i, ruffPosition.getY(i) + Math.sin(angle * 9) * 0.006);
+        if (Math.hypot(ruffPosition.getX(i), ruffPosition.getZ(i)) > 0.01) ruffPosition.setY(i, ruffPosition.getY(i) + Math.sin(angle * (a.collar==='ruff'?9:6)) * (a.collar==='ruff'?.006:.004));
       }
       ruff.computeVertexNormals();
-      put(clown, new THREE.Mesh(ruff, white), [0, 0.03, 0]);
+      if(a.collar==='bow') {ruff.dispose();for(const side of [-1,1]){const bow=put(clown,new THREE.Mesh(new THREE.SphereGeometry(.019,12,8),s.material(side<0?motley.one:motley.two)),[side*.019,.032,.018]);bow.scale.set(1,.65,.45);}put(clown,new THREE.Mesh(new THREE.SphereGeometry(.007,10,8),gold),[0,.032,.022]);}
+      else {
+        put(clown,new THREE.Mesh(ruff,a.collar==='petals'?s.material(motley.two):white),[0,.03,0]);
+        if(a.collar==='petals'||a.collar==='bells')for(let i=0;i<6;i++){const t=i*Math.PI/3;
+          if(a.collar==='bells')put(clown,new THREE.Mesh(new THREE.SphereGeometry(.004,8,6),gold),[Math.cos(t)*.048,.027,Math.sin(t)*.048]);
+          else {const petal=put(clown,new THREE.Mesh(new THREE.SphereGeometry(.012,10,6),s.material(motley.one)),[Math.cos(t)*.039,.029,Math.sin(t)*.039]);petal.scale.set(1,.22,1);}}
+      }
       const headY = 0.03 + R * 0.92;
       const face = texture(512, 256, (g) => {
         const cx = 128;
@@ -379,6 +433,23 @@ export default defineThing({
       }
     }
 
+    if(a.confetti!=='none')for(let i=0;i<12;i++) {
+      const t=random()*Math.PI*2,r=.1+random()*.075,x=Math.cos(t)*r,z=Math.sin(t)*r;
+      const colour=s.material([motley.one,motley.two,'#e7c14c','#a6c9d9'][i%4],{roughness:.6,metalness:a.confetti==='stars'?.5:0});
+      if(a.confetti==='scraps')s.box([.009,.0007,.006],[x,.00035,z],colour).rotation.y=random()*Math.PI;
+      else if(a.confetti==='stars'){const sh=new THREE.Shape();for(let n=0;n<10;n++){const angle=n*Math.PI/5,rr=n%2?.003:.007;if(n)sh.lineTo(Math.cos(angle)*rr,Math.sin(angle)*rr);else sh.moveTo(Math.cos(angle)*rr,Math.sin(angle)*rr);}sh.closePath();s.mesh(new THREE.ShapeGeometry(sh),colour,[x,.001,z]).rotation.x=-Math.PI/2;}
+      else {const points:[number,number,number][]=[];for(let n=0;n<=20;n++){const u=n/20*Math.PI*3;points.push([x+Math.cos(u)*.007,.008+Math.sin(u)*.007,z+n*.001]);}s.tube(points,.0013,colour);}
+    }
+    if(a.keepsake==='ticket') {s.label('ADMIT ONE • 047',.1,.039,[-.12,.001,.045],'#8c3d38','#e8cfa0').rotation.set(-Math.PI/2,0,.18);}
+    if(a.keepsake==='tag') {
+      s.label('FOR YOU',.057,.032,[-.106,.001,.004],'#5b4a3e','#eadcb7').rotation.x=-Math.PI/2;
+      s.tube([[-B/2,.1,0],[-.082,.055,.01],[-.086,.003,.003]],.001,s.material('#c8b895'));
+    }
+    if(a.keepsake==='ribbon') {
+      const ribbon=s.material(motley.one,{roughness:.6});
+      for(const side of [-1,1])s.tube([[-.125,.002,.02],[-.125+side*.03,.008,-.005],[-.125+side*.032,.012,.025],[-.125,.002,.02]],.002,ribbon);
+      s.tube([[-.125,.002,.02],[-.11,.001,.05],[-.13,.001,.07]],.002,ribbon);s.tube([[-.125,.002,.02],[-.145,.001,.04],[-.155,.001,.06]],.002,ribbon);
+    }
     const sway = mix(0.01, 0.11, mood.energy), pace = mix(1.2, 5, mood.energy);
     const phase = random() * 6;
     return s.finish({

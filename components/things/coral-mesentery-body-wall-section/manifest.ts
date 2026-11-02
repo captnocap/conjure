@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Coral mesentery body wall section", "summary": "Paired internal mesenteries connect the body wall to a retained central tissue boundary; actual sections expose their attachment. A generalized coral histology teaching section: paired mesenteries, complete and free-edged sheets, and a true pharyngeal lumen.", "scales": ["macro", "tabletop"]});

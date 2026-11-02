@@ -1,0 +1,2 @@
+import { defineManifest } from '@conjure/kit';
+export default defineManifest({kind: 'world', title: "Morning crêpe griddle stall", summary: "A small breakfast stall keeps a permanent round griddle counter, batter pails and folded serving crêpes under a supported canopy. Condiment shelves, paper sleeves and waiting stools evoke early market trade before the day becomes crowded.", scales: ["street", "room", "tabletop"]});

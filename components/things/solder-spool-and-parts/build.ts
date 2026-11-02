@@ -27,6 +27,27 @@ const SPOOLS = { red: '#c0342c', blue: '#2a5fa8', green: '#2f7d4f', yellow: '#db
 
 export default defineThing({
   questions: {
+    stock: score('How much of the parts stock is present?', ['A handful of samples', 'Enough for several repairs', 'Every compartment well stocked']),
+    labels: choice('How are the compartments identified?', {
+      none: 'Unlabelled, recognised by sight.', values: 'Small cream labels with component values.',
+      numbers: 'Numbered tabs on the compartment edges.', flags: 'Upright paper flags marking the rows.',
+    }),
+    leadShape: choice('How have the resistor leads been prepared?', {
+      straight: 'Long straight factory leads.', clipped: 'Short clipped leads from salvaged parts.',
+      folded: 'Leads folded down at right angles.', hooks: 'Little loops formed at the ends for terminal strips.',
+    }),
+    flux: choice('What flux sits beside the solder?', {
+      none: 'No separate flux.', tin: 'An open shallow tin of amber rosin.',
+      bottle: 'A squat flux bottle with a brush in its cap.', syringe: 'A capped flux syringe laid on the bench.',
+    }),
+    preparation: choice('What prepared components have been set aside?', {
+      loose: 'Only loose components.', tape: 'A row of resistors held between two paper tapes.',
+      cards: 'Components pushed through a small labelled stock card.', bag: 'A translucent packet of selected replacement parts.',
+    }),
+    tool: choice('What small preparation tool is ready?', {
+      none: 'No extra tool.', cutters: 'A pair of short flush cutters with splayed handles.',
+      gauge: 'A notched wire gauge with its size markings.', former: 'A stepped lead-forming jig.',
+    }),
     container: choice('What are the parts sorted into?', {
       muffin6: 'A six-cup muffin tin, blackened from the oven.',
       muffin12: 'A big twelve-cup muffin tin.',
@@ -71,6 +92,18 @@ export default defineThing({
     const pal = PALETTES[a.colours];
     const pick = <T,>(list: readonly T[]) => list[Math.floor(random() * list.length)];
     const solder = s.material('#d2d6d8', { metalness: 0.9, roughness: 0.22 });
+    const wireGeo = new THREE.CylinderGeometry(.0007,.0007,a.leadShape==='clipped'?.033:.052,4);
+    if(a.leadShape==='folded') {
+      const pos=wireGeo.attributes.position as THREE.BufferAttribute;
+      for(let i=0;i<pos.count;i++){const y=pos.getY(i),b=Math.max(0,Math.abs(y)-.016);pos.setXYZ(i,pos.getX(i),Math.sign(y)*Math.min(.016,Math.abs(y)),pos.getZ(i)+b);}
+      wireGeo.computeVertexNormals();
+    } else if(a.leadShape==='hooks') {
+      const path=new THREE.CatmullRomCurve3([[.005,-.023,0],[0,-.026,0],[-.003,-.021,0],[0,-.016,0],[0,.016,0],[.003,.021,0],[0,.026,0],[-.005,.023,0]].map(p=>new THREE.Vector3(...p)));
+      wireGeo.dispose();
+      // The replacement tube is assigned below so each batch owns exactly one geometry.
+      const hook=new THREE.TubeGeometry(path,26,.0007,4,false);
+      wireGeo.copy(hook);hook.dispose();
+    }
 
     // ---- Cells.
     const grid = { muffin6: [3, 2, 0.086, 0.034, 0.032], muffin12: [4, 3, 0.082, 0.032, 0.03], egg: [6, 2, 0.05, 0.021, 0.034], lids: [3, 2, 0.1, 0.036, 0.011], organiser: [4, 3, 0.062, 0.027, 0.03] }[a.container];
@@ -121,6 +154,16 @@ export default defineThing({
       for (const x of [-W * 0.3, W * 0.3]) s.cylinder(0.004, 0.004, 0.03, [x, depth, -D / 2 - 0.002], plastic, 8).rotation.z = Math.PI / 2;
     }
 
+    if(a.labels!=='none') {
+      const values=['10k','47k','100n','22µ','1M','SPARE'];
+      cells.forEach((cell,i)=>{
+        if(a.labels==='flags'&&i%cols!==0)return;
+        const label=a.labels==='values'?values[i%values.length]:a.labels==='numbers'?String(i+1).padStart(2,'0'):`ROW ${Math.floor(i/cols)+1}`;
+        if(a.labels==='flags') {s.rod([cell.x-cr*.7,.004,cell.z],[cell.x-cr*.7,depth+.05,cell.z],.001,s.material('#b8a27d'));s.label(label,.05,.02,[cell.x-cr*.7+.02,depth+.043,cell.z],'#303942','#f1e2bb');}
+        else s.label(label,.035,.013,[cell.x,depth+.005,cell.z+cr*.92],'#303942','#f1e2bb').rotation.x=-Math.PI/2;
+      });
+    }
+
     // ---- Components, batched by shape.
     const lists: Record<'body' | 'lead' | 'band' | 'disc' | 'can' | 'knob' | 'film', Inst[]> = { body: [], lead: [], band: [], disc: [], can: [], knob: [], film: [] };
     const kinds = ['resistor', 'disc', 'can', 'knob', 'film', 'resistor'] as const;
@@ -149,7 +192,7 @@ export default defineThing({
     cells.forEach((cell, i) => {
       const cupKind = kinds[i % kinds.length];
       const cupColour = cupKind === 'resistor' ? pal.body[Math.floor(i / 2) % pal.body.length] : pal.cap[i % pal.cap.length];
-      let count = Math.round(mix(8, 17, mood.density) * (cupKind === 'knob' ? 0.4 : 1) * (cr / 0.034) * mix(0.7, 1.2, random()));
+      let count = Math.round(mix(8, 17, mood.density) * mix(.22,1.2,a.stock) * (cupKind === 'knob' ? 0.4 : 1) * (cr / 0.034) * mix(0.7, 1.2, random()));
       if (a.state === 'raided') count = Math.floor(count * (random() < 0.3 ? 0.5 : 0.12));
       if (i === spilledCell) count = Math.floor(count * 0.2);
       for (let n = 0; n < count; n++) {
@@ -201,7 +244,7 @@ export default defineThing({
     };
     const white = () => new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.5 });
     batch(new THREE.CapsuleGeometry(0.005, 0.016, 3, 8), white(), lists.body);
-    batch(new THREE.CylinderGeometry(0.0007, 0.0007, 0.052, 4), new THREE.MeshStandardMaterial({ color: '#ffffff', metalness: 0.8, roughness: 0.3 }), lists.lead);
+    batch(wireGeo, new THREE.MeshStandardMaterial({ color: '#ffffff', metalness: 0.8, roughness: 0.3 }), lists.lead);
     batch(new THREE.CylinderGeometry(0.0053, 0.0053, 0.0024, 8), white(), lists.band);
     batch(new THREE.SphereGeometry(0.011, 10, 6), white(), lists.disc);
     batch(new THREE.CylinderGeometry(0.008, 0.008, 0.022, 10), new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.35, metalness: 0.3 }), lists.can);
@@ -257,6 +300,46 @@ export default defineThing({
     const bits = [];
     for (let i = 0; i < 2 + Math.floor(mood.density * 6); i++) bits.push({ at: [sx + (random() - 0.3) * 0.12, 0.0015, sz + 0.06 + random() * 0.07] as P, size: 0.6 + random() });
     s.scatter(new THREE.CapsuleGeometry(0.0016, 0.012, 2, 5).rotateZ(Math.PI / 2), solder, bits);
+
+    const ax=W/2+.07,az=.015;
+    if(a.flux==='tin') {
+      s.lathe([[0,0],[.027,0],[.03,.006],[.03,.023],[.027,.023],[.027,.004],[0,.004]],solder,[ax,0,az]);
+      s.cylinder(.026,.026,.002,[ax,.013,az],s.material('#b57929',{roughness:.25}),24);
+      s.cylinder(.03,.03,.003,[ax,.0015,az-.075],solder,24);
+      s.label('ROSIN',.045,.015,[ax,.0035,az-.075],'#71431f','#e7d1a3').rotation.x=-Math.PI/2;
+    } else if(a.flux==='bottle') {
+      s.cylinder(.022,.025,.047,[ax,.0235,az],s.material('#bb8235',{roughness:.35}),20);
+      s.cylinder(.014,.014,.018,[ax,.055,az],s.material('#3b3f43'),14);
+      s.rod([ax,.064,az],[ax,.088,az],.0025,solder);
+      s.label('FLUX',.035,.018,[ax,.027,az+.025],'#282c30','#efe5c9');
+    } else if(a.flux==='syringe') {
+      const sy=new Sculpture(context);const plastic=s.material('#d8e2dd',{roughness:.4});
+      sy.cylinder(.008,.008,.07,[0,.008,0],plastic,12).rotation.z=Math.PI/2;
+      sy.cylinder(.005,.005,.036,[-.05,.008,0],solder,8).rotation.z=Math.PI/2;
+      sy.box([.004,.022,.018],[-.07,.011,0],plastic);sy.box([.003,.025,.023],[-.033,.0125,0],plastic);
+      sy.cylinder(.002,.006,.02,[.045,.008,0],s.material('#ac7738'),8).rotation.z=-Math.PI/2;
+      sy.root.position.set(ax,0,az);sy.root.rotation.y=.8;s.root.add(sy.root);
+    }
+    if(a.preparation!=='loose') {
+      const px=0,pz=D/2+.19,paper=s.material('#e8d8b1',{roughness:.9});
+      if(a.preparation==='cards') {s.box([.13,.002,.065],[px,.001,pz],paper);s.label('47k • MATCHED',.115,.013,[px,.0025,pz+.023],'#384752','#e8d8b1').rotation.x=-Math.PI/2;}
+      else if(a.preparation==='tape')for(const z of [-.023,.023])s.box([.14,.002,.012],[px,.001,pz+z],paper);
+      for(let i=0;i<5;i++) {const x=px+(i-2)*.024; s.rod([x,.006,pz-.027],[x,.006,pz+.027],.0008,solder);s.cylinder(.004,.004,.018,[x,.006,pz],s.material(pal.body[i%pal.body.length]),8).rotation.x=Math.PI/2;for(let n=0;n<3;n++)s.cylinder(.0043,.0043,.002,[x,.006,pz+(n-1)*.005],s.material(BANDS[(i+n+1)%BANDS.length]),8).rotation.x=Math.PI/2;}
+      if(a.preparation==='bag') {const film=new THREE.MeshStandardMaterial({color:'#d4e2e7',transparent:true,opacity:.2,depthWrite:false,roughness:.25});s.box([.15,.014,.075],[px,.007,pz],film);s.box([.15,.003,.006],[px,.002,pz-.034],s.material('#bac9cb'));}
+    }
+    const tx=ax,tz=D/2+.055;
+    if(a.tool==='cutters') {
+      const grip=s.material('#425a7d',{roughness:.6});
+      for(const side of [-1,1]){s.rod([tx,.007,tz],[tx+side*.018,.006,tz+.065],.006,grip);s.rod([tx,.007,tz],[tx+side*.009,.005,tz-.025],.004,solder,.001);}
+      s.cylinder(.009,.009,.01,[tx,.007,tz],solder,12);
+    } else if(a.tool==='gauge') {
+      const shape=new THREE.Shape();shape.moveTo(-.05,-.03);shape.lineTo(.05,-.03);shape.lineTo(.05,.03);for(let i=0;i<6;i++){const x=.04-i*.016,w=.0015+i*.001;shape.lineTo(x+w,.03);shape.lineTo(x+w,.016);shape.lineTo(x-w,.016);shape.lineTo(x-w,.03);}shape.lineTo(-.05,.03);shape.closePath();
+      const gauge=s.mesh(new THREE.ExtrudeGeometry(shape,{depth:.002,bevelEnabled:false}),solder,[tx,.003,tz]);gauge.rotation.x=-Math.PI/2;
+      s.label('22 20 18 16',.08,.012,[tx,.0036,tz],'#333b40','#cad0d0').rotation.x=-Math.PI/2;
+    } else if(a.tool==='former') {
+      const jig=s.material('#6c8b61',{roughness:.5});for(let i=0;i<4;i++)s.box([.025+i*.018,.008,.018],[tx,.004,tz+(i-1.5)*.019],jig);
+      for(const side of [-1,1])s.box([.006,.012,.082],[tx+side*.052,.006,tz],jig);
+    }
 
     return s.finish();
   },

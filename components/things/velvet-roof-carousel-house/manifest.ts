@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Velvet-roof carousel house", "summary": "A miniature round house sits on a carousel platform beneath a pleated velvet roof, with brass columns and an open front threshold. A home inside a music box, quiet fairground memories and a little room waiting for its next turn.", "scales": ["tabletop", "room"]});

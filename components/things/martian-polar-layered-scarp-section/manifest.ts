@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind: 'thing', "title": "Martian polar layered scarp section", "summary": "A terrain wedge has alternating exposed layers truncated by a real slope and locally recessed strata, without floating face bands. An enlarged polar stratigraphic teaching wedge joins every ice-and-dust layer along real interfaces and truncates them at an eroded scarp; geometry is schematic, not a reconstruction of one measured Martian outcrop.", "scales": ["planetary", "landscape", "macro"]});

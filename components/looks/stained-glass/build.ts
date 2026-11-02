@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { MATERIAL_NAMES, type MaterialName, type Palette, type PaletteRole, choice, clamp01, defineLook, fromOklch, impliedMaterial, mix, oklch, paintRGB, rekey, score, seeded, sparkleAt, surfaceAt } from '@conjure/kit';
 
 type RGB = readonly [number, number, number];
 const hex = (value: string): RGB => [
@@ -84,6 +84,33 @@ const STOCKS = {
   true: stock([], [], ['#c9a13a', '#3b6ea8'], '#e8e8dc', 0, 1.9),
 } as const satisfies Record<string, Stock>;
 
+/**
+ * Re-key a many-hued set of 0–1 colours. Hues near the anchor (the set's most vivid colour, or the
+ * given index) take the `main` role and the rest answer in `other`; near-greys stay unless `neutrals`.
+ * Each group keeps its hue offsets drawn in by `spread`, so the palette reads while the set stays a set.
+ */
+interface SetKey { main: PaletteRole; other?: PaletteRole; anchor?: number; neutrals?: boolean; spread?: number }
+function rekeySet(colours: readonly RGB[], palette: Palette | undefined, key: SetKey): RGB[] {
+  if (!palette || !colours.length) return colours.slice();
+  const bytes = colours.map((c) => [c[0] * 255, c[1] * 255, c[2] * 255] as const);
+  const lch = bytes.map(oklch);
+  const anchor = key.anchor ?? lch.reduce((best, c, i) => (c[1] > lch[best][1] ? i : best), 0);
+  const roles = lch.map(([, C, h]): PaletteRole | undefined => {
+    if (C < 0.03) return key.neutrals ? key.main : undefined;
+    const d = Math.abs(Math.atan2(Math.sin(h - lch[anchor][2]), Math.cos(h - lch[anchor][2])));
+    return d < 0.9 || !key.other ? key.main : key.other;
+  });
+  const out = rekey(Object.fromEntries(bytes.map((c, i) => [i, c])), palette, Object.fromEntries(roles.map((r, i) => [i, r])));
+  return colours.map((c, i) => {
+    const r = roles[i];
+    if (!r) return c;
+    const [L, C, h] = oklch(out[i]);
+    const target = oklch(paintRGB(palette[r]))[2];
+    const k = fromOklch(L, C, target + Math.atan2(Math.sin(h - target), Math.cos(h - target)) * (key.spread ?? 0.5));
+    return [k[0] / 255, k[1] / 255, k[2] / 255];
+  });
+}
+
 /** A repeatable hash of a lattice point, in [0, 1). */
 function hash(x: number, y: number, s: number): number {
   let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(s | 0, 1274126177);
@@ -124,15 +151,35 @@ function blur(field: Float32Array, n: number, radius: number, passes: number) {
 
 const KIND_STONE = 0, KIND_BORDER = 1, KIND_GROUND = 2, KIND_PICTURE = 3;
 
+/**
+ * What each material becomes in a glazier's hands: a different glass, not a filter. Metal is
+ * silvered mirror glass that reflects instead of transmitting; brushed metal and leather take a
+ * hammered sheet; glitter a seedy one full of flashing bubbles; wet things water glass; matte goes
+ * sandblasted; chalk, rubber and velvet are opaque or near-opaque dark glass; glass is clear
+ * crown glass; a luminous thing burns brighter and spills more halation.
+ */
+const MATERIAL_AT = (name: MaterialName) => MATERIAL_NAMES.indexOf(name) + 1;
+const M_CHROME = MATERIAL_AT('chrome'), M_BRUSHED = MATERIAL_AT('brushed'), M_GLOSS = MATERIAL_AT('gloss'), M_SATIN = MATERIAL_AT('satin'), M_MATTE = MATERIAL_AT('matte'), M_VELVET = MATERIAL_AT('velvet');
+const M_RUBBER = MATERIAL_AT('rubber'), M_LEATHER = MATERIAL_AT('leather'), M_GLASS = MATERIAL_AT('glass'), M_GLITTER = MATERIAL_AT('glitter'), M_WET = MATERIAL_AT('wet'), M_GLOW = MATERIAL_AT('glow');
+const SHEET_OF: Partial<Record<number, string>> = { [M_CHROME]: 'antique', [M_GLASS]: 'antique', [M_BRUSHED]: 'hammered', [M_LEATHER]: 'hammered', [M_GLITTER]: 'seedy', [M_WET]: 'ripple' };
+/** The scene a silvered pane reflects, in 0–1: a bright horizon band, paler sky, dark ground, two streak lights. */
+function silvered(rx: number, ry: number, s: number): number {
+  const band = Math.exp(-(((ry - 0.06) / 0.09) ** 2));
+  const sky = ry > 0.05 ? 0.25 + 0.45 * smooth(0.05, 0.55, ry) : 0.08 + 0.1 * smooth(-0.6, -0.05, ry);
+  const streak = 0.45 * Math.exp(-(((ry - 0.42) / 0.025) ** 2)) * (0.55 + 0.45 * Math.cos(rx * 4 + s * 0.001)) + 0.3 * Math.exp(-(((ry + 0.3) / 0.03) ** 2)) * (0.5 + 0.5 * Math.cos(rx * 2.5 + s * 0.0017));
+  return clamp01(sky + 0.7 * band + streak);
+}
+
 export default defineLook({
+  materials: 'own',
   questions: {
     glass: choice('What glass is the window made from?', {
-      jewel: 'Medieval cathedral glass: ruby, cobalt, emerald and gold on a deep blue ground. Solemn, sacred, royal.',
-      opal: 'Opalescent Tiffany glass: milky peach, moss, teal and lavender under a soft sky. Gardens, lamps, gentle nostalgia.',
-      deco: 'Art Deco door glass: clear and frosted panes with amber, smoke grey, teal and black. Hotels, bars, city nights.',
-      grisaille: 'Pale grisaille: nearly colourless greenish-white glass with touches of silver-stain yellow. Quiet, scholarly, wintry.',
-      dalle: 'Modern slab glass: hot primaries, turquoise and violet, loud and flat. Mid-century chapels, optimism, pop.',
-      ember: 'Sunset glass: blood red, orange and amber against violet and indigo. Passion, endings, fire, apocalypse.',
+      jewel: 'Medieval cathedral glass: deep, saturated jewel tones on a dark, rich ground. Solemn, sacred, royal.',
+      opal: 'Opalescent Tiffany glass: milky, soft, pastel pieces under a pale sky. Gardens, lamps, gentle nostalgia.',
+      deco: 'Art Deco door glass: clear and frosted panes with a few strong accents and black. Hotels, bars, city nights.',
+      grisaille: 'Pale grisaille: nearly colourless glass with small touches of stain. Quiet, scholarly, wintry.',
+      dalle: 'Modern slab glass: hot, flat colour at full strength, loud and bold. Mid-century chapels, optimism, pop.',
+      ember: 'Sunset glass: hot, glowing pieces against a deep, dusky ground. Passion, endings, fire, apocalypse.',
       true: 'Glass matched to the scene: each piece keeps the colour of what it shows, only richer.',
     }),
     leading: choice('How is the open background behind the subject glazed?', {
@@ -199,7 +246,17 @@ export default defineLook({
     const mood = context.mood;
     const seed = (context.seed % 100_000) + 17;
     const random = seeded(context.seed ^ 0x5a17ed);
-    const P: Stock = STOCKS[a.glass];
+    // The palette re-keys the glazier's sheets (picked by their designed colour, so a piece keeps its
+    // place in the set), the backdrop glass and the border; clear glass and matched glass stay.
+    const designed: Stock = STOCKS[a.glass];
+    const P: Stock = context.palette && a.glass !== 'true'
+      ? {
+        ...designed,
+        glass: rekeySet(designed.glass, context.palette, { main: 'ink', other: 'second' }),
+        ground: rekeySet(designed.ground, context.palette, { main: 'ground', other: 'second', anchor: 0, neutrals: true }),
+        border: rekeySet(designed.border, context.palette, { main: 'second', neutrals: true }) as [RGB, RGB],
+      }
+      : designed;
     const pause = async () => {
       signal.throwIfAborted();
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
@@ -533,6 +590,25 @@ export default defineLook({
       stat[at + 6] += dep[p];
       stat[at + 7]++;
     }
+    // What each piece is made of: the material most of its pixels show, and how strongly over the piece.
+    const made = new Uint8Array(pieces), madeStrength = new Float32Array(pieces);
+    const madeCount = new Uint32Array(MATERIAL_NAMES.length + 1);
+    if (capture.material || capture.backdrop) {
+      const width = MATERIAL_NAMES.length + 1;
+      const tally = new Float32Array(pieces * width);
+      for (let p = 0; p < N; p++) {
+        const implied = impliedMaterial(surfaceAt(capture, p));
+        if (implied) tally[piece[p] * width + MATERIAL_AT(implied.name)] += implied.strength;
+      }
+      for (let index = 0; index < pieces; index++) {
+        let best = 0;
+        for (let at = 1; at < width; at++) if (tally[index * width + at] > tally[index * width + best]) best = at;
+        if (!best || !stat[index * 8 + 7]) continue;
+        made[index] = best;
+        madeStrength[index] = Math.min(1, tally[index * width + best] / stat[index * 8 + 7]);
+        madeCount[best]++;
+      }
+    }
     const kind = new Uint8Array(pieces);
     const glassR = new Float32Array(pieces), glassG = new Float32Array(pieces), glassB = new Float32Array(pieces);
     const meanLight = new Float32Array(pieces);
@@ -594,7 +670,8 @@ export default defineLook({
           let nearestSheet = P.glass[0], distance = Infinity, sheetIndex = 0;
           const id = identity[first * 4];
           const chroma = Math.max(r, g, b) - Math.min(r, g, b);
-          for (const sheet of P.glass) {
+          for (let i = 0; i < designed.glass.length; i++) {
+            const sheet = designed.glass[i];
             const da = r2 - g2 - (sheet[0] - sheet[1]);
             const dbb = (r2 + g2) / 2 - b2 - ((sheet[0] + sheet[1]) / 2 - sheet[2]);
             const dl = l - lum(sheet[0], sheet[1], sheet[2]);
@@ -602,15 +679,32 @@ export default defineLook({
             const grey = 1 - clamp01(chroma * 4);
             const liking = hash(id * 31 + 7, sheetIndex++, seed + 11) * 0.38 * grey;
             const d = (da * da + dbb * dbb) * (1 - 0.8 * grey) + dl * dl * 0.5 + liking + dice() * 0.004;
-            if (d < distance) (distance = d), (nearestSheet = sheet);
+            if (d < distance) (distance = d), (nearestSheet = P.glass[i]);
           }
           r2 = mix(r2, nearestSheet[0], P.snap);
           g2 = mix(g2, nearestSheet[1], P.snap);
           b2 = mix(b2, nearestSheet[2], P.snap);
         }
+        // The glazier's choice of sheet for what the thing is made of.
+        const ms = madeStrength[index], mm = made[index];
+        if (mm === M_CHROME || mm === M_BRUSHED) {
+          // Silvered glass: nearly colourless, it will reflect instead of glow.
+          const silver = mm === M_CHROME ? 0.8 : 0.66;
+          r2 = mix(r2, silver, 0.75 * ms); g2 = mix(g2, silver * 1.01, 0.75 * ms); b2 = mix(b2, silver * 1.05, 0.75 * ms);
+        } else if (mm === M_GLASS) {
+          r2 = mix(r2, P.clear[0], 0.7 * ms); g2 = mix(g2, P.clear[1], 0.7 * ms); b2 = mix(b2, P.clear[2], 0.7 * ms);
+        } else if (mm === M_MATTE) {
+          // Sandblasted: milky, the colour thinned.
+          const milk = 0.55 + l * 0.4;
+          r2 = mix(r2, milk, 0.45 * ms); g2 = mix(g2, milk * 0.99, 0.45 * ms); b2 = mix(b2, milk * 0.96, 0.45 * ms);
+        } else if (mm === M_RUBBER) {
+          r2 *= 1 - 0.6 * ms; g2 *= 1 - 0.6 * ms; b2 *= 1 - 0.6 * ms;
+        } else if (mm === M_VELVET) {
+          r2 *= 1 - 0.35 * ms; g2 *= 1 - 0.35 * ms; b2 *= 1 - 0.35 * ms;
+        }
         // Keep the scene's light and shade, but as glass: nothing falls to black, shadow is deeper colour.
         const want = 0.3 + 0.68 * Math.pow(l, 0.8);
-        const gain = Math.min(2.2, Math.max(0.7, want / Math.max(0.03, lum(r2, g2, b2)))) * (0.92 + dice() * 0.16);
+        const gain = Math.min(2.2, Math.max(0.7, want / Math.max(0.03, lum(r2, g2, b2)))) * (0.92 + dice() * 0.16) * (mm === M_GLOW ? 1 + 0.5 * ms : 1);
         // Farther pieces go a little paler and cooler, as aerial perspective.
         const far = clamp01((stat[at + 6] / count - nearest) / depthSpan) * 0.16;
         r = mix(r2 * gain, 0.78, far);
@@ -769,6 +863,10 @@ export default defineLook({
     const grime = mix(0.04, 0.45, mood.wear);
     const grimeReach = mix(2, 7, mood.wear);
     const roundelStep = groundStep * 1.2;
+    // The half vector between the light and the viewer, view space with y up, for glints and sheens.
+    const hLength = Math.hypot(lx, -ly, capture.light[2] + 1) || 1;
+    const half3: [number, number, number] = [lx / hLength, -ly / hLength, (capture.light[2] + 1) / hLength];
+    const glintCell = Math.max(2, Math.round(3 * n / 720));
     const bars: number[] = [];
     if (a.shape === 'lancet' || a.shape === 'round') bars.push(n * 0.27, n * 0.5, n * 0.73);
     else if (a.shape === 'panel' && a.cames > 0.4 && random() < 0.6) bars.push(n * 0.335, n * 0.665);
@@ -791,8 +889,10 @@ export default defineLook({
         const angle = turn[index];
         const ca = Math.cos(angle), sa = Math.sin(angle);
         const u = x * ca + y * sa, v = y * ca - x * sa;
+        const mm = made[index], ms = madeStrength[index];
+        const texture = (mm && SHEET_OF[mm]) ?? a.texture;
         let m = 1;
-        switch (a.texture) {
+        switch (texture) {
           case 'antique':
             m = 0.88 + 0.24 * fbm(u / 80, v / 7, seed + index);
             if (hash(x >> 3, y >> 3, seed + 3) < 0.035) {
@@ -842,6 +942,7 @@ export default defineLook({
           const d = Math.hypot(x - (gi + 0.5) * roundelStep, y - (gj + 0.5) * roundelStep);
           if (d < roundelStep * 0.45) m *= 0.9 + 0.16 * Math.cos(d * 0.75) + 0.25 * Math.exp(-d / 3);
         }
+        if (mm === M_MATTE) m = mix(m, 0.96 + 0.08 * hash(x, y, seed + 4), ms);
 
         // Grisaille: opaque brown vitreous paint, fired on.
         let paint = 0;
@@ -882,11 +983,56 @@ export default defineLook({
           else if (off < 2) m *= 1.35;
         }
 
-        const light = backlight(x, y) * m;
+        let light = backlight(x, y) * m;
+        // The material's glass meets the light its own way.
+        let glint = 0, sheen = 0;
+        if (mm) {
+          const nx = nxs[p], ny = nys[p], nz = nzs[p];
+          const ndh = Math.max(0, nx * half3[0] + ny * half3[1] + nz * half3[2]);
+          const facing = clamp01(nz);
+          if (mm === M_CHROME || mm === M_BRUSHED) {
+            // Silvered: the pane reflects the room instead of passing the light behind it.
+            const rx = 2 * nz * nx, ry = 2 * nz * ny;
+            const mirror = mm === M_CHROME ? silvered(rx, ry, seed) : clamp01(0.15 + 0.5 * smooth(-0.5, 0.5, ry) + 0.35 * Math.exp(-(((ry - 0.1) / 0.25) ** 2)));
+            light = mix(light, (0.3 + 1.1 * mirror) * m, ms);
+            glint = Math.pow(ndh, mm === M_CHROME ? 48 : 8) * (mm === M_CHROME ? 0.9 : 0.3) * ms;
+          } else if (mm === M_GLOSS) {
+            light *= 1 - 0.1 * ms;
+            glint = (Math.pow(ndh, 70) * 0.9 + Math.pow(ndh, 10) * 0.15) * ms;
+          } else if (mm === M_SATIN) sheen = (Math.pow(ndh, 8) * 0.35 + (1 - facing) ** 3 * 0.2) * ms;
+          else if (mm === M_MATTE) light = mix(light, 1, 0.5 * ms);
+          else if (mm === M_VELVET) {
+            light *= 1 - 0.3 * ms * facing * facing;
+            sheen = (1 - facing) ** 1.5 * 0.45 * ms;
+          } else if (mm === M_RUBBER) {
+            light *= 1 - 0.5 * ms;
+            sheen = Math.pow(ndh, 10) * 0.2 * ms;
+          } else if (mm === M_LEATHER) {
+            const su = x / 5, sv = y / 5, iu = Math.floor(su), iv = Math.floor(sv);
+            let first = 9, second = 9;
+            for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
+              const d = Math.hypot(su - (iu + i + hash(iu + i, iv + j, seed + 9)), sv - (iv + j + hash(iu + i, iv + j, seed + 10)));
+              if (d < first) (second = first), (first = d);
+              else if (d < second) second = d;
+            }
+            light *= 1 - 0.18 * ms * (1 - clamp01((second - first) / 0.35));
+            sheen = Math.pow(ndh, 16) * 0.25 * ms;
+          } else if (mm === M_GLASS) {
+            light *= 1 + 0.25 * ms;
+            glint = ((1 - facing) ** 2.5 * 0.6 + Math.pow(ndh, 120) * 0.9) * ms;
+          } else if (mm === M_GLITTER) glint = sheen = sparkleAt(x, y, [nx, ny, nz], half3, glintCell, seed) * ms;
+          else if (mm === M_WET) {
+            light *= 1 + 0.1 * ms;
+            const sl = Math.hypot(nx, ny * 0.3, nz) || 1;
+            glint = Math.pow(Math.max(0, (nx * half3[0] + ny * 0.3 * half3[1] + nz * half3[2]) / sl), 50) * 0.9 * ms;
+          } else if (mm === M_GLOW) light *= 1 + 0.6 * ms;
+        }
         const keep = 1 - paint * 0.88;
         r = r * light * tint[0] * keep + paint * 0.035;
         g = g * light * tint[1] * keep + paint * 0.022;
         b = b * light * tint[2] * keep + paint * 0.015;
+        if (sheen > 0) { r = mix(r, P.clear[0] * 1.1, sheen); g = mix(g, P.clear[1] * 1.1, sheen); b = mix(b, P.clear[2] * 1.1, sheen); }
+        if (glint > 0) { r += glint * 1.1; g += glint * 1.1; b += glint * 1.1; }
         // Past full brightness glass burns out toward white instead of clipping to a flat primary.
         const over = Math.max(0, Math.max(r, g, b) - 1);
         if (over > 0) {
@@ -925,6 +1071,8 @@ export default defineLook({
 
     // ---------------------------------------------------------------- halation: light spills over the lead and stone
     const glowR = outR.slice(), glowG = outG.slice(), glowB = outB.slice();
+    // Luminous panes spill more light over their leads.
+    if (madeCount[M_GLOW]) for (let p = 0; p < N; p++) if (made[piece[p]] === M_GLOW) { const k = 1 + 1.5 * madeStrength[piece[p]]; glowR[p] *= k; glowG[p] *= k; glowB[p] *= k; }
     const radius = Math.max(3, Math.round(n / 90));
     blur(glowR, n, radius, 2);
     await pause();
@@ -946,6 +1094,7 @@ export default defineLook({
 
     let live = 0;
     for (let index = 0; index < pieces; index++) if (counts[index] && kind[index] !== KIND_STONE) live++;
+    const glazed = MATERIAL_NAMES.map((name, at) => (madeCount[at + 1] ? `${name} ${madeCount[at + 1]}` : '')).filter(Boolean);
     return {
       pixels,
       notes: [
@@ -953,6 +1102,7 @@ export default defineLook({
         `${a.leading} ground, cames ${(threshold * 2).toFixed(1)} px on outlines`,
         `${a.paint === 'none' ? 'unpainted' : `${a.paint} grisaille`}, ${a.shape} opening${a.border === 'none' ? '' : `, ${a.border} border`}`,
         `lit by ${a.behind}`,
+        ...(glazed.length ? [`glazed by material: ${glazed.join(', ')} pieces`] : []),
       ],
     };
   },

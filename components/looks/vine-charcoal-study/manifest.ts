@@ -1,0 +1,2 @@
+import {defineManifest} from '@conjure/kit';
+export default defineManifest({kind:'look',title:'Vine charcoal study',summary:'Matte charcoal masses, paper tooth, loose searching contours, stump blends and lifted eraser lights. Expressive life studies, dark interiors, architectural sketches and atmospheric monochrome landscapes.',scales:['cosmic','planetary','landscape','street','room','tabletop','macro'],medium:'painting'});

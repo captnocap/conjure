@@ -34,6 +34,8 @@ try {
     const json = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
     if (path === '/api/status') return json({ configured: true, models: [model], defaultModel: model });
     if (path === '/api/traces' && request.method() === 'GET') return json([]);
+    // The gallery dock lists saved pictures as the page opens; the check has none.
+    if (path === '/api/gallery' && request.method() === 'GET') return json({ total: 0, entries: [] });
     if (path === '/api/gallery' && request.method() === 'POST') {
       gallery.push(request.postDataJSON());
       return json({ id: 'styles-qa' });

@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { choice, clamp01, defineLook, fromOklch, mix, oklch, rekey, rekeyOne, score, seeded } from '@conjure/kit';
 
 /**
  * Xieyi: Chinese freehand ink painting, re-brushed from the capture.
@@ -527,14 +527,14 @@ export default defineLook({
       'Large',
       'A huge goat-hair brush: broad heavy strokes',
     ]),
-    accent: choice('Which single colour, if any, is allowed beside the ink?', {
+    accent: choice('What character has the single colour, if any, allowed beside the ink? Its hue comes from the picture\u2019s palette.', {
       none: 'Ink alone: every tone from pale grey wash to burnt black, no colour at all.',
-      vermilion: 'Vermilion: a hot orange-red, like a persimmon, a lantern or a cockscomb.',
-      rouge: 'Rouge: a deep crimson-pink, like peony petals or plum blossom.',
-      indigo: 'Indigo: a soft grey-blue, like a scholar’s robe, far hills or cold water.',
-      ochre: 'Ochre: an earthy red-brown, like autumn leaves, a cat’s fur or bare rock.',
-      gamboge: 'Gamboge: a warm transparent yellow, like chrysanthemums, loquats or lamplight.',
-      malachite: 'Malachite: a mineral green, like moss, bamboo leaves or jade.',
+      vermilion: 'A hot, bright colour at full strength, singing against the ink like a lantern or a cockscomb.',
+      rouge: 'A deep, rich, velvety colour, like petals or blossom pooled in the wash.',
+      indigo: 'A soft, greyed, quiet colour, like a scholar’s robe, far hills or still water.',
+      ochre: 'An earthy, dusty, muted colour, like autumn leaves, a cat’s fur or bare rock.',
+      gamboge: 'A light, glowing, transparent colour, like flowers, ripe fruit or lamplight.',
+      malachite: 'A dense, chalky mineral colour, like moss, bamboo leaves or jade.',
     }),
     paper: choice('What is it painted on?', {
       xuan: 'Raw xuan rice paper: soft ivory, fibrous and thirsty, ink blooms the instant it lands.',
@@ -574,8 +574,19 @@ export default defineLook({
     await pause();
 
     const M = MANNERS[a.manner];
-    const P = PAPERS[a.paper];
-    const accent = ACCENTS[a.accent];
+    // The single accent takes the picture's ink; the paper takes half the ground's tint. The ink stays
+    // carbon black and the cinnabar seal stays red: they are the painting's identity.
+    const designedPaper = PAPERS[a.paper];
+    const tinted = rekey({ base: designedPaper.base }, context.palette, { base: 'ground' }).base;
+    const P: Paper = { ...designedPaper, base: [0, 1, 2].map((c) => mix(designedPaper.base[c], tinted[c], 0.5)) as unknown as RGB };
+    const designedAccent = ACCENTS[a.accent];
+    // Each accent keeps its own strength against the most vivid one (a greyed indigo stays soft).
+    const keyedAccent = (c: RGB): RGB => {
+      const [L, C, h] = oklch(rekeyOne(c, context.palette, 'ink'));
+      const most = Math.max(...Object.values(ACCENTS).map((v) => (v ? oklch(v)[1] : 0)));
+      return fromOklch(L, C * Math.min(1, oklch(c)[1] / most), h);
+    };
+    const accent = designedAccent && context.palette ? keyedAccent(designedAccent) : designedAccent;
     const wet = clamp01(a.wetness * 0.85 + M.wet + 0.05);
     const soak = clamp01(wet * P.absorb);
     const empty = clamp01(a.emptiness * 0.8 + M.empty + (0.5 - mood.cheer) * 0.08);

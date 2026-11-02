@@ -2,7 +2,8 @@ import type { Capture } from '@conjure/kit';
 
 /**
  * Atelier ships as plain browser modules with its own workers and a vendored p5 1.x.
- * It is served untouched from /atelier and loaded at runtime, never bundled.
+ * Its study runtime and Conjure geometry adapters are served from /atelier,
+ * loaded at runtime rather than bundled. The original Garden paths stay separate.
  */
 const BASE = '/atelier/';
 
@@ -88,31 +89,48 @@ const loadRuntime = () =>
     } satisfies Runtime;
   })());
 
-/** Describe a capture in the terms Atelier's treatments read. Treatments that need mesh geometry get none. */
+const frames = new WeakMap<Capture, object>();
+
+/** Preserve the actual captured geometry, ownership, materials and lights through the worker boundary. */
 function toAtelierFrame(capture: Capture) {
+  const saved = frames.get(capture);
+  if (saved) return saved;
   const ids = capture.baseColors.length;
-  return {
+  const evidence = capture.atelier;
+  const raw = {
     size: capture.size,
     color: capture.color,
     normal: capture.normal,
     depth: capture.depth,
     identity: capture.identity,
     diffuse: capture.diffuse,
-    albedo: null,
-    pixelWorldSize: capture.pixelWorldSize,
+    material: capture.material,
+    albedo: evidence?.albedo ?? null,
+    transmission: evidence?.transmission,
+    materialProfiles: evidence?.materialProfiles,
+    pixelWorldSize: evidence ? evidence.geometry.worldScale * 8.2 / capture.size : capture.pixelWorldSize,
     near: capture.near,
     far: capture.far,
     baseColors: capture.baseColors,
-    metalnesses: Array(ids).fill(0),
-    transmissions: Array(ids).fill(0),
+    metalnesses: evidence?.metalnesses ?? Array(ids).fill(0),
+    transmissions: evidence?.transmissions ?? Array(ids).fill(0),
     materialSettings: { preset: 'original', assignments: {} },
     materialBakeMetadata: null,
-    edges: [],
-    edgeOwners: [],
+    edges: evidence?.edges ?? [],
+    edgeOwners: evidence?.edgeOwners ?? [],
     reliefLight: capture.light,
-    spectralLights: [{ direction: capture.light, color: [1, 0.96, 0.87], intensity: 4.2 }],
-    spectralHemisphere: { sky: [1, 1, 1], ground: [0.44, 0.5, 0.46], intensity: 1.5, up: [0, -1, 0] },
+    spectralLights: evidence?.spectralLights ?? [{ direction: capture.light, color: [1, 0.96, 0.87], intensity: 4.2 }],
+    spectralHemisphere: evidence?.spectralHemisphere ?? { sky: [1, 1, 1], ground: [0.44, 0.5, 0.46], intensity: 1.5, up: [0, -1, 0] },
+    ...(evidence ? {
+      geometrySnapshot: () => evidence.geometry,
+      worldFromClip: evidence.worldFromClip,
+      cameraProjection: evidence.geometry.projection,
+      sectionRibLighting: evidence.sectionRibLighting,
+      cutawayShadowCamera: evidence.cutawayShadowCamera,
+    } : {}),
   };
+  frames.set(capture, raw);
+  return raw;
 }
 
 export async function applyMix(

@@ -1,6 +1,7 @@
 import type { Answers, Mood, QuestionSet } from '../kit/contract';
 import { choice, noul, score } from '../kit/questions';
 import { hashText, seeded } from '../kit/random';
+import { type Palette, rekey } from '../kit/palette';
 import { createSvgLayer, SVG_MOTIFS, type SvgLayer, type SvgMotif, type TraceStyle, type TracedImage } from '../kit/svg';
 import { NO_TRACES, TRACE_SPOTS, traceSheetQuestions, type TraceLibrary, type TraceSummary } from './found-entry';
 import { consult, type ConsultOptions, stanceBrief, type Usage, type Verdict } from './oracle';
@@ -10,18 +11,24 @@ import { NO_DIRECTION } from './art-direction';
 import { MAX_BRIEF_CHARACTERS } from './decision-limits';
 
 const MOTIFS = Object.fromEntries(SVG_MOTIFS.map(({ id, title, description }) => [id, `${title}: ${description}`])) as Record<SvgMotif, string>;
+/**
+ * Each pair is a character (deep and muted, pale and luminous, hot and bright). With the picture's
+ * palette its hues re-key to the palette's ink and second colour, keeping the pair's depth and strength.
+ */
 const PALETTES = {
-  mineral: { color: '#355d64', accent: '#c56c44', description: 'Petrol blue and weathered copper: mineral, tidal and quietly tactile.' },
-  botanical: { color: '#244f3b', accent: '#a18449', description: 'Deep fern green and antique brass: organic, patient and earthy.' },
-  solar: { color: '#cf6d43', accent: '#eab72f', description: 'Burnt orange and golden yellow: warm, expansive and sunlit.' },
-  nocturne: { color: '#e5d8fb', accent: '#79d5c8', description: 'Pale lilac and luminous mint: gentle light on a darker nocturnal print.' },
-  editorial: { color: '#34383d', accent: '#c2a48a', description: 'Charcoal and warm stone: understated ink, measured and editorial.' },
-  carnival: { color: '#4268d4', accent: '#e45f7a', description: 'Cobalt blue and coral pink: playful colour, graphic energy and surprise.' },
-  acid: { color: '#62f5db', accent: '#b5ed91', description: 'Electric turquoise and pale acid green: broken luminous ink against near-black, abrasive photocopies and nocturnal stencil prints.' },
-  phosphor: { color: '#b6efff', accent: '#d1a1ed', description: 'Cold cyan-white and fading lilac: interrupted CRT phosphor, spectral traces and bright nodes in deep shadows.' },
-  ember: { color: '#ffc28a', accent: '#e57966', description: 'Hot apricot and burnt coral: sparse incandescent fault lines against plum shadows, scorched film and volcanic surfaces.' },
+  mineral: { color: '#355d64', accent: '#c56c44', description: 'Deep, muted and mineral: a dark weathered ink with a warmer worn accent, tidal and quietly tactile.' },
+  botanical: { color: '#244f3b', accent: '#a18449', description: 'Deep and earthy: a dark organic ink with an antique, brassy accent, patient and grown.' },
+  solar: { color: '#cf6d43', accent: '#eab72f', description: 'Warm and expansive: a strong mid-bright ink with a brighter, lighter accent, sunlit.' },
+  nocturne: { color: '#e5d8fb', accent: '#79d5c8', description: 'Pale and gentle: soft light inks, nearly white, on a darker nocturnal print.' },
+  editorial: { color: '#34383d', accent: '#c2a48a', description: 'Understated: a near-black ink and a quiet stone-pale accent, measured and editorial.' },
+  carnival: { color: '#4268d4', accent: '#e45f7a', description: 'Playful: two strong clashing inks at full strength, graphic energy and surprise.' },
+  acid: { color: '#62f5db', accent: '#b5ed91', description: 'Electric and luminous: broken glowing ink against near-black, abrasive photocopies and nocturnal stencil prints.' },
+  phosphor: { color: '#b6efff', accent: '#d1a1ed', description: 'Spectral: cold, pale, nearly white light fading into a second tint, interrupted CRT phosphor and bright nodes in deep shadows.' },
+  ember: { color: '#ffc28a', accent: '#e57966', description: 'Incandescent: hot, light inks as sparse fault lines against dark shadows, scorched film and volcanic surfaces.' },
 } as const;
-type Palette = keyof typeof PALETTES;
+type InkPair = keyof typeof PALETTES;
+const hexOf = (rgb: readonly number[]) => `#${rgb.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
+const rgbOf = (hex: string) => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)] as const;
 
 /** Every new scene receives a model-directed vector composition, just like its world and look. */
 export const DESIGN_QUESTIONS = {
@@ -30,7 +37,7 @@ export const DESIGN_QUESTIONS = {
     none: 'One clear visual idea: let the primary motif stand alone.', ...MOTIFS,
   }),
   palette: choice('Which two inks should the SVG layers use to complement the print and express the idea?',
-    Object.fromEntries(Object.entries(PALETTES).map(([id, palette]) => [id, palette.description])) as Record<Palette, string>),
+    Object.fromEntries(Object.entries(PALETTES).map(([id, palette]) => [id, palette.description])) as Record<InkPair, string>),
   placement: choice('Where should the primary and companion SVG marks meet the captured scene?', {
     all: 'Across the whole composition, openly intersecting the objects and the space around them.',
     subject: 'Only within the captured objects and architectural surfaces, like an inlay or patterned skin.',
@@ -96,6 +103,8 @@ export function settleDesign(
   forced: Forced = {},
   traces: readonly TraceSummary[] = [],
   exploring?: Exploring,
+  /** The picture's palette; the chosen pair re-keys to its ink and second colour. */
+  colours?: Palette,
 ): DesignPlan {
   // Trace questions come after the motif questions, so an empty library leaves every draw as it was.
   const questions: QuestionSet = { ...DESIGN_QUESTIONS, ...traceSheetQuestions(traces) };
@@ -108,7 +117,9 @@ export function settleDesign(
   // Rerolls tour the motifs, inks, placement and blend rather than resampling the same favourites.
   const settled = settle('design', questions, verdicts, temperature, seeded(seed ^ hashText('design')), rulings, validPins, exploring);
   const answers = settled as DesignAnswers;
-  const palette = PALETTES[answers.palette];
+  const pair = PALETTES[answers.palette];
+  const keyed = rekey({ color: rgbOf(pair.color), accent: rgbOf(pair.accent) }, colours, { color: 'ink', accent: 'second' });
+  const palette = colours ? { color: hexOf(keyed.color), accent: hexOf(keyed.accent) } : pair;
   const shared = {
     color: palette.color, accent: palette.accent,
     opacity: round(0.04 + unit(answers.opacity) * 0.76),
@@ -141,7 +152,7 @@ export function settleDesign(
     layers, answers, ...(trace ? { trace } : {}),
     notes: [
       ...(trace ? [`Your traced picture \u201c${trace.name}\u201d as a ${trace.style} sheet`] : []),
-      `${title(answers.motif)}${answers.companion === 'none' ? '' : ` with ${title(answers.companion)}`} in ${answers.palette} inks`,
+      `${title(answers.motif)}${answers.companion === 'none' ? '' : ` with ${title(answers.companion)}`} in ${answers.palette} inks${colours ? ` (${colours.ink} and ${colours.second})` : ''}`,
       `${layers.length} vector ${layers.length === 1 ? 'sheet' : 'sheets'}, ${placement}, ${answers.blend} blending`,
       ...(answers.annotation ? ['An extra field-note sheet adds drafting marks and specimen annotations'] : []),
     ],
@@ -157,6 +168,7 @@ interface DesignRoll {
   look?: string;
   /** Which reroll this is. When set, choices tour their plausible answers instead of resampling. */
   roll?: number;
+  palette?: Palette;
 }
 
 /** A traced picture as a vector sheet in the composition's inks, blend and placement. */
@@ -189,7 +201,7 @@ export class DesignDecisions {
     readonly direction: Direction = NO_DIRECTION,
   ) {}
 
-  async plan({ seed, temperature, rulings, forced, mood, look, roll }: DesignRoll): Promise<DesignPlan> {
+  async plan({ seed, temperature, rulings, forced, mood, look, roll, palette }: DesignRoll): Promise<DesignPlan> {
     const traces = this.library.list();
     // A new medium, or a changed trace library, gets fresh art direction; revisiting restores the same decisions.
     const key = `${look ?? ''}|${traces.map((trace) => trace.id).join(',')}`;
@@ -203,7 +215,7 @@ export class DesignDecisions {
       this.#verdicts.set(key, verdicts);
     }
     const exploring = roll === undefined ? undefined : { roll, seed: hashText(`${this.idea}\u0000design\u0000${look ?? ''}`) };
-    const plan = settleDesign(await verdicts, temperature, seed, rulings, forced, traces, exploring);
+    const plan = settleDesign(await verdicts, temperature, seed, rulings, forced, traces, exploring, palette);
     if (plan.trace) {
       const image = await this.library.get(plan.trace.id).catch(() => null);
       const layer = image ? traceLayer(plan, image, seed) : null;

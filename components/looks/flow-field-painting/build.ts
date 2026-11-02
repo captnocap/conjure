@@ -1,4 +1,4 @@
-import { choice, clamp01, defineLook, mix, score, seeded } from '@conjure/kit';
+import { type Palette, choice, clamp01, defineLook, mix, oklch, paintRGB, rekeyOne, score, seeded } from '@conjure/kit';
 
 /**
  * Oil paint laid in directional strokes that follow a flow field read from the capture.
@@ -168,11 +168,11 @@ const SCREAM_BANDS = ['#e2541c', '#f08a24', '#f4c03a', '#c8301e', '#e8743a', '#f
 
 const CHORD_SAY = {
   scene: 'True to the scene’s own colours, only purer and more intense; greys become cobalt skies and ochre earth.',
-  starry: 'A cool night chord: cobalt and ultramarine against chrome-yellow lamplight, deep blue-green below. Nocturnes, wonder, insomnia.',
-  harvest: 'A hot harvest chord: wheat gold, ochre and orange under a pale cerulean sky, a few poppy reds. Midday fields, labour, blazing sun.',
-  blossom: 'A fresh spring chord: pale turquoise, almond-blossom white and pink, young greens. Renewal, tenderness, a new child.',
-  cafe: 'A clashing night-café chord: blood-red walls against bitter green, a sickly yellow lamp. Passions, nerves, drink, no sleep.',
-  sunset: 'A burning sunset chord: blood-orange and red sky in bands over indigo-blue water and ground. Alarm, fever, a cry through nature.',
+  starry: 'A night chord: a deep dominant hue in a dark sky against complementary lamplight, deeper still below. Nocturnes, wonder, insomnia.',
+  harvest: 'A blazing midday chord: a hot dominant hue and its neighbours under a pale contrasting sky, a few sharp accents. Fields, labour, blazing sun.',
+  blossom: 'A fresh spring chord: pale chalky tints of three soft hues around blossom white. Renewal, tenderness, a new child.',
+  cafe: 'A clashing night-café chord: two hues fighting at full strength, with a sickly lamp between. Passions, nerves, drink, no sleep.',
+  sunset: 'A burning sunset chord: a fiery dominant hue in bands across the sky over deep contrasting water and ground. Alarm, fever, a cry through nature.',
 } as const;
 
 const CHORDS: Record<keyof typeof CHORD_SAY, Chord> = {
@@ -206,9 +206,41 @@ const SUPPORTS = {
   linen: { say: 'Primed linen canvas: warm off-white, its weave catching the paint wherever it is thin.', tone: hex('#e6dcc8'), weave: 1, fibre: 0.15 },
   cardboard: { say: 'Raw brown cardboard, unprimed and matte: its tan shows between strokes and drinks the paint dry.', tone: hex('#a8875f'), weave: 0, fibre: 1 },
   gesso: { say: 'A smooth white gesso panel: bright clean gaps and crisp brush ridges.', tone: hex('#f2efe7'), weave: 0.12, fibre: 0.1 },
-  toned: { say: 'Coarse canvas toned with a red-brown ground: a warm glow burns through every gap.', tone: hex('#97503a'), weave: 1.25, fibre: 0.2 },
+  toned: { say: 'Coarse canvas toned with a dark coloured ground: its glow burns through every gap.', tone: hex('#97503a'), weave: 1.25, fibre: 0.2 },
 } as const;
 const SUPPORT_SAY = Object.fromEntries(Object.entries(SUPPORTS).map(([k, v]) => [k, v.say])) as Record<keyof typeof SUPPORTS, string>;
+
+/**
+ * A chord under the picture's palette: the whole chord turns (HSL hue) so its leading pull lands on
+ * the ink's hue, every other hue keeping its offset, so a chord stays a chord (starry keeps its
+ * complementary lamp, cafe its clash); the accent glow takes the second colour's hue; a colourless
+ * ink drains the chord. The scene chord, the blue period's blues, its dark-blue contours and the
+ * blue shadows are the tradition and stay. A toned canvas takes the ground's tint.
+ */
+function chordIn(key: keyof typeof CHORDS, palette: Palette | undefined): Chord {
+  const chord = CHORDS[key];
+  if (!palette || key === 'scene') return chord;
+  const hsl = [0, 0, 0];
+  const ink = paintRGB(palette.ink), second = paintRGB(palette.second);
+  toHsl(ink[0] / 255, ink[1] / 255, ink[2] / 255, hsl);
+  const turn = hsl[0] - chord.pulls[0];
+  toHsl(second[0] / 255, second[1] / 255, second[2] / 255, hsl);
+  const accent = hsl[0];
+  const drain = Math.min(1, oklch(ink)[1] / 0.1);
+  const at = (h: number) => (((h + turn) % 1) + 1) % 1;
+  const role = ([h, sat]: [number, number]): [number, number] => [at(h), sat * drain];
+  const out = [0, 0, 0];
+  const band = (value: string) => {
+    const c = hex(value);
+    toHsl(c[0], c[1], c[2], hsl);
+    fromHsl(at(hsl[0]), hsl[1] * drain, hsl[2], out);
+    return `#${out.map((v) => Math.round(clamp01(v) * 255).toString(16).padStart(2, '0')).join('')}`;
+  };
+  return {
+    ...chord, sky: role(chord.sky), ground: role(chord.ground), set: role(chord.set),
+    pulls: chord.pulls.map(at), accent, bands: chord.bands?.map(band) ?? null,
+  };
+}
 
 const STATES = {
   fresh: 'Just finished and still wet: the ridges of paint glisten in the light.',
@@ -250,7 +282,7 @@ interface Brush {
 export default defineLook({
   questions: {
     tradition: choice('Which painter’s tradition lays the paint?', TRADITIONS),
-    chord: choice('Which colour chord, warm or cool, carries the painting?', CHORD_SAY),
+    chord: choice('What character has the colour chord that carries the painting? Its hues come from the picture\u2019s palette.', CHORD_SAY),
     stroke: score('How long is each brushstroke?', ['Stubby dabs', 'Short dashes', 'Medium', 'Long', 'Very long sweeping ribbons']),
     load: score('How thick is the paint on the brush?', [
       'Thin and dry, dragged on',
@@ -273,8 +305,10 @@ export default defineLook({
     const vg = answers.tradition === 'swirl';
     const mu = answers.tradition === 'scream';
     const bl = answers.tradition === 'blue';
-    const chord = CHORDS[answers.chord];
-    const support = SUPPORTS[answers.support];
+    const chord = chordIn(answers.chord, context.palette);
+    const support = answers.support === 'toned' && context.palette
+      ? { ...SUPPORTS.toned, tone: rekeyOne(SUPPORTS.toned.tone.map((v) => Math.round(v * 255)) as unknown as [number, number, number], context.palette, 'ground').map((v) => v / 255) as RGB }
+      : SUPPORTS[answers.support];
     const state = answers.state;
     const random = seeded((context.seed ^ 0x2f6e1d93) >>> 0);
     const nseed = (context.seed ^ 0x5bd1e995) | 0;

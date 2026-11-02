@@ -1,10 +1,10 @@
 import {choice,defineLook,score} from '@conjure/kit';
-import {anatomy,prepare,organ,oval,scene,membrane,crop,rim,vein,line,label,finish,stop,canvas} from './organic';
+import {anatomy,prepare,organ,oval,scene,membrane,crop,rim,vein,line,label,finish,stop,canvas,tint} from './organic';
 import {micrograph} from './micrograph';
 export default defineLook({questions:{
  inhabitants:choice('What beings are drawn inside the world’s own surfaces?',{masks:'Nested skull-masks, staring faces and little witnesses inhabit the skin.',vermin:'Worms, tooth-beasts, bird larvae and searching roots weave through the surfaces.',settlements:'Tiny doorways, crooked villages and inhabited cliffs grow inside the larger forms.',choir:'A mixed bestiary of faces, creatures, small people and impossible little places.'}),
  hierarchy:score('How do the inner pictures divide their scales?',['A dense web of fine creatures with a few larger masks','Balanced large inhabitants, smaller scenes and tiny pictorial details','Broad masks and creatures whose bodies shelter smaller drawings']),
-pigment:choice('Which substances form the image?',{bone:'Ivory marrow, olive shadows and rust-red markings.',rust:'Iron oxide, dried red clay and pale flesh.',verdigris:'Green copper salts and bone with a rusty accent.',charcoal:'Carbon, ash and sepia on old tissue.'}),
+pigment:choice('Which substances form the image?',{bone:'Pale warm tissue, soft mid shadows and sharp contrasting marks.',rust:'Toned, smouldering stock with heavy shadows and sombre marks.',verdigris:'Cool mineral salts, vivid mid tones and a hot contrasting accent.',charcoal:'Restrained, ashen, near-monochrome on old tissue.'}),
  branching:choice('What form has the inhabited coral grown?',{fan:'A broad fan of branching arms around a root chamber.',antler:'Tall irregular antlers bearing scene chambers at their tips.',chandelier:'Drooping branches suspend the little inhabited rooms.',reef:'A low stepped reef of squared image chambers.'}),
  chamber:choice('What shape are the coral rooms?',{arches:'Arched chambers with scalloped coral crowns.',boxes:'Rectangular rooms built from rounded calcified walls.',polyps:'Oval polyps with a fringe of small teeth.',towers:'Narrow tall chambers stacked like tiny chapels.'}),
  spread:score('How far do the branches reach?',['A compact domestic cluster','A wide fan of chambers','A tall spreading architecture']),
@@ -33,7 +33,7 @@ const f=await prepare(cap,ctx,signal,a.pigment),d=f.d;
  if(a.state==='broken'){const [x,y]=nodes[0],ex=.5+(x-.5)*.86,ey=.79+(y-.79)*.86,angle=Math.atan2(y-.79,x-.5),dx=Math.cos(angle),dy=Math.sin(angle),nx=-dy,ny=dx;line(f,[ex-nx*.026,ey-ny*.026,ex-nx*.009+dx*.012,ey-ny*.009+dy*.012,ex+nx*.004-dx*.009,ey+ny*.004-dy*.009,ex+nx*.026,ey+ny*.026],f.p.ink,.004);for(let k=0;k<3;k++)line(f,[ex+dx*(.035+k*.012)+nx*.012,ey+dy*(.035+k*.012)+ny*.012,ex+dx*(.042+k*.012)+nx*.019,ey+dy*(.042+k*.012)+ny*.019],f.p.mid,.003);}
 
  if(a.state==='budding')nodes.forEach(([x,y,r],i)=>{membrane(f,x+r*.8,y+r,.032,.026,crop(f,a.target,i),'plain',.06);});
- if(a.state==='bleached'){d.strokeStyle='#f5e9ca';d.lineWidth=.002;for(let i=0;i<20;i++)line(f,[.3+i*.02,.93,.33+i*.017,.84],'#f5e9ca',.002);}
+ if(a.state==='bleached'){const bleach=tint('#f5e9ca',ctx,'ground');d.strokeStyle=bleach;d.lineWidth=.002;for(let i=0;i<20;i++)line(f,[.3+i*.02,.93,.33+i*.017,.84],bleach,.002);}
  await micrograph(f,a.inhabitants,a.hierarchy);
  label(f,'REEF OF INTERIORS / THE COLONY REMEMBERS',.045,.976,.010);return finish(f,[a.branching+' coral architecture',a.chamber+' image chambers',a.state]);
 

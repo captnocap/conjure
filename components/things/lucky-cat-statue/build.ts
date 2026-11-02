@@ -21,6 +21,12 @@ const GLAZE: Record<keyof typeof GLAZES, { body: string; ink: string; inner: str
 
 export default defineThing({
   questions: {
+    headShape: choice('What proportions does the cat’s head have?', { round: 'A round broad-cheeked head.', slender: 'A narrower elongated head.', wide: 'A very broad low head.', kitten: 'A larger round kitten-like head.' }),
+    whiskers: choice('How are the whiskers painted?', { fan: 'Three long fanned whiskers on each cheek.', straight: 'Two straight parallel whiskers.', curl: 'Curled decorative whiskers.', dots: 'Small whisker dots without long lines.' }),
+    pawMark: choice('What is painted on the raised paw?', { round: 'One round pink paw pad.', heart: 'A small pink heart.', flower: 'A five-petalled blossom.', toes: 'A large pad with three small toe pads.' }),
+    collarCharm: choice('What charm joins the collar bell?', { knot: 'A small red cord knot.', coin: 'A tiny gold coin charm.', flower: 'A little plum-blossom charm.', plain: 'Only the bell.' }),
+    coinBorder: choice('If the cat holds a gold coin, how is it edged?', { smooth: 'A smooth plain edge.', bead: 'A rim of small gold beads.', double: 'Two concentric raised borders.', rays: 'Short engraved-looking radial marks.' }),
+    tailShape: choice('How does the tail curl behind the cat?', { short: 'A short curled stub.', side: 'A tail curling around one haunch.', hook: 'An upright tail with a hooked tip.', loop: 'A loose loop resting behind the body.' }),
     glaze: choice('What colour is the cat?', GLAZES),
     paw: choice('Which paw is raised?', {
       left: 'The left paw, beckoning customers and friends.',
@@ -71,6 +77,7 @@ export default defineThing({
     const gold = s.material(stone ? '#a3a199' : '#e8b93a', stone ? { roughness: 0.95 } : { metalness: 0.8, roughness: 0.28, emissive: '#6a4a08', emissiveIntensity: mix(0.1, 0.5, mood.cheer) });
     const clay = s.material('#b5764e', { roughness: 0.95 });
     const dark = s.material('#1d1917', { roughness: 0.5 });
+    const ground=(node:THREE.Object3D,floor=0)=>{node.updateWorldMatrix(true,true);const delta=floor-new THREE.Box3().setFromObject(node,true).min.y;node.position.y+=delta;};
     const height = mix(0.09, 1.9, a.size ** 1.7);
 
     // Pedestal first, then the cat stands at `lift` (all in cat units: the cat is 1.45 tall).
@@ -98,7 +105,12 @@ export default defineThing({
       cat.ball([0.17, 0.2, 0.22], [side * 0.36, 0.2, 0.1], body, 14);
       cat.ball([0.11, 0.075, 0.15], [side * 0.2, 0.075, 0.42], body, 12);
     }
-    cat.ball([0.1, 0.1, 0.1], [0.12, 0.16, -0.44], body, 10);
+    if(a.tailShape==='short')cat.ball([.1,.1,.1],[.12,.16,-.44],body,10);
+    else if(a.tailShape==='side')cat.tube([[.12,.16,-.42],[.39,.16,-.35],[.5,.16,-.06],[.43,.17,.2]],.065,body);
+    else if(a.tailShape==='hook')cat.tube([[.1,.16,-.43],[.1,.4,-.5],[.12,.69,-.5],[.27,.78,-.48],[.35,.68,-.45]],.065,body);
+    else cat.tube([[.12,.16,-.42],[.39,.08,-.48],[.35,.07,-.7],[.08,.07,-.75],[-.08,.09,-.59]],.065,body);
+    const headNodes=new Set(cat.root.children);
+
 
     // Head with a painted face. Canvas x = 128 is the front of the sphere.
     const canvas = document.createElement('canvas');
@@ -125,7 +137,7 @@ export default defineThing({
     g.fillStyle = stone ? tone.ink : '#e8707a'; g.beginPath(); g.moveTo(121, 138); g.lineTo(135, 138); g.lineTo(128, 147); g.fill();
     g.lineWidth = 4; g.beginPath(); g.arc(119, 149, 9, 0.1, Math.PI * 0.95); g.stroke(); g.beginPath(); g.arc(137, 149, 9, 0.05, Math.PI * 0.9); g.stroke();
     g.lineWidth = 2.5;
-    for (const side of [-1, 1]) for (const tilt of [-0.18, 0, 0.18]) { g.beginPath(); g.moveTo(128 + side * 50, 144 + tilt * 30); g.lineTo(128 + side * 92, 144 + tilt * 110); g.stroke(); }
+    for(const side of [-1,1]){if(a.whiskers==='dots'){for(let i=0;i<3;i++){g.beginPath();g.arc(128+side*(54+i*8),141+(i%2)*8,2.5,0,Math.PI*2);g.fill();}}else for(const tilt of a.whiskers==='straight'?[-.08,.08]:[-.18,0,.18]){g.beginPath();g.moveTo(128+side*50,144+tilt*30);if(a.whiskers==='curl')g.quadraticCurveTo(128+side*110,144+tilt*160,128+side*88,133+tilt*110);else g.lineTo(128+side*92,144+tilt*(a.whiskers==='straight'?30:110));g.stroke();}}
     if (!stone && a.glaze !== 'gold') { g.fillStyle = 'rgba(240,120,130,0.4)'; for (const side of [-1, 1]) { g.beginPath(); g.ellipse(128 + side * 62, 140, 12, 8, 0, 0, Math.PI * 2); g.fill(); } }
     if (a.damage === 'mended') { g.strokeStyle = '#e8b93a'; g.lineWidth = 4; g.beginPath(); g.moveTo(150, 0); g.lineTo(170, 50); g.lineTo(158, 90); g.lineTo(196, 150); g.lineTo(186, 256); g.stroke(); }
     for (let i = 0; i < mood.wear * 18; i++) { g.fillStyle = `rgba(70,60,45,${0.05 + random() * 0.1})`; g.beginPath(); g.ellipse(random() * 512, random() * 256, 8 + random() * 26, 6 + random() * 18, random() * 3, 0, Math.PI * 2); g.fill(); }
@@ -141,10 +153,18 @@ export default defineThing({
       else { const inner = cat.cylinder(0.003, 0.085, 0.15, [side * 0.245, 1.34, 0.055], s.material(tone.inner, { roughness: 0.5 }), 10); inner.rotation.z = -side * 0.25; }
     }
 
+    const headGroup=new THREE.Group();headGroup.position.set(0,1.02,.04);for(const child of [...cat.root.children])if(!headNodes.has(child)){child.position.sub(headGroup.position);headGroup.add(child);}headGroup.scale.set(a.headShape==='slender'?.86:a.headShape==='wide'?1.18:a.headShape==='kitten'?1.13:1,a.headShape==='slender'?1.12:a.headShape==='wide'?.9:a.headShape==='kitten'?1.12:1,a.headShape==='kitten'?1.08:1);cat.root.add(headGroup);
+
     // Collar, bell and bib.
     cat.ring(0.27, 0.042, [0, 0.76, 0.02], red).rotation.x = Math.PI / 2;
     cat.ball([0.075, 0.075, 0.075], [0, 0.7, 0.3], gold, 14);
     cat.box([0.012, 0.05, 0.03], [0, 0.675, 0.365], dark);
+    if(a.collarCharm!=='plain'){
+      cat.tube([[.1,.755,.27],[.15,.69,.31],[.15,.655,.33]],.009,gold);
+      if(a.collarCharm==='coin'){const coin=cat.cylinder(.045,.045,.012,[.15,.63,.34],gold,18);coin.rotation.x=Math.PI/2;}
+      if(a.collarCharm==='knot')for(const side of [-1,1])cat.tube([[.15,.66,.34],[.15+side*.04,.65,.345],[.15+side*.03,.62,.345],[.15,.66,.34],[.15+side*.028,.59,.345]],.008,red);
+      if(a.collarCharm==='flower'){for(let i=0;i<5;i++){const t=i*Math.PI*2/5;cat.ball([.022,.022,.008],[.15+Math.sin(t)*.03,.63+Math.cos(t)*.03,.345],red,8);}cat.ball([.015,.015,.01],[.15,.63,.35],gold,8);}
+    }
     if (a.bib !== 'bare') {
       const cloth = s.material(stone ? '#7c8a74' : { green: '#3f8f52', red: '#cf2f27', purple: '#7a3f9a' }[a.bib], { roughness: 0.8 });
       for (let i = -2; i <= 2; i++) cat.ball([0.085, 0.1, 0.03], [i * 0.085, 0.6 - Math.abs(i) * 0.012, 0.345 - Math.abs(i) * 0.03], cloth, 10).rotation.y = i * 0.25;
@@ -167,11 +187,17 @@ export default defineThing({
         pivot.add(arm);
         if (lost) {
           const stump = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.09, 0.02, 12), clay); stump.position.y = 0.26; pivot.add(stump);
-          const fallen = new THREE.Mesh(new THREE.SphereGeometry(0.12, 14, 10), body); fallen.scale.set(1, 0.85, 1.25); fallen.rotation.y = random() * 3; fallen.position.set(side * 0.42, 0.1 - lift, 0.62); fallen.castShadow = true; cat.root.add(fallen);
-          const shard = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.1, 10), clay); shard.rotation.set(Math.PI / 2, 0, 0.4); shard.position.set(side * 0.42 - Math.sin(fallen.rotation.y) * 0.1, 0.09 - lift, 0.62 - Math.cos(fallen.rotation.y) * 0.1); cat.root.add(shard);
+          const fallen = new THREE.Mesh(new THREE.SphereGeometry(0.12, 14, 10), body); fallen.scale.set(1, 0.85, 1.25); fallen.rotation.y = random() * 3; fallen.position.set(side * 0.42, 0.1 - lift, 0.62); fallen.castShadow = true; cat.root.add(fallen);ground(fallen);
+          const shard = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.1, 10), clay); shard.rotation.set(Math.PI / 2, 0, 0.4); shard.position.set(side * 0.42 - Math.sin(fallen.rotation.y) * 0.1, 0.09 - lift, 0.62 - Math.cos(fallen.rotation.y) * 0.1); cat.root.add(shard);ground(shard);
         } else {
           const paw = new THREE.Mesh(new THREE.SphereGeometry(0.12, 14, 10), body); paw.position.set(0, 0.47, 0.06); paw.scale.set(1, 0.9, 1.1); paw.castShadow = true; pivot.add(paw);
-          const pad = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), s.material(stone ? '#8a8880' : '#f08a98')); pad.position.set(0, 0.45, 0.16); pad.scale.z = 0.5; pivot.add(pad);
+          const padMat=s.material(stone?'#8a8880':'#f08a98');
+          const pad=(x:number,y:number,r:number)=>{const mesh=new THREE.Mesh(new THREE.SphereGeometry(r,10,8),padMat);mesh.scale.z=.22;mesh.position.set(x,y,.188);pivot.add(mesh);};
+          if(a.pawMark==='round'||a.pawMark==='toes'){pad(0,.45,.044);if(a.pawMark==='toes')for(let i=-1;i<=1;i++)pad(i*.04,.508,.016);}
+          if(a.pawMark==='flower'){for(let i=0;i<5;i++){const t=i*Math.PI*2/5;pad(Math.sin(t)*.028,.46+Math.cos(t)*.028,.023);}pad(0,.46,.018);}
+          if(a.pawMark==='heart'){const shape=new THREE.Shape();shape.moveTo(0,-.04);shape.bezierCurveTo(-.065,.005,-.055,.065,0,.025);shape.bezierCurveTo(.055,.065,.065,.005,0,-.04);const mesh=new THREE.Mesh(new THREE.ShapeGeometry(shape),padMat);mesh.position.set(0,.46,.193);pivot.add(mesh);}
+
+          for(const mark of pivot.children){if(!(mark instanceof THREE.Mesh)||mark.material!==padMat)continue;const p=mark.geometry.getAttribute('position');for(let i=0;i<p.count;i++){const x=p.getX(i)*mark.scale.x+mark.position.x,y=p.getY(i)*mark.scale.y+mark.position.y;const z=.06+.132*Math.sqrt(Math.max(.01,1-(x/.12)**2-((y-.47)/.108)**2))+.0018;p.setZ(i,(z-mark.position.z)/mark.scale.z);}p.needsUpdate=true;mark.geometry.computeVertexNormals();}
           arms.push(pivot);
         }
         pivot.rotation.z = -side * 0.12;
@@ -197,7 +223,10 @@ export default defineThing({
       const coin = cat.cylinder(0.5, 0.5, 0.04, [0.02, 0.36, 0.47], gold, 28);
       coin.scale.set(0.32, 1, 0.5); coin.rotation.set(Math.PI / 2 - 0.12, 0, tilt);
       const front = cat.mesh(new THREE.CircleGeometry(0.5, 28), new THREE.MeshStandardMaterial({ map: coinMap, metalness: stone ? 0 : 0.5, roughness: stone ? 0.95 : 0.4 }), [0.02, 0.363, 0.492]);
-      front.scale.set(0.3, 0.47, 1); front.rotation.set(-0.12, 0, tilt);
+      front.scale.set(.3,.47,1);front.rotation.set(-.12,0,tilt);
+      const edgeGroup=new THREE.Group();edgeGroup.position.copy(front.position);edgeGroup.quaternion.copy(front.quaternion);cat.root.add(edgeGroup);
+      if(a.coinBorder==='bead'||a.coinBorder==='rays')for(let i=0;i<32;i++){const t=i*Math.PI/16;if(a.coinBorder==='bead'){const bead=new THREE.Mesh(new THREE.SphereGeometry(.009,6,4),gold);bead.position.set(Math.cos(t)*.153,Math.sin(t)*.24,.003);edgeGroup.add(bead);}else{const mark=new THREE.Mesh(new THREE.BoxGeometry(.004,.017,.003),s.material('#9b732d'));mark.position.set(Math.cos(t)*.14,Math.sin(t)*.22,.004);mark.rotation.z=t-Math.PI/2;edgeGroup.add(mark);}}
+      if(a.coinBorder==='double')for(const scale of [1,.92]){const ring=new THREE.Mesh(new THREE.TorusGeometry(1,.025,6,64),gold);ring.scale.set(.153*scale,.24*scale,.12);ring.position.z=.002;edgeGroup.add(ring);}
     } else if (a.holds === 'fish') {
       const scale = s.material(stone ? '#8f8d86' : '#e0503c', { roughness: 0.4 });
       const fish = new Sculpture(context);
@@ -218,7 +247,7 @@ export default defineThing({
       const coins = 7 + Math.floor(random() * 8 + mood.density * 8);
       for (let i = 0; i < coins; i++) {
         const angle = (random() - 0.5) * 2.6, reach = 0.6 + random() * 0.3;
-        s.cylinder(0.045, 0.045, 0.008, [Math.sin(angle) * reach, 0.004 + (random() > 0.8 ? 0.008 : 0), Math.cos(angle) * reach], random() > 0.4 ? gold : s.material('#c9cdd0', { metalness: 0.8, roughness: 0.3 }), 12);
+        s.cylinder(0.045, 0.045, 0.008, [Math.sin(angle) * reach, 0.004, Math.cos(angle) * reach], random() > 0.4 ? gold : s.material('#c9cdd0', { metalness: 0.8, roughness: 0.3 }), 12);
       }
       const cup = s.material('#f3f1ea', { roughness: 0.3 });
       s.lathe([[0, 0], [0.05, 0], [0.06, 0.02], [0.1, 0.11], [0.09, 0.11], [0.05, 0.025]], cup, [-0.55, 0, 0.5]);
